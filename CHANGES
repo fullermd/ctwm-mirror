@@ -1185,3 +1185,12 @@ VirtualScreens {
 	this because I have now 2 screens, but I was unable to get them working
 	properly, so I use only one.
 
+
+    [ At this point, Claude has stopped working on CTWM, and the project
+      is now in the hands of Richard Levitte <richard@levitte.org>. ]
+
+    9 - Changed Imakefile to support a distribution target.
+
+   10 - Changed :xpm:cross to become a bit larger and have a slightly more
+	3D appearance, and is visible even in very dark configurations.
+
