@@ -64,6 +64,13 @@
  *
  * 22-April-92 Claude Lecommandeur.
  *
+ * Changed behavior of DontMoveOff/MoveOffResistance to allow
+ * moving a window off screen less than #MoveOffResistance pixels.
+ * New code will no longer "snap" windows to #MoveOffResistance
+ * pixels off screen and instead movements will just be stopped and
+ * then resume once movement of #MoveOffResistance have been attempted.
+ *
+ * 15-December-02 Bjorn Knutsson 
  *
  ***********************************************************************/
 
@@ -4035,11 +4042,16 @@ static void ConstrainLeftTop (value, border)
 int *value;
 int border;
 {
-    if (*value < border &&
-        (Scr->MoveOffResistance < 0 ||
-         *value > border - Scr->MoveOffResistance))
+  if (*value < border) {
+    if (Scr->MoveOffResistance < 0 ||
+	*value > border - Scr->MoveOffResistance)
     {
         *value = border;
+    } else if (Scr->MoveOffResistance > 0 &&
+	       *value <= border - Scr->MoveOffResistance)
+    {
+      *value = *value + Scr->MoveOffResistance;
+    }
     }
 }
 
@@ -4049,11 +4061,15 @@ int size1;
 int border;
 int size2;
 {
-    if (*value + size1 > size2 - border &&
-        (Scr->MoveOffResistance < 0 ||
-         *value + size1 < size2 - border + Scr->MoveOffResistance))
+    if (*value + size1 > size2 - border) {
+      if (Scr->MoveOffResistance < 0 ||
+         *value + size1 < size2 - border + Scr->MoveOffResistance)
     {
         *value = size2 - size1 - border;
+	} else if (Scr->MoveOffResistance > 0 &&
+		   *value + size1 >= size2 - border + Scr->MoveOffResistance) {
+	  *value = *value - Scr->MoveOffResistance;
+	}
     }
 }
 

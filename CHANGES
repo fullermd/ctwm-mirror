@@ -1212,3 +1212,14 @@ VirtualScreens {
 
 	This was contributed by Matthew D. Fuller.
 
+   14 - DontMoveOff patch (by Björn Knutsson)
+
+	Change the behavior of DontMoveOff/MoveOffResistance so that
+	when you attempt to move a window off screen, it will not move
+	at all until it's been moved #MoveOffResistance pixels (as
+	before), but at this time it will no longer "snap", but
+	instead it will start moving off screen. This means that you
+	still have the old behavior of DontMoveOff, but now with the
+	ability to move a window off screen less that
+	#MoveOffResistance pixels.
+
