@@ -4,3 +4,4 @@ deftwmrc.c
 gram.c
 gram.h
 lex.c
+*.o.info
