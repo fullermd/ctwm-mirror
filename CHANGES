@@ -1233,3 +1233,9 @@ VirtualScreens {
 	This change differs a little bit from Björns contribution by
 	not using rand() at all.
 
+   16 - f.warpring patch (by Björn Knutsson)
+
+	If IconManagerFocus is set, there's no reason why the icon
+	manager should get enter and leave events.  This fixes some
+	disturbing in the warpring that would otherwise happen.
+
