@@ -51,6 +51,7 @@ int strcmp(); /* missing from string.h in AUX 2.0 */
 
 int iconmgr_textx = siconify_width+11;
 WList *Active = NULL;
+WList *Current = NULL;
 WList *DownIconManager = NULL;
 int iconifybox_width = siconify_width;
 int iconifybox_height = siconify_height;
@@ -79,6 +80,7 @@ void CreateIconManagers()
     Pixel background;
     char *icon_name;
     WorkSpaceList *wlist;
+    XWMHints	  wmhints;
 
     if (Scr->NoIconManagers)
 	return;
@@ -93,6 +95,7 @@ void CreateIconManagers()
     for (q = Scr->iconmgr; q != NULL; q = q->nextv) {
       for (p = q; p != NULL; p = p->next)
       {
+	if (!p->geometry || !strlen(p->geometry)) p->geometry = "+0+0";
 	mask = XParseGeometry(p->geometry, &JunkX, &JunkY,
 			      (unsigned int *) &p->width, (unsigned int *)&p->height);
 
@@ -108,6 +111,8 @@ void CreateIconManagers()
 	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
 			 &background);
 
+	if (p->width  < 1) p->width  = 1;
+	if (p->height < 1) p->height = 1;
 	p->w = XCreateSimpleWindow(dpy, Scr->Root,
 	    JunkX, JunkY, p->width, p->height, 1,
 	    Scr->Black, background);
@@ -122,12 +127,22 @@ void CreateIconManagers()
 	XSetStandardProperties(dpy, p->w, str, icon_name, None, NULL, 0, NULL);
 
 	Scr->workSpaceMgr.activeWSPC = wlist;
+	wmhints.initial_state = NormalState;
+	wmhints.input         = True;
+	XSetWMHints (dpy, p->w, &wmhints);
 	p->twm_win = AddWindow(p->w, TRUE, p);
 
+	p->twm_win->mapped = FALSE;
 	SetMapStateProp (p->twm_win, WithdrawnState);
 	if (p->twm_win && p->twm_win->wmhints &&
 	    (p->twm_win->wmhints->initial_state == IconicState)) {
-	    p->twm_win->mapped = FALSE;
+	    p->twm_win->isicon = TRUE;
+	}
+	else
+	if (!Scr->NoIconManagers && Scr->ShowIconManager) {
+	    p->twm_win->isicon = FALSE;
+	}
+	else {
 	    p->twm_win->isicon = TRUE;
 	}
       }
@@ -177,6 +192,7 @@ IconMgr *AllocateIconManager(name, icon_name, geom, columns)
     if (Scr->NoIconManagers)
 	return NULL;
 
+    if (columns < 1) columns = 1;
     p = (IconMgr *)malloc(sizeof(IconMgr));
     p->name = name;
     p->icon_name = icon_name;
@@ -236,11 +252,11 @@ void MoveIconManager(dir)
     int row_inc, col_inc;
     int got_it;
 
-    if (!Active) return;
+    if (!Current) return;
 
-    cur_row = Active->row;
-    cur_col = Active->col;
-    ip = Active->iconmgr;
+    cur_row = Current->row;
+    cur_col = Current->col;
+    ip = Current->iconmgr;
 
     row_inc = 0;
     col_inc = 0;
@@ -249,13 +265,13 @@ void MoveIconManager(dir)
     switch (dir)
     {
 	case F_FORWICONMGR:
-	    if ((tmp = Active->next) == NULL)
+	    if ((tmp = Current->next) == NULL)
 		tmp = ip->first;
 	    got_it = TRUE;
 	    break;
 
 	case F_BACKICONMGR:
-	    if ((tmp = Active->prev) == NULL)
+	    if ((tmp = Current->prev) == NULL)
 		tmp = ip->last;
 	    got_it = TRUE;
 	    break;
@@ -328,7 +344,7 @@ void MoveIconManager(dir)
     } else {
 	if (tmp->twm->title_height) {
 	    int tbx = Scr->TBInfo.titlex;
-	    int x = tmp->twm->highlightx;
+	    int x = tmp->twm->highlightxr;
 	    XWarpPointer (dpy, None, tmp->twm->title_w, 0, 0, 0, 0,
 			  tbx + (x - tbx) / 2,
 			  Scr->TitleHeight / 4);
@@ -360,7 +376,7 @@ void JumpIconManager(dir)
     ScreenInfo *sp;
     int screen;
 
-    if (!Active) return;
+    if (!Current) return;
 
 
 #define ITER(i) (dir == F_NEXTICONMGR ? (i)->next : (i)->prev)
@@ -368,7 +384,7 @@ void JumpIconManager(dir)
 #define TEST(ip) if ((ip)->count != 0 && (ip)->twm_win->mapped) \
 		 { got_it = TRUE; break; }
 
-    ip = Active->iconmgr;
+    ip = Current->iconmgr;
     for (tmp_ip = ITER(ip); tmp_ip; tmp_ip = ITER(tmp_ip)) {
 	TEST (tmp_ip);
     }
@@ -497,7 +513,16 @@ WList *AddIconManager(tmp_win)
 			    CopyFromParent, (unsigned int) CopyFromParent,
 			    (Visual *) CopyFromParent, valuemask, &attributes);
 
-
+/* for an unknown reason, this window creation fails when in captive mode
+and welcome on, same thing for workspace manager subwindows
+{
+    XWindowAttributes winattrs;
+    Status status;
+    
+printf ("tmp->w = %x\n", tmp->w);
+status = XGetWindowAttributes(dpy, tmp->w, &winattrs);
+if (! status) printf ("XGetWindowAttributes failed on %x\n", tmp->w);
+}*/
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
     attributes.background_pixel = tmp->cp.back;
     attributes.border_pixel = Scr->Black;
@@ -523,17 +548,12 @@ WList *AddIconManager(tmp_win)
     XSaveContext(dpy, tmp->icon, TwmContext, (caddr_t) tmp_win);
     XSaveContext(dpy, tmp->icon, ScreenContext, (caddr_t) Scr);
 
-    if (! Scr->ShowIconManager) {
-	ip->twm_win->mapped = FALSE;
-	ip->twm_win->isicon = TRUE;
-    }
-
     if (!ip->twm_win->isicon)
     {
       if (OCCUPY (ip->twm_win, Scr->workSpaceMgr.activeWSPC)) {
 	SetMapStateProp (ip->twm_win, NormalState);
-	XMapWindow(dpy, ip->w);
-	XMapWindow(dpy, ip->twm_win->frame);
+	XMapWindow (dpy, ip->w);
+	XMapWindow (dpy, ip->twm_win->frame);
       }
 	ip->twm_win->mapped = TRUE;
     }
@@ -630,6 +650,7 @@ void RemoveFromIconManager(ip, tmp)
 	ip->last = tmp->prev;
     else
 	tmp->next->prev = tmp->prev;
+    if (Current == tmp) Current = NULL;
 }
 
 /***********************************************************************
@@ -689,12 +710,19 @@ void RemoveIconManager(tmp_win)
   }
 }
 
+void CurrentIconManagerEntry (current)
+WList *current;
+{
+    Current = current;
+}
+
 void ActiveIconManager(active)
     WList *active;
 {
     active->active = TRUE;
     Active = active;
     Active->iconmgr->active = active;
+    Current = Active;
     DrawIconManagerBorder(active, False);
 }
 
@@ -853,14 +881,15 @@ void PackIconManager(ip)
 
     XResizeWindow(dpy, ip->w, newwidth, ip->height);
 
-    bw   = ip->twm_win->frame_bw3D ? ip->twm_win->frame_bw3D : ip->twm_win->frame_bw;
     mask = XParseGeometry (ip->geometry, &JunkX, &JunkY, &JunkW, &JunkH);
-    if (mask & XNegative) JunkX += Scr->MyDisplayWidth  - ip->width  - 2 * bw;
-    if (mask & YNegative) JunkY += Scr->MyDisplayHeight - ip->height - 2 * bw -
-				   ip->twm_win->title_height;
-    ip->twm_win->frame_x = JunkX;
-    ip->twm_win->frame_y = JunkY;
-
+    if (mask & XNegative) {
+	ip->twm_win->frame_x += ip->twm_win->frame_width - ip->width -
+				2 * ip->twm_win->frame_bw3D;
+    }
+    if (mask & YNegative) {
+	ip->twm_win->frame_y += ip->twm_win->frame_height - ip->height -
+				2 * ip->twm_win->frame_bw3D - ip->twm_win->title_height;
+    }
     savewidth = ip->width;
     if (ip->twm_win)
       SetupWindow (ip->twm_win,

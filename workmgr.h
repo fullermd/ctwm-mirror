@@ -134,6 +134,7 @@ typedef struct WorkSpaceMgr {
     WorkSpaceList	*activeWSPC;
     WorkSpaceWindow	workspaceWindow;
     OccupyWindow	occupyWindow;
+    int			visibility;
     int			count;
 } WorkSpaceMgr;
 

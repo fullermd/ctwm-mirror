@@ -575,10 +575,44 @@ setenv CTWM_WELCOME_FILE "|(giftoppm | pnmtoxwd) < ~/images/2010.gif"
 	In which case the 3D border witdh is given with : ThreeDBorderWidth.
 	The default value is 6.  The color is BorderColor for the window that has
 	focus and BorderTileBackground for all others windows. Note : The 3D
-	borders does merge very well with squeezed titles.
+	borders does not merge very well with squeezed titles, as the top edge
+	of the window where the title is missing does not get a 3d border.
 
    16 - Now, WindowRing can be specified without argument, in this case all the
 	windows are in the ring. (Alec Wolman <wolman@blue.cs.washington.edu>)
 
    17 - New keyword : WarpRingOnScreen, if present, tells ctwm that f.warpring
 	should warp pointer only to windows visible in the current workspace.
+
+
+    Changes from version 3.1 to 3.2
+    -------------------------------
+
+    1 - I have considerably reworked the focus handling. So I have probably
+        introduced some problems.
+
+    2 - New keyword : NoIconManagerFocus. Tells ctwm not to set focus on windows
+        when the pointer is in an IconManager.
+
+    3 - new option : -W. Tells ctwm not to display any welcome when starting.
+        To be used on slow machines.
+
+    4 - New keyword : StayUpMenus. Tells ctwm to use stayup menus. These menus
+        will stay on the screen when ButtonUp, if either the menu has not
+        yet been entered by the pointer, or the current item is a f.title.
+
+    5 - Now ctwm tries to use welcome.xwd instead of welcome.xpm if it exists.
+        On my machine the ctwm process size went from 2.3MB to 1MB when changing
+        this. Xpm is very greedy.
+
+    6 - New keyword : IconRegionJustification. Tells ctwm how to justify icons
+        inside their place in the IconRegion. This keyword needs a string
+        value. The acceptable values are : "left", "center", "right" and "border".
+        If "border" is given, the justification will be "left" if the icon
+        region gravity is "west" and "right" if the icon region gravity is "east".
+        (clever, isn't it)
+
+    7 - If you specify the -f filename option, ctwm will first try to load
+        filename.scrnum, where scrnum is the screen number. If it fails, it will
+        try to load filename as usual.
+

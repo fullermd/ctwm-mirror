@@ -744,7 +744,6 @@ UpdateMenu()
 	if (badItem != ActiveItem) badItem = NULL;
 	XFlush(dpy);
     }
-
 }
 
 
@@ -1311,6 +1310,7 @@ Bool PopUpMenu (menu, x, y, center)
 	XMapWindow (dpy, menu->shadow);
     }
     XSync(dpy, 0);
+
     return True;
 }
 
@@ -1348,7 +1348,7 @@ PopDownMenu()
     ActiveMenu = NULL;
     ActiveItem = NULL;
     MenuDepth = 0;
-    if (Context == C_WINDOW || Context == C_FRAME || Context == C_TITLE)
+    if (Context == C_WINDOW || Context == C_FRAME || Context == C_TITLE || Context == C_ICON)
       menuFromFrameOrWindowOrTitlebar = TRUE;
 }
 
@@ -1402,7 +1402,7 @@ static Bool belongs_to_twm_window (t, w)
 {
     if (!t) return False;
 
-    if (w == t->frame || w == t->title_w || w == t->hilite_w ||
+    if (w == t->frame || w == t->title_w || w == t->hilite_wl || w == t->hilite_wr ||
 	(t->icon && (w == t->icon->w || w == t->icon->bm_w))) return True;
     
     if (t && t->titlebuttons) {
@@ -1439,7 +1439,6 @@ void resizeFromCenter(w, tmp_win)
   int lastx, lasty, width, height, bw2;
   int namelen;
   int stat;
-  XEvent event;
   Window junk;
 
   namelen = strlen (tmp_win->name);
@@ -1452,6 +1451,7 @@ void resizeFromCenter(w, tmp_win)
   XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
 	       (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, 
 	       &JunkBW, &JunkDepth);
+
   XWarpPointer(dpy, None, w,
 	       0, 0, 0, 0, DragWidth/2, DragHeight/2);   
   XQueryPointer (dpy, Scr->Root, &JunkRoot, 
@@ -1479,26 +1479,25 @@ void resizeFromCenter(w, tmp_win)
   while (TRUE)
     {
       XMaskEvent(dpy,
-		 ButtonPressMask | PointerMotionMask, &event);
+		 ButtonPressMask | PointerMotionMask | ExposureMask, &Event);
       
-      if (event.type == MotionNotify) {
+      if (Event.type == MotionNotify) {
 	/* discard any extra motion events before a release */
 	while(XCheckMaskEvent(dpy,
-			      ButtonMotionMask | ButtonPressMask, &event))
-	  if (event.type == ButtonPress)
+			      ButtonMotionMask | ButtonPressMask, &Event))
+	  if (Event.type == ButtonPress)
 	    break;
       }
       
-      if (event.type == ButtonPress)
+      if (Event.type == ButtonPress)
 	{
 	  MenuEndResize(tmp_win);
 	  XMoveResizeWindow(dpy, w, AddingX, AddingY, AddingW, AddingH);
 	  break;
 	}
       
-/*    if (!DispatchEvent ()) continue; */
-
-      if (event.type != MotionNotify) {
+      if (Event.type != MotionNotify) {
+	DispatchEvent2 ();
 	continue;
       }
       
@@ -1563,6 +1562,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     int do_next_action = TRUE;
     int moving_icon = FALSE;
     Bool fromtitlebar = False;
+    Bool from3dborder = False;
     extern int ConstrainedMoveTime;
     TwmWindow *t;
 
@@ -1641,11 +1641,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
         break;
 
     case F_SHOWLIST:
-	if (Scr->NoIconManagers)
-	    break;
-	if (Scr->iconmgr->count == 0) break;
-	DeIconify(Scr->iconmgr->twm_win);
-	XRaiseWindow(dpy, Scr->iconmgr->twm_win->frame);
+	if (Scr->NoIconManagers) break;
+	ShowIconManager ();
 	break;
 
     case F_STARTANIMATION :
@@ -1665,8 +1662,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
     case F_HIDELIST:
-	if (Scr->NoIconManagers)
-	    break;
+	if (Scr->NoIconManagers) break;
 	HideIconManager ();
 	break;
 
@@ -1835,13 +1831,14 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	     */
 	    fromtitlebar = 
 	      belongs_to_twm_window (tmp_win, eventp->xbutton.window);
+	    from3dborder = (eventp->xbutton.window == tmp_win->frame) ? True : False;
 	    
 	    /* Save pointer position so we can tell if it was moved or
 	       not during the resize. */
 	    ResizeOrigX = eventp->xbutton.x_root;
 	    ResizeOrigY = eventp->xbutton.y_root;
 	    
-	    StartResize (eventp, tmp_win, fromtitlebar);
+	    StartResize (eventp, tmp_win, fromtitlebar, from3dborder);
 	    
 	    do {
 	      XMaskEvent(dpy,
@@ -2386,18 +2383,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    }
 	    else
 	    {
-		if (Scr->Focus != NULL) {
-		    SetBorder (Scr->Focus, False);
-		    if (Scr->Focus->hilite_w)
-		      XUnmapWindow (dpy, Scr->Focus->hilite_w);
-		}
-
 		InstallWindowColormaps (0, tmp_win);
-		if (tmp_win->hilite_w) XMapWindow (dpy, tmp_win->hilite_w);
-		SetBorder (tmp_win, True);
 		SetFocus (tmp_win, eventp->xbutton.time);
 		Scr->FocusRoot = FALSE;
-		Scr->Focus = tmp_win;
 	    }
 	}
 	break;
@@ -2693,6 +2681,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	adoptWindow ();
 	break;
 
+    case F_TESTFUNC:
+	testfunc ();
+	break;
+	
     case F_QUIT:
 	Done();
 	break;
@@ -2834,6 +2826,7 @@ Execute(s)
     char oldDisplay[256];
     char *doisplay;
     int restorevar = 0;
+    SigProc	sig;
 
     oldDisplay[0] = '\0';
     doisplay=getenv("DISPLAY");
@@ -2846,19 +2839,21 @@ Execute(s)
      * that they were invoked from, unless specifically overridden on
      * their command line.
      */
-    colon = rindex (ds, ':');
+    colon = strrchr (ds, ':');
     if (colon) {			/* if host[:]:dpy */
 	strcpy (buf, "DISPLAY=");
 	strcat (buf, ds);
 	colon = buf + 8 + (colon - ds);	/* use version in buf */
-	dot1 = index (colon, '.');	/* first period after colon */
+	dot1 = strchr (colon, '.');	/* first period after colon */
 	if (!dot1) dot1 = colon + strlen (colon);  /* if not there, append */
 	(void) sprintf (dot1, ".%d", Scr->screen);
 	putenv (buf);
 	restorevar = 1;
     }
 
+    sig = signal (SIGALRM, SIG_IGN);
     (void) system (s);
+    signal (SIGALRM, sig);
 
     if (restorevar) {		/* why bother? */
 	(void) sprintf (buf, "DISPLAY=%s", oldDisplay);
@@ -2880,14 +2875,8 @@ void
 FocusOnRoot()
 {
     SetFocus ((TwmWindow *) NULL, LastTimestamp());
-    if (Scr->Focus != NULL)
-    {
-	SetBorder (Scr->Focus, False);
-	if (Scr->Focus->hilite_w) XUnmapWindow (dpy, Scr->Focus->hilite_w);
-    }
     InstallWindowColormaps(0, &Scr->TwmRoot);
-    Scr->Focus = NULL;
-    Scr->FocusRoot = TRUE;
+    if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
 }
 
 DeIconify(tmp_win)
@@ -3063,12 +3052,10 @@ int def_x, def_y;
 	    if (t->icon && t->icon->w)
 	      XUnmapWindow(dpy, t->icon->w);
 	    SetMapStateProp(t, IconicState);
-	    SetBorder (t, False);
 	    if (t == Scr->Focus)
 	      {
 		SetFocus ((TwmWindow *) NULL, LastTimestamp());
-		Scr->Focus = NULL;
-		Scr->FocusRoot = TRUE;
+		if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
 	      }
 	    if (t->list) XMapWindow(dpy, t->list->icon);
 	    t->isicon = TRUE;
@@ -3109,12 +3096,10 @@ int def_x, def_y;
 	MosaicFade (blanket, winattrs.width, winattrs.height);
 	XDestroyWindow (dpy, blanket);
     }
-    SetBorder (tmp_win, False);
     if (tmp_win == Scr->Focus)
     {
 	SetFocus ((TwmWindow *) NULL, LastTimestamp());
-	Scr->Focus = NULL;
-	Scr->FocusRoot = TRUE;
+	if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
     }
     tmp_win->isicon = TRUE;
     if (iconify)
@@ -3336,7 +3321,7 @@ BumpWindowColormap (tmp, inc)
 	    tmp->cmaps.cwins = cwins;
 
 	    if (tmp->cmaps.number_cwins > 1)
-		bzero (tmp->cmaps.scoreboard, 
+		memset (tmp->cmaps.scoreboard, 0, 
 		       ColormapsScoreboardLength(&tmp->cmaps));
 
 	    if (previously_installed)
@@ -3348,36 +3333,46 @@ BumpWindowColormap (tmp, inc)
 
 
 
-HideIconManager ()
-{
-    SetMapStateProp (Scr->iconmgr->twm_win, WithdrawnState);
-    XUnmapWindow(dpy, Scr->iconmgr->twm_win->frame);
-    if (Scr->iconmgr->twm_win->icon && Scr->iconmgr->twm_win->icon->w)
-      XUnmapWindow (dpy, Scr->iconmgr->twm_win->icon->w);
-    Scr->iconmgr->twm_win->mapped = FALSE;
-    Scr->iconmgr->twm_win->isicon = TRUE;
-}
+ShowIconManager () {
+    IconMgr		*i;
+    WorkSpaceList	*wl;
 
+    if (! Scr->workSpaceManagerActive) return;
 
-
-
-SetBorder (tmp, onoroff)
-    TwmWindow *tmp;
-    Bool onoroff;
-{
-    if (tmp->highlight) {
-	if (Scr->use3Dborders) PaintBorders (tmp, onoroff);
-	if (onoroff) {
-	    XSetWindowBorder (dpy, tmp->frame, tmp->borderC.back);
-	    if (tmp->title_w) 
-	      XSetWindowBorder (dpy, tmp->title_w, tmp->borderC.back);
-	} else {
-	    XSetWindowBorderPixmap (dpy, tmp->frame, tmp->gray);
-	    if (tmp->title_w) 
-	      XSetWindowBorderPixmap (dpy, tmp->title_w, tmp->gray);
+    if (Scr->NoIconManagers) return;
+    for (wl = Scr->workSpaceMgr.workSpaceList; wl != NULL; wl = wl->next) {
+	for (i = wl->iconmgr; i != NULL; i = i->next) {
+	    if (i->count == 0) continue;
+	    if (OCCUPY (i->twm_win, Scr->workSpaceMgr.activeWSPC)) {
+		SetMapStateProp (i->twm_win, NormalState);
+		XMapWindow (dpy, i->twm_win->w);
+		XMapRaised (dpy, i->twm_win->frame);
+		if (i->twm_win->icon && i->twm_win->icon->w)
+		    XUnmapWindow (dpy, i->twm_win->icon->w);
+	    }
+	    i->twm_win->mapped = TRUE;
+	    i->twm_win->isicon = FALSE;
 	}
     }
 }
+
+
+HideIconManager () {
+    IconMgr		*i;
+    WorkSpaceList	*wl;
+
+    if (Scr->NoIconManagers) return;
+    for (wl = Scr->workSpaceMgr.workSpaceList; wl != NULL; wl = wl->next) {
+	for (i = wl->iconmgr; i != NULL; i = i->next) {
+	    SetMapStateProp (i->twm_win, WithdrawnState);
+	    XUnmapWindow(dpy, i->twm_win->frame);
+	    if (i->twm_win->icon && i->twm_win->icon->w) XUnmapWindow (dpy, i->twm_win->icon->w);
+	    i->twm_win->mapped = FALSE;
+	    i->twm_win->isicon = TRUE;
+	}
+    }
+}
+
 
 
 

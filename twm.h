@@ -68,6 +68,10 @@
 
 typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 
+#ifdef SVR4
+#define signal sigset
+#endif /* SVR4 */
+
 #define BW 2			/* border width */
 #define BW2 4			/* border width  * 2 */
 
@@ -172,6 +176,7 @@ typedef struct _SqueezeInfo {
 #define J_LEFT			1
 #define J_CENTER		2
 #define J_RIGHT			3
+#define J_BORDER		4
 
 /* Colormap window entry for each window in WM_COLORMAP_WINDOWS
  * ICCCM property.
@@ -238,7 +243,9 @@ typedef struct TwmWindow
     int old_bw;			/* border width before reparenting */
     Window frame;		/* the frame window */
     Window title_w;		/* the title bar window */
-    Window hilite_w;		/* the hilite window */
+    Window hilite_wl;		/* the left hilite window */
+    Window hilite_wr;		/* the right hilite window */
+    Cursor curcurs;		/* current resize cursor */
     Pixmap gray;
     Icon *icon;			/* the curent icon */
     name_list *iconslist;	/* the current list of icons */
@@ -255,8 +262,10 @@ typedef struct TwmWindow
     char *full_name;		/* full name of the window */
     char *name;			/* name of the window */
     char *icon_name;            /* name of the icon */
+    int name_x;			/* start x of name text */
     int name_width;		/* width of name text */
-    int highlightx;		/* start of highlight window */
+    int highlightxl;		/* start of left highlight window */
+    int highlightxr;		/* start of right highlight window */
     int rightx;			/* start of right buttons */
     XWindowAttributes attr;	/* the child window attributes */
     XSizeHints hints;		/* normal hints */
@@ -304,6 +313,7 @@ typedef struct TwmWindow
 
     short OpaqueMove;
     short OpaqueResize;
+    Bool hasfocusvisible;	/* The window has visivle focus*/
     int  occupation;
     Image *HiliteImage;                /* focus highlight window background */
 } TwmWindow;
@@ -398,5 +408,6 @@ extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
 
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
+#define VISIBLE(w) (w->occupation & Scr->workSpaceMgr.visibility)
 
 #endif /* _TWM_ */

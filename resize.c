@@ -73,6 +73,11 @@ static int clampDY;
 static int last_width;
 static int last_height;
 
+static unsigned int resizeGrabMask;
+
+extern Cursor	TopRightCursor, TopLeftCursor, BottomRightCursor, BottomLeftCursor,
+		LeftCursor, RightCursor, TopCursor, BottomCursor;
+
 static void do_auto_clamp (tmp_win, evp)
     TwmWindow *tmp_win;
     XEvent *evp;
@@ -132,21 +137,23 @@ static void do_auto_clamp (tmp_win, evp)
  */
 
 void
-StartResize(evp, tmp_win, fromtitlebar)
+StartResize(evp, tmp_win, fromtitlebar, from3dborder)
 XEvent *evp;
 TwmWindow *tmp_win;
-Bool fromtitlebar;
+Bool fromtitlebar, from3dborder;
 {
     Window      junkRoot;
     unsigned int junkbw, junkDepth;
+    Cursor	cursor;
 
+    cursor = (Scr->BorderCursors && tmp_win->curcurs) ? tmp_win->curcurs : Scr->ResizeCursor;
     ResizeWindow = tmp_win->frame;
     if (! Scr->OpaqueResize || resizeWhenAdd) XGrabServer(dpy);
-    XGrabPointer(dpy, Scr->Root, True,
-        ButtonPressMask | ButtonReleaseMask |
-	ButtonMotionMask | PointerMotionHintMask,
+    resizeGrabMask = ButtonPressMask | ButtonReleaseMask |
+			ButtonMotionMask | PointerMotionHintMask;
+    XGrabPointer(dpy, Scr->Root, True, resizeGrabMask,
         GrabModeAsync, GrabModeAsync,
-        Scr->Root, Scr->ResizeCursor, CurrentTime);
+        Scr->Root, cursor, CurrentTime);
 
     XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
         &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
@@ -159,7 +166,7 @@ Bool fromtitlebar;
     origHeight = dragHeight;
     clampTop = clampBottom = clampLeft = clampRight = clampDX = clampDY = 0;
 
-    if (Scr->AutoRelativeResize && !fromtitlebar)
+    if (Scr->AutoRelativeResize && (from3dborder || !fromtitlebar))
       do_auto_clamp (tmp_win, evp);
 
     Scr->SizeStringOffset = SIZE_HINDENT;
@@ -190,8 +197,8 @@ int x, y, w, h;
   unsigned int junkbw, junkDepth;
 
     if (! Scr->OpaqueResize) XGrabServer(dpy);
-    XGrabPointer(dpy, Scr->Root, True,
-        ButtonPressMask | ButtonMotionMask | PointerMotionMask,
+    resizeGrabMask = ButtonPressMask | ButtonMotionMask | PointerMotionMask;
+    XGrabPointer(dpy, Scr->Root, True, resizeGrabMask,
         GrabModeAsync, GrabModeAsync,
         Scr->Root, Scr->ResizeCursor, CurrentTime);
     dragx = x + tmp_win->frame_bw;
@@ -234,8 +241,8 @@ TwmWindow *tmp_win;
 int x, y, w, h;
 {
     XGrabServer(dpy);
-    XGrabPointer(dpy, Scr->Root, True,
-        ButtonReleaseMask | ButtonMotionMask | PointerMotionHintMask,
+    resizeGrabMask = ButtonReleaseMask | ButtonMotionMask | PointerMotionHintMask;
+    XGrabPointer(dpy, Scr->Root, True, resizeGrabMask,
         GrabModeAsync, GrabModeAsync,
         Scr->Root, Scr->ResizeCursor, CurrentTime);
 
@@ -265,6 +272,7 @@ int y_root;
 TwmWindow *tmp_win;
 {
     int action;
+    Cursor cursor;
 
     action = 0;
 
@@ -280,6 +288,7 @@ TwmWindow *tmp_win;
         dragy += delta;
         dragHeight -= delta;
         action = 1;
+	cursor = TopCursor;
     }
     else if (y_root <= dragy/* ||
              y_root == findRootInfo(root)->rooty*/) {
@@ -290,6 +299,7 @@ TwmWindow *tmp_win;
         clampTop = 1;
 	clampDY = 0;
         action = 1;
+	cursor = TopCursor;
     }
     if (clampLeft) {
         int         delta = x_root - dragx;
@@ -300,6 +310,7 @@ TwmWindow *tmp_win;
         dragx += delta;
         dragWidth -= delta;
         action = 1;
+	cursor = clampTop ? TopLeftCursor : LeftCursor;
     }
     else if (x_root <= dragx/* ||
              x_root == findRootInfo(root)->rootx*/) {
@@ -310,6 +321,7 @@ TwmWindow *tmp_win;
         clampLeft = 1;
 	clampDX = 0;
         action = 1;
+	cursor = clampTop ? TopLeftCursor : LeftCursor;
     }
     if (clampBottom) {
         int         delta = y_root - dragy - dragHeight;
@@ -319,6 +331,7 @@ TwmWindow *tmp_win;
         }
         dragHeight += delta;
         action = 1;
+	cursor = clampLeft ? BottomLeftCursor : BottomCursor;
     }
     else if (y_root >= dragy + dragHeight) {
         dragy = origy;
@@ -327,6 +340,7 @@ TwmWindow *tmp_win;
         clampBottom = 1;
 	clampDY = 0;
         action = 1;
+	cursor = clampLeft ? BottomLeftCursor : BottomCursor;
     }
     if (clampRight) {
         int         delta = x_root - dragx - dragWidth;
@@ -336,6 +350,8 @@ TwmWindow *tmp_win;
         }
         dragWidth += delta;
         action = 1;
+	cursor = clampBottom ? BottomRightCursor : RightCursor;
+	cursor = clampTop ? TopRightCursor : cursor;
     }
     else if (x_root >= dragx + dragWidth) {
         dragx = origx;
@@ -344,6 +360,8 @@ TwmWindow *tmp_win;
         clampRight = 1;
 	clampDX = 0;
         action = 1;
+	cursor = clampBottom ? BottomRightCursor : RightCursor;
+	cursor = clampTop ? TopRightCursor : cursor;
     }
 
     if (action) {
@@ -362,6 +380,10 @@ TwmWindow *tmp_win;
             dragWidth + 2 * tmp_win->frame_bw,
             dragHeight + 2 * tmp_win->frame_bw,
 	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+	if (Scr->BorderCursors && (cursor != tmp_win->curcurs)) {
+	    tmp_win->curcurs = cursor;
+	    XChangeActivePointerGrab (dpy, resizeGrabMask, cursor, CurrentTime);
+	}
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -388,6 +410,7 @@ int y_root;
 TwmWindow *tmp_win;
 {
     int action;
+    Cursor cursor;
 
     action = 0;
 
@@ -403,6 +426,7 @@ TwmWindow *tmp_win;
         dragy += delta;
         dragHeight -= delta;
         action = 1;
+	cursor = TopCursor;
     }
     else if (y_root <= dragy/* ||
              y_root == findRootInfo(root)->rooty*/) {
@@ -413,6 +437,7 @@ TwmWindow *tmp_win;
         clampTop = 1;
 	clampDY = 0;
         action = 1;
+	cursor = TopCursor;
     }
     if (clampLeft) {
         int         delta = x_root - dragx;
@@ -423,6 +448,7 @@ TwmWindow *tmp_win;
         dragx += delta;
         dragWidth -= delta;
         action = 1;
+	cursor = clampTop ? TopLeftCursor : LeftCursor;
     }
     else if (x_root <= dragx/* ||
              x_root == findRootInfo(root)->rootx*/) {
@@ -433,6 +459,7 @@ TwmWindow *tmp_win;
         clampLeft = 1;
 	clampDX = 0;
         action = 1;
+	cursor = clampTop ? TopLeftCursor : LeftCursor;
     }
     if (clampBottom) {
         int         delta = y_root - dragy - dragHeight;
@@ -442,6 +469,7 @@ TwmWindow *tmp_win;
         }
         dragHeight += delta;
         action = 1;
+	cursor = clampLeft ? BottomLeftCursor : BottomCursor;
     }
     else if (y_root >= dragy + dragHeight - 1/* ||
            y_root == findRootInfo(root)->rooty
@@ -452,6 +480,7 @@ TwmWindow *tmp_win;
         clampBottom = 1;
 	clampDY = 0;
         action = 1;
+	cursor = clampLeft ? BottomLeftCursor : BottomCursor;
     }
     if (clampRight) {
         int         delta = x_root - dragx - dragWidth;
@@ -461,6 +490,8 @@ TwmWindow *tmp_win;
         }
         dragWidth += delta;
         action = 1;
+	cursor = clampBottom ? BottomRightCursor : RightCursor;
+	cursor = clampTop ? TopRightCursor : cursor;
     }
     else if (x_root >= dragx + dragWidth - 1/* ||
              x_root == findRootInfo(root)->rootx +
@@ -471,6 +502,8 @@ TwmWindow *tmp_win;
         clampRight = 1;
 	clampDX = 0;
         action = 1;
+	cursor = clampBottom ? BottomRightCursor : RightCursor;
+	cursor = clampTop ? TopRightCursor : cursor;
     }
 
     if (action) {
@@ -489,6 +522,10 @@ TwmWindow *tmp_win;
             dragWidth + 2 * tmp_win->frame_bw,
             dragHeight + 2 * tmp_win->frame_bw,
 	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+	if (Scr->BorderCursors && (cursor != tmp_win->curcurs)) {
+	    tmp_win->curcurs = cursor;
+	    XChangeActivePointerGrab (dpy, resizeGrabMask, cursor, CurrentTime);
+	}
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -918,20 +955,34 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     /*
      * fix up highlight window
      */
-    if (tmp_win->title_height && tmp_win->hilite_w)
+    if (tmp_win->title_height && tmp_win->hilite_wl)
     {
-	xwc.width = (tmp_win->rightx - tmp_win->highlightx);
+	xwc.width = (tmp_win->name_x - tmp_win->highlightxl);
+	if (Scr->use3Dtitles) xwc.width -= 4;
+        if (xwc.width <= 0) {
+            xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
+            xwc.width = 1;
+        } else {
+            xwc.x = tmp_win->highlightxl;
+        }
+
+        xwcm = CWX | CWWidth;
+        XConfigureWindow(dpy, tmp_win->hilite_wl, xwcm, &xwc);
+    }
+    if (tmp_win->title_height && tmp_win->hilite_wr)
+    {
+	xwc.width = (tmp_win->rightx - tmp_win->highlightxr);
 	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
 	if (Scr->use3Dtitles) xwc.width -= 4;
         if (xwc.width <= 0) {
             xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
             xwc.width = 1;
         } else {
-            xwc.x = tmp_win->highlightx;
+            xwc.x = tmp_win->highlightxr;
         }
 
         xwcm = CWX | CWWidth;
-        XConfigureWindow(dpy, tmp_win->hilite_w, xwcm, &xwc);
+        XConfigureWindow(dpy, tmp_win->hilite_wr, xwcm, &xwc);
     }
 
     if (HasShape && reShape) {

@@ -95,11 +95,14 @@ static Image  *Create3DZoomImage ();
 static Image  *Create3DBarImage ();
 static Image  *Create3DResizeAnimation ();
 
+extern FILE *errorlog;
+
 void FreeImage ();
 
 static int    reportfilenotfound = 1;
-static GC     rootGC = (GC) 0;
 static Colormap AlternateCmap = None;
+static Visual *AlternateVisual = NULL;
+static int AlternateDepth = 8;
 
 int  HotX, HotY;
 
@@ -478,7 +481,7 @@ ColorPair cp;
     int		width, height;
     XGCValues	gcvalues;
 
-    if (rootGC == (GC) 0) rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
+    if (Scr->rootGC == (GC) 0) Scr->rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
     bm = FindBitmap (name, &width, &height);
     if (bm == None) return (None);
 
@@ -486,8 +489,9 @@ ColorPair cp;
     image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
     gcvalues.background = cp.back;
     gcvalues.foreground = cp.fore;
-    XChangeGC   (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
-    XCopyPlane  (dpy, bm, image->pixmap, rootGC, 0, 0, width, height, 0, 0, (unsigned long) 1);
+    XChangeGC   (dpy, Scr->rootGC, GCForeground | GCBackground, &gcvalues);
+    XCopyPlane  (dpy, bm, image->pixmap, Scr->rootGC, 0, 0, width, height,
+		0, 0, (unsigned long) 1);
     XFreePixmap (dpy, bm);
     image->mask   = None;
     image->width  = width;
@@ -556,12 +560,12 @@ char *name;
     attributes.valuemask |= XpmDepth;
     attributes.valuemask |= XpmVisual;
 
-    if (AlternateCmap)
-	attributes.colormap = AlternateCmap;
-    else
-	attributes.colormap = DefaultColormap (dpy, Scr->screen);
-    attributes.depth    = DefaultDepth    (dpy, Scr->screen);
-    attributes.visual   = DefaultVisual   (dpy, Scr->screen);
+    attributes.colormap = AlternateCmap ? AlternateCmap :
+					  DefaultColormap (dpy, Scr->screen);
+    attributes.depth    = AlternateCmap ? AlternateDepth :
+					  DefaultDepth (dpy, Scr->screen);
+    attributes.visual   = AlternateCmap ? AlternateVisual :
+					  DefaultVisual (dpy, Scr->screen);
     status = XpmReadFileToPixmap(dpy, Scr->Root, fullname,
 				 &(image->pixmap), &(image->mask), &attributes);
     free (fullname);
@@ -653,8 +657,16 @@ char *file;
     Cursor waitcursor;
     int x, y;
     ColorPair WelcomeCp;
+    XColor black;
+    XVisualInfo vinfo;
 
     NewFontCursor (&waitcursor, "watch");
+
+    Scr->WelcomeVisual = DefaultVisual (dpy, Scr->screen);
+/*
+    if (XMatchVisualInfo (dpy, Scr->screen, 8, PseudoColor, &vinfo))
+	Scr->WelcomeVisual = vinfo.visual;
+*/
     valuemask = (CWBackingStore | CWSaveUnder | CWBackPixel |
 		 CWOverrideRedirect | CWEventMask | CWCursor);
     attributes.backing_store	 = NotUseful;
@@ -668,25 +680,36 @@ char *file;
 			(unsigned int) Scr->MyDisplayHeight,
 			(unsigned int) 0,
 			CopyFromParent, (unsigned int) CopyFromParent,
-			(Visual *) CopyFromParent, valuemask,
+			Scr->WelcomeVisual, valuemask,
 			&attributes);
     XMapWindow (dpy, Scr->WindowMask);
     XMaskEvent (dpy, ExposureMask, &event);
 
-    if (file == (char*) 0)
-#ifdef XPM
-	file = "xpm:welcome.xpm";
-#else
-	file = "xwd:welcome.xwd";
-#endif
+    if (Scr->Monochrome != COLOR) return;
+
     WelcomeCp.fore = Scr->Black;
     WelcomeCp.back = Scr->White;
-    Scr->WelcomeCmap  = XCreateColormap (dpy, Scr->WindowMask,
-				DefaultVisual (dpy, Scr->screen), AllocNone);
+    Scr->WelcomeCmap  = XCreateColormap (dpy, Scr->WindowMask, Scr->WelcomeVisual, AllocNone);
     if (! Scr->WelcomeCmap) return;
+    black.red   = 0;
+    black.green = 0;
+    black.blue  = 0;
+    XAllocColor (dpy, Scr->WelcomeCmap, &black);
+
     reportfilenotfound = 0;
-    AlternateCmap = Scr->WelcomeCmap;
-    Scr->WelcomeImage  = GetImage (file, WelcomeCp);
+    AlternateCmap   = Scr->WelcomeCmap;
+    AlternateVisual = Scr->WelcomeVisual;
+    AlternateDepth  = 8;
+    if (! file) {
+	Scr->WelcomeImage  = GetImage ("xwd:welcome.xwd", WelcomeCp);
+#ifdef XPM
+	if (Scr->WelcomeImage == None)
+		Scr->WelcomeImage  = GetImage ("xpm:welcome.xpm", WelcomeCp);
+#endif
+    }
+    else {
+	Scr->WelcomeImage  = GetImage (file, WelcomeCp);
+    }
     AlternateCmap = None;
     reportfilenotfound = 1;
     if (Scr->WelcomeImage == None) return;
@@ -698,6 +721,7 @@ char *file;
     x = (Scr->MyDisplayWidth  -  Scr->WelcomeImage->width) / 2;
     y = (Scr->MyDisplayHeight - Scr->WelcomeImage->height) / 2;
 
+    XSetWindowBackground (dpy, Scr->WindowMask, black.pixel);
     XClearWindow (dpy, Scr->WindowMask);
     XCopyArea (dpy, Scr->WelcomeImage->pixmap, Scr->WindowMask, Scr->WelcomeGC, 0, 0,
 		Scr->WelcomeImage->width, Scr->WelcomeImage->height, x, y);
@@ -710,6 +734,7 @@ UnmaskScreen () {
     Colormap		cmap;
     XColor		colors [256], stdcolors [256];
     int			i, j, usec;
+    Status		status;
     unsigned long	planemask;
 
     usec = 17000;
@@ -727,8 +752,9 @@ UnmaskScreen () {
 	}
 	XQueryColors (dpy, cmap, colors, 256);
 	XFreeColors  (dpy, cmap, pixels, 256, 0L);
+	XFreeColors  (dpy, cmap, pixels, 256, 0L); /* Ah Ah */
 
-	XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
+	status = XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
 	for (i = 0; i < 256; i++) {
 	    colors [i].pixel = i;
 	    colors [i].flags = DoRed | DoGreen | DoBlue;
@@ -749,7 +775,10 @@ UnmaskScreen () {
 	XFreeGC       (dpy, Scr->WelcomeGC);
 	FreeImage     (Scr->WelcomeImage);
     }
-    cmap = XCreateColormap (dpy, Scr->Root, DefaultVisual (dpy, Scr->screen), AllocNone);
+    if (Scr->Monochrome != COLOR) goto fin;
+
+    if (! Scr->WelcomeVisual) Scr->WelcomeVisual = DefaultVisual (dpy, Scr->screen);
+    cmap = XCreateColormap (dpy, Scr->Root, Scr->WelcomeVisual, AllocNone);
     if (! cmap) goto fin;
     XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
     for (i = 0; i < 256; i++) {
@@ -846,6 +875,7 @@ int incr;
 	return;
     }
     AnimationSpeed += incr;
+    if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
 
     signal (SIGALRM, AnimateHandler);
     if (AnimationSpeed == 1) {
@@ -1138,6 +1168,54 @@ MyFont *font;
 }
 
 
+void SetFocusVisualAttributes (tmp_win, focus)
+TwmWindow *tmp_win;
+Bool focus;
+{
+    if (! tmp_win) return;
+
+    if (focus && tmp_win->hasfocusvisible) return;
+    if (! focus && ! tmp_win->hasfocusvisible) return;
+    if (tmp_win->highlight) {
+	if (Scr->use3Dborders) {
+	    if (focus && ! tmp_win->hasfocusvisible) PaintBorders (tmp_win, True);
+	    if (! focus && tmp_win->hasfocusvisible) PaintBorders (tmp_win, False);
+	}
+	else {
+	    if (focus) {
+		XSetWindowBorder (dpy, tmp_win->frame, tmp_win->borderC.back);
+		if (tmp_win->title_w)
+		    XSetWindowBorder (dpy, tmp_win->title_w, tmp_win->borderC.back);
+	    } else {
+		XSetWindowBorderPixmap (dpy, tmp_win->frame, tmp_win->gray);
+		if (tmp_win->title_w)
+		    XSetWindowBorderPixmap (dpy, tmp_win->title_w, tmp_win->gray);
+	    }
+	}
+    }
+    if (focus) {
+	if (tmp_win->hilite_wl) XMapWindow (dpy, tmp_win->hilite_wl);
+	if (tmp_win->hilite_wr) XMapWindow (dpy, tmp_win->hilite_wr);
+	if (tmp_win->list) ActiveIconManager (tmp_win->list);
+    }
+    else {
+	if (tmp_win->hilite_wl) XUnmapWindow (dpy, tmp_win->hilite_wl);
+	if (tmp_win->hilite_wr) XUnmapWindow (dpy, tmp_win->hilite_wr);
+	if (tmp_win->list) NotActiveIconManager (tmp_win->list);
+    }
+    if (Scr->use3Dtitles && Scr->SunkFocusWindowTitle && tmp_win->title_height) {
+	ButtonState bs;
+
+	bs = focus ? on : off;
+	Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
+			tmp_win->title_width  - Scr->TBInfo.titlex -
+			Scr->TBInfo.rightoff,
+			Scr->TitleHeight, 2,
+			tmp_win->title, bs, False, False);
+    }
+    tmp_win->hasfocusvisible = focus;
+}
+
 /*
  * SetFocus - separate routine to set focus to make things more understandable
  * and easier to debug
@@ -1147,19 +1225,35 @@ void SetFocus (tmp_win, time)
     Time	time;
 {
     Window w = (tmp_win ? tmp_win->w : PointerRoot);
-
-#ifdef TRACE
-    if (tmp_win) {
-	printf ("Focusing on window \"%s\"\n", tmp_win->full_name);
-    } else {
-	printf ("Unfocusing; Scr->Focus was \"%s\"\n",
-		Scr->Focus ? Scr->Focus->full_name : "(nil)");
-    }
-#endif
+/* printf ("SetFocus : %x\n", w); */
 
     XSetInputFocus (dpy, w, RevertToPointerRoot, time);
+    if (Scr->Focus == tmp_win) return;
+
+    if (Scr->Focus) {
+	SetFocusVisualAttributes (Scr->Focus, False);
+    }
+    if (tmp_win)    {
+	SetFocusVisualAttributes (tmp_win, True);
+    }
+    if (Scr->ClickToFocus) ChangeFocusGrab (tmp_win);
+    Scr->Focus = tmp_win;
 }
 
+#define MyWindow(win) ((win)->iconmgr || \
+		      ((win) == Scr->workSpaceMgr.workspaceWindow.twm_win) || \
+		      ((win) == Scr->workSpaceMgr.occupyWindow.twm_win))
+
+void ChangeFocusGrab (tmp_win)
+TwmWindow *tmp_win;
+{
+    if (tmp_win) {
+	ClickToFocusUngrab (tmp_win);
+    }
+    if (Scr->Focus && ! MyWindow (Scr->Focus)) {
+	ClickToFocusGrab (Scr->Focus);
+    }
+}
 
 #ifdef NOPUTENV
 /*
@@ -1180,7 +1274,7 @@ putenv(s)
     char **newenv;
     static int virgin = 1; /* true while "environ" is a virgin */
 
-    v = index(s, '=');
+    v = strchr(s, '=');
     if(v == 0)
 	return 0; /* punt if it's not of the right form */
     varlen = (v + 1) - s;
@@ -1791,18 +1885,18 @@ int		type;
 			bw, cp, on, True, False);
 	    break;
 	case 1 :
-	    Draw3DBorder (w, x - bw, y + thick - bw,
-			width - thick + 2 * bw, height - thick + 2 * bw,
+	    Draw3DBorder (w, x, y + thick - bw,
+			width - thick + bw, height - thick,
 			bw, cp, on, True, False);
 	    break;
 	case 2 :
-	    Draw3DBorder (w, x - bw, y - bw,
-			width - thick + 2 * bw, height - thick + 2 * bw,
+	    Draw3DBorder (w, x, y,
+			width - thick + bw, height - thick + bw,
 			bw, cp, on, True, False);
 	    break;
 	case 3 :
-	    Draw3DBorder (w, x + thick - bw, y - bw,
-			width - thick + 2 * bw, height - thick + 2 * bw,
+	    Draw3DBorder (w, x + thick - bw, y,
+			width - thick, height - thick + bw,
 			bw, cp, on, True, False);
 	    break;
     }
@@ -1855,30 +1949,6 @@ Bool focus;
 	    2, cp, on, True, False);
 	return;
     }
-    Draw3DBorder (tmp_win->frame,
-		tmp_win->title_x + Scr->TitleHeight,
-		0,
-		tmp_win->title_width - 2 * Scr->TitleHeight,
-		tmp_win->frame_bw3D,
-		2, cp, off, True, False);
-    Draw3DBorder (tmp_win->frame,
-		tmp_win->frame_bw3D + Scr->TitleHeight,
-		tmp_win->frame_height - tmp_win->frame_bw3D,
-		tmp_win->frame_width - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
-		tmp_win->frame_bw3D,
-		2, cp, off, True, False);
-    Draw3DBorder (tmp_win->frame,
-		0,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D,
-		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
-		2, cp, off, True, False);
-    Draw3DBorder (tmp_win->frame,
-		tmp_win->frame_width  - tmp_win->frame_bw3D,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D,
-		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
-		2, cp, off, True, False);
     Draw3DCorner (tmp_win->frame,
 		tmp_win->title_x - tmp_win->frame_bw3D,
 		0,
@@ -1903,6 +1973,30 @@ Bool focus;
 		Scr->TitleHeight + tmp_win->frame_bw3D,
 		Scr->TitleHeight + tmp_win->frame_bw3D,
 		tmp_win->frame_bw3D, 2, cp, 3);
+    Draw3DBorder (tmp_win->frame,
+		tmp_win->title_x + Scr->TitleHeight,
+		0,
+		tmp_win->title_width - 2 * Scr->TitleHeight,
+		tmp_win->frame_bw3D,
+		2, cp, off, True, False);
+    Draw3DBorder (tmp_win->frame,
+		tmp_win->frame_bw3D + Scr->TitleHeight,
+		tmp_win->frame_height - tmp_win->frame_bw3D,
+		tmp_win->frame_width - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+		tmp_win->frame_bw3D,
+		2, cp, off, True, False);
+    Draw3DBorder (tmp_win->frame,
+		0,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D,
+		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+		2, cp, off, True, False);
+    Draw3DBorder (tmp_win->frame,
+		tmp_win->frame_width  - tmp_win->frame_bw3D,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D,
+		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+		2, cp, off, True, False);
 }
 
 void PaintTitle (tmp_win)
@@ -1921,23 +2015,22 @@ TwmWindow *tmp_win;
 		Scr->TitleHeight, 2,
 		tmp_win->title, off, True, False);
 
-    FBF(tmp_win->title.fore, tmp_win->title.back,
-	Scr->TitleBarFont.font->fid);
+    FBF(tmp_win->title.fore, tmp_win->title.back, Scr->TitleBarFont.font->fid);
 
     if (Scr->use3Dtitles) {
 	if (Scr->Monochrome != COLOR) {
 	    XDrawImageString (dpy, tmp_win->title_w, Scr->NormalGC,
-		 Scr->TBInfo.titlex + 4, Scr->TitleBarFont.y + 2, 
+		 tmp_win->name_x, Scr->TitleBarFont.y + 2, 
 		 tmp_win->name, strlen(tmp_win->name));
 	}
 	else
 	    XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
-		 Scr->TBInfo.titlex + 4, Scr->TitleBarFont.y + 2, 
+		 tmp_win->name_x, Scr->TitleBarFont.y + 2, 
 		 tmp_win->name, strlen(tmp_win->name));
     }
     else
         XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
-		 Scr->TBInfo.titlex, Scr->TitleBarFont.y, 
+		 tmp_win->name_x, Scr->TitleBarFont.y, 
 		 tmp_win->name, strlen(tmp_win->name));
 }
 
@@ -2046,6 +2139,71 @@ void adoptWindow () {
     XFlush (dpy);
     SimulateMapRequest (w);
     return;
+}
+
+void testfunc () {
+    char logname [64];
+
+    if (errorlog) {
+	fclose (errorlog);
+	printf ("stop logging events\n");
+	errorlog = NULL;
+    }
+    else {
+	sprintf (logname, "CtwmLog.%d", getpid());
+	printf ("logging events to : %s\n", logname);
+	errorlog = fopen (logname, "w");
+    }
+}
+
+extern Cursor	TopRightCursor, TopLeftCursor, BottomRightCursor, BottomLeftCursor,
+		LeftCursor, RightCursor, TopCursor, BottomCursor;
+
+void SetBorderCursor (tmp_win, x, y)
+TwmWindow *tmp_win;
+int       x, y;
+{
+    Cursor cursor;
+    XSetWindowAttributes attr;
+    int h  = Scr->TitleHeight + tmp_win->frame_bw3D;
+    int fw = tmp_win->frame_width;
+    int fh = tmp_win->frame_height;
+    int wd = tmp_win->frame_bw3D;
+
+    if (! tmp_win) return;
+    if ((x < 0) || (y < 0)) cursor = Scr->FrameCursor;
+    else
+    if (x < wd) {
+	if (y < h) cursor = TopLeftCursor;
+	else
+	if (y >= fh - h) cursor = BottomLeftCursor;
+	else cursor = LeftCursor;
+    }
+    else
+    if (x >= fw - wd) {
+	if (y < h) cursor = TopRightCursor;
+	else
+	if (y >= fh - h) cursor = BottomRightCursor;
+	else cursor = RightCursor;
+    }
+    else
+    if (y < wd) {
+	if (x < h) cursor = TopLeftCursor;
+	else
+	if (x >= fw - h) cursor = TopRightCursor;
+	else cursor = TopCursor;
+    }
+    else
+    if (y >= fh - wd) {
+	if (x < h) cursor = BottomLeftCursor;
+	else
+	if (x >= fw - h) cursor = BottomRightCursor;
+	else cursor = BottomCursor;
+    }
+    else cursor = Scr->FrameCursor;
+    attr.cursor = cursor;
+    XChangeWindowAttributes (dpy, tmp_win->frame, CWCursor, &attr);
+    tmp_win->curcurs = cursor;
 }
 
 Image *GetImage (name, cp)
@@ -2169,11 +2327,12 @@ ColorPair cp;
 	    }
 	    image = (Image*) malloc (sizeof (struct _Image));
 	    image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
-	    if (rootGC == (GC) 0) rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
+	    if (Scr->rootGC == (GC) 0) Scr->rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
 	    gcvalues.background = cp.back;
 	    gcvalues.foreground = cp.fore;
-	    XChangeGC   (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
-	    XCopyPlane  (dpy, pm, image->pixmap, rootGC, 0, 0, width, height, 0, 0, (unsigned long) 1);
+	    XChangeGC   (dpy, Scr->rootGC, GCForeground | GCBackground, &gcvalues);
+	    XCopyPlane  (dpy, pm, image->pixmap, Scr->rootGC, 0, 0, width, height, 0, 0,
+			(unsigned long) 1);
 	    image->mask   = None;
 	    image->width  = width;
 	    image->height = height;
@@ -2215,6 +2374,7 @@ char	*filename;
     FILE	*file;
     char	*fullname;
     XColor	colors [256];
+    XWDColor	xwdcolors [256];
     unsigned	buffer_size;
     XImage	*image;
     unsigned char *imagedata;
@@ -2232,6 +2392,7 @@ char	*filename;
     XWDFileHeader header;
     Image	*ret;
     Bool	anim;
+    unsigned long swaptest = 1;
 
     ispipe = 0;
     anim   = False;
@@ -2258,6 +2419,7 @@ file_opened:
 	if (ispipe && anim) StartAnimation ();
 	return (None);
     }
+    if (*(char *) &swaptest) _swaplong ((char *) &header, sizeof (header));
     win_name_size = header.header_size - sizeof (header);
     len = fread (win_name, win_name_size, 1, file);
     if (len != 1) {
@@ -2270,23 +2432,33 @@ file_opened:
     h       = header.pixmap_height;
     depth   = header.pixmap_depth;
     ncolors = header.ncolors;
-    len = fread ((char *) colors, sizeof (XColor), ncolors, file);
+    len = fread ((char *) xwdcolors, sizeof (XWDColor), ncolors, file);
     if (len != ncolors) {
 	fprintf (stderr, "file %s has not the correct format\n", filename);
 	if (ispipe && anim) StartAnimation ();
 	return (None);
     }
+    if (*(char *) &swaptest) {
+	for (i = 0; i < ncolors; i++) {
+	    _swaplong  ((char *) &xwdcolors [i].pixel, 4);
+	    _swapshort ((char *) &xwdcolors [i].red, 3 * 2);
+	}
+    }
+    for (i = 0; i < ncolors; i++) {
+	colors [i].pixel = xwdcolors [i].pixel;
+	colors [i].red   = xwdcolors [i].red;
+	colors [i].green = xwdcolors [i].green;
+	colors [i].blue  = xwdcolors [i].blue;
+	colors [i].flags = xwdcolors [i].flags;
+	colors [i].pad   = xwdcolors [i].pad;
+    }
 
     scrn    = Scr->screen;
-    if (AlternateCmap)
-	cmap    = AlternateCmap;
-    else
-	cmap    = DefaultColormap (dpy, scrn);
-    visual  = DefaultVisual   (dpy, scrn);
+    cmap    = AlternateCmap ? AlternateCmap   : DefaultColormap (dpy, scrn);
+    visual  = AlternateCmap ? AlternateVisual : DefaultVisual   (dpy, scrn);
     gc      = DefaultGC       (dpy, scrn);
 
     buffer_size = header.bytes_per_line * h;
-
     imagedata = (unsigned char*) malloc (buffer_size);
     if (! imagedata) {
 	fprintf (stderr, "cannot allocate memory for image %s\n", filename);
@@ -2337,7 +2509,8 @@ file_opened:
     if ((w > (Scr->MyDisplayWidth / 2)) || (h > (Scr->MyDisplayHeight / 2))) {
 	int x, y;
 
-	pixret = XCreatePixmap (dpy, Scr->Root, Scr->MyDisplayWidth, Scr->MyDisplayHeight, depth);
+	pixret = XCreatePixmap (dpy, Scr->Root, Scr->MyDisplayWidth,
+				Scr->MyDisplayHeight, depth);
 	x = (Scr->MyDisplayWidth  - w) / 2;
 	y = (Scr->MyDisplayHeight - h) / 2;
 	XFillRectangle (dpy, pixret, gc, 0, 0, Scr->MyDisplayWidth, Scr->MyDisplayHeight);
@@ -2398,19 +2571,22 @@ XImage *image;
 XColor *colors;
 int    *ncolors;
 {
-    unsigned char index [256];
-    unsigned int  used  [256];  
+    unsigned char ind  [256];
+    unsigned int  used [256];  
     int           i, j, size, nused;
     unsigned char color;
     XColor        newcolors [256];
     unsigned char *imagedata;
 
-    for (i = 0; i < 256; i++) used [i] = 0;
-
+    for (i = 0; i < 256; i++) {
+	used [i] = 0;
+	ind  [i] = 0;
+    }
     nused = 0;
-    size  = image->width * image->height;
+    size  = image->bytes_per_line * image->height;
     imagedata = (unsigned char *) image->data;
     for (i = 0; i < size; i++) {
+	if ((i % image->bytes_per_line) > image->width) continue;
         color = imagedata [i];
         if (used [color] == 0) {
             for (j = 0; j < nused; j++) {
@@ -2418,8 +2594,8 @@ int    *ncolors;
                     (colors [color].green == newcolors [j].green) &&
                     (colors [color].blue  == newcolors [j].blue)) break;
             }
-            index [color] = j;
-            used  [color] = 1;
+            ind  [color] = j;
+            used [color] = 1;
             if (j == nused) {
                 newcolors [j].red   = colors [color].red;
                 newcolors [j].green = colors [color].green;
@@ -2429,7 +2605,7 @@ int    *ncolors;
         }
     }
     for (i = 0; i < size; i++) {
-        imagedata [i] = index [imagedata [i]];
+        imagedata [i] = ind [imagedata [i]];
     }
     for (i = 0; i < nused; i++) {
         colors [i] = newcolors [i];
@@ -2548,12 +2724,9 @@ int	*width, *height;
     *height = h;
 
     scrn   = Scr->screen;
-    if (AlternateCmap)
-	cmap    = AlternateCmap;
-    else
-	cmap   = DefaultColormap (dpy, scrn);
-    visual = DefaultVisual   (dpy, scrn);
-    gc     = DefaultGC       (dpy, scrn);
+    cmap   = AlternateCmap ? AlternateCmap   : DefaultColormap (dpy, scrn);
+    visual = AlternateCmap ? AlternateVisual : DefaultVisual (dpy, scrn);
+    gc     = DefaultGC     (dpy, scrn);
 
     buffer_size = w * h;
     imagedata = (unsigned char*) malloc (buffer_size);
@@ -2659,3 +2832,39 @@ TagTable *table;
 }
 
 #endif
+
+_swapshort (bp, n)
+    register char *bp;
+    register unsigned n;
+{
+    register char c;
+    register char *ep = bp + n;
+
+    while (bp < ep) {
+	c = *bp;
+	*bp = *(bp + 1);
+	bp++;
+	*bp++ = c;
+    }
+}
+
+_swaplong (bp, n)
+    register char *bp;
+    register unsigned n;
+{
+    register char c;
+    register char *ep = bp + n;
+    register char *sp;
+
+    while (bp < ep) {
+	sp = bp + 3;
+	c = *sp;
+	*sp = *bp;
+	*bp++ = c;
+	sp = bp + 1;
+	c = *sp;
+	*sp = *bp;
+	*bp++ = c;
+	bp += 2;
+    }
+}

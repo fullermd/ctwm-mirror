@@ -1,7 +1,7 @@
-#define XPM
-#define IMCONV
-#define USEM4
+#undef  IMCONV
 #undef  USE_SOUND
+#define XPM
+#define USEM4
 
 #define NullParameter
 #define InstallNonExecFile InstallNonExec
@@ -63,13 +63,10 @@
 
 #ifdef DEBUG
     CDEBUGFLAGS = -g
-     DEBUG_DEFS = -DGIVECORE
-#else
-     DEBUG_DEFS = 
 #endif
 
 LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)
-        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(SOUND_DEFS) -DX11R4 $(DEBUG_DEFS)
+        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(SOUND_DEFS) -DX11R4
  EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(SOUND_INCLUDES)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
@@ -107,14 +104,14 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) 
 		xpm/supman1.xbm   xpm/supman4.xbm   xpm/supman7.xbm \
 		xpm/supman2.xbm   xpm/supman5.xbm   xpm/supman8.xbm \
 		xpm/supman3.xbm   xpm/supman6.xbm   xpm/supman9.xbm \
-		xpm/nt1.xpm   xpm/nt2.xpm xpm/xftp.xpm
+		xpm/nt1.xpm   xpm/nt2.xpm xpm/xftp.xpm xpm/welcome.xwd
 
 AllTarget(ctwm)
 
-SpecialObjectRule(parse.o,NullParameter,'-DSYSTEM_INIT_FILE="'$(TWMDIR)'/system.ctwmrc"')
-SpecialObjectRule(ctwm.o,NullParameter,'-DPIXMAP_DIRECTORY="'$(TWMDIR)'"')
+SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(TWMDIR)'/system.ctwmrc"')
+SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="'$(TWMDIR)'"')
 #if !HasPutenv
-SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
+SpecialObjectRule(util.o,util.c,-DNOPUTENV)
 #endif
 
 depend:: lex.c gram.c deftwmrc.c 

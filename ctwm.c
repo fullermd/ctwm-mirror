@@ -86,6 +86,7 @@ ScreenInfo *Scr = NULL;		/* the cur and prev screens */
 int PreviousScreen;		/* last screen that we were on */
 int FirstScreen;		/* TRUE ==> first screen of display */
 Bool PrintErrorMessages = False;	/* controls error messages */
+Bool ShowWelcomeWindow = True;
 static int RedirectError;	/* TRUE ==> another window manager running */
 static int CatchRedirectError();	/* for settting RedirectError */
 static int TwmErrorHandler();	/* for everything else */
@@ -94,7 +95,16 @@ int InfoLines;
 char *InitFile = NULL;
 static Window CreateRootWindow ();
 
-Cursor UpperLeftCursor;		/* upper Left corner cursor */
+Cursor	UpperLeftCursor;
+Cursor	TopRightCursor,
+	TopLeftCursor,
+	BottomRightCursor,
+	BottomLeftCursor,
+	LeftCursor,
+	RightCursor,
+	TopCursor,
+	BottomCursor;
+       
 Cursor RightButt;
 Cursor MiddleButt;
 Cursor LeftButt;
@@ -127,6 +137,7 @@ char **Argv;
 char **Environ;
 
 Bool RestartPreviousState = False;	/* try to restart in previous state */
+Bool TrapExceptions = True;
 
 unsigned long black, white;
 
@@ -191,7 +202,10 @@ main(argc, argv, environ)
 	      case 'q':				/* -quiet */
 		PrintErrorMessages = False;
 		continue;
-	      case 'w':				/* -quiet */
+	      case 'W':				/* -nowelcome */
+		ShowWelcomeWindow = False;
+		continue;
+	      case 'w':				/* -window */
 		captive     = True;
 		MultiScreen = False;
 		if ((i + 1) >= argc) continue;
@@ -224,10 +238,10 @@ main(argc, argv, environ)
     newhandler (SIGQUIT, Done);
     newhandler (SIGTERM, Done);
     signal (SIGALRM, SIG_IGN);
-#ifndef GIVECORE
-    signal (SIGSEGV, Crash);
-    signal (SIGBUS,  Crash);
-#endif
+    if (TrapExceptions) {
+	signal (SIGSEGV, Crash);
+	signal (SIGBUS,  Crash);
+    }
 
 #undef newhandler
 
@@ -313,6 +327,7 @@ main(argc, argv, environ)
         /* Make sure property priority colors is empty */
         XChangeProperty (dpy, root, _XA_MIT_PRIORITY_COLORS,
 			 XA_CARDINAL, 32, PropModeReplace, NULL, 0);
+	XSync(dpy, 0); /* Flush possible previous errors */
 	RedirectError = FALSE;
 	XSetErrorHandler(CatchRedirectError);
 	if (captive) 
@@ -463,6 +478,15 @@ main(argc, argv, environ)
 
 	    /* define cursors */
 
+	    NewFontCursor(&TopLeftCursor, "top_left_corner");
+	    NewFontCursor(&TopRightCursor, "top_right_corner");
+	    NewFontCursor(&BottomLeftCursor, "bottom_left_corner");
+	    NewFontCursor(&BottomRightCursor, "bottom_right_corner");
+	    NewFontCursor(&LeftCursor, "left_side");
+	    NewFontCursor(&RightCursor, "right_side");
+	    NewFontCursor(&TopCursor, "top_side");
+	    NewFontCursor(&BottomCursor, "bottom_side");
+
 	    NewFontCursor(&UpperLeftCursor, "top_left_corner");
 	    NewFontCursor(&RightButt, "rightbutton");
 	    NewFontCursor(&LeftButt, "leftbutton");
@@ -484,7 +508,7 @@ main(argc, argv, environ)
 
 	Scr->WindowMask = (Window) 0;
 	screenmasked = 0;
-	if ((welcomefile = getenv ("CTWM_WELCOME_FILE")) != NULL) {
+	if (ShowWelcomeWindow && (welcomefile = getenv ("CTWM_WELCOME_FILE"))) {
 	    screenmasked = 1;
 	    MaskScreen (welcomefile);
 	}
@@ -494,7 +518,11 @@ main(argc, argv, environ)
 
 	/* Parse it once for each screen. */
 	ParseTwmrc(InitFile);
-	if (! screenmasked) MaskScreen (NULL);
+	if (ShowWelcomeWindow && ! screenmasked) MaskScreen (NULL);
+	if (Scr->ClickToFocus) {
+	    Scr->FocusRoot  = FALSE;
+	    Scr->TitleFocus = FALSE;
+	}
 	ConfigureWorkSpaceManager ();
 
 	if (Scr->use3Dtitles) {
@@ -539,8 +567,6 @@ main(argc, argv, environ)
 	AllocateOthersIconManagers ();
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
-	if (!Scr->NoIconManagers)
-	    Scr->iconmgr->twm_win->isicon = TRUE;
 
 	XQueryTree(dpy, Scr->Root, &root, &parent, &children, &nchildren);
 	/*
@@ -573,18 +599,6 @@ main(argc, argv, environ)
 	    {
 		XUnmapWindow(dpy, children[i]);
 		SimulateMapRequest(children[i]);
-	    }
-	}
-
-	if (Scr->ShowIconManager && !Scr->NoIconManagers)
-	{
-	    Scr->iconmgr->twm_win->isicon = FALSE;
-	    if (Scr->iconmgr->count)
-	    {
-		if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
-		SetMapStateProp (Scr->iconmgr->twm_win, NormalState);
-		XMapWindow(dpy, Scr->iconmgr->w);
-		XMapWindow(dpy, Scr->iconmgr->twm_win->frame);
 	    }
 	}
 	if (Scr->ShowWorkspaceManager && Scr->workSpaceManagerActive)
@@ -628,7 +642,7 @@ main(argc, argv, environ)
 				Scr->MyDisplayHeight, 0, 0, 0);
 
 	XUngrabServer(dpy);
-	UnmaskScreen ();
+	if (ShowWelcomeWindow) UnmaskScreen ();
 
 	FirstScreen = FALSE;
     	Scr->FirstTime = FALSE;
@@ -712,8 +726,8 @@ InitVariables()
 
     Scr->DefaultC.fore = black;
     Scr->DefaultC.back = white;
-    Scr->BorderColorC.fore = black;
-    Scr->BorderColorC.back = white;
+    Scr->BorderColorC.fore = white;
+    Scr->BorderColorC.back = black;
     Scr->BorderTileC.fore = black;
     Scr->BorderTileC.back = white;
     Scr->TitleC.fore = black;
@@ -754,6 +768,9 @@ InitVariables()
     Scr->DontMoveOff = FALSE;
     Scr->DoZoom = FALSE;
     Scr->TitleFocus = TRUE;
+    Scr->IconManagerFocus = TRUE;
+    Scr->StayUpMenus = FALSE;
+    Scr->ClickToFocus = FALSE;
     Scr->NoIconTitlebar = FALSE;
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;
@@ -803,7 +820,10 @@ InitVariables()
     Scr->ClearShadowContrast = 50;
     Scr->DarkShadowContrast  = 40;
     Scr->BeNiceToColormap = FALSE;
+    Scr->BorderCursors = TRUE;
     Scr->IconJustification = J_CENTER;
+    Scr->IconRegionJustification = J_CENTER;
+    Scr->TitleJustification = J_LEFT;
     Scr->SmartIconify = FALSE;
     Scr->MaxIconTitleWidth = Scr->MyDisplayWidth;
 
@@ -915,10 +935,12 @@ Time time;
 {
     TwmWindow *tmp;			/* temp twm window structure */
     int scrnum;
+    ScreenInfo *savedScreen;	        /* Its better to avoid coredumps */
 
     /* put a border back around all windows */
 
     XGrabServer (dpy);
+    savedScreen = Scr;
     for (scrnum = 0; scrnum < NumScreens; scrnum++)
     {
 	if ((Scr = ScreenList[scrnum]) == NULL)
@@ -931,7 +953,7 @@ Time time;
 	    XMapWindow (dpy, tmp->w);
 	}
     }
-
+    Scr = savedScreen;
     XUngrabServer (dpy);
     SetFocus ((TwmWindow*)NULL, time);
 }

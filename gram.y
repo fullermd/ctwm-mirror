@@ -54,6 +54,7 @@
 
 static char *Action = "";
 static char *Name = "";
+static char *defstring = "default";
 static MenuRoot	*root, *pull = NULL;
 static char *curWorkSpc;
 static char *client, *workspace;
@@ -144,10 +145,10 @@ stmt		: error
 		| WORKSPCMGR_GEOMETRY string	{ if (Scr->FirstTime)
 						    Scr->workSpaceMgr.workspaceWindow.geometry = $2;
 						}
-		| MAPWINDOWCURRENTWORKSPACE
+		| MAPWINDOWCURRENTWORKSPACE {}
 		  curwork
 
-		| MAPWINDOWDEFAULTWORKSPACE
+		| MAPWINDOWDEFAULTWORKSPACE {}
 		  defwork
 
 		| ZOOM number		{ if (Scr->FirstTime)
@@ -209,11 +210,11 @@ stmt		: error
 
 		| DONT_ICONIFY_BY_UNMAPPING { list = &Scr->DontIconify; }
 		  win_list
-		| WORKSPACES
+		| WORKSPACES {}
 		  workspc_list
 		| OCCUPYALL		{ list = &Scr->OccupyAll; }
 		  win_list
-		| OCCUPYLIST
+		| OCCUPYLIST {}
 		  occupy_list
 		| ICONMGR_NOSHOW	{ list = &Scr->IconMgrNoShow; }
 		  win_list
@@ -262,7 +263,7 @@ stmt		: error
 		  icon_list
 		| COLOR 		{ color = COLOR; }
 		  color_list
-                | SAVECOLOR          
+                | SAVECOLOR             {}
                   save_color_list
                 | MONOCHROME 		{ color = MONOCHROME; }
 	          color_list
@@ -341,7 +342,7 @@ sarg		: SKEYWORD string	{ if (!do_string_keyword ($1, $2)) {
 					    ParseError = 1;
 					  }
 					}
- 		| SKEYWORD 		{ if (!do_string_keyword ($1, "default")) {
+ 		| SKEYWORD 		{ if (!do_string_keyword ($1, defstring)) {
  					    twmrc_error_prefix();
  					    fprintf (stderr,
  				"unknown string keyword %d (no value)\n",
@@ -422,7 +423,7 @@ contextkey	: WINDOW		{ cont |= C_WINDOW_BIT; }
 		;
 
 
-pixmap_list	: LB pixmap_entries RB
+pixmap_list	: LB pixmap_entries RB {}
 		;
 
 pixmap_entries	: /* Empty */
@@ -433,7 +434,7 @@ pixmap_entry	: TITLE_HILITE string { SetHighlightPixmap ($2); }
 		;
 
 
-cursor_list	: LB cursor_entries RB
+cursor_list	: LB cursor_entries RB {}
 		;
 
 cursor_entries	: /* Empty */
@@ -486,7 +487,7 @@ cursor_entry	: FRAME string string {
 			NewFontCursor(&Scr->DestroyCursor, $2); }
 		;
 
-color_list	: LB color_entries RB
+color_list	: LB color_entries RB {}
 		;
 
 
@@ -525,7 +526,7 @@ color_entry	: CLKEYWORD string	{ if (!do_colorlist_keyword ($1, color,
 					}
 		;
 
-save_color_list : LB s_color_entries RB 
+save_color_list : LB s_color_entries RB {}
                 ;
 
 s_color_entries : /* Empty */
@@ -536,7 +537,7 @@ s_color_entry   : string            { do_string_savecolor(color, $1); }
                 | CLKEYWORD         { do_var_savecolor($1); }
                 ;
 
-win_color_list	: LB win_color_entries RB
+win_color_list	: LB win_color_entries RB {}
 		;
 
 win_color_entries	: /* Empty */
@@ -570,7 +571,7 @@ win_sqz_entries	: /* Empty */
 		;
 
 
-iconm_list	: LB iconm_entries RB
+iconm_list	: LB iconm_entries RB {}
 		;
 
 iconm_entries	: /* Empty */
@@ -590,7 +591,7 @@ iconm_entry	: string string number	{ if (Scr->FirstTime)
 					}
 		;
 
-workspc_list	: LB workspc_entries RB
+workspc_list	: LB workspc_entries RB {}
 		;
 
 workspc_entries	: /* Empty */
@@ -606,7 +607,7 @@ workspc_entry	: string	{
 		workapp_list
 		;
 
-workapp_list	: LB workapp_entries RB
+workapp_list	: LB workapp_entries RB {}
 		;
 
 workapp_entries	: /* Empty */
@@ -658,7 +659,7 @@ defwork		: LB string RB {
 		}
 		;
 
-win_list	: LB win_entries RB
+win_list	: LB win_entries RB {}
 		;
 
 win_entries	: /* Empty */
@@ -670,7 +671,7 @@ win_entry	: string		{ if (Scr->FirstTime)
 					}
 		;
 
-occupy_list	: LB occupy_entries RB
+occupy_list	: LB occupy_entries RB {}
 		;
 
 occupy_entries	:  /* Empty */
@@ -685,7 +686,7 @@ occupy_entry	: string {client = $1;}
 		  occupy_window_list
 		;
 
-occupy_workspc_list	: LB occupy_workspc_entries RB
+occupy_workspc_list	: LB occupy_workspc_entries RB {}
 			;
 
 occupy_workspc_entries	:   /* Empty */
@@ -696,7 +697,7 @@ occupy_workspc_entry	: string {
 				AddToClientsList ($1, client);
 			  }
 
-occupy_window_list	: LB occupy_window_entries RB
+occupy_window_list	: LB occupy_window_entries RB {}
 			;
 
 occupy_window_entries	:   /* Empty */
@@ -707,7 +708,7 @@ occupy_window_entry	: string {
 				AddToClientsList (workspace, $1);
 			  }
 
-icon_list	: LB icon_entries RB
+icon_list	: LB icon_entries RB {}
 		;
 
 icon_entries	: /* Empty */
@@ -717,7 +718,7 @@ icon_entries	: /* Empty */
 icon_entry	: string string		{ if (Scr->FirstTime) AddToList(list, $1, $2); }
 		;
 
-function	: LB function_entries RB
+function	: LB function_entries RB {}
 		;
 
 function_entries: /* Empty */

@@ -164,7 +164,23 @@ int *final_x, *final_y;
 	splitEntry (ie, ir->grav1, ir->grav2, w, h);
 	ie->used = 1;
 	ie->twm_win = tmp_win;
-	*final_x = ie->x + (ie->w - iconWidth (tmp_win)) / 2;
+	switch (Scr->IconRegionJustification) {
+	    case J_LEFT :
+		*final_x = ie->x;
+		break;
+	    case J_CENTER :
+		*final_x = ie->x + (ie->w - iconWidth (tmp_win)) / 2;
+		break;
+	    case J_RIGHT :
+		*final_x = ie->x + ie->w - iconWidth (tmp_win);
+		break;
+	    case J_BORDER :
+		if (ir->grav2 == D_EAST)
+		    *final_x = ie->x + ie->w - iconWidth (tmp_win);
+		else
+		    *final_x = ie->x;
+		break;
+	}
 	*final_y = ie->y + (ie->h - iconHeight (tmp_win)) / 2;
     } else {
 	*final_x = def_x;

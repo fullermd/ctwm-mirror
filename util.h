@@ -71,6 +71,8 @@ void PaintIcon ();
 void PaintTitleButton ();
 void PaintTitleButtons ();
 void adoptWindow ();
+void ChangeFocusGrab ();
+Cursor CalculateBorderCursor ();
 
 extern int HotX, HotY;
 

@@ -82,11 +82,12 @@ static void ResizeOccupyWindow		();
 Atom _XA_WM_OCCUPATION;
 Atom _XA_WM_CURRENTWORKSPACE;
 Atom _XA_WM_WORKSPACESLIST;
+Atom _OL_WIN_ATTR;
 
 int       fullOccupation    = 0;
 int       useBackgroundInfo = False;
-XContext  MapWListContext;
-static Cursor handCursor;
+XContext  MapWListContext = (XContext) 0;
+static Cursor handCursor  = (Cursor) 0;
 
 extern Bool MaybeAnimate;
 
@@ -123,6 +124,7 @@ void InitWorkSpaceManager ()
     Scr->workSpaceMgr.occupyWindow.twm_win	= (TwmWindow*) 0;
 
     XrmInitialize ();
+    if (MapWListContext == (XContext) 0) MapWListContext = XUniqueContext ();
 }
 
 ConfigureWorkSpaceManager () {
@@ -142,9 +144,9 @@ void CreateWorkSpaceManager () {
     _XA_WM_OCCUPATION       = XInternAtom (dpy, "WM_OCCUPATION",       False);
     _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", False);
     _XA_WM_WORKSPACESLIST   = XInternAtom (dpy, "WM_WORKSPACESLIST",   False);
+    _OL_WIN_ATTR            = XInternAtom (dpy, "_OL_WIN_ATTR",        False);
 
     NewFontCursor (&handCursor, "hand2");
-    MapWListContext = XUniqueContext();
 
     Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
     CreateWorkSpaceManagerWindow ();
@@ -342,7 +344,8 @@ WorkSpaceList *wlist;
 	ExecuteFunction (Scr->ChangeWorkspaceFunction.func, action,
 			   (Window) 0, (TwmWindow*) 0, &event, C_ROOT, FALSE);
     }
-    XFlush (dpy);
+    /*XFlush (dpy);*/
+    XSync (dpy, 0);
     MaybeAnimate = True;
 }
 
@@ -764,7 +767,7 @@ int newoccupation;
 	return;
     }
     oldoccupation = tmp_win->occupation;
-    tmp_win->occupation = newoccupation & ~tmp_win->occupation;
+    tmp_win->occupation = newoccupation & ~oldoccupation;
     AddIconManager (tmp_win);
     tmp_win->occupation = newoccupation;
     RemoveIconManager (tmp_win);
@@ -909,8 +912,10 @@ static void CreateWorkSpaceManagerWindow ()
     TwmWindow	  *tmp_win;
     unsigned long valuemask;
     XSetWindowAttributes	attr;
+    XWindowAttributes		wattr;
     unsigned long		attrmask;
     XSizeHints	  sizehints;
+    XWMHints	  wmhints;
     int		  gravity;
 
     Scr->workSpaceMgr.workspaceWindow.buttonFont = Scr->IconManagerFont;
@@ -1052,6 +1057,9 @@ static void CreateWorkSpaceManagerWindow ()
 			name, icon_name, None, NULL, 0, NULL);
     XSetWMSizeHints (dpy, Scr->workSpaceMgr.workspaceWindow.w, &sizehints, XA_WM_NORMAL_HINTS);
 
+    wmhints.initial_state = NormalState;
+    wmhints.input         = True;
+    XSetWMHints (dpy, Scr->workSpaceMgr.workspaceWindow.w, &wmhints);
     tmp_win = AddWindow (Scr->workSpaceMgr.workspaceWindow.w, FALSE, Scr->iconmgr);
     if (! tmp_win) {
 	fprintf (stderr, "cannot create workspace manager window, exiting...\n");
@@ -1070,9 +1078,10 @@ static void CreateWorkSpaceManagerWindow ()
     attrmask |= CWWinGravity;
     XChangeWindowAttributes (dpy, Scr->workSpaceMgr.workspaceWindow.w, attrmask, &attr);
 
-    XSelectInput (dpy, Scr->workSpaceMgr.workspaceWindow.w, KeyPressMask |
-							    KeyReleaseMask |
-							    ExposureMask);
+    XGetWindowAttributes (dpy, Scr->workSpaceMgr.workspaceWindow.w, &wattr);
+    attrmask = wattr.your_event_mask | KeyPressMask | KeyReleaseMask | ExposureMask;
+    XSelectInput (dpy, Scr->workSpaceMgr.workspaceWindow.w, attrmask);
+
     for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
 	if (Scr->BackingStore) {
 	    attr.backing_store = WhenMapped;
@@ -1166,7 +1175,9 @@ static void CreateOccupyWindow () {
     TwmWindow	  *tmp_win;
     WorkSpaceList *wlist;
     XSizeHints	  sizehints;
+    XWMHints      wmhints;
     XSetWindowAttributes	attr;
+    XWindowAttributes		wattr;
     unsigned long attrmask;
 
     Scr->workSpaceMgr.occupyWindow.font     = Scr->IconManagerFont;
@@ -1260,11 +1271,20 @@ static void CreateOccupyWindow () {
     sizehints.min_width   = 2 * columns;
     sizehints.min_height  = 2 * lines;
     XSetStandardProperties (dpy, w, name, icon_name, None, NULL, 0, &sizehints);
+
+    wmhints.initial_state = NormalState;
+    wmhints.input         = True;
+    XSetWMHints (dpy, Scr->workSpaceMgr.workspaceWindow.w, &wmhints);
     tmp_win = AddWindow (w, FALSE, Scr->iconmgr);
     if (! tmp_win) {
 	fprintf (stderr, "cannot create occupy window, exiting...\n");
 	exit (1);
     }
+
+    XGetWindowAttributes (dpy, Scr->workSpaceMgr.workspaceWindow.w, &wattr);
+    attrmask = wattr.your_event_mask | KeyPressMask | KeyReleaseMask | ExposureMask;
+    XSelectInput (dpy, Scr->workSpaceMgr.workspaceWindow.w, attrmask);
+
     for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
 	XSelectInput (dpy, wlist->obuttonw, ButtonPressMask | ButtonReleaseMask);
 	XSaveContext (dpy, wlist->obuttonw, TwmContext,    (caddr_t) tmp_win);
@@ -1284,10 +1304,12 @@ static void CreateOccupyWindow () {
     SetMapStateProp (tmp_win, WithdrawnState);
 
     attrmask = 0;
+/* for some reason, it doesn't work
     if (Scr->BackingStore) {
 	attr.backing_store = WhenMapped;
 	attrmask |= CWBackingStore;
     }
+*/
     attr.cursor = Scr->ButtonCursor;
     attrmask |= CWCursor;
     XChangeWindowAttributes (dpy, w, attrmask, &attr);
@@ -1313,9 +1335,12 @@ void PaintOccupyWindow () {
 	else
 	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, off);
     }
-    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.OK,         ok_string,         occupyButtoncp, off);
-    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.cancel,     cancel_string,     occupyButtoncp, off);
-    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.allworkspc, everywhere_string, occupyButtoncp, off);
+    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.OK,
+		ok_string, occupyButtoncp, off);
+    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.cancel,
+		cancel_string, occupyButtoncp, off);
+    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.allworkspc,
+		everywhere_string, occupyButtoncp, off);
 }
 
 static void PaintButton (which, w, label, cp, state)
@@ -1889,6 +1914,7 @@ XEvent *event;
 	    XTranslateCoordinates (dpy, oldwlist->mapSubwindow.w, mw->w, X0, Y0, &X1, &Y1, &junkW);
 	    w = XCreateSimpleWindow (dpy, mw->w, X1, Y1, W0, H0, 1, Scr->Black, Scr->White);
 /* for an unknown reason, this window creation fails when in captive mode
+and welcome on, same thing for icon managers subwindows
 printf ("mw->w = %x, coord = %d, %d, %d, %d\n", mw->w, X1, Y1, W0, H0);
 status = XGetWindowAttributes(dpy, w, &winattrs);
 if (! status) printf ("XGetWindowAttributes failed on %x\n", w);

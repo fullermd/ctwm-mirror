@@ -82,6 +82,7 @@ typedef struct ScreenInfo
     Image   *WelcomeImage;
     GC       WelcomeGC;
     Colormap WelcomeCmap;
+    Visual  *WelcomeVisual;
 
     name_list *ImageCache;	/* list of pixmaps */
     TitlebarPixmaps tbpm;	/* titlebar pixmaps */
@@ -128,7 +129,7 @@ typedef struct ScreenInfo
 	int pad;			/* button-padding */
 	int width;			/* width of single button & border */
 	int leftx;			/* start of left buttons */
-	int titlex;			/* start of title string */
+	int titlex;			/* start of title */
 	int rightoff;			/* offset back from right edge */
 	int titlew;			/* width of title part */
     } TBInfo;
@@ -146,6 +147,8 @@ typedef struct ScreenInfo
     short ClearShadowContrast;  /* The contrast of the clear shadow */
     short DarkShadowContrast;   /* The contrast of the dark shadow */
     short IconJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
+    short IconRegionJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
+    short TitleJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
     short SmartIconify;
     int   MaxIconTitleWidth;	/* */
 
@@ -173,6 +176,7 @@ typedef struct ScreenInfo
     short	WMgrHorizButtonIndent;
     short	WMgrButtonShadowDepth;
     short	BeNiceToColormap;
+    short	BorderCursors;
 
     name_list *BorderColorL;
     name_list *IconBorderColorL;
@@ -215,6 +219,7 @@ typedef struct ScreenInfo
     GC DrawGC;			/* GC to draw lines for move and resize */
     GC GreyGC;			/* for shadowing on monochrome displays */
     GC ShadGC;			/* for shadowing on with patterns */
+    GC rootGC;                  /* used for allocating pixmaps in FindPixmap (util.c) */
 
     unsigned long Black;
     unsigned long White;
@@ -258,6 +263,7 @@ typedef struct ScreenInfo
     short DontMoveOff;		/* don't allow windows to be moved off */
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
+    short IconManagerFocus;	/* focus on window in title bar ? */
     short NoIconTitlebar;	/* put title bars on icons */
     short NoTitlebar;		/* put title bars on windows */
     short DecorateTransients;	/* put title bars on transients */
@@ -285,6 +291,8 @@ typedef struct ScreenInfo
     short SortIconMgr;		/* sort entries in the icon manager */
     short Shadow;		/* show the menu shadow */
     short InterpolateMenuColors;/* make pretty menus */
+    short StayUpMenus;		/* stay up menus */
+    short ClickToFocus;		/* click to focus */
     short NoIconManagers;	/* Don't create any icon managers */
     short ClientBorderWidth;	/* respect client window border width */
     short SqueezeTitle;		/* make title as small as possible */

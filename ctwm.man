@@ -92,8 +92,10 @@ managed.  By default, \fIctwm\fP will attempt to manage
 all screens on the display.
 .TP 8
 .B \-f \fIfilename\fP
-This option specifies the name of the startup file to use.  By default,
-\fIctwm\fP will look in the user's home directory for files 
+This option specifies the name of the startup file to use.
+\fICtwm\fP will first try to load filename.num, where \fInum\fP is the screen number.
+If it fails, it will try to load filename.
+By default, \fIctwm\fP will look in the user's home directory for files 
 named \fI.ctwmrc.num\fP (where \fInum\fP is a screen number) or \fI.ctwmrc\fP.
 .TP 8
 .B \-v
@@ -120,6 +122,9 @@ embedded \fIctwm\fP instantiations. This is totally useless, but I like. The
 f.adoptwindow function can be used to capture an existing window belonging to
 another \fIctwm\fP. A possible use of such mode can be to test new configuration file
 without restarting \fIctwm\fP.
+.TP 8
+.B \-W
+This option tells \fIctwm\fP not to display any welcome when starting.
 
 .SH CUSTOMIZATION
 .PP
@@ -412,8 +417,8 @@ color variables may also be given a list of window and color name pairs to
 allow per-window colors to be specified (see \fBBorderColor\fP for details):
 \fBBorderColor\fP,
 \fBIconManagerHighlight\fP,
-\fBBorderTitleBackground\fP,
-\fBBorderTitleForeground\fP,
+\fBBorderTileBackground\fP,
+\fBBorderTileForeground\fP,
 \fBTitleBackground\fP,
 \fBTitleForeground\fP,
 \fBIconBackground\fP,
@@ -645,6 +650,12 @@ be filled in from left from the right.  Icons are laid out within the region
 in a grid with cells \fIgridwidth\fP pixels wide and \fIgridheight\fP pixels 
 high. The optional win-list argument tells ctwm that if such a window is iconified,
 and there is enough room in this icon region for its icon, then place it here.
+.IP "\fBIconRegionJustification\fP \fIstring\fP" 8
+Where string is either \fB"left"\fP, \fB"center"\fP \fB"right"\fP or \fB"border"\fP.
+Tells ctwm how to justify icons inside their place in the IconRegion.
+This keyword needs a string value. The acceptable values are : "left", "center",
+"right" and "border". If "border" is given, the justification will be "left" if
+the icon region gravity is "west" and "right" if the icon region gravity is "east".
 .IP "\fBIcons\fP { \fIwin-list\fP }" 8
 This variable specifies a list of window names and the bitmap filenames that
 should be used as their icons.  For example:
@@ -768,6 +779,9 @@ This variable indicates that icons should not display the icon name
 of the client.  If the
 optional \fIwin-list\fP is given, only those clients will not have
 icon titles.
+.IP "\fBNoIconManagerFocus\fP" 8
+This variable indicates that ctwm will not set the focus on the corresponding
+window when the pointer is in an IconManager.
 .IP "\fBNoIconManagers\fP" 8
 This variable indicates that no icon manager should be created.
 .IP "\fBNoMenuShadows\fP" 8
@@ -1002,6 +1016,10 @@ resource.
 .IP "\fBStartInMapState\fP" 8
 This variable specifies that the WorkSpaceManager should be started
 in its map form when created.
+.IP "\fBStayUpMenus\fP" 8
+Tells ctwm to use stayup menus. These menus
+will stay on the screen when ButtonUp, if either the menu has not
+yet been entered by the pointer, or the current item is a f.title.
 .IP "\fBSunkFocusWindowTitle\fP" 8
 This variable specifies that the title of the focus window (if exists)
 should be sunken instead of raised. Only valid if UseThreeDTitles is set.

@@ -69,7 +69,7 @@
 #endif
 #define BUF_LEN 300
 
-static int ParseIconJustification ();
+static int ParseJustification ();
 static int ParseRandomPlacement ();
 
 static FILE *twmrc;
@@ -156,20 +156,26 @@ int ParseTwmrc (filename)
 
     /*
      * Check for the twmrc file in the following order:
-     *   0.  -f filename
-     *   1.  .ctwmrc.#
-     *   2.  .ctwmrc
-     *   3.  .twmrc.#
-     *   4.  .twmrc
-     *   5.  system.ctwmrc
+     *   0.  -f filename.#
+     *   1.  -f filename
+     *   2.  .ctwmrc.#
+     *   3.  .ctwmrc
+     *   4.  .twmrc.#
+     *   5.  .twmrc
+     *   6.  system.ctwmrc
      */
     for (twmrc = NULL, i = 0; !twmrc && i < 6; i++) {
 	switch (i) {
-	  case 0:			/* -f filename */
+	  case 0:			/* -f filename.# */
+	    cp = tmpfilename;
+	    (void) sprintf (tmpfilename, "%s.%d", filename, Scr->screen);
+	    break;
+
+	  case 1:			/* -f filename */
 	    cp = filename;
 	    break;
 
-	  case 1:			/* ~/.ctwmrc.screennum */
+	  case 2:			/* ~/.ctwmrc.screennum */
 	    if (!filename) {
 		home = getenv ("HOME");
 		if (home) {
@@ -182,13 +188,13 @@ int ParseTwmrc (filename)
 	    }
 	    continue;
 
-	  case 2:			/* ~/.ctwmrc */
+	  case 3:			/* ~/.ctwmrc */
 	    if (home) {
 		tmpfilename[homelen + 8] = '\0';
 	    }
 	    break;
 
-	  case 3:			/* ~/.twmrc.screennum */
+	  case 4:			/* ~/.twmrc.screennum */
 	    if (!filename) {
 		home = getenv ("HOME");
 		if (home) {
@@ -201,13 +207,13 @@ int ParseTwmrc (filename)
 	    }
 	    continue;
 
-	  case 4:			/* ~/.twmrc */
+	  case 5:			/* ~/.twmrc */
 	    if (home) {
 		tmpfilename[homelen + 7] = '\0'; /* C.L. */
 	    }
 	    break;
 
-	  case 5:			/* system.twmrc */
+	  case 6:			/* system.twmrc */
 	    cp = SYSTEM_INIT_FILE;
 	    break;
 	}
@@ -228,7 +234,7 @@ int ParseTwmrc (filename)
 #endif
 	int status;
 
-	if (filename && cp != filename) {
+	if (filename && strncmp (cp, filename, strlen (filename))) {
 	    fprintf (stderr,
 		     "%s:  unable to open twmrc file %s, using %s instead\n",
 		     ProgramName, filename, cp);
@@ -472,6 +478,9 @@ typedef struct _TwmKeyword {
 #define kw0_BeNiceToColormap		38
 #define kw0_SmartIconify		39
 #define kw0_WarpRingOnScreen		40
+#define kw0_NoIconManagerFocus		41
+#define kw0_StayUpMenus			42
+#define kw0_ClickToFocus		43
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -485,8 +494,10 @@ typedef struct _TwmKeyword {
 #define kws_PixmapDirectory		10
 #define kws_RandomPlacement		11
 #define kws_IconJustification		12
+#define kws_TitleJustification		13
+#define kws_IconRegionJustification	14
 #ifdef SOUNDS
-#define kws_SoundHost			13
+#define kws_SoundHost			15
 #endif
 
 #define kwn_ConstrainedMoveTime		1
@@ -555,6 +566,7 @@ static TwmKeyword keytable[] = {
     { "center",			JKEYWORD, J_CENTER },
     { "changeworkspacefunction", CHANGE_WORKSPACE_FUNCTION, 0 },
     { "clearshadowcontrast",	NKEYWORD, kwn_ClearShadowContrast },
+    { "clicktofocus",		KEYWORD, kw0_ClickToFocus },
     { "clientborderwidth",	KEYWORD, kw0_ClientBorderWidth },
     { "color",			COLOR, 0 },
     { "constrainedmovetime",	NKEYWORD, kwn_ConstrainedMoveTime },
@@ -654,6 +666,7 @@ static TwmKeyword keytable[] = {
     { "f.version",		FKEYWORD, F_VERSION },
     { "f.vlzoom",		FKEYWORD, F_LEFTZOOM },
     { "f.vrzoom",		FKEYWORD, F_RIGHTZOOM },
+    { "f.test",			FKEYWORD, F_TESTFUNC },
     { "f.warphere",		FSKEYWORD, F_WARPHERE },
     { "f.warpring",		FSKEYWORD, F_WARPRING },
     { "f.warpto",		FSKEYWORD, F_WARPTO },
@@ -686,6 +699,7 @@ static TwmKeyword keytable[] = {
     { "iconmanagershow",	ICONMGR_SHOW, 0 },
     { "iconmgr",		ICONMGR, 0 },
     { "iconregion",		ICON_REGION, 0 },
+    { "iconregionjustification",SKEYWORD, kws_IconRegionJustification },
     { "icons",			ICONS, 0 },
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
     { "l",			LOCK, 0 },
@@ -718,6 +732,7 @@ static TwmKeyword keytable[] = {
     { "nodefaults",		KEYWORD, kw0_NoDefaults },
     { "nograbserver",		KEYWORD, kw0_NoGrabServer },
     { "nohighlight",		NO_HILITE, 0 },
+    { "noiconmanagerfocus",	KEYWORD, kw0_NoIconManagerFocus },
     { "noiconmanagers",		KEYWORD, kw0_NoIconManagers },
     { "noicontitle",		NO_ICON_TITLE, 0  },
     { "nomenushadows",		KEYWORD, kw0_NoMenuShadows },
@@ -767,6 +782,7 @@ static TwmKeyword keytable[] = {
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
     { "startinmapstate",	KEYWORD, kw0_StartInMapState },
+    { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
     { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
     { "t",			TITLE, 0 },
     { "threedborderwidth",	NKEYWORD, kwn_ThreeDBorderWidth },
@@ -776,6 +792,7 @@ static TwmKeyword keytable[] = {
     { "titlefont",		SKEYWORD, kws_TitleFont },
     { "titleforeground",	CLKEYWORD, kwcl_TitleForeground },
     { "titlehighlight",		TITLE_HILITE, 0 },
+    { "titlejustification",	SKEYWORD, kws_TitleJustification },
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
     { "transienthasoccupation",	KEYWORD, kw0_TransientHasOccupation },
     { "transientontop",		NKEYWORD, kwn_TransientOnTop },
@@ -989,6 +1006,17 @@ int do_single_keyword (keyword)
 	Scr->WarpRingAnyWhere = FALSE;
 	return 1;
 
+      case kw0_NoIconManagerFocus:
+	Scr->IconManagerFocus = FALSE;
+	return 1;
+
+      case kw0_StayUpMenus:
+	Scr->StayUpMenus = TRUE;
+	return 1;
+
+      case kw0_ClickToFocus:
+	Scr->ClickToFocus = TRUE;
+	return 1;
     }
 
     return 0;
@@ -1073,16 +1101,43 @@ int do_string_keyword (keyword, s)
 	Scr->MaxWindowWidth = JunkWidth;
 	Scr->MaxWindowHeight = JunkHeight;
 	return 1;
+
       case kws_IconJustification:
 	{
-	    int just = ParseIconJustification (s);
+	    int just = ParseJustification (s);
 
- 	    if (just < 0) {
+ 	    if ((just < 0) || (just == J_BORDER)) {
  		twmrc_error_prefix();
  		fprintf (stderr,
  			 "ignoring invalid IconJustification argument \"%s\"\n", s);
  	    } else {
  		Scr->IconJustification = just;
+ 	    }
+ 	    return 1;
+ 	}
+      case kws_IconRegionJustification:
+	{
+	    int just = ParseJustification (s);
+
+ 	    if (just < 0) {
+ 		twmrc_error_prefix();
+ 		fprintf (stderr,
+ 			 "ignoring invalid IconRegionJustification argument \"%s\"\n", s);
+ 	    } else {
+ 		Scr->IconRegionJustification = just;
+ 	    }
+ 	    return 1;
+ 	}
+      case kws_TitleJustification:
+	{
+	    int just = ParseJustification (s);
+
+ 	    if ((just < 0) || (just == J_BORDER)) {
+ 		twmrc_error_prefix();
+ 		fprintf (stderr,
+ 			 "ignoring invalid TitleJustification argument \"%s\"\n", s);
+ 	    } else {
+ 		Scr->TitleJustification = just;
  	    }
  	    return 1;
  	}
@@ -1421,9 +1476,9 @@ static int ParseRandomPlacement (s)
     register char *s;
 {
     if (strlen (s) == 0) return RP_ALL;
-
+    if (strcmp (s, "default") == 0) return RP_ALL;
     XmuCopyISOLatin1Lowered (s, s);
-    if (strcmp (s,  "default") == 0) return RP_ALL;
+
     if (strcmp (s,      "off") == 0) return RP_OFF;
     if (strcmp (s,       "on") == 0) return RP_ALL;
     if (strcmp (s,      "all") == 0) return RP_ALL;
@@ -1431,16 +1486,18 @@ static int ParseRandomPlacement (s)
     return (-1);
 }
 
-static int ParseIconJustification (s)
+static int ParseJustification (s)
     register char *s;
 {
     if (strlen (s) == 0) return (-1);
+    if (strcmp (s, "default") == 0) return J_CENTER;
     XmuCopyISOLatin1Lowered (s, s);
 
     if (strcmp (s, "default") == 0) return J_CENTER;
     if (strcmp (s,    "left") == 0) return J_LEFT;
     if (strcmp (s,  "center") == 0) return J_CENTER;
     if (strcmp (s,   "right") == 0) return J_RIGHT;
+    if (strcmp (s,  "border") == 0) return J_BORDER;
     return (-1);
 }
 
@@ -1448,6 +1505,7 @@ static int ParseUsePPosition (s)
     register char *s;
 {
     if (strlen (s) == 0) return (-1);
+    if (strcmp (s,  "default") == 0) return PPOS_OFF;
     XmuCopyISOLatin1Lowered (s, s);
 
     if (strcmp (s,  "default") == 0) return PPOS_OFF;
@@ -1556,6 +1614,7 @@ char *name, *def;
         static int maxsize = 0;
         int n, nl;
 
+	if (def == NULL) return ("");     /* XXX JWS: prevent segfaults */
         /* The char * storage only lasts for 1 call... */
         if ((n = EXTRA + ((nl = strlen(name)) +  strlen(def))) > maxsize) {
 		maxsize = n;
@@ -1635,13 +1694,11 @@ char *host;
         static char tmp_name[] = "/tmp/twmrcXXXXXX";
         int fd;
         FILE *tmpf;
+	char *user;
 
-        fd = mkstemp(tmp_name);                 /* I *hope* mkstemp exists, beca
-use */
-                                                                        /* I tri
-ed to find the "portable" */
-                                                                        /* mktmp
-... */
+        fd = mkstemp(tmp_name);		/* I *hope* mkstemp exists, because */
+					/* I tried to find the "portable" */
+					/* mktmp... */
         if (fd < 0) {
                 perror("mkstemp failed in m4_defs");
                 exit(377);
@@ -1650,7 +1707,7 @@ ed to find the "portable" */
         XmuGetHostname(client, MAXHOSTNAME);
         hostname = gethostbyname(client);
         strcpy(server, XDisplayName(host));
-        colon = index(server, ':');
+        colon = strchr(server, ':');
         if (colon != NULL) *colon = '\0';
         if ((server[0] == '\0') || (!strcmp(server, "unix")))
                 strcpy(server, client); /* must be connected to :0 or unix:0 */
@@ -1662,7 +1719,9 @@ ed to find the "portable" */
                 fputs(MkDef("HOSTNAME", hostname->h_name), tmpf);
         else
                 fputs(MkDef("HOSTNAME", client), tmpf);
-        fputs(MkDef("USER", getenv("USER")), tmpf);
+
+	if (!(user=getenv("USER")) && !(user=getenv("LOGNAME"))) user = "unknown";
+        fputs(MkDef("USER", user), tmpf);
         fputs(MkDef("HOME", getenv("HOME")), tmpf);
         fputs(MkNum("VERSION", ProtocolVersion(display)), tmpf);
         fputs(MkNum("REVISION", ProtocolRevision(display)), tmpf);

@@ -112,6 +112,7 @@ extern void TwmOutput();
 #define F_TOGGLESOUND		64
 #define F_REREADSOUNDS		65
 #endif
+#define F_TESTFUNC		66
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
