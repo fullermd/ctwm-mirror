@@ -1152,7 +1152,7 @@ WindowGeometries {
 
 
     4 - Preliminary GNOME compliance (see README.gnome and TODO.gnome)
-	(by Rudolph T. Maceyko).
+	(by Nathan Dushman).
 
     5 - IconifyStyle : "normal" "mosaic" "zoomin" "zoomout" "sweep"
 
