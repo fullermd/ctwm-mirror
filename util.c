@@ -1948,17 +1948,29 @@ ColorPair cp;
 
     FB (cp.shadd, cp.shadc);
 #ifdef LEVITTE_TEST
+#if 0
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, point+1, h-point-1, h-point-1);
+#endif
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+2, point+1, h-point-1, h-point-2);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+2, point, h-point, h-point-2);
+#if 0
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point-2, h-point-1, h-point-2, h-point);
+#else
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point, h-point-2, h-point-2, h-point);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point-1, h-point-2, h-point-2, h-point-1);
+#endif
 #else
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point-1, h-point-1);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, point, h-point-1, h-point);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point-1, h-point, h-point-1);
 #endif
 
+#ifdef LEVITTE_TEST
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point-1, point, h-point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point-1, point, h-point-1, point);
+#else
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point-1, h-point-1, point);
+#endif
 #ifdef LEVITTE_TEST
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, h-point-1, h-point-1, point+1);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, h-point, h-point, point+1);
