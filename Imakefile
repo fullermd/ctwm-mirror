@@ -188,7 +188,7 @@ gram.h gram.c: gram.y
 
 clean::
 	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c
-	$(RM) *.[chy].flc
+	$(RM) *.[chy].flc *.orig *.rej
 
 deftwmrc.c:  system.ctwmrc
 	$(RM) $@
