@@ -1930,7 +1930,7 @@ ColorPair cp;
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
 
-    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
 
     FB (cp.shadd, cp.shadc);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point-1, h-point-1);
@@ -1965,7 +1965,7 @@ ColorPair cp;
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
 
-    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
     FB (cp.shadd, cp.shadc);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h/2, h-point);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point, point);
@@ -1996,7 +1996,7 @@ ColorPair cp;
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
 
-    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
     Draw3DBorder (image->pixmap, 3, 3, h-6, h-6, 1, cp, on, True, False);
     Draw3DBorder (image->pixmap, 3, ((h-6)/3)+3, ((h-6)*2/3)+1,
      ((h-6)*2/3)+1, 1, cp, on, True, False);
@@ -2025,7 +2025,7 @@ ColorPair cp;
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
 
-    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
     Draw3DBorder (image->pixmap, (h / 2) - 4, (h / 2) - 4, 9, 9, 1, cp,
      off, True, False);
 
@@ -2162,7 +2162,7 @@ ColorPair cp;
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
 
-    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
     Draw3DBorder (image->pixmap, 0, h / 4, ((3 * h) / 4) + 1, ((3 * h) / 4) + 1, 2,
 		cp, off, True, False);
     Draw3DBorder (image->pixmap, 0, h / 2, (h / 2) + 1, (h / 2) + 1, 2, cp, off, True, False);
@@ -2290,7 +2290,7 @@ ColorPair cp;
 	    free (im);
 	    return (None);
 	}
-	Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+	Draw3DBorder (im->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
 	for (j = i; j <= h; j += (h/4)){
 	    Draw3DBorder (im->pixmap, (left ? 0 : j), (top ? 0 : j),
 			  h - j, h - j, 2, cp, off, True, False);
@@ -2354,7 +2354,7 @@ ColorPair cp;
 	    free (im);
 	    return (None);
 	}
-	Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+	Draw3DBorder (im->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
 	for (i = j; i < h - 3; i += 5) {
 	    Draw3DBorder (im->pixmap, 4, i, h - 8, 4, 2, cp, off, True, False);
 	}
@@ -2405,7 +2405,7 @@ ColorPair cp;
 	for(k = (j > 0 ? 0 : n-1) ; (k >= 0) && (k < n); k += j){
 	    im = (Image*) malloc (sizeof (struct _Image));
 	    im->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-	    Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+	    Draw3DBorder (im->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
 	    for (i = 2 + k; i < (h / 2); i += n) {
 		Draw3DBorder (im->pixmap, i, i, h - (2 * i), h - (2 * i), 2, cp, off, True, False);
 	    }
