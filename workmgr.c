@@ -527,13 +527,13 @@ WorkSpace *ws;
     oldw = vs->wsw->mswl [oldws->number]->w;
     neww = vs->wsw->mswl [newws->number]->w;
     if (useBackgroundInfo) {
-	if (oldws->image == None)
+	if (oldws->image == None || Scr->NoImagesInWorkSpaceManager)
 	    XSetWindowBackground       (dpy, oldw, oldws->backcp.back);
 	else
 	    XSetWindowBackgroundPixmap (dpy, oldw, oldws->image->pixmap);
     }
     else {
-	if (vs->wsw->defImage == None)
+	if (vs->wsw->defImage == None || Scr->NoImagesInWorkSpaceManager)
 	    XSetWindowBackground       (dpy, oldw, vs->wsw->defColors.back);
 	else
 	    XSetWindowBackgroundPixmap (dpy, oldw, vs->wsw->defImage->pixmap);
@@ -1555,11 +1555,13 @@ virtualScreen *vs;
 
 	vs->wsw->mswl [ws->number]->wl = NULL;
 	if (useBackgroundInfo) {
-	    if (ws->image == None) XSetWindowBackground       (dpy, mapsw, ws->backcp.back);
-	    else                   XSetWindowBackgroundPixmap (dpy, mapsw, ws->image->pixmap);
+	    if (ws->image == None || Scr->NoImagesInWorkSpaceManager)
+		XSetWindowBackground       (dpy, mapsw, ws->backcp.back);
+	    else
+		XSetWindowBackgroundPixmap (dpy, mapsw, ws->image->pixmap);
 	}
 	else {
-	    if (vs->wsw->defImage == None)
+	    if (vs->wsw->defImage == None || Scr->NoImagesInWorkSpaceManager)
 		XSetWindowBackground       (dpy, mapsw, vs->wsw->defColors.back);
 	    else
 		XSetWindowBackgroundPixmap (dpy, mapsw, vs->wsw->defImage->pixmap);

@@ -1194,3 +1194,10 @@ VirtualScreens {
    10 - Changed :xpm:cross to become a bit larger and have a slightly more
 	3D appearance, and is visible even in very dark configurations.
 
+   11 - New keyword: NoImagesInWorkSpaceManager
+
+	If it's enabled, background images aren't displayed in the workspace
+	map.
+
+	This was contributed by Thomas Linden.
+

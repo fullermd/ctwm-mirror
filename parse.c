@@ -634,6 +634,7 @@ typedef struct _TwmKeyword {
 #define kw0_PackNewWindows		61
 #define kw0_IgnoreCaseInMenuSelection	62
 #define kw0_SloppyFocus                 63
+#define kw0_NoImagesInWorkSpaceManager  64
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -969,6 +970,7 @@ static TwmKeyword keytable[] = {
     { "noiconmanagerfocus",	KEYWORD, kw0_NoIconManagerFocus },
     { "noiconmanagers",		KEYWORD, kw0_NoIconManagers },
     { "noicontitle",		NO_ICON_TITLE, 0  },
+    { "noimagesinworkspacemanager", KEYWORD, kw0_NoImagesInWorkSpaceManager },
     { "nomenushadows",		KEYWORD, kw0_NoMenuShadows },
     { "noopaquemove",		NOOPAQUEMOVE, 0 },
     { "noopaqueresize",		NOOPAQUERESIZE, 0 },
@@ -1353,6 +1355,10 @@ int do_single_keyword (keyword)
 
       case kw0_SloppyFocus:
 	Scr->SloppyFocus = TRUE;
+	return 1;
+
+      case kw0_NoImagesInWorkSpaceManager:
+	Scr->NoImagesInWorkSpaceManager = TRUE;
 	return 1;
 
     }

@@ -1002,6 +1002,10 @@ This variable indicates that ctwm will not set the focus on the corresponding
 window when the pointer is in an IconManager.
 .IP "\fBNoIconManagers\fP" 8
 This variable indicates that no icon manager should be created.
+.IP "\fBNoImagesInWorkSpaceManager\fP" 8
+This variable turns off displaying of background images in the WorkSpaceMap.
+Instead only the colors defined in \fBWorkSpaces\fP will be used as background
+in the WorkSpaceMap.
 .IP "\fBNoMenuShadows\fP" 8
 This variable indicates that menus should not have drop shadows drawn behind
 them.  This is typically used with slower servers since it speeds up menu
