@@ -1260,7 +1260,12 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
       if (tmp_win->isicon) {
 	if (tmp_win->icon_on) {
 	  if (tmp_win->icon && tmp_win->icon->w) {
-	    if (vs) XReparentWindow (dpy, tmp_win->icon->w, vs->window, 0, 0);
+	    if (vs != tmp_win->oldvs) {
+		int x, y, junk;
+		Window junkW, w = tmp_win->icon->w;
+		XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
+		XReparentWindow (dpy, w, vs->window, x, y);
+	    }
 	    IconUp (tmp_win);
 	    XMapWindow (dpy, tmp_win->icon->w);
 	    return;
