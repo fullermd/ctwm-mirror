@@ -379,6 +379,9 @@ IconMgr *iconp;
 #endif
     namelen = strlen (tmp_win->name);
 
+    if (LookInList(Scr->IgnoreTransientL, tmp_win->full_name, &tmp_win->class))
+      tmp_win->transient = 0;
+
     tmp_win->highlight = Scr->Highlight && 
 	(!LookInList(Scr->NoHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
@@ -1285,6 +1288,23 @@ IconMgr *iconp;
 	    XSaveContext(dpy, tmp_win->lolite_wr, ScreenContext, (XPointer)Scr);
 	}
     }
+
+    if (tmp_win->group && tmp_win->group != tmp_win->w) {
+      /*
+       * GTK windows often have a spurious "group leader" window which is
+       * never reported to us and therefore does not really exist. Look for
+       * that here. It is in fact a duplicate of the WM_CLIENT_LEADER
+       * property.
+       */
+
+      TwmWindow *groupleader; /* the current twm window */
+      stat = XFindContext(dpy, tmp_win->group, TwmContext, (XPointer *)&groupleader);
+      if (stat == XCNOENT)
+	groupleader = NULL;
+      if (!groupleader) {
+	tmp_win->group = tmp_win->w;
+      }
+    } 
 
     XUngrabServer(dpy);
 

@@ -1239,3 +1239,100 @@ VirtualScreens {
 	manager should get enter and leave events.  This fixes some
 	disturbing in the warpring that would otherwise happen.
 
+   17 - f.movetoprevworkspace,
+	f.movetonextworkspace,
+	f.movetoprevworkspaceandfollow,
+	f.movetonextworkspaceandfollow patch (by Daniel Holmström)
+
+	Makes it possible to move a window to the previous or next  
+	workspace and, if you like, go to that workspace and focus 
+	the moved window.
+
+   18 - f.fill "vertical" patch (by Daniel Holmström)
+
+	Expands the window vertically without overlapping any other window, 
+	much like { f.fill "top" f.fill "bottom" } but with the exception 
+	that it doesn't expand over window borders. It also sets the 
+	windows 'zoomed' to F_FULLZOOM, so one can toggle between this 
+	size, original and maximized.
+
+   19 - RESIZEKEEPSFOCUS bugfix patch (by Daniel Holmström)
+
+	If a window is maximized with togglemaximize and then restored 
+	it might loose focus if the cursor is outside the restored window. 
+	This hack puts the cursor at the left-top corner of the window.
+
+   20 - f.zoom bugfix patch (by Daniel Holmström)
+
+	f.zoom now doesn't move the window up (as it sometimes did before)
+
+   21 - IgnoreTransient patch (by Peter Berg Larsen)
+
+	New keyword with list of windows for which to ignore transients.
+
+   22 - Workspace switch peformance optimization (by MC)
+
+	Stops ctwm from redrawing windows that occupy all workspaces when
+	switching from one workspace to another.
+
+   23 - GTK "group leader" bugfix (by Olaf 'Rhialto' Seibert)
+
+	Makes ctwm aware of the mysterious GTK group leader windows.
+
+   24 - Resize cursor with non-3D-borders bugfix (by Olaf 'Rhialto' Seibert)
+
+	BorderResizeCursors now works also for top and left borders when
+	non-3D-borders are used.
+
+   25 - Memory leak bugfix (by Simon Burge)
+
+ 	GetWMPropertyString in util.c no longer leaks memory.
+
+   26 - Warpring bugfix (by Takahashi Youichirou)
+
+	Solves these two problems when warping the pointer to the 
+	next/previous mapped window:
+
+	o Sometimes the pointer moved right too much and ended up outside
+	  the title bar.
+
+	o When the active window was closed and the pointer ended up on the
+          root window, the pointer wouldn't warp until moved with the mouse. 
+
+   27 - NoWarpToMenuTitle patch (by Julian Coleman)
+
+	Fixes the sometimes annoying feature that the cursor is warped to the 
+	menu title if the menu won't fit on the screen below the current 
+	pointer position. 
+
+	This patch introduces a new keyword "NoWarpToMenuTitle" keyword to 
+	turn this off. 
+
+   28 - Scr->workSpaceMgr.windowFont font init bugfix (by Martin Stjernholm)
+
+	The Scr->workSpaceMgr.windowFont in workmgr.c is now initialized.
+
+   29 - Full GNU regex patch (by Claude Lecommandeur)
+
+	It is now possible to use full GNU regex for window or class names by
+	defining USE_GNU_REGEX in Imakefile. It is disabled in the default
+	Imakefile.
+
+   30 - DontToggleWorkSpaceManagerState patch (by Dan 'dl' Lilliehorn)
+
+        New keyword to turn off the feature toggling the workspace manager
+	state to/from map/button state when you press ctrl and the workspace
+	manager window is in focus.
+
+   31 - TWMAllIcons patch (by Dan 'dl' Lilliehorn)
+
+	Adds the TWMAllIcons menu, listing all iconified windows on all
+	workspaces.
+
+   32 - f.changesize patch (by Dan 'dl' Lilliehorn)
+
+	Adds the function f.changesize which allows you to change the size
+	of the focused window via menus and keybindings.
+
+	Example:
+	"Down"     = c|s: all           : f.changesize "bottom +10"

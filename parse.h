@@ -161,6 +161,7 @@ extern void TwmOutput();
 #define F_FITTOCONTENT		87
 #define F_SHOWBGRD		88
 
+
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
 #define F_WARPTOICONMGR		103	/* string */
@@ -184,6 +185,11 @@ extern void TwmOutput();
 #define F_JUMPUP		121	/* string */
 #define F_JUMPDOWN		122	/* string */
 #define F_MOVERESIZE		123	/* string */
+#define F_MOVETONEXTWORKSPACE   124
+#define F_MOVETOPREVWORKSPACE   125
+#define F_MOVETONEXTWORKSPACEANDFOLLOW   126
+#define F_MOVETOPREVWORKSPACEANDFOLLOW   127
+#define F_CHANGESIZE            128     /* string */
 
 #define D_NORTH			1
 #define D_SOUTH			2

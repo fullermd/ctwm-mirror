@@ -614,6 +614,7 @@ main(argc, argv, environ)
 	Scr->IconMenuDontShow = NULL;
 	Scr->VirtualScreens = NULL;
 	Scr->CaptiveRoot = captiveroot;
+	Scr->IgnoreTransientL = NULL;
 
 	/* remember to put an initialization in InitVariables also
 	 */
@@ -725,9 +726,12 @@ main(argc, argv, environ)
 	InitMenus();
 	InitWorkSpaceManager ();
 
+	InitVirtualScreens (Scr);
+	ConfigureWorkSpaceManager1 ();
+
 	/* Parse it once for each screen. */
 	if(cfgchk) {
-	    if(ParseTwmrc(InitFile)==0) {
+	  if(ParseTwmrc(InitFile)==0) {
 	        /* Error return */
 	        fprintf (stderr, "Errors found\n");
 		exit(1);
@@ -737,14 +741,19 @@ main(argc, argv, environ)
 	    }
 	}
 	else
+	  {
 	    ParseTwmrc(InitFile);
+	  }
+
+	ConfigureWorkSpaceManager2 ();
+
 	if (ShowWelcomeWindow && ! screenmasked) MaskScreen (NULL);
 	if (Scr->ClickToFocus) {
 	    Scr->FocusRoot  = FALSE;
 	    Scr->TitleFocus = FALSE;
 	}
-	InitVirtualScreens (Scr);
-	ConfigureWorkSpaceManager ();
+
+
 
 	if (Scr->use3Dtitles) {
 	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 0;
@@ -988,6 +997,7 @@ InitVariables()
     FreeList(&Scr->AlwaysSqueezeToGravityL);
     FreeList(&Scr->IconMenuDontShow);
     FreeList(&Scr->VirtualScreens);
+    FreeList(&Scr->IgnoreTransientL);
 
     NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
     NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
@@ -1144,6 +1154,7 @@ InitVariables()
     Scr->IgnoreCaseInMenuSelection = False;
     Scr->PackNewWindows = False;
     Scr->AlwaysSqueezeToGravity = FALSE;
+    Scr->NoWarpToMenuTitle = FALSE;
 
     Scr->BorderTop    = 0;
     Scr->BorderBottom = 0;

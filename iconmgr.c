@@ -429,6 +429,7 @@ void MoveMappedIconManager(dir)
     WList *orig = NULL;
     int got_it;
 
+    if (!Current) Current = Active; 
     if (!Current) return;
 
     ip = Current->iconmgr;
@@ -477,7 +478,7 @@ void MoveMappedIconManager(dir)
 	    int tbx = Scr->TBInfo.titlex;
 	    int x = tmp->twm->highlightxr;
 	    XWarpPointer (dpy, None, tmp->twm->title_w, 0, 0, 0, 0,
-			  tbx + (x - tbx) / 2,
+			  tmp->twm->title_width / 2, 
 			  Scr->TitleHeight / 4);
 	} else {
 	    XWarpPointer (dpy, None, tmp->twm->w, 0, 0, 0, 0, 5, 5);
@@ -778,7 +779,10 @@ void RemoveFromIconManager(ip, tmp)
 	ip->last = tmp->prev;
     else
 	tmp->next->prev = tmp->prev;
-    if (Current == tmp) Current = NULL;
+
+    /* pebl: If the list was the current and tmp was the last in the list
+       reset current list */
+    if (Current == tmp) Current = ip->first;
 }
 
 /***********************************************************************

@@ -113,6 +113,7 @@ XContext  MapWListContext = (XContext) 0;
 static Cursor handCursor  = (Cursor) 0;
 static Bool DontRedirect ();
 
+extern Bool donttoggleworkspacemanagerstate;
 extern Bool MaybeAnimate;
 extern FILE *tracefile;
 
@@ -133,32 +134,52 @@ void InitWorkSpaceManager () {
     Scr->workSpaceMgr.occupyWindow->columns   = 0;
     Scr->workSpaceMgr.occupyWindow->twm_win   = (TwmWindow*) 0;
 
+#ifdef I18N
+    Scr->workSpaceMgr.windowFont.basename =
+      "-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1";
+    /*"-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1";*/
+#else
+    Scr->workSpaceMgr.windowFont.name =
+      "-adobe-times-*-r-*--10-*-*-*-*-*-*-*";
+    /*"-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1";*/
+#endif 
+
     XrmInitialize ();
     if (MapWListContext == (XContext) 0) MapWListContext = XUniqueContext ();
 }
 
-ConfigureWorkSpaceManager () {
+/* dl: I split ConfigureWSM into two functions to make vscreens work properly 
+ */
+
+ConfigureWorkSpaceManager1 () {
     virtualScreen *vs;
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
         WorkSpaceWindow *wsw = (WorkSpaceWindow*) malloc (sizeof (WorkSpaceWindow));
 	wsw->name	     = "WorkSpaceManager";
 	wsw->icon_name       = "WorkSpaceManager Icon";
 	wsw->twm_win	     = (TwmWindow*) 0;
-	wsw->state	     = Scr->workSpaceMgr.initialstate; /*  = BUTTONSSTATE */
-	wsw->curImage        = None;
-	wsw->curColors.back  = Scr->Black;
-	wsw->curColors.fore  = Scr->White;
-	wsw->curPaint        = False;
-	wsw->defImage        = None;
-	wsw->defColors.back  = Scr->White;
-	wsw->defColors.fore  = Scr->Black;
-	wsw->vspace          = Scr->WMgrVertButtonIndent;
-	wsw->hspace          = Scr->WMgrHorizButtonIndent;
 	vs->wsw = wsw;
     }
-    Scr->workSpaceMgr.occupyWindow->vspace = Scr->WMgrVertButtonIndent;
-    Scr->workSpaceMgr.occupyWindow->hspace = Scr->WMgrHorizButtonIndent;
 }
+
+ConfigureWorkSpaceManager2 () {
+  virtualScreen *vs;
+  for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+    	vs->wsw->curColors.back  = Scr->Black;
+	vs->wsw->curColors.fore  = Scr->White;
+	vs->wsw->state	     = Scr->workSpaceMgr.initialstate; /*  = BUTTONSSTATE */
+	vs->wsw->curImage        = None;
+	vs->wsw->curPaint        = False;
+	vs->wsw->defImage        = None;
+	vs->wsw->defColors.back  = Scr->White;
+	vs->wsw->defColors.fore  = Scr->Black;
+	vs->wsw->vspace          = Scr->WMgrVertButtonIndent;
+	vs->wsw->hspace          = Scr->WMgrHorizButtonIndent;
+  }
+  Scr->workSpaceMgr.occupyWindow->vspace = Scr->WMgrVertButtonIndent;
+  Scr->workSpaceMgr.occupyWindow->hspace = Scr->WMgrHorizButtonIndent;
+}
+
 
 void CreateWorkSpaceManager () {
     WorkSpace       *wlist;
@@ -431,12 +452,12 @@ WorkSpace *ws;
     valuemask = (CWBackingStore | CWSaveUnder);
     attr.backing_store = NotUseful;
     attr.save_under    = False;
-    cachew = XCreateWindow (dpy, Scr->Root, vs->x, vs->y,
+    /*    cachew = XCreateWindow (dpy, Scr->Root, vs->x, vs->y,
 			(unsigned int) vs->w, (unsigned int) vs->h, (unsigned int) 0,
 			CopyFromParent, (unsigned int) CopyFromParent,
 			(Visual *) CopyFromParent, valuemask,
 			&attr);
-    XMapWindow (dpy, cachew);
+			XMapWindow (dpy, cachew);*/
 
     if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
 	if (newws->image == None)
@@ -566,7 +587,7 @@ WorkSpace *ws;
 #endif /* GNOME */
     XSelectInput(dpy, Scr->Root, eventMask);
 
-    XDestroyWindow (dpy, cachew);
+    /*    XDestroyWindow (dpy, cachew);*/
     if (Scr->ChangeWorkspaceFunction.func != 0) {
 	char *action;
 	XEvent event;
@@ -1078,6 +1099,122 @@ TwmWindow *twm_win;
     }
     if (!newoccupation) return;
     ChangeOccupation (twm_win, newoccupation);
+}
+
+void MoveToNextWorkSpace (vs,twm_win)
+     virtualScreen *vs;
+     TwmWindow *twm_win;
+{
+  WorkSpace *wlist1, *wlist2;
+
+  if (! Scr->workSpaceManagerActive) return;
+  wlist1 = Scr->vScreenList->wsw->currentwspc;
+  wlist2 = Scr->vScreenList->wsw->currentwspc;
+
+  if (twm_win->iconmgr)   return;
+  if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
+   
+  wlist1 = (wlist1->next != NULL) ? wlist1->next : 
+    Scr->workSpaceMgr.workSpaceList;
+  if (!(twm_win->occupation & (1 << wlist1->number)))
+    {
+      /*      add to new workspace */
+      ToggleOccupation(wlist1->name, twm_win);
+      /*      remove from old workspace */
+      ToggleOccupation(wlist2->name, twm_win);
+    }
+}
+
+
+void MoveToNextWorkSpaceAndFollow (vs,twm_win)
+     virtualScreen *vs;
+     TwmWindow *twm_win;
+
+{
+  WorkSpace *wlist1, *wlist2;
+
+  if (! Scr->workSpaceManagerActive) return;
+  wlist1 = Scr->vScreenList->wsw->currentwspc;
+  wlist2 = Scr->vScreenList->wsw->currentwspc;
+
+
+  if (twm_win->iconmgr)   return;
+  if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
+   
+  wlist1 = (wlist1->next != NULL) ? wlist1->next : 
+    Scr->workSpaceMgr.workSpaceList;
+   
+  if (!(twm_win->occupation & (1 << wlist1->number)))
+    {
+      /*      add to new workspace */
+      ToggleOccupation(wlist1->name, twm_win);
+      /*      remove from old workspace */
+      ToggleOccupation(wlist2->name, twm_win);
+    }
+
+  GotoWorkSpace(vs, wlist1);
+
+  RaiseWindow(twm_win);
+}
+
+
+void MoveToPrevWorkSpace (vs,twm_win)
+     virtualScreen *vs;
+     TwmWindow *twm_win;
+{
+  int newoccupation, oldoccupation;
+  WorkSpace *wlist1, *wlist2;
+    
+  if (! Scr->workSpaceManagerActive) return;
+  wlist1 = Scr->workSpaceMgr.workSpaceList;
+  if (wlist1 == NULL) return;
+   
+  wlist2 = wlist1->next;
+  while ((wlist2 != Scr->vScreenList->wsw->currentwspc/*Scr->workSpaceMgr.activeWSPC*/) && (wlist2 != NULL)) {
+    wlist1 = wlist2;
+    wlist2 = wlist2->next;
+  }
+  wlist2 = Scr->vScreenList->wsw->currentwspc;
+  /*Scr->workSpaceMgr.activeWSPC;*/
+   
+  if (!(twm_win->occupation & (1 << wlist1->number)))
+    {
+      /*      add to new workspace */
+      ToggleOccupation(wlist1->name, twm_win);
+      /*      remove from old workspace */
+      ToggleOccupation(wlist2->name, twm_win);
+    }
+}
+
+void MoveToPrevWorkSpaceAndFollow (vs,twm_win)
+     virtualScreen *vs;
+     TwmWindow *twm_win;
+{
+  int newoccupation, oldoccupation;
+  WorkSpace *wlist1, *wlist2;
+    
+  if (! Scr->workSpaceManagerActive) return;
+  wlist1 = Scr->workSpaceMgr.workSpaceList;
+  if (wlist1 == NULL) return;
+   
+  wlist2 = wlist1->next;
+  while ((wlist2 != Scr->vScreenList->wsw->currentwspc/*Scr->workSpaceMgr.activeWSPC*/) && (wlist2 != NULL)) {
+    wlist1 = wlist2;
+    wlist2 = wlist2->next;
+  }
+  wlist2 = Scr->vScreenList->wsw->currentwspc;
+  /*Scr->workSpaceMgr.activeWSPC;*/
+   
+  if (!(twm_win->occupation & (1 << wlist1->number)))
+    {
+      /*      add to new workspace */
+      ToggleOccupation(wlist1->name, twm_win);
+      /*      remove from old workspace */
+      ToggleOccupation(wlist2->name, twm_win);
+    }
+  GotoWorkSpace(vs,wlist1);
+  RaiseWindow(twm_win);
+
 }
 
 static WorkSpace *GetWorkspace (wname)
@@ -1648,7 +1785,7 @@ XEvent *event;
 	    if (event->xexpose.window == buttonw) break;
 	}
 	if (ws == NULL) {
-	    PaintWorkSpaceManagerBorder (vs);
+	  PaintWorkSpaceManagerBorder (vs);
 	}
 	else
 	if (ws == vs->wsw->currentwspc)
@@ -2450,10 +2587,16 @@ XEvent *event;
     if (! keysym) return;
     keyname = XKeysymToString (keysym);
     if (! keyname) return;
-    if ((strcmp (keyname, "Control_R") == 0) || (strcmp (keyname, "Control_L") == 0)) {
-	WMapToggleState (vs);
+    if ((strcmp (keyname, "Control_R") == 0) || 
+	(strcmp (keyname, "Control_L") == 0)) 
+      {
+	/* DontToggleWorkSpaceManagerState added 20040607 by dl*/
+	if (!donttoggleworkspacemanagerstate)
+	  {
+	    WMapToggleState (vs);
+	  }
 	return;
-    }
+      }
 }
 
 void WMgrHandleKeyPressEvent (vs, event)
@@ -2471,8 +2614,14 @@ XEvent *event;
     if (! keysym) return;
     keyname = XKeysymToString (keysym);
     if (! keyname) return;
-    if ((strcmp (keyname, "Control_R") == 0) || (strcmp (keyname, "Control_L") == 0)) {
-	WMapToggleState (vs);
+    if ((strcmp (keyname, "Control_R") == 0) || 
+	(strcmp (keyname, "Control_L") == 0)) 
+      {
+	/* DontToggleWorkSpaceManagerState added 20040607 by dl*/
+	if (!donttoggleworkspacemanagerstate)
+	  {
+	    WMapToggleState (vs);
+	  }
 	return;
     }
     if (vs->wsw->state == MAPSTATE) return;
@@ -2848,7 +2997,7 @@ WinList   wl;
     char      *label;
 
     label  = wl->twm_win->icon_name;
-    cp     = wl->cp;
+     cp     = wl->cp;
 
     if (Scr->ReverseCurrentWorkspace && wl->wlist == vs->wsw->currentwspc) {
 	InvertColorPair (&cp);

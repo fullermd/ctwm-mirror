@@ -76,6 +76,11 @@
 #include "screen.h"
 #include "gram.h"
 
+#ifdef USE_GNU_REGEX
+# include <regex.h>
+#endif /* USE_GNU_REGEX */
+
+
 extern int twmrc_error_prefix();
 
 /***********************************************************************
@@ -306,6 +311,34 @@ name_list **list;
     *list = NULL;
 }
 
+#ifdef USE_GNU_REGEX
+
+#define MAXPATLEN 256
+
+int match (pattern, string)
+     char *pattern, *string;
+{
+  regex_t preg;
+  int error;
+
+  if ((pattern == NULL) || (string == NULL)) return 0;
+  error = regcomp (&preg, pattern, REG_EXTENDED | REG_NOSUB);
+  if (error != 0) {
+    char buf [256];
+    (void) regerror (error, &preg, buf, sizeof buf);
+    fprintf (stderr, "%s : %s\n", buf, pattern);
+    return 0;
+  }
+  error = regexec (&preg, string, 5, 0, 0);
+  regfree (&preg);
+  if (error == 0) return 1;
+  return 0;
+}
+
+#else
+
+
+
 int regex_match_after_star ();
 
 int is_pattern (p)
@@ -429,3 +462,9 @@ char *p, *t;
     if ((p == NULL) || (t == NULL)) return (FALSE);
     return ((regex_match (p,t) == TRUE) ? TRUE : FALSE);
 }
+
+#endif
+
+
+
+

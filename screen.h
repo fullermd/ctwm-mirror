@@ -149,6 +149,9 @@ typedef struct ScreenInfo
     MenuRoot *Workspaces;	/* the TwmWorkspaces menu */
     MenuRoot *AllWindows;	/* the TwmAllWindows menu */
 
+  /*Added by dl 2004 */
+    MenuRoot *AllIcons;         /* the TwmAllIcons menu */
+
   /******************************************************/
   /* Added by Dan Lilliehorn (dl@dl.nu) 2000-02-29)     */
     MenuRoot *Keys;             /* the TwmKeys menu     */
@@ -301,6 +304,7 @@ typedef struct ScreenInfo
     name_list *WarpCursorL;	/* windows to warp cursor to on deiconify */
     name_list *DontSave;
     name_list *WindowGeometries;
+    name_list *IgnoreTransientL;
 
     name_list *OpaqueMoveList;
     name_list *NoOpaqueMoveList;
@@ -417,6 +421,7 @@ typedef struct ScreenInfo
     short IgnoreLockModifier;	/* Should we ignore the lock modifier */
     unsigned int IgnoreModifier;
     short IgnoreCaseInMenuSelection;	/* Should we ignore case in menu selection */
+    short NoWarpToMenuTitle; /* warp cursor to clipped menu title */
     short NoImagesInWorkSpaceManager;   /* do not display mini images of the desktop background images on WSmap */
 
     FuncKey FuncKeyRoot;

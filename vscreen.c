@@ -42,6 +42,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
   if (scr->VirtualScreens == NULL) {
     if (userealroot) {
       virtualScreen *vs = (virtualScreen*) malloc (sizeof (virtualScreen));
+
       vs->x      = 0;
       vs->y      = 0;
       vs->w      = scr->rootw;
@@ -58,6 +59,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
       sprintf (scr->VirtualScreens->name, "%dx%d+0+0", scr->rootw, scr->rooth);
     }
   }
+
   attrmask  = ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
               SubstructureRedirectMask | KeyPressMask | ButtonPressMask |
               ButtonReleaseMask;
@@ -91,6 +93,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
     vs->window = XCreateWindow (dpy, Scr->Root, x, y, w, h,
 			       0, CopyFromParent, (unsigned int) CopyFromParent,
 			       (Visual *) CopyFromParent, valuemask, &attributes);
+
     XSync (dpy, 0);
     XMapWindow (dpy, vs->window);
     XChangeProperty (dpy, vs->window, _XA_WM_VIRTUALROOT, XA_STRING, 8, 
@@ -99,6 +102,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
     vs->next = scr->vScreenList;
     scr->vScreenList = vs;
   }
+
   if (scr->vScreenList == NULL) {
     twmrc_error_prefix ();
     fprintf (stderr, "no valid VirtualScreens found, exiting...\n");

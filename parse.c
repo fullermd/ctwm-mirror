@@ -340,6 +340,7 @@ int ParseTwmrc (filename)
 #else
     if (twmrc) {
 #endif
+
 	int status;
 
 	if (filename && strncmp (cp, filename, strlen (filename))) {
@@ -635,6 +636,7 @@ typedef struct _TwmKeyword {
 #define kw0_IgnoreCaseInMenuSelection	62
 #define kw0_SloppyFocus                 63
 #define kw0_NoImagesInWorkSpaceManager  64
+#define kw0_NoWarpToMenuTitle 65
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -775,6 +777,7 @@ static TwmKeyword keytable[] = {
     { "dontsave",		DONT_SAVE, 0 },
     { "dontsetinactive",	DONTSETINACTIVE, 0 },
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
+    { "donttoggleworkspacemanagerstate", DONTTOGGLEWORKSPACEMANAGERSTATE, 0 },
     { "dontwarpcursorinwmap",	KEYWORD, kw0_DontWarpCursorInWMap },
     { "east",			DKEYWORD, D_EAST },
     { "f",			FRAME, 0 },
@@ -788,6 +791,7 @@ static TwmKeyword keytable[] = {
     { "f.backmapiconmgr",	FKEYWORD, F_BACKMAPICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
     { "f.bottomzoom",		FKEYWORD, F_BOTTOMZOOM },
+    { "f.changesize",           FSKEYWORD, F_CHANGESIZE },
     { "f.circledown",		FKEYWORD, F_CIRCLEDOWN },
     { "f.circleup",		FKEYWORD, F_CIRCLEUP },
     { "f.colormap",		FSKEYWORD, F_COLORMAP },
@@ -835,6 +839,10 @@ static TwmKeyword keytable[] = {
     { "f.movepack",		FKEYWORD, F_MOVEPACK },
     { "f.movepush",		FKEYWORD, F_MOVEPUSH },
     { "f.moveresize",		FSKEYWORD, F_MOVERESIZE },
+    { "f.movetonextworkspace",  FKEYWORD, F_MOVETONEXTWORKSPACE },
+    { "f.movetonextworkspaceandfollow",  FKEYWORD, F_MOVETONEXTWORKSPACEANDFOLLOW },
+    { "f.movetoprevworkspace",  FKEYWORD, F_MOVETOPREVWORKSPACE },
+    { "f.movetoprevworkspaceandfollow",  FKEYWORD, F_MOVETOPREVWORKSPACEANDFOLLOW },
     { "f.nexticonmgr",		FKEYWORD, F_NEXTICONMGR },
     { "f.nextworkspace",	FKEYWORD, F_NEXTWORKSPACE },
     { "f.nop",			FKEYWORD, F_NOP },
@@ -933,6 +941,7 @@ static TwmKeyword keytable[] = {
     { "ignorecaseinmenuselection",	KEYWORD, kw0_IgnoreCaseInMenuSelection },
     { "ignorelockmodifier",	KEYWORD, kw0_IgnoreLockModifier },
     { "ignoremodifier",		IGNOREMODIFIER, 0 },
+    { "ignoretransient",	IGNORE_TRANSIENT, 0 },
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
     { "l",			LOCK, 0 },
     { "left",			JKEYWORD, J_LEFT },
@@ -986,6 +995,7 @@ static TwmKeyword keytable[] = {
     { "notitlefocus",		KEYWORD, kw0_NoTitleFocus },
     { "notitlehighlight",	NO_TITLE_HILITE, 0 },
     { "noversion",		KEYWORD, kw0_NoVersion },
+    { "nowarptomenutitle",      KEYWORD, kw0_NoWarpToMenuTitle },
     { "occupy",			OCCUPYLIST, 0 },
     { "occupyall",		OCCUPYALL, 0 },
     { "opaquemove",		OPAQUEMOVE, 0 },
@@ -1360,6 +1370,10 @@ int do_single_keyword (keyword)
       case kw0_NoImagesInWorkSpaceManager:
 	Scr->NoImagesInWorkSpaceManager = TRUE;
 	return 1;
+
+ case kw0_NoWarpToMenuTitle:
+ Scr->NoWarpToMenuTitle = TRUE;
+ return 1;
 
     }
     return 0;

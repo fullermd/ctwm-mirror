@@ -660,6 +660,10 @@ minimum size as described under \fBSqueezeTitle\fP below.
 If the optional window list is supplied, only those windows will be
 prevented from being squeezed.
 
+.IP "\fBDontToggleWorkSpaceManagerState\fP" 8
+Turns off the feature toggling the workspace manager state to/from map/button
+state when you press ctrl and the workspace manager window is in focus.
+
 .IP "\fBDontWarpCursorInWMap\fP" 8
 Tells ctwm not to warp the cursor to the corresponding actual window
 when you click in a small window in the workspace map.
@@ -878,6 +882,13 @@ num locks. You don't need IgnoreLockModifier any more with this option.
 IgnoreModifier { lock m2 }
 .EE
 
+.IP "\fBIgnoreTransient\fP" 8
+List of windows for which to ignore transients.
+
+.EX 0
+IgnoreTransient { "Wine" }
+.EE
+
 .IP "\fBInterpolateMenuColors\fP" 8
 This variable indicates that menu entry colors should be interpolated between
 entry specified colors.  In the example below:
@@ -1066,6 +1077,10 @@ be displayed.  If the optional \fIwin-list\fP is given, only those windows
 will not have highlight areas.  This and the \fBSqueezeTitle\fP options
 can be set to substantially reduce the amount of screen space required by
 titlebars.
+.IP "\fBNoWarpToMenuTitle\fP" 8
+This variable indicates that the cursor should not be warped to the title
+of a menu which does not have room to drop down below the current cursor
+position.
 .IP "\fBOccupy\fP { \fIoccupy-list\fP }" 8
 This variable specifies which windows occupy which workspaces at startup.
 .IP
@@ -1792,6 +1807,17 @@ This function sounds the keyboard bell.
 This function is similar to the \fBf.fullzoom\fP function, but
 resizes the window to fill only the bottom half of the screen.
 
+.IP "\fBf.changesize\fP \fIstring\fP" 8
+This function allows you to change the size of the focused window. The
+format of the string must be \fB"<border> <+|-><sizechange>"\fP, where \fBborder\fP must be one of \fBTop\fP, \fBBottom\fP, \fBLeft\fP or \fBRight\fP.
+
+.EX 0
+"Right"  = c|s: all      : f.changesize "right +10"
+"Left"   = c|s: all      : f.changesize "right -10"
+"Down"   = c|s: all      : f.changesize "bottom +10"
+"Up"     = c|s: all      : f.changesize "bottom -10"
+.EE
+
 .IP "\fBf.circledown\fP" 8
 This function lowers the top-most window that occludes another window.
 
@@ -1865,9 +1891,11 @@ name.
 .\"the window server's cut buffer.
 
 .IP "\fBf.fill\fI \fIstring\fP" 8
-Where string is either : "right", "left", "top" or "bottom".
+Where string is either : "right", "left", "top", "bottom" or "vertical".
 The current window is resized in the specified direction until it
 reaches an obstacle (either another window, or the screen border).
+f.fill "vertical" sets the window status to 'zoomed' and toggles, ie
+calling it again will reset the previous window size.
 
 .IP "\fBf.fittocontent\fI" 8
 Can be used only with window boxes. The result is to have the box have the
@@ -2012,6 +2040,18 @@ Takes one string argument which is a geometry with the
 standard X geometry syntax (e.g. 200x300+150-0). Sets the current window
 to the specified geometry. The width and height are to be given in pixel,
 no base size or resize increment are used.
+
+.IP "\fBf.movetonextworkspace\fI" 8
+Move the window to the next workspace.
+
+.IP "\fBf.movetoprevworkspace\fI" 8
+Move the window to the previous workspace.
+
+.IP "\fBf.movetonextworkspaceandfollow\fI" 8
+Move the window to the next workspace and go to that workspace.
+
+.IP "\fBf.movetoprevworkspaceandfollow\fI" 8
+Move the window to the previous workspace and go to that workspace.
 
 .IP "\fBf.nexticonmgr\fI" 8
 This function warps the pointer to the next icon manager containing any windows

@@ -105,6 +105,7 @@ static char *ptr;
 static name_list **list;
 static int cont = 0;
 static int color;
+Bool donttoggleworkspacemanagerstate = FALSE;
 int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 
@@ -143,6 +144,7 @@ extern yylex();
 %token <num> DONTSETINACTIVE CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
 %token <num> AUTOSQUEEZE STARTSQUEEZED DONT_SAVE AUTO_LOWER ICONMENU_DONTSHOW WINDOW_BOX
 %token <num> IGNOREMODIFIER WINDOW_GEOMETRIES ALWAYSSQUEEZETOGRAVITY VIRTUAL_SCREENS
+%token <num> IGNORE_TRANSIENT DONTTOGGLEWORKSPACEMANAGERSTATE
 %token <ptr> STRING
 
 %type <ptr> string
@@ -342,6 +344,9 @@ stmt		: error
 		  win_list
 		| NO_TITLE		{ if (Scr->FirstTime)
 						Scr->NoTitlebar = TRUE; }
+		| IGNORE_TRANSIENT	{ list = &Scr->IgnoreTransientL; }
+		  win_list
+		| DONTTOGGLEWORKSPACEMANAGERSTATE  { donttoggleworkspacemanagerstate = TRUE; }
 		| MAKE_TITLE		{ list = &Scr->MakeTitle; }
 		  win_list
 		| START_ICONIFIED	{ list = &Scr->StartIconified; }
@@ -422,6 +427,7 @@ stmt		: error
 		| WINDOW_RING		{ list = &Scr->WindowRingL; }
 		  win_list
 		| WINDOW_RING           { Scr->WindowRingAll = TRUE; }
+		
 		| WINDOW_RING_EXCLUDE    { if (!Scr->WindowRingL)
 		                              Scr->WindowRingAll = TRUE;
 		                          list = &Scr->WindowRingExcludeL; }
@@ -429,7 +435,7 @@ stmt		: error
 
 		| WINDOW_GEOMETRIES 	 {  }
 		  wingeom_list
-		  ;
+
 
 		| VIRTUAL_SCREENS      	{ }
 		  geom_list
@@ -690,7 +696,7 @@ wingeom_list	: LB wingeom_entries RB {}
 wingeom_entries	: /* Empty */
 		| wingeom_entries wingeom_entry
 		;
-
+/* added a ';' after call to AddToList */
 wingeom_entry	: string string	{ AddToList (&Scr->WindowGeometries, $1, $2); }
                 ;
 

@@ -1093,7 +1093,7 @@ __YYSCLASS char * yyreds[] =
 };
 #endif /* YYDEBUG */
 #define YYFLAG  (-3000)
-/* @(#) $Revision: 70.7 $ */    
+/* @(#) $Revision: 1.2 $ */    
 
 /*
 ** Skeleton parser driver for yacc output
@@ -3548,7 +3548,7 @@ __YYSCLASS char * yyreds[] =
 };
 #endif /* YYDEBUG */
 #define YYFLAG  (-3000)
-/* @(#) $Revision: 70.7 $ */    
+/* @(#) $Revision: 1.2 $ */    
 
 /*
 ** Skeleton parser driver for yacc output

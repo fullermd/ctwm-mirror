@@ -1076,7 +1076,7 @@ HandleKeyPress()
 	    item = ActiveItem;
 	}
 	else
-	if (!strcmp (keynam, "Left")) {
+	if (!strcmp (keynam, "Left") || !strcmp(keynam, "Escape")) {
 	    MenuRoot *menu;
 
 	    if (ActiveMenu->pinned) return;
@@ -3993,6 +3993,13 @@ HandleConfigureRequest()
 
     if (width != Tmp_win->frame_width || height != Tmp_win->frame_height)
 	Tmp_win->zoomed = ZOOM_NONE;
+
+    /* Workaround for Java 1.4 bug that freezes the application whenever
+     * a new window is displayed. (When UsePPosition is on and either
+     * UseThreeDBorders or BorderWidth 0 is set.)
+     */
+    if (!bw)
+        sendEvent = True; 
 
     /*
      * SetupWindow (x,y) are the location of the upper-left outer corner and

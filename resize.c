@@ -1123,6 +1123,9 @@ int flag;
     int frame_bw_times_2;
     int  zwidth = Scr->rootw;
     int zheight = Scr->rooth;
+    int tmpX, tmpY, tmpW, tmpH;
+
+
 
 	XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
 	        &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
@@ -1145,31 +1148,32 @@ int flag;
             border_x = 0;
             border_y = 0;
 	}
-        if (tmp_win->zoomed == flag)
-        {
-            dragHeight = tmp_win->save_frame_height;
-            dragWidth = tmp_win->save_frame_width;
-            dragx = tmp_win->save_frame_x;
-            dragy = tmp_win->save_frame_y;
-            tmp_win->zoomed = ZOOM_NONE;
-        }
-        else
-        {
-                if (tmp_win->zoomed == ZOOM_NONE)
-                {
-                        tmp_win->save_frame_x = dragx;
-                        tmp_win->save_frame_y = dragy;
-                        tmp_win->save_frame_width = dragWidth;
-                        tmp_win->save_frame_height = dragHeight;
-                        tmp_win->zoomed = flag;
-                 }
-                  else
-                            tmp_win->zoomed = flag;
+	if (tmp_win->zoomed == flag)
+	{
+		dragHeight = tmp_win->save_frame_height;
+		dragWidth = tmp_win->save_frame_width;
+		/* dl: I removed this. Why restore position when restoring
+		   zoom?
+		  dragx = tmp_win->save_frame_x;
+		  dragy = tmp_win->save_frame_y;*/
+		tmp_win->zoomed = ZOOM_NONE;
+	}
+	else
+	{
+		if (tmp_win->zoomed == ZOOM_NONE)
+		{
+			tmp_win->save_frame_x = dragx;
+			tmp_win->save_frame_y = dragy;
+			tmp_win->save_frame_width = dragWidth;
+			tmp_win->save_frame_height = dragHeight;
+			tmp_win->zoomed = flag;
+		}
+		else
+			tmp_win->zoomed = flag;
 
+		frame_bw_times_2 = 2*tmp_win->frame_bw;
 
-	frame_bw_times_2 = 2*tmp_win->frame_bw;
-
-        switch (flag)
+		switch (flag)
         {
         case ZOOM_NONE:
             break;
@@ -1218,12 +1222,29 @@ int flag;
         RaiseWindow(tmp_win);
 
     ConstrainSize(tmp_win, &dragWidth, &dragHeight);
-
+#ifdef BETTERZOOM 
+	if (flag == F_ZOOM)
+	{
+		if (dragy + dragHeight < tmp_win->save_frame_y + tmp_win->save_frame_height)
+			dragy = tmp_win->save_frame_y + tmp_win->save_frame_height - dragHeight;
+	}
+#endif
     SetupWindow (tmp_win, dragx , dragy , dragWidth, dragHeight, -1);
 /* I don't understand the reason of this. Claude.
     XUngrabPointer (dpy, CurrentTime);
 */
     XUngrabServer (dpy);
+
+   XQueryPointer(dpy, 
+		 tmp_win->w, 
+		 &junkRoot, &junkRoot, 
+		 &tmpX, &tmpY, &tmpW, &tmpH, &junkDepth);
+   if (tmp_win->frame_x > tmpX ||
+       tmp_win->frame_x + tmp_win->frame_width < tmpX ||
+       tmp_win->frame_y > tmpY ||
+       tmp_win->frame_y + tmp_win->frame_height < tmpY) {
+      XWarpPointer(dpy, Scr->Root, tmp_win->w, 0, 0, 0, 0, 0, 0);
+   }
 }
 
 void savegeometry (tmp_win)
@@ -1326,6 +1347,100 @@ SetFrameShape (tmp)
 	    (void) XShapeCombineMask (dpy, tmp->frame, ShapeClip, 0, 0,
 				      None, ShapeSet);
 	}
+    }
+}
+
+ChangeSize (in_string, tmp_win)
+     char *in_string;
+     TwmWindow *tmp_win;
+{
+  int i=0, j=0, change=0, size=0;
+  char tmp_string[10];
+  char operator ='\0';
+  char size_string[10];
+
+  while(in_string[i] != ' ')
+    {
+      tmp_string[i] = in_string[i];
+      i++;
+    }
+  tmp_string[i]='\0';
+
+  i++;
+  operator = in_string[i];
+  i++;
+
+  while(in_string[i] != '\0')
+    {
+      size_string[j] = in_string[i];
+      i++;
+      j++;
+    }
+  size_string[j] = '\0';
+
+  change = atoi(size_string);
+
+  if (operator == '-')
+    {
+      change = 0 - change;
+    }
+  else if (operator != '+')
+    {
+      /* error */
+      fprintf (stderr, "%s: Bad argument to f.changesize\n", ProgramName);
+      return;
+    }
+
+  if (strcmp("bottom", tmp_string) == 0)
+    {
+      size = tmp_win->frame_height + change;
+
+      if (size < 1)
+	size = 1;
+
+      SetupWindow (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
+		   tmp_win->frame_width, size , 
+		   -1);
+    }
+  else if (strcmp("top", tmp_string) == 0)
+    {
+      size = tmp_win->frame_height + change;
+
+      if (size < 1)
+	size = 1;
+
+      SetupWindow (tmp_win, tmp_win->frame_x, (tmp_win->frame_y - change),
+		   tmp_win->frame_width, size, 
+		   -1);
+    }
+  else if (strcmp("left", tmp_string) == 0)
+    {
+      size = tmp_win->frame_width + change;
+
+      if (size < 1)
+	size = 1;
+
+      SetupWindow (tmp_win, (tmp_win->frame_x - change), tmp_win->frame_y,
+		   size, tmp_win->frame_height, 
+		   -1);
+    }
+  else if (strcmp("right", tmp_string) == 0)
+    {
+      size = tmp_win->frame_width + change;
+
+      if (size < 1)
+	size = 1;
+
+      SetupWindow (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
+		   size, tmp_win->frame_height, 
+		   -1);
+
+    }
+  else
+    {
+      /* error */
+      fprintf (stderr, "%s: Bad argument to f.changesize\n", ProgramName);
+      return;
     }
 }
 

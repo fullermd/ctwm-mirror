@@ -100,6 +100,12 @@ void GnomeAddClientWindow ();
 void GnomeDeleteClientWindow ();
 #endif /* GNOME */
 
+void MoveToNextWorkSpace ();
+void MoveToPrevWorkSpace ();
+void MoveToNextWorkSpaceAndFollow ();
+void MoveToPrevWorkSpaceAndFollow ();
+
+
 typedef struct winList {
     struct WorkSpace	*wlist;
     Window		w;

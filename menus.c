@@ -1005,8 +1005,11 @@ NewMenuRoot(name)
     if (strcmp(name, TWM_ALLWINDOWS) == 0)
 	Scr->AllWindows = tmp;
 
-    /* Added by Dan Lilliehorn (dl@dl.nu) 2000-02-29       */
+    /* Added by dl 2004 */
+    if (strcmp(name, TWM_ALLICONS) == 0)
+    Scr->AllIcons = tmp;
 
+    /* Added by Dan Lilliehorn (dl@dl.nu) 2000-02-29       */
     if (strcmp(name, TWM_KEYS) == 0)
 	Scr->Keys = tmp;
 
@@ -1081,6 +1084,9 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 	(menu == Scr->Icons) ||
 	(menu == Scr->AllWindows) ||
 
+	/* Added by dl 2004 */
+	(menu == Scr->AllIcons) ||
+
 	/* Added by Dan Lillehorn (dl@dl.nu) 2000-02-29 */
 	(menu == Scr->Keys) ||
 	(menu == Scr->Visible)) {
@@ -1094,6 +1100,7 @@ AddToMenu(menu, item, action, sub, func, fore, back)
     else {
 	itemname = item;
     }
+
     tmp->item = itemname;	
     tmp->strlen = strlen(itemname);
     tmp->action = action;
@@ -1104,6 +1111,7 @@ AddToMenu(menu, item, action, sub, func, fore, back)
     tmp->separated = 0;
 
     if (!Scr->HaveFonts) CreateFonts();
+    
 #ifdef I18N
     XmbTextExtents(Scr->MenuFont.font_set,
 		   itemname, tmp->strlen,
@@ -1112,6 +1120,7 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 #else    
     width = XTextWidth(Scr->MenuFont.font, itemname, tmp->strlen);
 #endif    
+    
     if (width <= 0)
 	width = 1;
     if (width > menu->width)
@@ -1140,7 +1149,6 @@ AddToMenu(menu, item, action, sub, func, fore, back)
     return (tmp);
 }
 
-
 
 MakeMenus()
 {
@@ -1451,12 +1459,15 @@ Bool PopUpMenu (menu, x, y, center)
     if ((menu == Scr->Windows) ||
 	(menu == Scr->Icons) ||
 	(menu == Scr->AllWindows) ||
+	/* Added by Dan 'dl' Lilliehorn 040607 */
+	(menu == Scr->AllIcons) ||
 	/* Added by Dan Lilliehorn (dl@dl.nu) 2000-02-29 */
 	(menu == Scr->Visible))
     {
 	TwmWindow *tmp_win;
 	WorkSpace *ws;
-	Boolean all, icons, visible;      /* visible: Added by dl */
+	Boolean all, icons, visible, allicons; /* visible, allicons: 
+						  Added by dl */
 	int func;
 
 	/* this is the twm windows menu,  let's go ahead and build it */
@@ -1464,6 +1475,7 @@ Bool PopUpMenu (menu, x, y, center)
 	all = (menu == Scr->AllWindows);
 	icons = (menu == Scr->Icons);
 	visible = (menu == Scr->Visible);    /* Added by dl */
+	allicons = (menu == Scr->AllIcons);
 	DestroyMenu (menu);
 
 	menu->first = NULL;
@@ -1479,13 +1491,17 @@ Bool PopUpMenu (menu, x, y, center)
 	if (menu == Scr->Icons) 
   	    AddToMenu(menu, "TWM Icons", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
 	else
-	if (menu == Scr->Visible) /* Added by dl */
+	if (menu == Scr->Visible) /* Added by dl 2000 */
 	    AddToMenu(menu, "TWM Visible", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
+	else
+	  if (menu == Scr->AllIcons) /* Added by dl 2004 */
+	    AddToMenu(menu, "TWM AllIcons", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
 	else
   	    AddToMenu(menu, "TWM All Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
   
 	ws = NULL;
-	if (! all && CurrentSelectedWorkspace) {
+
+	if (! (all || allicons) && CurrentSelectedWorkspace) {
 	    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
         	if (strcmp (ws->name, CurrentSelectedWorkspace) == 0) break;
 	    }
@@ -1501,7 +1517,8 @@ Bool PopUpMenu (menu, x, y, center)
 	  if (tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win) continue;
 	  if (Scr->ShortAllWindowsMenus && (tmp_win->wspmgr || tmp_win->iconmgr)) continue;
 
-	  if (!all && !OCCUPY (tmp_win, ws)) continue;
+	  if (!(all || allicons) && !OCCUPY (tmp_win, ws)) continue;
+	  if (allicons && !tmp_win->isicon) continue;
 	  if (icons && !tmp_win->isicon) continue;
 	  if (visible && tmp_win->isicon) continue;  /* added by dl */
 	  WindowNameCount++;
@@ -1520,7 +1537,8 @@ Bool PopUpMenu (menu, x, y, center)
 		tmp_win == Scr->currentvs->wsw->twm_win) continue;
 	    if (Scr->ShortAllWindowsMenus && tmp_win->iconmgr) continue;
 
-	    if (!all && ! OCCUPY (tmp_win, ws)) continue;
+	    if (!(all || allicons)&& ! OCCUPY (tmp_win, ws)) continue;
+	    if (allicons && !tmp_win->isicon) continue;
 	    if (icons && !tmp_win->isicon) continue;
 	    if (visible && tmp_win->isicon) continue;  /* added by dl */
             tmp_win2 = tmp_win;
@@ -1558,7 +1576,8 @@ Bool PopUpMenu (menu, x, y, center)
             WindowNames[WindowNameCount] = tmp_win2;
 	    WindowNameCount++;
         }
-	func = (all || CurrentSelectedWorkspace) ? F_WINWARP : F_POPUP;
+	func = (all || allicons || CurrentSelectedWorkspace) ? F_WINWARP : 
+	      F_POPUP;
         for (i = 0; i < WindowNameCount; i++)
         {
 	    char *tmpname;
@@ -1709,7 +1728,7 @@ Bool PopUpMenu (menu, x, y, center)
 	XRaiseWindow (dpy, menu->shadow);
     }
     XMapRaised(dpy, menu->w);
-    if (clipped && center) {
+if (!Scr->NoWarpToMenuTitle && clipped && center) {
 	xl = x + (menu->width      / 2);
 	yt = y + (Scr->EntryHeight / 2);
 	XWarpPointer (dpy, Scr->Root, Scr->Root, x, y, menu->width, menu->height, xl, yt);
@@ -2204,6 +2223,26 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
 	ToggleOccupation (action, tmp_win);
 	break;
+
+    case F_MOVETONEXTWORKSPACE:
+		if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+		MoveToNextWorkSpace(Scr->currentvs,tmp_win);
+		break;
+
+    case F_MOVETOPREVWORKSPACE:
+		if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+		MoveToPrevWorkSpace(Scr->currentvs,tmp_win);
+		break;
+
+    case F_MOVETONEXTWORKSPACEANDFOLLOW:
+		if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+		MoveToNextWorkSpaceAndFollow(Scr->currentvs,tmp_win);
+		break;
+
+    case F_MOVETOPREVWORKSPACEANDFOLLOW:
+		if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+		MoveToPrevWorkSpaceAndFollow(Scr->currentvs,tmp_win);
+		break;
 
     case F_SORTICONMGR:
 	if (DeferExecution(context, func, Scr->SelectCursor))
@@ -2994,6 +3033,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		{
 		    if (!ExecuteFunction (mitem->func, mitem->action, w,
 					  tmp_win, eventp, context, pulldown))
+		      /* pebl FIXME: Here should the fous be updated, 
+			 or the function would operate on the same window */
 		      break;
 		}
 	    }
@@ -3265,6 +3306,12 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	    len = strlen(action);
 
+#ifdef WARPTO_FROM_ICONMGR
+		if (len == 0 && tmp_win && tmp_win->iconmgr)
+		{
+			printf ("curren iconmgr entry: %s", tmp_win->iconmgr->Current);
+		}
+#endif /* #ifdef WARPTO_FROM_ICONMGR */
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 		if (!strncmp(action, t->full_name, len)) break;
 		if (match (action, t->full_name)) break;
@@ -3506,6 +3553,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     case F_TRACE:
 	DebugTrace (action);
 	break;
+	
+    case F_CHANGESIZE:
+        ChangeSize (action, tmp_win);
+        break;
 	
     case F_QUIT:
 	Done();
@@ -5106,7 +5157,48 @@ char *direction;
 	    newh = save;
 	    SetupWindow (tmp_win, newx, newy, neww, newh, -1);
 	}
-    } else return;
+	}
+	else if (!strcmp (direction, "vertical"))
+	{
+		if (tmp_win->zoomed == ZOOM_NONE)
+		{
+			int	tmp_bw;
+			tmp_win->save_frame_height = tmp_win->frame_height;
+			tmp_win->save_frame_width = tmp_win->frame_width;
+			tmp_win->save_frame_y = tmp_win->frame_y;
+			tmp_win->save_frame_x = tmp_win->frame_x;
+			/* FindConstraint 'grows' over borders 
+			 * the window is next to,
+			 * so make the window a bit smaller. */
+			if (Scr->use3Dborders)
+				tmp_bw = tmp_win->frame_bw3D;
+			else
+				tmp_bw = tmp_win->frame_bw;
+			tmp_win->frame_y += tmp_bw;
+			tmp_win->frame_height -= tmp_bw * 2;
+			newy = FindConstraint (tmp_win, J_TOP);
+			newh = FindConstraint (tmp_win, J_BOTTOM) - newy;
+			newx = tmp_win->frame_x;
+			neww = tmp_win->frame_width;
+			if (newy == tmp_win->frame_y)
+				newy++;
+			ConstrainSize (tmp_win, &neww, &newh);
+			/* if the bottom of the window has moved up 
+			 * it will be pushed down */
+			if (newy + newh < 
+			    tmp_win->save_frame_y + tmp_win->save_frame_height)
+			  newy = tmp_win->save_frame_y + 
+			    tmp_win->save_frame_height - newh;
+			tmp_win->zoomed = F_ZOOM;
+			SetupWindow (tmp_win, newx, newy, neww, newh, -1);
+		}
+		else 
+		{
+			fullzoom (tmp_win, tmp_win->zoomed);
+		}
+		return;
+	}
+    else return;
     SetupWindow (tmp_win, newx, newy, neww, newh, -1);
 }
 
@@ -5159,8 +5251,10 @@ char *action;
 	    if (fy + fheight > cons) fy = cons - fheight;
 	    break;
     }
+    /* Pebl Fixme: don't warp if jump happens through iconmgr */
     XWarpPointer (dpy, Scr->Root, Scr->Root, 0, 0, 0, 0, fx + px, fy + py);
-    XRaiseWindow (dpy, tmp_win->frame);
+    if (!Scr->NoRaiseMove)
+        XRaiseWindow (dpy, tmp_win->frame);
     SetupWindow (tmp_win, fx, fy, tmp_win->frame_width, tmp_win->frame_height, -1);
 }
 
