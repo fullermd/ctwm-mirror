@@ -236,7 +236,6 @@ typedef struct ScreenInfo
     name_list	*DontSetInactive;
     name_list	*AutoSqueeze;
     name_list	*StartSqueezed;
-    name_list	*AlwaysSqueezeToGravity;
     short 	use3Dmenus;
     short 	use3Dtitles;
     short 	use3Diconmanagers;
@@ -296,6 +295,7 @@ typedef struct ScreenInfo
     name_list *IconManagerHighlightL;	/* icon manager highlight colors */
     name_list *SqueezeTitleL;		/* windows of which to squeeze title */
     name_list *DontSqueezeTitleL;	/* windows of which not to squeeze */
+    name_list *AlwaysSqueezeToGravityL;	/* windows which should squeeze toward gravity */
     name_list *WindowRingL;	/* windows in ring */
     name_list *WindowRingExcludeL;      /* windows excluded from ring */
     name_list *WarpCursorL;	/* windows to warp cursor to on deiconify */
@@ -402,6 +402,7 @@ typedef struct ScreenInfo
     short NoIconManagers;	/* Don't create any icon managers */
     short ClientBorderWidth;	/* respect client window border width */
     short SqueezeTitle;		/* make title as small as possible */
+    short AlwaysSqueezeToGravity; /* squeeze toward gravity */
     short HaveFonts;		/* set if fonts have been loaded */
     short FirstTime;		/* first time we've read .twmrc */
     short CaseSensitive;	/* be case-sensitive when sorting names */

@@ -366,11 +366,13 @@ if it crosses the current active workspace. If
 window is always visible during the move, regardless of whether it crosses
 the current workspace or not. The Shift key toggles this behaviour.
 
-.IP "\fBAlwaysSqueezeToGravity\fP { \fIwin-list\fP }" 8
-This variable instructs \fIctwm\fP to obey window gravity when
-squeezing the named windows even when the windows have titlebars.
+.IP "\fBAlwaysSqueezeToGravity\fP [{ \fIwin-list\fP }] " 8
+This variable indicates that \fIctwm\fP should obey window gravity
+when squeezing a window even when the window has a titlebar.
 Normally, \fIctwm\fP will always squeeze a window that has a titlebar
 toward the north.
+The optional \fIwin-list\fP may be used to control which windows
+this applies on.
 
 .IP "\fBAnimationSpeed\fP \fIspeed\fP" 8
 The \fIspeed\fP argument is a non-negative integer. It determines the number of

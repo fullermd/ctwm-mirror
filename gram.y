@@ -304,7 +304,8 @@ stmt		: error
 		  win_list
 		| STARTSQUEEZED		{ list = &Scr->StartSqueezed; }
 		  win_list
-		| ALWAYSSQUEEZETOGRAVITY { list = &Scr->AlwaysSqueezeToGravity; }
+		| ALWAYSSQUEEZETOGRAVITY	{ Scr->AlwaysSqueezeToGravity = TRUE; }
+		| ALWAYSSQUEEZETOGRAVITY	{ list = &Scr->AlwaysSqueezeToGravityL; }
 		  win_list
 		| DONTSETINACTIVE	{ list = &Scr->DontSetInactive; }
 		  win_list

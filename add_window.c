@@ -435,8 +435,9 @@ IconMgr *iconp;
     else
 	tmp_win->StartSqueezed = False;
 
-    if (LookInList (Scr->AlwaysSqueezeToGravity, tmp_win->full_name, &tmp_win->class))
-	tmp_win->AlwaysSqueezeToGravity= True;
+    if (Scr->AlwaysSqueezeToGravity
+	|| LookInList (Scr->AlwaysSqueezeToGravityL, tmp_win->full_name, &tmp_win->class))
+	tmp_win->AlwaysSqueezeToGravity = True;
     else
 	tmp_win->AlwaysSqueezeToGravity = False;
 

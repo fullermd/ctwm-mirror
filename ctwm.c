@@ -572,7 +572,7 @@ main(argc, argv, environ)
 	Scr->DontSetInactive = NULL;
 	Scr->AutoSqueeze = NULL;
 	Scr->StartSqueezed = NULL;
-	Scr->AlwaysSqueezeToGravity = NULL;
+	Scr->AlwaysSqueezeToGravityL = NULL;
 	Scr->MakeTitle = NULL;
 	Scr->AutoRaise = NULL;
 	Scr->AutoLower = NULL;
@@ -965,7 +965,7 @@ InitVariables()
     FreeList(&Scr->DontSetInactive);
     FreeList(&Scr->AutoSqueeze);
     FreeList(&Scr->StartSqueezed);
-    FreeList(&Scr->AlwaysSqueezeToGravity);
+    FreeList(&Scr->AlwaysSqueezeToGravityL);
     FreeList(&Scr->IconMenuDontShow);
     FreeList(&Scr->VirtualScreens);
 
@@ -1054,7 +1054,7 @@ InitVariables()
     Scr->AutoOccupy = FALSE;
     Scr->TransientHasOccupation = FALSE;
     Scr->DontPaintRootWindow = FALSE;
-    Scr->IconManagerDontShow =FALSE;
+    Scr->IconManagerDontShow = FALSE;
     Scr->BackingStore = TRUE;
     Scr->SaveUnder = TRUE;
     Scr->RandomPlacement = RP_OFF;
@@ -1123,6 +1123,7 @@ InitVariables()
     Scr->IgnoreModifier = 0;
     Scr->IgnoreCaseInMenuSelection = False;
     Scr->PackNewWindows = False;
+    Scr->AlwaysSqueezeToGravity = FALSE;
 
     Scr->BorderTop    = 0;
     Scr->BorderBottom = 0;
