@@ -17,7 +17,7 @@
 ctwm - Tab Window Manager for the X Window System
 .SH SYNTAX
 .PP
-\fIctwm \fP[-display \fIdpy\fP] [-s] [-f \fIinitfile\fP] [-v] [-n] [-k] [-K m4file] [-w [win-id]]
+\fIctwm \fP[-display \fIdpy\fP] [-s] [-cfgchk] [-f \fIinitfile\fP] [-v] [-n] [-k] [-K m4file] [-w [win-id]]
 .PP
 .SH DESCRIPTION
 .PP
@@ -90,6 +90,10 @@ This option indicates that only the default screen (as specified by
 \fB\-display\fP or by the \fBDISPLAY\fP environment variable) should be
 managed.  By default, \fIctwm\fP will attempt to manage
 all screens on the display.
+.TP 8
+.B \-cfgchk
+This option causes \fIctwm\fP to only try to parse the config file, and
+indicate whether errors are found.
 .TP 8
 .B \-f \fIfilename\fP
 This option specifies the name of the startup file to use.

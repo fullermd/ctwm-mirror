@@ -1204,3 +1204,8 @@ VirtualScreens {
 
 	This was contributed by Thomas Linden.
 
+   13 - New command line option: -cfgchk
+
+	If used, CTWM will only parse the configuration file and indicate
+	if it found errors or not.
+

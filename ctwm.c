@@ -144,6 +144,7 @@ int GoThroughM4 = True;
 #endif
 Window ResizeWindow;		/* the window we are resizing */
 
+int cfgchk        = 0;
 int  captive      = FALSE;
 char *captivename = NULL;
 
@@ -332,11 +333,19 @@ main(argc, argv, environ)
 		}
 		PrintErrorMessages = True;
 		continue;
+	      case 'c':				/* -cfgchk */
+		if(!strcmp(argv[i],"-cfgchk")) {
+		    cfgchk	= 1;
+		    continue;
+		}
 #ifdef X11R6
-	      case 'c':				/* -clientId */
-		if (++i >= argc) goto usage;
+		if (++i >= argc) goto usage;	/* -clientId */
 		client_id = argv[i];
 		continue;
+#else
+		goto usage;
+#endif
+#ifdef X11R6
 	      case 'r':				/* -restore */
 		if (++i >= argc) goto usage;
 		restore_filename = argv[i];
@@ -390,9 +399,9 @@ main(argc, argv, environ)
       usage:
 	fprintf (stderr, "usage: %s [-display dpy] [-version] [-info]", ProgramName);
 #ifdef USEM4
-	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-K file] [-n] [-name name]\n");
+	fprintf (stderr, " [-cfgchk] [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-K file] [-n] [-name name]\n");
 #else
-	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-name name] \n");
+	fprintf (stderr, " [-cfgchk] [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-name name] \n");
 #endif
 	exit (1);
     }
@@ -530,7 +539,7 @@ main(argc, argv, environ)
 	XSync(dpy, 0);
 	XSetErrorHandler(TwmErrorHandler);
 
-	if (RedirectError)
+	if (RedirectError && cfgchk==0)
 	{
 	    fprintf (stderr, "%s:  another window manager is already running",
 		     ProgramName);
@@ -717,7 +726,18 @@ main(argc, argv, environ)
 	InitWorkSpaceManager ();
 
 	/* Parse it once for each screen. */
-	ParseTwmrc(InitFile);
+	if(cfgchk) {
+	    if(ParseTwmrc(InitFile)==0) {
+	        /* Error return */
+	        fprintf (stderr, "Errors found\n");
+		exit(1);
+	    } else {
+	        fprintf (stderr, "No errors found\n");
+		exit(0);
+	    }
+	}
+	else
+	    ParseTwmrc(InitFile);
 	if (ShowWelcomeWindow && ! screenmasked) MaskScreen (NULL);
 	if (Scr->ClickToFocus) {
 	    Scr->FocusRoot  = FALSE;
