@@ -1494,7 +1494,7 @@ Bool PopUpMenu (menu, x, y, center)
 	if (menu == Scr->Visible) /* Added by dl 2000 */
 	    AddToMenu(menu, "TWM Visible", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
 	else
-	  if (menu == Scr->AllIcons) /* Added by dl 2004 */
+	if (menu == Scr->AllIcons) /* Added by dl 2004 */
 	    AddToMenu(menu, "TWM All Icons", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
 	else
   	    AddToMenu(menu, "TWM All Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
@@ -3033,7 +3033,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		{
 		    if (!ExecuteFunction (mitem->func, mitem->action, w,
 					  tmp_win, eventp, context, pulldown))
-		      /* pebl FIXME: Here should the fous be updated, 
+		      /* pebl FIXME: the focus should be updated here, 
 			 or the function would operate on the same window */
 		      break;
 		}

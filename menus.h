@@ -71,12 +71,12 @@
 #define TWM_ALLWINDOWS	"TwmAllWindows"	/* for f.menu "TwmAllWindows" */
 
 /* Added by dl 2004 */
-#define TWM_ALLICONS    "TwmAllIcons"   /* for f.menu "TwmAllIcons" */
+#define TWM_ALLICONS	"TwmAllIcons"	/* for f.menu "TwmAllIcons" */
 
 /*******************************************************************/
 /* Added by Dan Lilliehorn (dl@dl.nu) 2000-02-29                   */
-#define TWM_KEYS        "TwmKeys"       /* for f.menu "TwmKeys"    */
-#define TWM_VISIBLE     "TwmVisible"    /* for f.menu "TwmVisible" */
+#define TWM_KEYS	"TwmKeys"	/* for f.menu "TwmKeys"    */
+#define TWM_VISIBLE	"TwmVisible"	/* for f.menu "TwmVisible" */
 
 #define MAX_FILE_SIZE 4096	/* max chars to read from file for cut */
 
