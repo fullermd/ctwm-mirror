@@ -75,13 +75,15 @@
 #include "twm.h"
 #include "screen.h"
 #include "gram.h"
+#include "list.h"
+#include "util.h"
 
 #ifdef USE_GNU_REGEX
 # include <regex.h>
 #endif /* USE_GNU_REGEX */
 
 
-extern int twmrc_error_prefix();
+extern void twmrc_error_prefix(void);
 
 /***********************************************************************
  *
@@ -90,7 +92,7 @@ extern int twmrc_error_prefix();
  *
  *  Inputs:
  *	list	- the address of the pointer to the head of a list
- *	name	- a pointer to the name of the window 
+ *	name	- a pointer to the name of the window
  *	ptr	- pointer to list dependent data
  *
  *  Special Considerations
@@ -102,14 +104,9 @@ extern int twmrc_error_prefix();
  ***********************************************************************
  */
 
-int match ();
-int is_pattern ();
+static int is_pattern (char *p);
 
-void
-AddToList(list_head, name, ptr)
-name_list **list_head;
-char *name;
-char *ptr;
+void AddToList(name_list **list_head, char *name, char *ptr)
 {
     name_list *nptr;
 
@@ -121,7 +118,7 @@ char *ptr;
 	twmrc_error_prefix();
 	fprintf (stderr, "unable to allocate %d bytes for name_list\n",
 		 sizeof(name_list));
-	Done();
+	Done(0);
     }
 
     nptr->next = *list_head;
@@ -155,11 +152,7 @@ char *ptr;
  ***********************************************************************
  */
 
-char *
-LookInList(list_head, name, class)
-name_list *list_head;
-char *name;
-XClassHint *class;
+char *LookInList(name_list *list_head, char *name, XClassHint *class)
 {
     name_list *nptr;
 
@@ -183,19 +176,12 @@ XClassHint *class;
     return (NULL);
 }
 
-char *
-LookInNameList(list_head, name)
-name_list *list_head;
-char *name;
+char *LookInNameList(name_list *list_head, char *name)
 {
     return (LookInList(list_head, name, NULL));
 }
 
-char *
-LookPatternInList(list_head, name, class)
-name_list *list_head;
-char *name;
-XClassHint *class;
+char *LookPatternInList(name_list *list_head, char *name, XClassHint *class)
 {
     name_list *nptr;
 
@@ -216,10 +202,7 @@ XClassHint *class;
     return (NULL);
 }
 
-char *
-LookPatternInNameList (list_head, name)
-name_list *list_head;
-char *name;
+char *LookPatternInNameList (name_list *list_head, char *name)
 {
     return (LookPatternInList(list_head, name, NULL));
 }
@@ -244,11 +227,8 @@ char *name;
  ***********************************************************************
  */
 
-int GetColorFromList(list_head, name, class, ptr)
-name_list *list_head;
-char *name;
-XClassHint *class;
-Pixel *ptr;
+int GetColorFromList(name_list *list_head, char *name,
+		     XClassHint *class, Pixel *ptr)
 {
     int save;
     name_list *nptr;
@@ -296,8 +276,7 @@ Pixel *ptr;
  ***********************************************************************
  */
 
-void FreeList(list)
-name_list **list;
+void FreeList(name_list **list)
 {
     name_list *nptr;
     name_list *tmp;
@@ -339,10 +318,10 @@ int match (pattern, string)
 
 
 
-int regex_match_after_star ();
+int regex_match (char *p, char *t);
+int regex_match_after_star (char *p, char *t);
 
-int is_pattern (p)
-char *p;
+static int is_pattern (char *p)
 {
     while ( *p ) {
 	switch ( *p++ ) {
@@ -359,8 +338,7 @@ char *p;
 
 #define ABORT 2
 
-int regex_match (p, t)
-char *p, *t;
+int regex_match (char *p, char *t)
 {
     register char range_start, range_end;
     int invert;
@@ -431,11 +409,10 @@ char *p, *t;
     return (!*t);
 }
 
-int regex_match_after_star (p, t)
-char *p, *t;
+int regex_match_after_star (char *p, char *t)
 {
     register int mat;
-    register nextp;
+    register int nextp;
 
     while ((*p == '?') || (*p == '*')) {
 	if (*p == '?') {
@@ -456,8 +433,7 @@ char *p, *t;
     return (mat);
 }
 
-int match (p, t)
-char *p, *t;
+int match (char *p, char *t)
 {
     if ((p == NULL) || (t == NULL)) return (FALSE);
     return ((regex_match (p,t) == TRUE) ? TRUE : FALSE);

@@ -23,6 +23,13 @@
  *
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
+
+#ifdef GNOME
+/* 6/19/1999 nhd for GNOME compliance */
+#include "gnome.h"
+#endif /* GNOME */
+#include "vscreen.h"
+
 #ifndef _WORKMGR_
 #define _WORKMGR_
 
@@ -35,78 +42,7 @@
 #define STYLE_STYLE2	2
 #define STYLE_STYLE3	3
 
-void InitWorkSpaceManager ();
-int ConfigureWorkSpaceManager ();
-void CreateWorkSpaceManager ();
-void GotoWorkSpaceByName ();
-void GotoWorkSpaceByNumber ();
-void GotoPrevWorkSpace ();
-void GotoNextWorkSpace ();
-void GotoRightWorkSpace ();
-void GotoLeftWorkSpace ();
-void GotoUpWorkSpace ();
-void GotoDownWorkSpace ();
-void GotoWorkSpace ();
-void AddWorkSpace ();
-void SetupOccupation ();
-void Occupy ();
-void OccupyHandleButtonEvent ();
-void OccupyAll ();
-void AddToWorkSpace ();
-void RemoveFromWorkSpace ();
-void ToggleOccupation ();
-void AllocateOthersIconManagers ();
-void ChangeOccupation ();
-void WmgrRedoOccupation ();
-void WMgrRemoveFromCurrentWosksace ();
-void WMgrAddToCurrentWosksaceAndWarp ();
-void WMgrHandleExposeEvent ();
-void PaintWorkSpaceManager ();
-void PaintOccupyWindow ();
-unsigned int GetMaskFromProperty ();
-void AddToClientsList ();
-void WMapToggleState ();
-void WMapSetMapState ();
-void WMapSetButtonsState ();
-void WMapAddWindow ();
-void WMapDestroyWindow ();
-void WMapMapWindow ();
-void WMapSetupWindow ();
-void WMapIconify ();
-void WMapDeIconify ();
-void WMapRaiseLower ();
-void WMapLower ();
-void WMapRaise ();
-void WMapRestack ();
-void WMapUpdateIconName ();
-void WMgrHandleKeyReleaseEvent ();
-void WMgrHandleKeyPressEvent ();
-void WMgrHandleButtonEvent ();
-void WMapRedrawName ();
-void WMapCreateCurrentBackGround ();
-void WMapCreateDefaultBackGround ();
-char *GetCurrentWorkSpaceName ();
-Bool AnimateRoot ();
-void AddToCaptiveList ();
-void RemoveFromCaptiveList ();
-Bool RedirectToCaptive ();
-void SetPropsIfCaptiveCtwm ();
-Window CaptiveCtwmRootWindow ();
-
-#ifdef GNOME
-/* 6/19/1999 nhd for GNOME compliance */
-void InitGnome ();
-void GnomeAddClientWindow ();
-void GnomeDeleteClientWindow ();
-#endif /* GNOME */
-
-void MoveToNextWorkSpace ();
-void MoveToPrevWorkSpace ();
-void MoveToNextWorkSpaceAndFollow ();
-void MoveToPrevWorkSpaceAndFollow ();
-
-
-typedef struct winList {
+struct winList {
     struct WorkSpace	*wlist;
     Window		w;
     int			x, y;
@@ -115,9 +51,9 @@ typedef struct winList {
     ColorPair		cp;
     MyFont		font;
     struct winList	*next;
-} *WinList;
+};
 
-typedef struct WorkSpaceMgr {
+struct WorkSpaceMgr {
     struct WorkSpace	   *workSpaceList;
     struct WorkSpaceWindow *workSpaceWindowList;
     struct OccupyWindow    *occupyWindow;
@@ -134,9 +70,9 @@ typedef struct WorkSpaceMgr {
     short      	    buttonStyle;
     name_list	    *windowBackgroundL;
     name_list	    *windowForegroundL;
-} WorkSpaceMgr;
+};
 
-typedef struct WorkSpace {
+struct WorkSpace {
   int	              number;
   char	              *name;
   char	              *label;
@@ -147,20 +83,20 @@ typedef struct WorkSpace {
   ColorPair           backcp;
   struct WindowRegion *FirstWindowRegion;
   struct WorkSpace *next;
-} WorkSpace;
+};
 
-typedef struct MapSubwindow {
+struct MapSubwindow {
   Window  w;
   Window  blanket;
   int     x, y;
   WinList wl;
-} MapSubwindow;
+};
 
-typedef struct ButtonSubwindow {
+struct ButtonSubwindow {
   Window w;
-} ButtonSubwindow;
+};
 
-typedef struct WorkSpaceWindow {
+struct WorkSpaceWindow {
   virtualScreen   *vs;
   Window	  w;
   TwmWindow       *twm_win;
@@ -187,9 +123,9 @@ typedef struct WorkSpaceWindow {
   Image		*defImage;
   unsigned long	defBorderColor;
   struct WorkSpaceWindow *next;
-} WorkSpaceWindow;
+};
 
-typedef struct OccupyWindow  {
+struct OccupyWindow {
   Window       	w;
   TwmWindow    	*twm_win;
   char		*geometry;
@@ -206,14 +142,88 @@ typedef struct OccupyWindow  {
   ColorPair    	cp;
   MyFont       	font;
   int	       	tmpOccupation;
-} OccupyWindow;
+};
 
-typedef struct CaptiveCTWM {
+struct CaptiveCTWM {
   Window	root;
   String	name;
-} CaptiveCTWM;
+};
 
-CaptiveCTWM GetCaptiveCTWMUnderPointer ();
-void SetNoRedirect ();
+void InitWorkSpaceManager (void);
+void ConfigureWorkSpaceManager (void);
+void CreateWorkSpaceManager (void);
+void GotoWorkSpaceByName (virtualScreen *vs, char *wname);
+void GotoWorkSpaceByNumber (virtualScreen *vs, int workspacenum);
+void GotoPrevWorkSpace (virtualScreen *vs);
+void GotoNextWorkSpace (virtualScreen *vs);
+void GotoRightWorkSpace (virtualScreen *vs);
+void GotoLeftWorkSpace (virtualScreen *vs);
+void GotoUpWorkSpace (virtualScreen *vs);
+void GotoDownWorkSpace (virtualScreen *vs);
+void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws);
+void AddWorkSpace (char *name,
+		   char *background, char *foreground,
+		   char *backback, char *backfore, char *backpix);
+void SetupOccupation (TwmWindow *twm_win, int occupation_hint);
+void Occupy (TwmWindow *twm_win);
+void OccupyHandleButtonEvent (XEvent *event);
+void OccupyAll (TwmWindow *twm_win);
+void AddToWorkSpace (char *wname, TwmWindow *twm_win);
+void RemoveFromWorkSpace (char *wname, TwmWindow *twm_win);
+void ToggleOccupation (char *wname, TwmWindow *twm_win);
+void AllocateOthersIconManagers (void);
+void ChangeOccupation (TwmWindow *tmp_win, int newoccupation);
+void WmgrRedoOccupation (TwmWindow *win);
+void WMgrRemoveFromCurrentWorkSpace (virtualScreen *vs, TwmWindow *win);
+void WMgrAddToCurrentWorkSpaceAndWarp (virtualScreen *vs, char *winname);
+void WMgrHandleExposeEvent (virtualScreen *vs, XEvent *event);
+void PaintWorkSpaceManager (virtualScreen *vs);
+void PaintOccupyWindow (void);
+unsigned int GetMaskFromProperty (char *prop, unsigned long len);
+void AddToClientsList (char *workspace, char *client);
+void WMapToggleState (virtualScreen *vs);
+void WMapSetMapState (virtualScreen *vs);
+void WMapSetButtonsState (virtualScreen *vs);
+void WMapAddWindow (TwmWindow *win);
+void WMapDestroyWindow (TwmWindow *win);
+void WMapMapWindow (TwmWindow *win);
+void WMapSetupWindow (TwmWindow *win, int x, int y, int w, int h);
+void WMapIconify (TwmWindow *win);
+void WMapDeIconify (TwmWindow *win);
+void WMapRaiseLower (TwmWindow *win);
+void WMapLower (TwmWindow *win);
+void WMapRaise (TwmWindow *win);
+void WMapRestack (WorkSpace *ws);
+void WMapUpdateIconName (TwmWindow *win);
+void WMgrHandleKeyReleaseEvent (virtualScreen *vs, XEvent *event);
+void WMgrHandleKeyPressEvent (virtualScreen *vs, XEvent *event);
+void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event);
+void InvertColorPair (ColorPair *cp);
+void WMapRedrawName (virtualScreen *vs, WinList   wl);
+void WMapCreateCurrentBackGround (char *border,
+				  char *background, char *foreground,
+				  char *pixmap);
+void WMapCreateDefaultBackGround (char *border,
+				  char *background, char *foreground,
+				  char *pixmap);
+char *GetCurrentWorkSpaceName (virtualScreen *vs);
+Bool AnimateRoot (void);
+void AddToCaptiveList (void);
+void RemoveFromCaptiveList (void);
+Bool RedirectToCaptive (Window window);
+void SetPropsIfCaptiveCtwm (TwmWindow *win);
+Window CaptiveCtwmRootWindow (Window window);
 
-#endif
+void MoveToNextWorkSpace (virtualScreen *vs, TwmWindow *twm_win);
+void MoveToPrevWorkSpace (virtualScreen *vs, TwmWindow *twm_win);
+void MoveToNextWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win);
+void MoveToPrevWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win);
+
+CaptiveCTWM GetCaptiveCTWMUnderPointer (void);
+void SetNoRedirect (Window window);
+
+extern void ShowBackground (virtualScreen *vs);
+
+Bool visible (TwmWindow *tmp_win);
+
+#endif /* _WORKMGR_ */

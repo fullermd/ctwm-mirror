@@ -54,12 +54,14 @@
  *
  **********************************************************************/
 
+#include "screen.h"
+
 #ifndef ICONS_H
 #define ICONS_H
 
 typedef enum {match_none, match_class, match_name, match_icon} Matchtype;
 
-typedef struct Icon
+struct Icon
 {
     Matchtype	match;
     Window	w;		/* the icon window */
@@ -77,9 +79,9 @@ typedef struct Icon
     Bool	has_title, title_schrinked;
     int		border_width;
     struct IconRegion	*ir;
-} Icon;
+};
 
-typedef struct IconRegion
+struct IconRegion
 {
     struct IconRegion	*next;
     int			x, y, w, h;
@@ -90,24 +92,26 @@ typedef struct IconRegion
     short		Alignement;		/* J_TOP, J_CENTER, J_BOTTOM or J_BORDER */
     name_list           *clientlist;
     struct IconEntry	*entries;
-} IconRegion;
+};
 
-typedef struct IconEntry
+struct IconEntry
 {
     struct IconEntry	*next;
     int			x, y, w, h;
     TwmWindow		*twm_win;
     short 		used;
-}IconEntry;
+};
 
-extern int IconUp ();
-extern int IconDown ();
-extern name_list **AddIconRegion();
-extern CreateIconWindow();
-extern void SchrinkIconTitle ();
-extern void ExpandIconTitle ();
-extern void ReshapeIcon ();
-extern int GetIconOffset ();
-extern Bool AnimateIcons ();
+extern int IconUp (TwmWindow *tmp_win);
+extern void IconDown (TwmWindow *tmp_win);
+extern name_list **AddIconRegion(char *geom, int grav1, int grav2,
+				 int stepx, int stepy,
+				 char *ijust, char *just, char *align);
+extern int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y);
+extern void SchrinkIconTitle (TwmWindow *tmp_win);
+extern void ExpandIconTitle (TwmWindow *tmp_win);
+extern void ReshapeIcon (Icon *icon);
+extern int GetIconOffset (Icon *icon);
+extern Bool AnimateIcons (ScreenInfo *scr, Icon *icon);
 
 #endif /* ICONS_H */

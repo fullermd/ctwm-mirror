@@ -72,8 +72,9 @@
 #include "util.h"
 #include "gram.h"
 #include "screen.h"
+#include "gc.h"
 
-extern int twmrc_error_prefix();
+extern void twmrc_error_prefix(void);
 
 /***********************************************************************
  *
@@ -84,8 +85,7 @@ extern int twmrc_error_prefix();
  ***********************************************************************
  */
 
-void
-CreateGCs()
+void CreateGCs(void)
 {
     static ScreenInfo *prevScr = NULL;
     XGCValues	    gcv;

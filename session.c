@@ -124,12 +124,12 @@
 #endif /* PATH_MAX */
 
 #include <X11/Xlib.h>
-#include <X11/SM/SMlib.h>
 #include <X11/Xatom.h>
 #include <stdio.h>
 #include "twm.h"
 #include "icons.h"
 #include "screen.h"
+#include "session.h"
 
 SmcConn smcConn = NULL;
 XtInputId iceInputId;
@@ -143,9 +143,7 @@ Bool sent_save_done = 0;
 
 /*===[ Get Client SM_CLIENT_ID ]=============================================*/
 
-char *
-GetClientID (window)
-Window window;
+char *GetClientID (Window window)
 /* This function returns the value of the session manager client ID property
  * given a valid window handle. If no such property exists on a window then
  * null is returned 
@@ -157,7 +155,6 @@ Window window;
     Atom actual_type;
     int actual_format;
     unsigned long nitems;
-    unsigned long nbytes;
     unsigned long bytes_after;
     unsigned char *prop = NULL;
 
@@ -187,9 +184,7 @@ Window window;
 
 /*===[ Get Window Role ]=====================================================*/
 
-char *
-GetWindowRole (window)
-Window window;
+char *GetWindowRole (Window window)
 /* this function returns the WM_WINDOW_ROLE property of a window
  */
 {
@@ -206,10 +201,7 @@ Window window;
 
 /*===[ Various file write procedures ]=======================================*/
 
-int
-write_byte (file, b)
-FILE		*file;
-unsigned char   b;
+static int write_byte (FILE *file, unsigned char b)
 {
     if (fwrite ((char *) &b, 1, 1, file) != 1)
 	return 0;
@@ -218,10 +210,7 @@ unsigned char   b;
 
 /*---------------------------------------------------------------------------*/
 
-int
-write_ushort (file, s)
-FILE		*file;
-unsigned short	s;
+static int write_ushort (FILE *file, unsigned short s)
 {
     unsigned char   file_short[2];
 
@@ -234,10 +223,7 @@ unsigned short	s;
 
 /*---------------------------------------------------------------------------*/
 
-int
-write_short (file, s)
-FILE	*file;
-short	s;
+static int write_short (FILE *file, short s)
 {
     unsigned char   file_short[2];
 
@@ -253,10 +239,7 @@ short	s;
  *                            integer.
  */
 
-int
-write_int (file, i)
-FILE	*file;
-int	i;
+static int write_int (FILE *file, int i)
 {
     unsigned char   file_int[4];
 
@@ -271,10 +254,7 @@ int	i;
 
 /*---------------------------------------------------------------------------*/
 
-int
-write_counted_string (file, string)
-FILE	*file;
-char	*string;
+static int write_counted_string (FILE *file, char *string)
 {
     if (string)
     {
@@ -296,10 +276,7 @@ char	*string;
 
 /*===[ various file read procedures ]========================================*/
 
-int
-read_byte (file, bp)
-FILE		*file;
-unsigned char	*bp;
+static int read_byte (FILE *file, unsigned char *bp)
 {
     if (fread ((char *) bp, 1, 1, file) != 1)
 	return 0;
@@ -308,10 +285,7 @@ unsigned char	*bp;
 
 /*---------------------------------------------------------------------------*/
 
-int
-read_ushort (file, shortp)
-FILE		*file;
-unsigned short	*shortp;
+static int read_ushort (FILE *file, unsigned short *shortp)
 {
     unsigned char   file_short[2];
 
@@ -323,10 +297,7 @@ unsigned short	*shortp;
 
 /*---------------------------------------------------------------------------*/
 
-int
-read_short (file, shortp)
-FILE	*file;
-short	*shortp;
+static int read_short (FILE *file, short *shortp)
 {
     unsigned char   file_short[2];
 
@@ -341,10 +312,7 @@ short	*shortp;
  *                            integer.
  */
 
-int
-read_int (file, intp)
-FILE	*file;
-int	*intp;
+static int read_int (FILE *file, int *intp)
 {
     unsigned char   file_int[4];
 
@@ -359,10 +327,7 @@ int	*intp;
 
 /*---------------------------------------------------------------------------*/
 
-int
-read_counted_string (file, stringp)
-FILE	*file;
-char	**stringp;
+static int read_counted_string (FILE *file, char **stringp)
 {
     unsigned char  len;
     char	   *data;
@@ -372,13 +337,13 @@ char	**stringp;
     if (len == 0) {
 	data = 0;
     } else {
-    	data = malloc ((unsigned) len + 1);
-    	if (!data)
+	data = malloc ((unsigned) len + 1);
+	if (!data)
 	    return 0;
-    	if (fread (data, (int) sizeof (char), (int) len, file) != len) {
+	if (fread (data, (int) sizeof (char), (int) len, file) != len) {
 	    free (data);
 	    return 0;
-    	}
+	}
 	data[len] = '\0';
     }
     *stringp = data;
@@ -434,12 +399,8 @@ char	**stringp;
 
 /*===[ Write Window Config Entry to file ]===================================*/
 
-int
-WriteWinConfigEntry (configFile, theWindow, clientId, windowRole)
-FILE *configFile;
-TwmWindow *theWindow;
-char *clientId;
-char *windowRole;
+int WriteWinConfigEntry (FILE *configFile, TwmWindow *theWindow,
+			 char *clientId, char *windowRole)
 /* this function writes a window configuration entry of a given window to
  * the given configuration file
  */
@@ -561,11 +522,8 @@ char *windowRole;
 
 /*===[ Read Window Configuration Entry ]=====================================*/
 
-int
-ReadWinConfigEntry (configFile, version, pentry)
-FILE *configFile;
-unsigned short version;
-TWMWinConfigEntry **pentry;
+int ReadWinConfigEntry (FILE *configFile, unsigned short version,
+			TWMWinConfigEntry **pentry)
 /* this function reads the next window configuration entry from the given file
  * else it returns FALSE if none exists or there is a problem
  */
@@ -707,9 +665,7 @@ give_up:
 
 /*===[ Read In Win Config File ]=============================================*/
 
-void
-ReadWinConfigFile (filename)
-char *filename;
+void ReadWinConfigFile (char *filename)
 /* this function reads the window configuration file and stores the information
  * in a data structure which is returned
  */
@@ -748,21 +704,13 @@ char *filename;
  *                            restored occupation of the window 
  */
 
-int
-GetWindowConfig (theWindow, x, y, width, height,
-    iconified, icon_info_present, icon_x, icon_y,
-    width_ever_changed_by_user, height_ever_changed_by_user, occupation)
-
-TwmWindow *theWindow;
-short *x, *y;
-unsigned short *width, *height;
-Bool *iconified;
-Bool *icon_info_present;
-short *icon_x, *icon_y;
-Bool *width_ever_changed_by_user;
-Bool *height_ever_changed_by_user;
-int *occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
-
+int GetWindowConfig (TwmWindow *theWindow, short *x, short *y,
+		     unsigned short *width, unsigned short *height,
+		     Bool *iconified, Bool *icon_info_present,
+		     short *icon_x, short *icon_y,
+		     Bool *width_ever_changed_by_user,
+		     Bool *height_ever_changed_by_user,
+		     int *occupation) /* <== [ Matthew McNeill Feb 1997 ] == */
 /* This function attempts to extract all the relevant information from the 
  * given window and return values via the rest of the parameters to the
  * function
@@ -812,10 +760,10 @@ int *occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
 		 */
 
 		if (strcmp (theWindow->class.res_name,
-		        ptr->class.res_name) == 0 &&
+			ptr->class.res_name) == 0 &&
 		    strcmp (theWindow->class.res_class,
 			ptr->class.res_class) == 0 &&
-	    	   (ptr->wm_name == NULL ||
+		   (ptr->wm_name == NULL ||
 		    strcmp (theWindow->name, ptr->wm_name) == 0))
 		{
 		    if (clientId)
@@ -838,7 +786,7 @@ int *occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
 			int wm_command_count = 0, i;
 
 			XGetCommand (dpy, theWindow->w,
-		            &wm_command, &wm_command_count);
+			    &wm_command, &wm_command_count);
 
 			if (wm_command_count == ptr->wm_command_count)
 			{
@@ -894,10 +842,7 @@ int *occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
 
 /*===[ Unique Filename Generator ]===========================================*/
 
-static char *
-unique_filename (path, prefix)
-char *path;
-char *prefix;
+static char *unique_filename (char *path, char *prefix)
 /* this function attempts to allocate a temporary filename to store the 
  * information of the windows
  */
@@ -928,10 +873,7 @@ char *prefix;
 #  define PATH_MAX 1023
 #endif
 
-void
-SaveYourselfPhase2CB (smcConn, clientData)
-SmcConn smcConn;
-SmPointer clientData;
+void SaveYourselfPhase2CB (SmcConn smcConn, SmPointer clientData)
 /* this is where all the work is done in saving the state of the windows.
  * it is not done in Phase One because phase one is used for the other clients
  * to make sure that all the property information on their windows is correct
@@ -950,7 +892,6 @@ SmPointer clientData;
     SmPropValue prop1val, prop2val, prop3val;
     char discardCommand[PATH_MAX + 4];
     int numVals, i;
-    char yes = 1;
     static int first_time = 1;
 
     if (first_time)
@@ -1110,14 +1051,8 @@ SmPointer clientData;
 
 /*===[ Save Yourself SM CallBack ]===========================================*/
 
-void
-SaveYourselfCB (smcConn, clientData, saveType, shutdown, interactStyle, fast)
-SmcConn smcConn;
-SmPointer clientData;
-int saveType;
-Bool shutdown;
-int interactStyle;
-Bool fast;
+void SaveYourselfCB (SmcConn smcConn, SmPointer clientData,
+		     int saveType, Bool shutdown, int interactStyle, Bool fast)
 /* this procedure is called by the session manager when requesting the 
  * window manager to save its status, ie all the window configurations 
  */
@@ -1133,25 +1068,19 @@ Bool fast;
 
 /*===[ Die SM Call Back ]====================================================*/
 
-void
-DieCB (smcConn, clientData)
-SmcConn smcConn;
-SmPointer clientData;
+void DieCB (SmcConn smcConn, SmPointer clientData)
 /* this procedure is called by the session manager when requesting that the 
  * application shut istelf down
  */
 {
     SmcCloseConnection (smcConn, 0, NULL);
     XtRemoveInput (iceInputId);
-    Done();
+    Done(0);
 }
 
 /*===[ Save Complete SM Call Back ]==========================================*/
 
-void
-SaveCompleteCB (smcConn, clientData)
-SmcConn smcConn;
-SmPointer clientData;
+void SaveCompleteCB (SmcConn smcConn, SmPointer clientData)
 /* This function is called to say that the save has been completed and that
  * the program can continue its operation
  */
@@ -1161,10 +1090,7 @@ SmPointer clientData;
 
 /*===[ Shutdown Cancelled SM Call Back ]=====================================*/
 
-void
-ShutdownCancelledCB (smcConn, clientData)
-SmcConn smcConn;
-SmPointer clientData;
+void ShutdownCancelledCB (SmcConn smcConn, SmPointer clientData)
 
 {
     if (!sent_save_done)
@@ -1176,11 +1102,7 @@ SmPointer clientData;
 
 /*===[ Process ICE Message ]=================================================*/
 
-void
-ProcessIceMsgProc (client_data, source, id)
-XtPointer	client_data;
-int 		*source;
-XtInputId	*id;
+void ProcessIceMsgProc (XtPointer client_data, int *source, XtInputId *id)
 
 {
     IceConn	ice_conn = (IceConn) client_data;
@@ -1190,9 +1112,7 @@ XtInputId	*id;
 
 /*===[ Connect To Session Manager ]==========================================*/
 
-void
-ConnectToSessionManager (previous_id)
-char *previous_id;
+void ConnectToSessionManager (char *previous_id)
 /* This procedure attempts to connect to the session manager and setup the
  * interclent exchange via the Call Backs
  */

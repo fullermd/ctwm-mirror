@@ -57,7 +57,7 @@
 #ifndef _ICONMGR_
 #define _ICONMGR_
 
-typedef struct WList
+struct WList
 {
     struct WList *next;
     struct WList *prev;
@@ -75,9 +75,9 @@ typedef struct WList
     unsigned top, bottom;
     short active;
     short down;
-} WList;
+};
 
-typedef struct IconMgr
+struct IconMgr
 {
     struct IconMgr *next;		/* pointer to the next icon manager */
     struct IconMgr *prev;		/* pointer to the previous icon mgr */
@@ -96,26 +96,27 @@ typedef struct IconMgr
     int x, y, width, height;
     int columns, cur_rows, cur_columns;
     int count;
-} IconMgr;
+};
 
 extern int iconmgr_textx;
 extern WList *DownIconManager;
 
-extern void CreateIconManagers();
-extern IconMgr *AllocateIconManager();
-extern void MoveIconManager();
-extern void MoveMappedIconManager();
-extern void JumpIconManager();
-extern WList *AddIconManager();
-extern void InsertInIconManager();
-extern void RemoveFromIconManager();
-extern void RemoveIconManager();
-extern void CurrentIconManagerEntry();
-extern void ActiveIconManager();
-extern void NotActiveIconManager();
-extern void DrawIconManagerBorder();
-extern void SortIconManager();
-extern void PackIconManager();
+extern void CreateIconManagers(void);
+extern IconMgr *AllocateIconManager(char *name, char *geom, char *icon_name,
+				    int columns);
+extern void MoveIconManager(int dir);
+extern void MoveMappedIconManager(int dir);
+extern void JumpIconManager(register int dir);
+extern WList *AddIconManager(TwmWindow *tmp_win);
+extern void InsertInIconManager(IconMgr *ip, WList *tmp, TwmWindow *tmp_win);
+extern void RemoveFromIconManager(IconMgr *ip, WList *tmp);
+extern void RemoveIconManager(TwmWindow *tmp_win);
+extern void CurrentIconManagerEntry(WList *current);
+extern void ActiveIconManager(WList *active);
+extern void NotActiveIconManager(WList *active);
+extern void DrawIconManagerBorder(WList *tmp, int fill);
+extern void SortIconManager(IconMgr *ip);
+extern void PackIconManager(IconMgr *ip);
 
 
 #endif /* _ICONMGR_ */

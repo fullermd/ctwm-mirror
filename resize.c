@@ -68,6 +68,7 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <ctype.h>
 #include "twm.h"
 #include "parse.h"
 #include "events.h"
@@ -104,9 +105,7 @@ static unsigned int resizeGrabMask;
 extern Cursor	TopRightCursor, TopLeftCursor, BottomRightCursor, BottomLeftCursor,
 		LeftCursor, RightCursor, TopCursor, BottomCursor;
 
-static void do_auto_clamp (tmp_win, evp)
-    TwmWindow *tmp_win;
-    XEvent *evp;
+static void do_auto_clamp (TwmWindow *tmp_win, XEvent *evp)
 {
     Window junkRoot;
     int x, y, h, v, junkbw;
@@ -162,11 +161,8 @@ static void do_auto_clamp (tmp_win, evp)
  ***********************************************************************
  */
 
-void
-StartResize(evp, tmp_win, fromtitlebar, from3dborder)
-XEvent *evp;
-TwmWindow *tmp_win;
-Bool fromtitlebar, from3dborder;
+void StartResize(XEvent *evp, TwmWindow *tmp_win,
+		 Bool fromtitlebar, Bool from3dborder)
 {
     Window      junkRoot, grabwin;
     unsigned int junkbw, junkDepth;
@@ -216,10 +212,7 @@ Bool fromtitlebar, from3dborder;
 
 
 
-void
-MenuStartResize(tmp_win, x, y, w, h)
-TwmWindow *tmp_win;
-int x, y, w, h;
+void MenuStartResize(TwmWindow *tmp_win, int x, int y, int w, int h)
 {
     if (! Scr->OpaqueResize) XGrabServer(dpy);
     resizeGrabMask = ButtonPressMask | ButtonMotionMask | PointerMotionMask;
@@ -260,10 +253,7 @@ int x, y, w, h;
  ***********************************************************************
  */
 
-void
-AddStartResize(tmp_win, x, y, w, h)
-TwmWindow *tmp_win;
-int x, y, w, h;
+void AddStartResize(TwmWindow *tmp_win, int x, int y, int w, int h)
 {
     XGrabServer(dpy);
     resizeGrabMask = ButtonReleaseMask | ButtonMotionMask | PointerMotionHintMask;
@@ -290,11 +280,7 @@ int x, y, w, h;
 
 
 
-void
-MenuDoResize(x_root, y_root, tmp_win)
-int x_root;
-int y_root;
-TwmWindow *tmp_win;
+void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win)
 {
     int action;
     Cursor cursor;
@@ -428,11 +414,7 @@ TwmWindow *tmp_win;
  ***********************************************************************
  */
 
-void
-DoResize(x_root, y_root, tmp_win)
-int x_root;
-int y_root;
-TwmWindow *tmp_win;
+void DoResize(int x_root, int y_root, TwmWindow *tmp_win)
 {
     int action;
     Cursor cursor;
@@ -569,11 +551,7 @@ TwmWindow *tmp_win;
  ***********************************************************************
  */
 
-void
-DisplaySize(tmp_win, width, height)
-TwmWindow *tmp_win;
-int width;
-int height;
+void DisplaySize(TwmWindow *tmp_win, int width, int height)
 {
     char str[100];
     int dwidth;
@@ -639,8 +617,7 @@ int height;
  ***********************************************************************
  */
 
-void
-EndResize()
+void EndResize(void)
 {
     TwmWindow *tmp_win;
 
@@ -682,9 +659,7 @@ EndResize()
     ResizeWindow = None;
 }
 
-void
-MenuEndResize(tmp_win)
-TwmWindow *tmp_win;
+void MenuEndResize(TwmWindow *tmp_win)
 {
     MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
     XUnmapWindow(dpy, Scr->SizeWindow);
@@ -706,9 +681,7 @@ TwmWindow *tmp_win;
  ***********************************************************************
  */
 
-void
-AddEndResize(tmp_win)
-TwmWindow *tmp_win;
+void AddEndResize(TwmWindow *tmp_win)
 {
 
 #ifdef DEBUG
@@ -733,9 +706,7 @@ TwmWindow *tmp_win;
  * 
  ***********************************************************************/
 
-ConstrainSize (tmp_win, widthp, heightp)
-    TwmWindow *tmp_win;
-    int *widthp, *heightp;
+void ConstrainSize (TwmWindow *tmp_win, int *widthp, int *heightp)
 {
 #define makemult(a,b) ((b==1) ? (a) : (((int)((a)/(b))) * (b)) )
 #define _min(a,b) (((a) < (b)) ? (a) : (b))
@@ -885,17 +856,13 @@ ConstrainSize (tmp_win, widthp, heightp)
  ***********************************************************************
  */
 
-void SetupWindow (tmp_win, x, y, w, h, bw)
-    TwmWindow *tmp_win;
-    int x, y, w, h, bw;
+void SetupWindow (TwmWindow *tmp_win, int x, int y, int w, int h, int bw)
 {
     SetupFrame (tmp_win, x, y, w, h, bw, False);
 }
 
-void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
-    TwmWindow *tmp_win;
-    int x, y, w, h, bw;
-    Bool sendEvent;			/* whether or not to force a send */
+void SetupFrame (TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
+		 Bool sendEvent)	/* whether or not to force a send */
 {
     XEvent client_event;
     XWindowChanges frame_wc, xwc;
@@ -1111,10 +1078,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
  **********************************************************************
  */
 
-void
-fullzoom(tmp_win,flag)
-TwmWindow *tmp_win;
-int flag;
+void fullzoom(TwmWindow *tmp_win, int flag)
 {
     Window      junkRoot;
     unsigned int junkbw, junkDepth;
@@ -1247,8 +1211,7 @@ int flag;
    }
 }
 
-void savegeometry (tmp_win)
-TwmWindow *tmp_win;
+void savegeometry (TwmWindow *tmp_win)
 {
     if (!tmp_win) return;
     tmp_win->savegeometry.x      = tmp_win->frame_x;
@@ -1257,8 +1220,7 @@ TwmWindow *tmp_win;
     tmp_win->savegeometry.height = tmp_win->frame_height;
 }
 
-void restoregeometry (tmp_win)
-TwmWindow *tmp_win;
+void restoregeometry (TwmWindow *tmp_win)
 {
     int x, y, w, h;
 
@@ -1271,8 +1233,7 @@ TwmWindow *tmp_win;
     SetupWindow (tmp_win, x, y, w, h, -1);
 }
 
-SetFrameShape (tmp)
-    TwmWindow *tmp;
+void SetFrameShape (TwmWindow *tmp)
 {
     /*
      * see if the titlebar needs to move
@@ -1350,9 +1311,7 @@ SetFrameShape (tmp)
     }
 }
 
-ChangeSize (in_string, tmp_win)
-     char *in_string;
-     TwmWindow *tmp_win;
+void ChangeSize (char *in_string, TwmWindow *tmp_win)
 {
   int i=0, j=0, change=0, size=0;
   char tmp_string[10], tmp_string2[10];

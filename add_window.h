@@ -61,38 +61,49 @@
  *
  **********************************************************************/
 
+#include "twm.h"
+#include "iconmgr.h"
+
 #ifndef _ADD_WINDOW_
 #define _ADD_WINDOW_
 
 extern char NoName[];
 extern int  resizeWhenAdd;
 
-extern int GetGravityOffsets ();
-extern TwmWindow *AddWindow();
-extern int MappedNotOverride();
-extern AddDefaultBindings ();
-extern void GrabButtons();
-extern void GrabKeys();
+extern void GetGravityOffsets (TwmWindow *tmp, int *xp, int *yp);
+extern TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp);
+extern int MappedNotOverride(Window w);
+extern void AddDefaultBindings (void);
+extern void GrabButtons(TwmWindow *tmp_win);
+extern void GrabKeys(TwmWindow *tmp_win);
+#if 0 /* Not implemented! */
 extern void UngrabButtons();
 extern void UngrabKeys();
-extern void GetWindowSizeHints();
-extern int AnimateButton ();
-extern int AnimateHighlight ();
-extern void CreateWindowRegions ();
-extern Bool PlaceWindowInRegion ();
-extern void RemoveWindowFromRegion ();
-extern name_list **AddWindowRegion ();
+#endif
+extern void GetWindowSizeHints(TwmWindow *tmp_win);
+extern void AnimateButton (TBWindow *tbw);
+extern void AnimateHighlight (TwmWindow *t);
+extern void CreateWindowRegions (void);
+extern Bool PlaceWindowInRegion (TwmWindow *tmp_win,
+				 int *final_x, int *final_y);
+extern void RemoveWindowFromRegion (TwmWindow	*tmp_win);
+extern name_list **AddWindowRegion (char *geom, int  grav1, int grav2);
 extern int AddingX;	
 extern int AddingY;
 extern int AddingW;
 extern int AddingH;
 
 #ifndef NO_LOCALE
-extern char *GetWMPropertyString();
+extern char *GetWMPropertyString(Window w, Atom prop);
 #endif /* NO_LOCALE */
 
-extern SetHighlightPixmap ();
-extern FetchWmColormapWindows ();
-extern FetchWmProtocols ();
+extern void SetHighlightPixmap (char *filename);
+extern int FetchWmColormapWindows (TwmWindow *tmp);
+extern void FetchWmProtocols (TwmWindow *tmp);
+
+extern TwmColormap *CreateTwmColormap(Colormap c);
+extern ColormapWindow *CreateColormapWindow(Window w,
+					    Bool creating_parent,
+					    Bool property_window);
 #endif /* _ADD_WINDOW_ */
 

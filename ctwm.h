@@ -24,10 +24,12 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
-Bool	CtwmIsRunning			();
-char	**CtwmListWorkspaces		();
-char	*CtwmCurrentWorkspace		();
-int	CtwmChangeWorkspace		();
-char	**CtwmCurrentOccupation		();
-int	CtwmSetOccupation		();
-int	CtwmAddToCurrentWorkspace	();
+Bool	CtwmIsRunning			(Display *dpy, int scrnum);
+char	**CtwmListWorkspaces		(Display *dpy, int scrnum);
+char	*CtwmCurrentWorkspace		(Display *dpy, int scrnum);
+int	CtwmChangeWorkspace		(Display *dpy, int scrnum,
+					 char	*workspace);
+char	**CtwmCurrentOccupation		(Display *dpy, Window window);
+int	CtwmSetOccupation		(Display *dpy, Window	window,
+					 char **occupation);
+int	CtwmAddToCurrentWorkspace	(Display *dpy, Window window);

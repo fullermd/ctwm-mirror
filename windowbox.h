@@ -35,12 +35,18 @@
  *
  **********************************************************************/
 
+#include "types.h"
+
 #ifndef _WINDOW_BOX_
 #define _WINDOW_BOX_
 
-extern name_list **addWindowBox ();
-extern void createWindowBoxes ();
-extern WindowBox *findWindowBox ();
+extern name_list **addWindowBox (char *boxname, char *geometry);
+extern void createWindowBoxes (void);
+extern WindowBox *findWindowBox (TwmWindow *twmwin);
+
+extern void ConstrainedToWinBox (TwmWindow *twmwin,
+				 int x, int y, int *nx, int *ny);
+extern void fittocontent (TwmWindow *twmwin);
 
 #endif /* _WINDOW_BOX_ */
 

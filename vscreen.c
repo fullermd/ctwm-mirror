@@ -27,6 +27,7 @@
 #include <X11/Xatom.h>
 #include <stdio.h>
 #include "twm.h"
+#include "cursor.h"
 #include "screen.h"
 
 void InitVirtualScreens (ScreenInfo *scr) {
@@ -36,6 +37,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
   name_list *nptr;
   Atom _XA_WM_VIRTUALROOT = XInternAtom (dpy, "WM_VIRTUALROOT", False);
   Bool userealroot = True;
+  extern void twmrc_error_prefix(void);
 
   NewFontCursor (&cursor, "X_cursor");
 
@@ -78,7 +80,6 @@ void InitVirtualScreens (ScreenInfo *scr) {
     virtualScreen *vs;
     char *geometry = (char*) nptr->name;
     int x, y, w, h;
-    unsigned int mask = XParseGeometry (geometry, &x, &y, &w, &h);
 
     if ((x < 0) || (y < 0) || (w > scr->rootw) || (h > scr->rooth)) {
       twmrc_error_prefix ();
@@ -110,8 +111,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
   }
 }
 
-virtualScreen *getVScreenOf (x, y)
-int x, y;
+virtualScreen *getVScreenOf (int x, int y)
 {
   virtualScreen *vs;
   for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {

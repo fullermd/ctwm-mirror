@@ -22,7 +22,7 @@ Atom _XA_WIN_STATE;
 static Atom _XA_WIN_CLIENT_LIST;
 
 
-void InitGnome () {
+void InitGnome (void) {
   int curws = 1;
   virtualScreen *vs;
   Atom _XA_WIN_SUPPORTING_WM_CHECK, _XA_WIN_PROTOCOLS,

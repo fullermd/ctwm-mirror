@@ -26,6 +26,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+#include <stdlib.h>
+#include <string.h>
 #include "ctwm.h"
 
 Atom _XA_WM_OCCUPATION;
@@ -35,9 +37,7 @@ Atom _XA_WM_WORKSPACESLIST;
 /* Note that this doesn't assure that ctwm is really running,
    i should set up a communication via flipping a property */
 
-Bool CtwmIsRunning (dpy, scrnum)
-Display	*dpy;
-int	scrnum;
+Bool CtwmIsRunning (Display *dpy, int scrnum)
 {
     unsigned char	*prop;
     unsigned long	bytesafter;
@@ -54,9 +54,7 @@ int	scrnum;
     return (True);
 }
 
-char **CtwmListWorkspaces (dpy, scrnum)
-Display	*dpy;
-int	scrnum;
+char **CtwmListWorkspaces (Display *dpy, int scrnum)
 {
     unsigned char	*prop, *p;
     unsigned long	bytesafter;
@@ -96,9 +94,7 @@ int	scrnum;
     return (ret);
 }
 
-char *CtwmCurrentWorkspace (dpy, scrnum)
-Display	*dpy;
-int	scrnum;
+char *CtwmCurrentWorkspace (Display *dpy, int scrnum)
 {
     unsigned char	*prop;
     unsigned long	bytesafter;
@@ -116,10 +112,7 @@ int	scrnum;
     return ((char*) prop);
 }
 
-int CtwmChangeWorkspace (dpy, scrnum, workspace)
-Display	*dpy;
-int	scrnum;
-char	*workspace;
+int CtwmChangeWorkspace (Display *dpy, int scrnum, char	*workspace)
 {
     _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", True);
     if (_XA_WM_CURRENTWORKSPACE == None) return (0);
@@ -130,9 +123,7 @@ char	*workspace;
     return (1);
 }
 
-char **CtwmCurrentOccupation (dpy, window)
-Display	*dpy;
-Window  window;
+char **CtwmCurrentOccupation (Display *dpy, Window window)
 {
     unsigned char	*prop, *p;
     unsigned long	bytesafter;
@@ -172,10 +163,7 @@ Window  window;
     return (ret);
 }
 
-int CtwmSetOccupation (dpy, window, occupation)
-Display	*dpy;
-Window	window;
-char	**occupation;
+int CtwmSetOccupation (Display *dpy, Window window, char **occupation)
 {
     int		len;
     char	**occ;
@@ -204,9 +192,7 @@ char	**occupation;
     return (1);
 }
 
-int CtwmAddToCurrentWorkspace (dpy, window)
-Display	*dpy;
-Window  window;
+int CtwmAddToCurrentWorkspace (Display *dpy, Window window)
 {
     unsigned char	*prop;
     unsigned long	bytesafter;

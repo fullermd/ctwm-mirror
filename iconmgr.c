@@ -106,7 +106,7 @@ int iconifybox_height = siconify_height;
  ***********************************************************************
  */
 
-void CreateIconManagers()
+void CreateIconManagers(void)
 {
     IconMgr *p, *q;
     int mask;
@@ -169,7 +169,7 @@ void CreateIconManagers()
 
 	XSetStandardProperties(dpy, p->w, str, icon_name, None, NULL, 0, NULL);
 
-	//Scr->workSpaceMgr.activeWSPC = ws;
+	/* Scr->workSpaceMgr.activeWSPC = ws; */
 	wmhints.initial_state = NormalState;
 	wmhints.input         = True;
 	wmhints.flags         = InputHint | StateHint;
@@ -226,11 +226,8 @@ void CreateIconManagers()
  ***********************************************************************
  */
 
-IconMgr *AllocateIconManager(name, icon_name, geom, columns)
-    char *name;
-    char *geom;
-    char *icon_name;
-    int columns;
+IconMgr *AllocateIconManager(char *name, char *icon_name, char *geom,
+			     int columns)
 {
     IconMgr *p;
 
@@ -294,8 +291,7 @@ IconMgr *AllocateIconManager(name, icon_name, geom, columns)
  ***********************************************************************
  */
 
-void MoveIconManager(dir)
-    int dir;
+void MoveIconManager(int dir)
 {
     IconMgr *ip;
     WList *tmp = NULL;
@@ -421,8 +417,7 @@ void MoveIconManager(dir)
  ***********************************************************************
  */
 
-void MoveMappedIconManager(dir)
-    int dir;
+void MoveMappedIconManager(int dir)
 {
     IconMgr *ip;
     WList *tmp = NULL;
@@ -475,8 +470,6 @@ void MoveMappedIconManager(dir)
 	XWarpPointer(dpy, None, tmp->icon, 0,0,0,0, 5, 5);
     } else {
 	if (tmp->twm->title_height) {
-	    int tbx = Scr->TBInfo.titlex;
-	    int x = tmp->twm->highlightxr;
 	    XWarpPointer (dpy, None, tmp->twm->title_w, 0, 0, 0, 0,
 			  tmp->twm->title_width / 2, 
 			  Scr->TitleHeight / 4);
@@ -500,8 +493,7 @@ void MoveMappedIconManager(dir)
  ***********************************************************************
  */
 
-void JumpIconManager(dir)
-    register int dir;
+void JumpIconManager(register int dir)
 {
     IconMgr *ip, *tmp_ip = NULL;
     int got_it = FALSE;
@@ -569,8 +561,7 @@ void JumpIconManager(dir)
  ***********************************************************************
  */
 
-WList *AddIconManager(tmp_win)
-    TwmWindow *tmp_win;
+WList *AddIconManager(TwmWindow *tmp_win)
 {
     WList *tmp, *old;
     int h, offs;
@@ -589,11 +580,12 @@ WList *AddIconManager(tmp_win)
 	!LookInList(Scr->IconMgrShow, tmp_win->full_name, &tmp_win->class))
 	return NULL;
     if ((ip = (IconMgr *)LookInList(Scr->IconMgrs, tmp_win->full_name,
-	    &tmp_win->class)) == NULL)
+	    &tmp_win->class)) == NULL) {
 	if (Scr->workSpaceManagerActive)
 	    ip = Scr->workSpaceMgr.workSpaceList->iconmgr;
 	else
 	    ip = Scr->iconmgr;
+    }
 
   tmp = NULL;
   old = tmp_win->list;
@@ -722,14 +714,12 @@ WList *AddIconManager(tmp_win)
  ***********************************************************************
  */
 
-void InsertInIconManager(ip, tmp, tmp_win)
-    IconMgr *ip;
-    WList *tmp;
-    TwmWindow *tmp_win;
+void InsertInIconManager(IconMgr *ip, WList *tmp, TwmWindow *tmp_win)
 {
     WList *tmp1;
     int added;
-    int (*compar)() = (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
+    int (*compar)(const char *s1, const char *s2)
+      = (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
 
     added = FALSE;
     if (ip->first == NULL)
@@ -766,9 +756,7 @@ void InsertInIconManager(ip, tmp, tmp_win)
     }
 }
 
-void RemoveFromIconManager(ip, tmp)
-    IconMgr *ip;
-    WList *tmp;
+void RemoveFromIconManager(IconMgr *ip, WList *tmp)
 {
     if (tmp->prev == NULL)
 	ip->first = tmp->next;
@@ -796,8 +784,7 @@ void RemoveFromIconManager(ip, tmp)
  ***********************************************************************
  */
 
-void RemoveIconManager(tmp_win)
-    TwmWindow *tmp_win;
+void RemoveIconManager(TwmWindow *tmp_win)
 {
     IconMgr *ip;
     WList *tmp, *tmp1, *save;
@@ -842,14 +829,12 @@ void RemoveIconManager(tmp_win)
   }
 }
 
-void CurrentIconManagerEntry (current)
-WList *current;
+void CurrentIconManagerEntry (WList *current)
 {
     Current = current;
 }
 
-void ActiveIconManager(active)
-    WList *active;
+void ActiveIconManager(WList *active)
 {
     active->active = TRUE;
     Active = active;
@@ -858,16 +843,13 @@ void ActiveIconManager(active)
     DrawIconManagerBorder(active, False);
 }
 
-void NotActiveIconManager(active)
-    WList *active;
+void NotActiveIconManager(WList *active)
 {
     active->active = FALSE;
     DrawIconManagerBorder(active, False);
 }
 
-void DrawIconManagerBorder(tmp, fill)
-    WList *tmp;
-    int fill;
+void DrawIconManagerBorder(WList *tmp, int fill)
 {
     if (Scr->use3Diconmanagers) {
 	if (tmp->active && Scr->Highlight)
@@ -902,12 +884,12 @@ void DrawIconManagerBorder(tmp, fill)
  ***********************************************************************
  */
 
-void SortIconManager(ip)
-    IconMgr *ip;
+void SortIconManager(IconMgr *ip)
 {
     WList *tmp1, *tmp2;
     int done;
-    int (*compar)() = (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
+    int (*compar)(const char *s1, const char *s2)
+      = (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
 
     if (ip == NULL)
 	ip = Active->iconmgr;
@@ -947,8 +929,7 @@ void SortIconManager(ip)
  ***********************************************************************
  */
 
-void PackIconManager(ip)
-    IconMgr *ip;
+void PackIconManager(IconMgr *ip)
 {
     int newwidth, i, row, col, maxcol,  colinc, rowinc, wheight, wwidth;
     int new_x, new_y;

@@ -69,7 +69,7 @@
 #include "parse.h"
 #include "util.h"
 
-extern int twmrc_error_prefix();
+extern void twmrc_error_prefix(void);
 extern Bool AnimationPending;
 extern Bool AnimationActive;
 extern Bool MaybeAnimate;
@@ -78,11 +78,7 @@ extern Bool MaybeAnimate;
 			Scr->SchrinkIconTitles ? w->icon->width : w->icon->w_width)
 #define iconHeight(w)	(w->icon->border_width * 2 + w->icon->w_height)
 
-static
-splitEntry (ie, grav1, grav2, w, h)
-    IconEntry	*ie;
-    int		grav1, grav2;
-    int		w, h;
+static void splitEntry (IconEntry *ie, int grav1, int grav2, int w, int h)
 {
     IconEntry	*new;
     int		save;
@@ -135,15 +131,13 @@ splitEntry (ie, grav1, grav2, w, h)
     }
 }
 
-roundUp (v, multiple)
+static int roundUp (int v, int multiple)
 {
     return ((v + multiple - 1) / multiple) * multiple;
 }
 
-static void PlaceIcon(tmp_win, def_x, def_y, final_x, final_y)
-TwmWindow *tmp_win;
-int def_x, def_y;
-int *final_x, *final_y;
+static void PlaceIcon(TwmWindow *tmp_win, int def_x, int def_y,
+		      int *final_x, int *final_y)
 {
     IconRegion	*ir, *oldir;
     IconEntry	*ie;
@@ -242,10 +236,7 @@ int *final_x, *final_y;
     return;
 }
 
-static IconEntry *
-FindIconEntry (tmp_win, irp)
-    TwmWindow   *tmp_win;
-    IconRegion	**irp;
+static IconEntry *FindIconEntry (TwmWindow *tmp_win, IconRegion **irp)
 {
     IconRegion	*ir;
     IconEntry	*ie;
@@ -261,8 +252,7 @@ FindIconEntry (tmp_win, irp)
     return 0;
 }
 
-IconUp (tmp_win)
-    TwmWindow   *tmp_win;
+int IconUp (TwmWindow *tmp_win)
 {
     int		x, y;
     int		defx, defy;
@@ -303,10 +293,7 @@ IconUp (tmp_win)
     return (0);
 }
 
-static IconEntry *
-prevIconEntry (ie, ir)
-    IconEntry	*ie;
-    IconRegion	*ir;
+static IconEntry *prevIconEntry (IconEntry *ie, IconRegion *ir)
 {
     IconEntry	*ip;
 
@@ -321,9 +308,7 @@ prevIconEntry (ie, ir)
  * regions together
  */
 
-static
-mergeEntries (old, ie)
-    IconEntry	*old, *ie;
+static void mergeEntries (IconEntry *old, IconEntry *ie)
 {
     if (old->y == ie->y) {
 	ie->w = old->w + ie->w;
@@ -336,8 +321,7 @@ mergeEntries (old, ie)
     }
 }
 
-IconDown (tmp_win)
-    TwmWindow   *tmp_win;
+void IconDown (TwmWindow *tmp_win)
 {
     IconEntry	*ie, *ip, *in;
     IconRegion	*ir;
@@ -372,12 +356,10 @@ IconDown (tmp_win)
     }
 }
 
-name_list **
-AddIconRegion(geom, grav1, grav2, stepx, stepy, ijust, just, align)
-char *geom;
-int grav1, grav2;
-int stepx, stepy;
-char *ijust, *just, *align;
+name_list **AddIconRegion(char *geom,
+			  int grav1, int grav2,
+			  int stepx, int stepy,
+			  char *ijust, char *just, char *align)
 {
     IconRegion *ir;
     int mask, tmp;
@@ -469,9 +451,7 @@ FreeIconRegions()
 }
 #endif
 
-CreateIconWindow(tmp_win, def_x, def_y)
-TwmWindow *tmp_win;
-int def_x, def_y;
+int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 {
     unsigned long event_mask;
     unsigned long valuemask;		/* mask for create windows */
@@ -816,8 +796,7 @@ int def_x, def_y;
     return (0);
 }
 
-void SchrinkIconTitle (tmp_win)
-TwmWindow *tmp_win;
+void SchrinkIconTitle (TwmWindow *tmp_win)
 {
     Icon	*icon;
     XRectangle	rect;
@@ -838,8 +817,7 @@ TwmWindow *tmp_win;
 		icon->w_height - icon->height, True);
 }
 
-void ExpandIconTitle (tmp_win)
-TwmWindow *tmp_win;
+void ExpandIconTitle (TwmWindow *tmp_win)
 {
     Icon	*icon;
     XRectangle	rect;
@@ -860,8 +838,7 @@ TwmWindow *tmp_win;
 		icon->w_height - icon->height, True);
 }
 
-void ReshapeIcon (icon)
-Icon *icon;
+void ReshapeIcon (Icon *icon)
 {
     int x;
     XRectangle	rect;
@@ -886,8 +863,7 @@ Icon *icon;
     XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, &rect, 1, ShapeUnion, 0);
 }
 
-int GetIconOffset (icon)
-Icon *icon;
+int GetIconOffset (Icon *icon)
 {
     short justif;
 
@@ -909,9 +885,7 @@ Icon *icon;
     }
 }
 
-Bool AnimateIcons (scr, icon)
-ScreenInfo *scr;
-Icon	   *icon;
+Bool AnimateIcons (ScreenInfo *scr, Icon *icon)
 {
     Image	*image;
     XRectangle	rect;

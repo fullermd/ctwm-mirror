@@ -61,6 +61,10 @@
  *
  ***********************************************************************/
 
+#include <X11/Intrinsic.h>
+#include <X11/Xproto.h>
+#include "types.h"
+
 #ifndef _UTIL_
 #define _UTIL_
 
@@ -68,56 +72,77 @@
 #   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
 #endif
 
-extern void	Zoom();
-extern void	MoveOutline();
-extern Pixmap	GetBitmap(), FindBitmap();
-extern void	GetUnknownIcon();
-extern char 	*ExpandFilename();
-extern char 	*ExpandFilePath();
+extern void	Zoom(Window wf, Window wt);
+extern void	MoveOutline(Window root,
+			    int x, int y, int width, int height,
+			    int bw, int th);
+extern Pixmap	GetBitmap(char *name);
+extern Pixmap	FindBitmap(char *name,
+			   unsigned int *widthp, unsigned int *heightp);
+extern void	GetUnknownIcon(char *name);
+extern char	*ExpandFilename(char *name);
+extern char	*ExpandFilePath(char *path);
+extern char	*ExpandPixmapPath (char *name);
 
-void MaskScreen ();
-int UnmaskScreen ();
-void StartAnimation ();
-void StopAnimation ();
-void SetAnimationSpeed ();
-void ModifyAnimationSpeed ();
-void Animate ();
-void InsertRGBColormap ();
-void RemoveRGBColormap ();
-void LocateStandardColormaps ();
-void GetColor ();
-void GetShadeColors ();
-void GetFont();
-void SetFocusVisualAttributes ();
-void SetFocus ();
-Pixmap Create3DMenuIcon ();
-Pixmap Create3DIconManagerIcon ();
-void Draw3DBorder ();
-void Draw3DCorner ();
-void PaintBorders ();
-void PaintAllDecoration ();
-void PaintTitle ();
-void PaintIcon ();
-void PaintTitleButton ();
-void PaintTitleButtons ();
-void adoptWindow ();
-void DebugTrace ();
-void SetBorderCursor ();
+void MaskScreen (char *file);
+void UnmaskScreen (void);
+void StartAnimation (void);
+void StopAnimation (void);
+void SetAnimationSpeed (int speed);
+void ModifyAnimationSpeed (int incr);
+void Animate (void);
+void TryToAnimate (void);
+void InsertRGBColormap (Atom a, XStandardColormap *maps, int nmaps,
+			Bool replace);
+void RemoveRGBColormap (Atom a);
+void LocateStandardColormaps (void);
+void GetColor (int kind, Pixel *what, char *name);
+void GetShadeColors (ColorPair *cp);
+void GetFont(MyFont *font);
+void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus);
+void SetFocus (TwmWindow *tmp_win, Time time);
+Pixmap CreateMenuIcon(int height, int *widthp, int *heightp);
+Pixmap Create3DMenuIcon (unsigned int height,
+			 unsigned int *widthp, unsigned int *heightp,
+			 ColorPair cp);
+Pixmap Create3DIconManagerIcon (ColorPair cp);
+void Draw3DBorder (Window w,
+		   int x, int y, int width, int height, int bw,
+		   ColorPair cp,
+		   int state, int fill, int forcebw);
+void Draw3DCorner (Window w,
+		   int x, int y, int width, int height, int thick, int bw,
+		   ColorPair cp,
+		   int type);
+void PaintBorders (TwmWindow *tmp_win, Bool focus);
+void PaintAllDecoration (void);
+void PaintTitle (TwmWindow *tmp_win);
+void PaintIcon (TwmWindow *tmp_win);
+void PaintTitleButton (TwmWindow *tmp_win, TBWindow  *tbw);
+void PaintTitleButtons (TwmWindow *tmp_win);
+void adoptWindow (void);
+void DebugTrace (char *file);
+void SetBorderCursor (TwmWindow *tmp_win, int x, int y);
+#if 0 /* These aren't implemented anywhere! */
 void ChangeFocusGrab ();
 Cursor CalculateBorderCursor ();
+#endif
 
 extern int HotX, HotY;
 
-typedef struct _Image {
+struct _Image {
     Pixmap pixmap;
     Pixmap mask;
     int    width;
     int    height;
     struct _Image *next;
-} Image;
+};
 
-extern Image *GetImage ();
+extern Image *GetImage (char *name, ColorPair cp);
 
-extern void ConstrainByBorders ();
+extern void ConstrainByBorders1 (int *left, int width, int *top, int height);
+extern void ConstrainByBorders (TwmWindow *twmwin,
+				int *left, int width,
+				int *top, int height);
 
 #endif /* _UTIL_ */

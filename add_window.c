@@ -95,6 +95,7 @@
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
+#include "session.h"
 
 #define gray_width 2
 #define gray_height 2
@@ -110,12 +111,17 @@ int AddingH;
 
 static int PlaceX = 50;
 static int PlaceY = 50;
-static void CreateWindowTitlebarButtons();
+static void CreateWindowTitlebarButtons(TwmWindow *tmp_win);
 
-static void		splitWindowRegionEntry ();
-static WindowEntry	*findWindowEntry ();
-static WindowEntry	*prevWindowEntry ();
-static void		mergeWindowEntries ();
+static void		splitWindowRegionEntry (WindowEntry	*we,
+						int grav1, int grav2,
+						int w, int h);
+static WindowEntry	*findWindowEntry (WorkSpace    *wl,
+					  TwmWindow    *tmp_win,
+					  WindowRegion **wrp);
+static WindowEntry	*prevWindowEntry (WindowEntry	*we,
+					  WindowRegion	*wr);
+static void		mergeWindowEntries (WindowEntry	*old, WindowEntry *we);
 
 char NoName[] = "Untitled"; /* name if no name is specified */
 int  resizeWhenAdd;
@@ -137,9 +143,8 @@ extern int captive;
  ************************************************************************
  */
 
-GetGravityOffsets (tmp, xp, yp)
-    TwmWindow *tmp;			/* window from which to get gravity */
-    int *xp, *yp;			/* return values */
+void GetGravityOffsets (TwmWindow *tmp,	/* window from which to get gravity */
+			int *xp, int *yp)	/* return values */
 {
     static struct _gravity_offset {
 	int x, y;
@@ -191,11 +196,7 @@ GetGravityOffsets (tmp, xp, yp)
  ***********************************************************************
  */
 
-TwmWindow *
-AddWindow(w, iconm, iconp)
-Window w;
-int iconm;
-IconMgr *iconp;
+TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 {
     virtualScreen *vs;
     TwmWindow *tmp_win;			/* new twm window structure */
@@ -604,14 +605,14 @@ IconMgr *iconp;
     }
     if (LookInList (Scr->WindowGeometries, tmp_win->full_name, &tmp_win->class)) {
         char *geom;
-	int mask;
+	int mask_;
 	geom = LookInList (Scr->WindowGeometries, tmp_win->full_name, &tmp_win->class);
-	mask= XParseGeometry (geom, &tmp_win->attr.x, &tmp_win->attr.y,
-			      (unsigned int*) &tmp_win->attr.width,
-			      (unsigned int*) &tmp_win->attr.height);
+	mask_ = XParseGeometry (geom, &tmp_win->attr.x, &tmp_win->attr.y,
+				(unsigned int*) &tmp_win->attr.width,
+				(unsigned int*) &tmp_win->attr.height);
 
-	if (mask & XNegative) tmp_win->attr.x += Scr->rootw - tmp_win->attr.width;
-	if (mask & YNegative) tmp_win->attr.y += Scr->rooth - tmp_win->attr.height;
+	if (mask_ & XNegative) tmp_win->attr.x += Scr->rootw - tmp_win->attr.width;
+	if (mask_ & YNegative) tmp_win->attr.y += Scr->rooth - tmp_win->attr.height;
         random_placed = True;
 	ask_user = False;
     }
@@ -757,7 +758,7 @@ IconMgr *iconp;
 			      SIZE_HINDENT,
 			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
 			      tmp_win->name, namelen);
-#endif	    
+#endif
 
 	    if (winbox) ConstrainedToWinBox (tmp_win, AddingX, AddingY, &AddingX, &AddingY);
 
@@ -1335,9 +1336,7 @@ IconMgr *iconp;
  ***********************************************************************
  */
 
-int
-MappedNotOverride(w)
-    Window w;
+int MappedNotOverride(Window w)
 {
     XWindowAttributes wa;
 
@@ -1347,19 +1346,17 @@ MappedNotOverride(w)
 
 
 /***********************************************************************
- * 
+ *
  *  Procedure:
  *      AddDefaultBindings - attach default bindings so that naive users
  *      don't get messed up if they provide a minimal twmrc.
  */
-static void do_add_binding (button, context, modifier, func)
-    int button, context, modifier;
-    int func;
-{ 
+static void do_add_binding (int button, int context, int modifier, int func)
+{
     AddFuncButton (button, context, modifier, func, NULL, NULL);
 }
 
-AddDefaultBindings ()
+void AddDefaultBindings (void)
 {
 #define NoModifierMask 0
 
@@ -1395,9 +1392,7 @@ AddDefaultBindings ()
 		pointer_mode, GrabModeAsync, None,  \
 		Scr->FrameCursor);
 
-void
-GrabButtons(tmp_win)
-TwmWindow *tmp_win;
+void GrabButtons(TwmWindow *tmp_win)
 {
     FuncButton *tmp;
     int i;
@@ -1451,9 +1446,7 @@ TwmWindow *tmp_win;
 #define ungrabkey(funckey, modifier, window) \
 	XUngrabKey (dpy, funckey->keycode, funckey->mods | modifier, window);
 
-void
-GrabKeys(tmp_win)
-TwmWindow *tmp_win;
+void GrabKeys(TwmWindow *tmp_win)
 {
     FuncKey *tmp;
     IconMgr *p;
@@ -1560,7 +1553,7 @@ TwmWindow *tmp_win;
     }
 }
 
-void ComputeCommonTitleOffsets ()
+void ComputeCommonTitleOffsets (void)
 {
     int buttonwidth = (Scr->TBInfo.width + Scr->TBInfo.pad);
 
@@ -1576,8 +1569,7 @@ void ComputeCommonTitleOffsets ()
 				Scr->TitlePadding);
 }
 
-static void CreateHighlightWindows (tmp_win)
-    TwmWindow *tmp_win;
+static void CreateHighlightWindows (TwmWindow *tmp_win)
 {
     XSetWindowAttributes attributes;	/* attributes for create windows */
     GC gc;
@@ -1669,8 +1661,7 @@ static void CreateHighlightWindows (tmp_win)
 		       Scr->d_visual, valuemask, &attributes);
 }
 
-static void CreateLowlightWindows (tmp_win)
-    TwmWindow *tmp_win;
+static void CreateLowlightWindows (TwmWindow *tmp_win)
 {
     XSetWindowAttributes attributes;    /* attributes for create windows */
     unsigned long valuemask;
@@ -1734,9 +1725,7 @@ static void CreateLowlightWindows (tmp_win)
 }
 
 
-void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
-    TwmWindow *tmp_win;
-    Bool squeeze;
+void ComputeWindowTitleOffsets (TwmWindow *tmp_win, int width, Bool squeeze)
 {
     int titlew = width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff;
 
@@ -1787,8 +1776,7 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
  * to take the frame_bw into account since we want (0,0) of the title window
  * to line up with (0,0) of the frame window.
  */
-void ComputeTitleLocation (tmp)
-    register TwmWindow *tmp;
+void ComputeTitleLocation (register TwmWindow *tmp)
 {
     tmp->title_x = tmp->frame_bw3D - tmp->frame_bw;
     tmp->title_y = tmp->frame_bw3D - tmp->frame_bw;
@@ -1838,8 +1826,7 @@ void ComputeTitleLocation (tmp)
 }
 
 
-static void CreateWindowTitlebarButtons (tmp_win)
-    TwmWindow *tmp_win;
+static void CreateWindowTitlebarButtons (TwmWindow *tmp_win)
 {
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
@@ -1928,8 +1915,7 @@ static void CreateWindowTitlebarButtons (tmp_win)
 }
 
 
-SetHighlightPixmap (filename)
-    char *filename;
+void SetHighlightPixmap (char *filename)
 {
 #ifdef VMS
     char *ftemp;
@@ -1941,8 +1927,7 @@ SetHighlightPixmap (filename)
 }
 
 
-FetchWmProtocols (tmp)
-    TwmWindow *tmp;
+void FetchWmProtocols (TwmWindow *tmp)
 {
     unsigned long flags = 0L;
     Atom *protocols = NULL;
@@ -1962,9 +1947,7 @@ FetchWmProtocols (tmp)
     tmp->protocols = flags;
 }
 
-TwmColormap *
-CreateTwmColormap(c)
-    Colormap c;
+TwmColormap *CreateTwmColormap(Colormap c)
 {
     TwmColormap *cmap;
     cmap = (TwmColormap *) malloc(sizeof(TwmColormap));
@@ -1981,11 +1964,9 @@ CreateTwmColormap(c)
     return (cmap);
 }
 
-ColormapWindow *
-CreateColormapWindow(w, creating_parent, property_window)
-    Window w;
-    Bool creating_parent;
-    Bool property_window;
+ColormapWindow *CreateColormapWindow(Window w,
+				     Bool creating_parent,
+				     Bool property_window)
 {
     ColormapWindow *cwin;
     TwmColormap *cmap;
@@ -2037,9 +2018,8 @@ CreateColormapWindow(w, creating_parent, property_window)
 
     return (cwin);
 }
-		
-FetchWmColormapWindows (tmp)
-    TwmWindow *tmp;
+
+int FetchWmColormapWindows (TwmWindow *tmp)
 {
     register int i, j;
     Window *cmap_windows = NULL;
@@ -2047,12 +2027,12 @@ FetchWmColormapWindows (tmp)
     int number_cmap_windows = 0;
     ColormapWindow **cwins = NULL;
     int previously_installed;
-    extern void free_cwins();
 
     number_cmap_windows = 0;
 
-    if (/* SUPPRESS 560 */previously_installed = 
-       (Scr->cmapInfo.cmaps == &tmp->cmaps && tmp->cmaps.number_cwins)) {
+    if (/* SUPPRESS 560 */
+	(previously_installed =
+	 (Scr->cmapInfo.cmaps == &tmp->cmaps && tmp->cmaps.number_cwins))) {
 	cwins = tmp->cmaps.cwins;
 	for (i = 0; i < tmp->cmaps.number_cwins; i++)
 	    cwins[i]->colormap->state = 0;
@@ -2168,8 +2148,7 @@ FetchWmColormapWindows (tmp)
 }
 
 
-void GetWindowSizeHints (tmp)
-    TwmWindow *tmp;
+void GetWindowSizeHints (TwmWindow *tmp)
 {
     long supplied = 0;
 
@@ -2195,8 +2174,7 @@ void GetWindowSizeHints (tmp)
     }
 }
 
-AnimateButton (tbw)
-TBWindow *tbw;
+void AnimateButton (TBWindow *tbw)
 {
     Image	*image;
     XSetWindowAttributes attr;
@@ -2208,8 +2186,7 @@ TBWindow *tbw;
     tbw->image = image->next;
 }
 
-AnimateHighlight (t)
-TwmWindow *t;
+void AnimateHighlight (TwmWindow *t)
 {
     Image	*image;
     XSetWindowAttributes attr;
@@ -2227,9 +2204,7 @@ TwmWindow *t;
     t->HiliteImage = image->next;
 }
 
-name_list **AddWindowRegion (geom, grav1, grav2)
-char *geom;
-int  grav1, grav2;
+name_list **AddWindowRegion (char *geom, int grav1, int grav2)
 {
     WindowRegion *wr;
     int mask;
@@ -2254,7 +2229,7 @@ int  grav1, grav2;
     return (&(wr->clientlist));
 }
 
-void CreateWindowRegions () {
+void CreateWindowRegions (void) {
     WindowRegion  *wr, *wr1 = NULL, *wr2 = NULL;
     WorkSpace *wl;
 
@@ -2280,9 +2255,7 @@ void CreateWindowRegions () {
 }
 
 
-Bool PlaceWindowInRegion (tmp_win, final_x, final_y)
-TwmWindow *tmp_win;
-int       *final_x, *final_y;
+Bool PlaceWindowInRegion (TwmWindow *tmp_win, int *final_x, int *final_y)
 {
     WindowRegion  *wr;
     WindowEntry	  *we;
@@ -2318,10 +2291,8 @@ int       *final_x, *final_y;
     return (True);
 }
 
-static void splitWindowRegionEntry (we, grav1, grav2, w, h)
-WindowEntry	*we;
-int		grav1, grav2;
-int		w, h;
+static void splitWindowRegionEntry (WindowEntry *we, int grav1, int grav2,
+				    int w, int h)
 {
     WindowEntry	*new;
     int		save;
@@ -2372,10 +2343,8 @@ int		w, h;
     }
 }
 
-static WindowEntry *findWindowEntry (wl, tmp_win, wrp)
-WorkSpace    *wl;
-TwmWindow    *tmp_win;
-WindowRegion **wrp;
+static WindowEntry *findWindowEntry (WorkSpace *wl, TwmWindow *tmp_win,
+				     WindowRegion **wrp)
 {
     WindowRegion *wr;
     WindowEntry	 *we;
@@ -2391,9 +2360,7 @@ WindowRegion **wrp;
     return (WindowEntry*) 0;
 }
 
-static WindowEntry *prevWindowEntry (we, wr)
-WindowEntry	*we;
-WindowRegion	*wr;
+static WindowEntry *prevWindowEntry (WindowEntry *we, WindowRegion *wr)
 {
     WindowEntry	*wp;
 
@@ -2402,8 +2369,7 @@ WindowRegion	*wr;
     return wp;
 }
 
-static void mergeWindowEntries (old, we)
-WindowEntry	*old, *we;
+static void mergeWindowEntries (WindowEntry *old, WindowEntry *we)
 {
     if (old->y == we->y) {
 	we->w = old->w + we->w;
@@ -2414,8 +2380,7 @@ WindowEntry	*old, *we;
     }
 }
 
-void RemoveWindowFromRegion (tmp_win)
-TwmWindow	*tmp_win;
+void RemoveWindowFromRegion (TwmWindow *tmp_win)
 {
     WindowEntry  *we, *wp, *wn;
     WindowRegion *wr;

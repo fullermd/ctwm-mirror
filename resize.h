@@ -64,22 +64,28 @@
 #ifndef _RESIZE_
 #define _RESIZE_
 
-extern void MenuStartResize();
-extern void StartResize();
-extern void AddStartResize();
-extern void MenuDoResize();
-extern void DoResize();
-extern void DisplaySize();
-extern void EndResize();
-extern void MenuEndResize();
-extern void AddEndResize();
-extern void SetupWindow();
-extern void SetupFrame();
-extern ConstrainSize ();
+extern void MenuStartResize(TwmWindow *tmp_win, int x, int y, int w, int h);
+extern void StartResize(XEvent *evp, TwmWindow *tmp_win,
+			Bool fromtitlebar, Bool from3dborder);
+extern void AddStartResize(TwmWindow *tmp_win, int x, int y, int w, int h);
+extern void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win);
+extern void DoResize(int x_root, int y_root, TwmWindow *tmp_win);
+extern void DisplaySize(TwmWindow *tmp_win, int width, int height);
+extern void EndResize(void);
+extern void MenuEndResize(TwmWindow *tmp_win);
+extern void AddEndResize(TwmWindow *tmp_win);
+extern void SetupWindow(TwmWindow *tmp_win,
+			int x, int y, int w, int h, int bw);
+extern void SetupFrame(TwmWindow *tmp_win,
+		       int x, int y, int w, int h, int bw,
+		       Bool sendEvent);
+extern void ConstrainSize (TwmWindow *tmp_win, int *widthp, int *heightp);
 
-extern void fullzoom();
-extern void savegeometry ();
-extern void restoregeometry ();
-extern int SetFrameShape ();
+extern void fullzoom(TwmWindow *tmp_win, int flag);
+extern void savegeometry (TwmWindow *tmp_win);
+extern void restoregeometry (TwmWindow *tmp_win);
+extern void SetFrameShape (TwmWindow *tmp);
+
+extern void ChangeSize (char *in_string, TwmWindow *tmp_win);
+
 #endif /* _RESIZE_ */
-

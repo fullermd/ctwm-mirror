@@ -82,25 +82,25 @@
 #define ICONIFY_ZOOMOUT 3
 #define ICONIFY_SWEEP   4
 
-typedef struct _StdCmap {
+struct _StdCmap {
     struct _StdCmap *next;		/* next link in chain */
     Atom atom;				/* property from which this came */
     int nmaps;				/* number of maps below */
     XStandardColormap *maps;		/* the actual maps */
-} StdCmap;
+};
 
 #define SIZE_HINDENT 10
 #define SIZE_VINDENT 2
 
-typedef struct _TitlebarPixmaps {
+struct _TitlebarPixmaps {
     Pixmap xlogo;
     Pixmap resize;
     Pixmap question;
     Pixmap menu;
     Pixmap delete;
-} TitlebarPixmaps;
+};
 
-typedef struct ScreenInfo
+struct ScreenInfo
 {
     int screen;			/* the default screen */
     int d_depth;		/* copy of DefaultDepth(dpy, screen) */
@@ -139,7 +139,7 @@ typedef struct ScreenInfo
     Image *UnknownImage;	/* the unknown icon pixmap */
     Pixmap siconifyPm;		/* the icon manager iconify pixmap */
     Pixmap pullPm;		/* pull right menu icon */
-    int	pullW, pullH;		/* size of pull right menu icon */
+    unsigned int pullW, pullH;	/* size of pull right menu icon */
     char *HighlightPixmapName;	/* name of the hilite image if any */
 
     MenuRoot *MenuList;		/* head of the menu list */
@@ -430,7 +430,7 @@ typedef struct ScreenInfo
 #ifdef GNOME
     GnomeData *gnomedata;
 #endif /* GNOME */
-} ScreenInfo;
+};
 
 extern int MultiScreen;
 extern int NumScreens;

@@ -73,6 +73,7 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <unistd.h>
 
 #ifdef __WAIT_FOR_CHILDS
 #  include <sys/wait.h>
@@ -84,6 +85,7 @@
 #include <fcntl.h>
 #endif
 #include "twm.h"
+#include "ctwm.h"
 #include "add_window.h"
 #include "gc.h"
 #include "parse.h"
@@ -95,6 +97,9 @@
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
+#include "session.h"
+#include "cursor.h"
+#include "windowbox.h"
 #ifdef VMS
 #  include <stdlib.h>
 #  include <decw$include/Xproto.h>
@@ -118,20 +123,20 @@
 #    include <X11/SM/SMlib.h>
 #  endif /* X11R6 */
 
-#ifdef I18N
-#include <X11/Xlocale.h>
-#else
-#  ifndef NO_LOCALE
-#    include <locale.h>
-#  endif /* NO_LOCALE */
-#endif
+#  ifdef I18N
+#    include <X11/Xlocale.h>
+#  else
+#    ifndef NO_LOCALE
+#      include <locale.h>
+#    endif /* NO_LOCALE */
+#  endif
 
 #  ifndef PIXMAP_DIRECTORY
 #    define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
 #  endif /* PIXMAP_DIRECTORY */
 #endif /* VMS */
 
-#  ifdef X11R6
+#ifdef X11R6
 XtAppContext appContext;	/* Xt application context */
 #endif /* X11R6 */
 
@@ -160,16 +165,18 @@ int FirstScreen;		/* TRUE ==> first screen of display */
 Bool PrintErrorMessages = False;	/* controls error messages */
 Bool ShowWelcomeWindow = True;
 static int RedirectError;	/* TRUE ==> another window manager running */
-static int CatchRedirectError();	/* for settting RedirectError */
-static int TwmErrorHandler();	/* for everything else */
+/* for settting RedirectError */
+static int CatchRedirectError(Display *display, XErrorEvent *event);
+/* for everything else */
+static int TwmErrorHandler(Display *display, XErrorEvent *event);
 char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
 int InfoLines,InfoWidth,InfoHeight;
 char *InitFile = NULL;
-static Window CreateRootWindow ();
-static void DisplayInfo ();
-int InternUsefulAtoms ();
-int InitVariables();
-int CreateFonts();
+static Window CreateRootWindow (int x, int y,
+				unsigned int width, unsigned int height);
+static void DisplayInfo (void);
+void InternUsefulAtoms (void);
+void InitVariables(void);
 
 Cursor	UpperLeftCursor;
 Cursor	TopRightCursor,
@@ -225,11 +232,10 @@ Bool TrapExceptions = True;
 
 unsigned long black, white;
 
-extern void assign_var_savecolor();
-SIGNAL_T Restart();
-SIGNAL_T Crash();
+SIGNAL_T Restart(int signum);
+SIGNAL_T Crash(int signum);
 #ifdef __WAIT_FOR_CHILDS
-  SIGNAL_T ChildExit();
+  SIGNAL_T ChildExit(int signum);
 #endif
 
 extern Atom _XA_WM_WORKSPACESLIST;
@@ -243,22 +249,17 @@ extern Atom _XA_WM_WORKSPACESLIST;
  */
 
 #ifdef VMS
-main(int argc, char **argv)
+int main(int argc, char **argv)
 #else
-main(argc, argv, environ)
-    int argc;
-    char **argv;
-    char **environ;
+int main(int argc, char **argv, char **environ)
 #endif
 {
     Window croot, parent, *children;
     unsigned int nchildren;
     int i, j;
-    char *display_name = NULL;
     unsigned long valuemask;	/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
-    extern ColormapWindow *CreateColormapWindow();
 #ifdef X11R6
     int zero = 0;
     char *restore_filename = NULL;
@@ -270,8 +271,8 @@ main(argc, argv, environ)
     static int crooty = 100;
     static unsigned int crootw = 1280;
     static unsigned int crooth =  768;
-    //    static unsigned int crootw = 2880;
-    //    static unsigned int crooth = 1200;
+/*    static unsigned int crootw = 2880; */
+/*    static unsigned int crooth = 1200; */
     Window capwin = (Window) 0;
     IconRegion *ir;
 
@@ -951,7 +952,7 @@ main(argc, argv, environ)
  ***********************************************************************
  */
 
-InitVariables()
+void InitVariables(void)
 {
     FreeList(&Scr->BorderColorL);
     FreeList(&Scr->IconBorderColorL);
@@ -1193,12 +1194,12 @@ InitVariables()
     Scr->IconManagerFont.name = DEFAULT_NICE_FONT;
     Scr->DefaultFont.font = NULL;
     Scr->DefaultFont.name = DEFAULT_FAST_FONT;
-#endif    
+#endif
 
 }
 
 
-CreateFonts ()
+void CreateFonts (void)
 {
     GetFont(&Scr->TitleBarFont);
     GetFont(&Scr->MenuFont);
@@ -1211,8 +1212,8 @@ CreateFonts ()
 }
 
 
-RestoreWithdrawnLocation (tmp)
-    TwmWindow *tmp;
+void RestoreWithdrawnLocation (TwmWindow *tmp);
+void RestoreWithdrawnLocation (TwmWindow *tmp)
 {
     int gravx, gravy;
     unsigned int bw, mask;
@@ -1297,12 +1298,11 @@ RestoreWithdrawnLocation (tmp)
  ***********************************************************************
  */
 
-void Reborder (time)
-Time time;
+void Reborder (Time time)
 {
     TwmWindow *tmp;			/* temp twm window structure */
     int scrnum;
-    ScreenInfo *savedScreen;	        /* Its better to avoid coredumps */
+    ScreenInfo *savedScreen;		/* Its better to avoid coredumps */
 
     /* put a border back around all windows */
 
@@ -1325,7 +1325,7 @@ Time time;
     SetFocus ((TwmWindow*)NULL, time);
 }
 
-SIGNAL_T Done()
+SIGNAL_T Done(int signum)
 {
 #ifdef SOUNDS
     play_exit_sound();
@@ -1347,7 +1347,7 @@ SIGNAL_T Done()
 #endif
 }
 
-SIGNAL_T Crash ()
+SIGNAL_T Crash (int signum)
 {
     Reborder (CurrentTime);
     XDeleteProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
@@ -1365,7 +1365,7 @@ SIGNAL_T Crash ()
 }
 
 
-SIGNAL_T Restart()
+SIGNAL_T Restart(int signum)
 {
     StopAnimation ();
     XSync (dpy, 0);
@@ -1407,9 +1407,7 @@ ChildExit (int signum)
 Bool ErrorOccurred = False;
 XErrorEvent LastErrorEvent;
 
-static int TwmErrorHandler(display, event)
-    Display *display;
-    XErrorEvent *event;
+static int TwmErrorHandler(Display *display, XErrorEvent *event)
 {
     LastErrorEvent = *event;
     ErrorOccurred = True;
@@ -1424,9 +1422,7 @@ static int TwmErrorHandler(display, event)
 
 
 /* ARGSUSED*/
-static int CatchRedirectError(display, event)
-    Display *display;
-    XErrorEvent *event;
+static int CatchRedirectError(Display *display, XErrorEvent *event)
 {
     RedirectError = TRUE;
     LastErrorEvent = *event;
@@ -1449,7 +1445,7 @@ Atom _XA_WM_CLIENT_MACHINE;
   Atom _XA_WM_WINDOW_ROLE;
 #endif
 
-InternUsefulAtoms ()
+void InternUsefulAtoms (void)
 {
     /* 
      * Create priority colors if necessary.
@@ -1470,9 +1466,8 @@ InternUsefulAtoms ()
 #endif
 }
 
-static Window CreateRootWindow (x, y, width, height)
-int		x, y;
-unsigned int	width, height;
+static Window CreateRootWindow (int x, int y,
+				unsigned int width, unsigned int height)
 {
     int		scrnum;
     Window	ret;
@@ -1497,7 +1492,7 @@ unsigned int	width, height;
     return (ret);
 }
 
-static void DisplayInfo () {
+static void DisplayInfo (void) {
     (void) printf ("Twm version:  %s\n", Version);
     (void) printf ("Compile time options :");
 #ifdef XPM

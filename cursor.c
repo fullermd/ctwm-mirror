@@ -69,6 +69,7 @@
 #endif
 #include "screen.h"
 #include "util.h"
+#include "cursor.h"
 
 static struct _CursorName {
     char		*name;
@@ -155,9 +156,7 @@ static struct _CursorName {
 {"xterm",		XC_xterm,		None},
 };
 
-void NewFontCursor (cp, str)
-    Cursor *cp;
-    char *str;
+void NewFontCursor (Cursor *cp, char *str)
 {
     int i;
 
@@ -176,9 +175,7 @@ void NewFontCursor (cp, str)
 	     ProgramName, str);
 }
 
-NewBitmapCursor(cp, source, mask)
-Cursor *cp;
-char *source, *mask;
+int NewBitmapCursor(Cursor *cp, char *source, char *mask)
 {
     XColor fore, back;
     int hotx, hoty;
@@ -212,13 +209,12 @@ char *source, *mask;
     return (0);
 }
 
-Cursor MakeStringCursor (string)
-char *string;
+Cursor MakeStringCursor (char *string)
 {
     Cursor	cursor;
     XColor	black, white;
     Pixmap	bitmap;
-    unsigned int width, height, rwidth, rheight, middle;
+    unsigned int width, height, middle;
     GC		gc;
     Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
     MyFont	myfont = Scr->TitleBarFont;

@@ -64,8 +64,6 @@
 #ifndef _LIST_
 #define _LIST_
 
-typedef struct name_list_struct name_list;
-
 struct name_list_struct
 {
     name_list *next;		/* pointer to the next name */
@@ -73,13 +71,18 @@ struct name_list_struct
     char *ptr;			/* list dependent data */
 };
 
-extern void	AddToList();
-extern char*	LookInList();
-extern char*	LookInNameList();
-extern char*	LookPatternInList();
-extern char*	LookPatternInNameList();
-extern int 	GetColorFromList();
-extern void	FreeList();
+extern void	AddToList(name_list **list_head, char *name, char *ptr);
+extern char*	LookInList(name_list *list_head, char *name,
+			   XClassHint *class);
+extern char*	LookInNameList(name_list *list_head, char *name);
+extern char*	LookPatternInList(name_list *list_head, char *name,
+				  XClassHint *class);
+extern char*	LookPatternInNameList(name_list *list_head, char *name);
+extern int	GetColorFromList(name_list *list_head, char *name,
+				 XClassHint *class, Pixel *ptr);
+extern void	FreeList(name_list **list);
+
+extern int	match (char *pattern, char *string);
 
 #endif /* _LIST_ */
 

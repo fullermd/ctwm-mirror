@@ -83,6 +83,7 @@
 #include "gram.h"
 #include "screen.h"
 #include "icons.h"
+#include "cursor.h"
 #include <stdio.h>
 #ifdef VMS
 #include <decw$include/Xos.h>
@@ -146,8 +147,8 @@
 # include <setjmp.h>
 # include <jpeglib.h>
 # include <jerror.h>
-  static Image *LoadJpegImage ();
-  static Image *GetJpegImage  ();
+  static Image *LoadJpegImage (char *name);
+  static Image *GetJpegImage  (char *name);
 
   struct jpeg_error {
     struct jpeg_error_mgr pub;
@@ -171,41 +172,44 @@
 extern int captive;
 extern Atom _XA_WM_WORKSPACESLIST;
 
-static Image *LoadBitmapImage ();
-static Image *GetBitmapImage  ();
+static Image *LoadBitmapImage (char  *name, ColorPair cp);
+static Image *GetBitmapImage  (char  *name, ColorPair cp);
 #if !defined(VMS) || defined(HAVE_XWDFILE_H)
-static Image *LoadXwdImage    ();
-static Image *GetXwdImage     ();
+static Image *LoadXwdImage    (char  *filename, ColorPair cp);
+static Image *GetXwdImage     (char  *name, ColorPair cp);
 #endif
 #ifdef XPM
-static Image *LoadXpmImage    ();
-static Image *GetXpmImage     ();
-static void   xpmErrorMessage ();
+static Image *LoadXpmImage    (char  *name, ColorPair cp);
+static Image *GetXpmImage     (char  *name, ColorPair cp);
+static void   xpmErrorMessage (int status, char *name, char *fullname);
 #endif
 #ifdef IMCONV
-static Image *GetImconvImage  ();
+static Image *GetImconvImage  (char *filename, int *width, int *height);
 #endif
-static Pixmap CreateXLogoPixmap(), CreateResizePixmap();
-static Pixmap CreateQuestionPixmap(), CreateMenuPixmap();
-static Pixmap CreateDotPixmap ();
-static Image  *Create3DMenuImage ();
-static Image  *Create3DDotImage ();
-static Image  *Create3DResizeImage ();
-static Image  *Create3DZoomImage ();
-static Image  *Create3DBarImage ();
-static Image  *Create3DVertBarImage ();
-static Image  *Create3DResizeAnimation ();
-static Image  *Create3DCrossImage ();
-static Image  *Create3DIconifyImage ();
-static Image  *Create3DSunkenResizeImage ();
-static Image  *Create3DBoxImage ();
+static Pixmap CreateXLogoPixmap(unsigned int *widthp, unsigned int *heightp);
+static Pixmap CreateResizePixmap(unsigned int *widthp, unsigned int *heightp);
+static Pixmap CreateQuestionPixmap(unsigned int *widthp, unsigned int *heightp);
+static Pixmap CreateMenuPixmap(unsigned int *widthp, unsigned int *heightp);
+static Pixmap CreateDotPixmap (unsigned int *widthp, unsigned int *heightp);
+static Image  *Create3DMenuImage (ColorPair cp);
+static Image  *Create3DDotImage (ColorPair cp);
+static Image  *Create3DResizeImage (ColorPair cp);
+static Image  *Create3DZoomImage (ColorPair cp);
+static Image  *Create3DBarImage (ColorPair cp);
+static Image  *Create3DVertBarImage (ColorPair cp);
+static Image  *Create3DResizeAnimation (Bool in, Bool left, Bool top,
+					ColorPair cp);
+static Image  *Create3DCrossImage (ColorPair cp);
+static Image  *Create3DIconifyImage (ColorPair cp);
+static Image  *Create3DSunkenResizeImage (ColorPair cp);
+static Image  *Create3DBoxImage (ColorPair cp);
 
 extern FILE *tracefile;
 
-void FreeImage ();
+void FreeImage (Image *image);
 
-int _swapshort ();
-int _swaplong ();
+void _swapshort (register char *bp, register unsigned n);
+void _swaplong (register char *bp, register unsigned n);
 
 static int    reportfilenotfound = 1;
 static Colormap AlternateCmap = None;
@@ -239,9 +243,8 @@ Bool MaybeAnimate     = True;
  */
 
 /* ARGSUSED */
-void MoveOutline(root, x, y, width, height, bw, th)
-    Window root;
-    int x, y, width, height, bw, th;
+void MoveOutline(Window root,
+		 int x, int y, int width, int height, int bw, int th)
 {
     static int	lastx = 0;
     static int	lasty = 0;
@@ -365,9 +368,7 @@ void MoveOutline(root, x, y, width, height, bw, th)
  ***********************************************************************
  */
 
-void
-Zoom(wf, wt)
-    Window wf, wt;
+void Zoom(Window wf, Window wt)
 {
     int fx, fy, tx, ty;			/* from, to */
     unsigned int fw, fh, tw, th;	/* from, to */
@@ -406,15 +407,14 @@ Zoom(wf, wt)
 }
 
 
-char *ExpandFilePath (path)
-char *path;
+char *ExpandFilePath (char *path)
 {
     char *ret, *colon, *p;
     int  len;
 
     len = 0;
     p   = path;
-    while (colon = strchr (p, ':')) {
+    while ((colon = strchr (p, ':'))) {
 	len += colon - p + 1;
 	if (*p == '~') len += HomeLen - 1;
 	p = colon + 1;
@@ -425,7 +425,7 @@ char *path;
     *ret = 0;
 
     p   = path;
-    while (colon = strchr (p, ':')) {
+    while ((colon = strchr (p, ':'))) {
 	*colon = '\0';
 	if (*p == '~') {
 	    strcat (ret, Home);
@@ -461,9 +461,7 @@ char *path;
  ***********************************************************************
  */
 
-char *
-ExpandFilename(name)
-char *name;
+char *ExpandFilename(char *name)
 {
     char *newname;
 
@@ -492,8 +490,7 @@ char *name;
     return newname;
 }
 
-char *ExpandPixmapPath (name)
-char *name;
+char *ExpandPixmapPath (char *name)
 {
     char    *ret, *colon;
 
@@ -534,7 +531,7 @@ char *name;
     else
     if (Scr->PixmapDirectory) {
 	char *p = Scr->PixmapDirectory;
-	while (colon = strchr (p, ':')) {
+	while ((colon = strchr (p, ':'))) {
 	    *colon = '\0';
 	    ret = (char *) malloc (strlen (p) + strlen (name) + 2);
 	    sprintf (ret, "%s/%s", p, name);
@@ -560,9 +557,7 @@ char *name;
  ***********************************************************************
  */
 
-void
-GetUnknownIcon(name)
-char *name;
+void GetUnknownIcon(char *name)
 {
     Scr->UnknownImage = GetImage (name, Scr->IconC);
 }
@@ -583,9 +578,7 @@ char *name;
  ***********************************************************************
  */
 
-Pixmap FindBitmap (name, widthp, heightp)
-    char *name;
-    unsigned int *widthp, *heightp;
+Pixmap FindBitmap (char *name, unsigned int *widthp, unsigned int *heightp)
 {
     char *bigname;
     Pixmap pm;
@@ -601,7 +594,7 @@ Pixmap FindBitmap (name, widthp, heightp)
 	int i;
 	static struct {
 	    char *name;
-	    Pixmap (*proc)();
+	    Pixmap (*proc)(unsigned int *widthp, unsigned int *heightp);
 	} pmtab[] = {
 	    { TBPM_DOT,		CreateDotPixmap },
 	    { TBPM_ICONIFY,	CreateDotPixmap },
@@ -671,15 +664,12 @@ Pixmap FindBitmap (name, widthp, heightp)
     return pm;
 }
 
-Pixmap GetBitmap (name)
-    char *name;
+Pixmap GetBitmap (char *name)
 {
     return FindBitmap (name, &JunkWidth, &JunkHeight);
 }
 
-static Image *LoadBitmapImage (name, cp)
-char  *name;
-ColorPair cp;
+static Image *LoadBitmapImage (char  *name, ColorPair cp)
 {
     Image	 *image;
     Pixmap	 bm;
@@ -705,9 +695,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *GetBitmapImage (name, cp)
-char  *name;
-ColorPair cp;
+static Image *GetBitmapImage (char  *name, ColorPair cp)
 {
     Image	*image, *r, *s;
     char	path [128], pref [128];
@@ -742,9 +730,7 @@ ColorPair cp;
 #ifdef XPM
 static int reportxpmerror = 1;
 
-static Image *LoadXpmImage (name, cp)
-char *name;
-ColorPair cp;
+static Image *LoadXpmImage (char *name, ColorPair cp)
 {
     char	*fullname;
     Image	*image;
@@ -799,9 +785,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *GetXpmImage (name, cp)
-char *name;
-ColorPair cp;
+static Image *GetXpmImage (char *name, ColorPair cp)
 {
     char    path [128], pref [128];
     Image   *image, *r, *s;
@@ -833,9 +817,7 @@ ColorPair cp;
     return (image);
 }
 
-static void xpmErrorMessage (status, name, fullname)
-int	status;
-char	*name, *fullname;
+static void xpmErrorMessage (int status, char *name, char *fullname)
 {
     switch (status) {
 	case XpmSuccess:
@@ -875,8 +857,7 @@ char	*name, *fullname;
 
 #endif
 
-void MaskScreen (file)
-char *file;
+void MaskScreen (char *file)
 {
     unsigned long valuemask;
     XSetWindowAttributes attributes;
@@ -950,7 +931,8 @@ char *file;
 		Scr->WelcomeImage->width, Scr->WelcomeImage->height, x, y);
 }
 
-UnmaskScreen () {
+void UnmaskScreen (void)
+{
 #ifdef VMS
     float  timeout;
 #else
@@ -1087,7 +1069,7 @@ fin:
 #ifdef VMS
 
 /* use the VMS system services to request the timer to issue an AST */
-void AnimateHandler ();
+void AnimateHandler (void);
 
 unsigned int tv[2];
 int status;
@@ -1097,7 +1079,8 @@ unsigned long timefe;
 
 #define TIMID 12L
 
-void StartAnimation () {
+void StartAnimation (void)
+{
     if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
     if (AnimationSpeed <= 0) return;
     if (AnimationActive) return;
@@ -1122,15 +1105,13 @@ void StopAnimation () {
     if (status != SS$_NORMAL) lib$signal(status);
 }
 
-void SetAnimationSpeed (speed)
-int speed;
+void SetAnimationSpeed (int speed)
 {
     AnimationSpeed = speed;
     if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
 }
 
-void ModifyAnimationSpeed (incr)
-int incr;
+void ModifyAnimationSpeed (int incr)
 {
     if ((AnimationSpeed + incr) < 0) return;
     if ((AnimationSpeed + incr) == 0) {
@@ -1153,7 +1134,7 @@ int incr;
     AnimationActive = True;
 }
 
-void AnimateHandler () {
+void AnimateHandler (void) {
     AnimationPending = True;
 
     sys$setef(timefe);
@@ -1167,7 +1148,8 @@ SIGNAL_T AnimateHandler ();
 #endif
 
 #ifndef USE_SIGNALS
-void TryToAnimate () {
+void TryToAnimate (void)
+{
     struct timeval  tp;
     struct timezone tzp;
     static unsigned long lastsec;
@@ -1177,7 +1159,7 @@ void TryToAnimate () {
     gettimeofday (&tp, &tzp);
     gap = ((tp.tv_sec - lastsec) * 1000000) + (tp.tv_usec - lastusec);
     if (tracefile) {
-	fprintf (tracefile, "Time = %u, %d, %u, %d, %u\n", lastsec, lastusec,
+	fprintf (tracefile, "Time = %lu, %ld, %u, %d, %lu\n", lastsec, lastusec,
 		tp.tv_sec, tp.tv_usec, gap);
 	fflush (tracefile);
     }
@@ -1193,7 +1175,8 @@ void TryToAnimate () {
 }
 #endif /* USE_SIGNALS */
 
-void StartAnimation () {
+void StartAnimation (void)
+{
 #ifdef USE_SIGNALS
     struct itimerval tv;
 #endif
@@ -1233,7 +1216,8 @@ void StartAnimation () {
     AnimationActive = True;
 }
 
-void StopAnimation () {
+void StopAnimation (void)
+{
 #ifdef USE_SIGNALS
     struct itimerval tv;
 
@@ -1248,15 +1232,13 @@ void StopAnimation () {
     AnimationActive = False;
 }
 
-void SetAnimationSpeed (speed)
-int speed;
+void SetAnimationSpeed (int speed)
 {
     AnimationSpeed = speed;
     if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
 }
 
-void ModifyAnimationSpeed (incr)
-int incr;
+void ModifyAnimationSpeed (int incr)
 {
 #ifdef USE_SIGNALS
     struct itimerval tv;
@@ -1300,8 +1282,7 @@ int incr;
 }
 
 #ifdef USE_SIGNALS
-SIGNAL_T AnimateHandler (dummy)
-int dummy;
+SIGNAL_T AnimateHandler (int dummy)
 {
     signal (SIGALRM, AnimateHandler);
     AnimationPending = True;
@@ -1309,7 +1290,8 @@ int dummy;
 #endif
 #endif /* VMS */
 
-void Animate () {
+void Animate (void)
+{
     TwmWindow	*t;
     int		scrnum;
     ScreenInfo	*scr;
@@ -1358,11 +1340,8 @@ void Animate () {
     return;
 }
 
-void InsertRGBColormap (a, maps, nmaps, replace)
-    Atom a;
-    XStandardColormap *maps;
-    int nmaps;
-    Bool replace;
+void InsertRGBColormap (Atom a, XStandardColormap *maps, int nmaps,
+			Bool replace)
 {
     StdCmap *sc = NULL;
 
@@ -1400,8 +1379,7 @@ void InsertRGBColormap (a, maps, nmaps, replace)
     return;
 }
 
-void RemoveRGBColormap (a)
-    Atom a;
+void RemoveRGBColormap (Atom a)
 {
     StdCmap *sc, *prev;
 
@@ -1420,7 +1398,7 @@ void RemoveRGBColormap (a)
     return;
 }
 
-void LocateStandardColormaps()
+void LocateStandardColormaps(void)
 {
     Atom *atoms;
     int natoms;
@@ -1440,10 +1418,7 @@ void LocateStandardColormaps()
     return;
 }
 
-void GetColor(kind, what, name)
-int kind;
-Pixel *what;
-char *name;
+void GetColor(int kind, Pixel *what, char *name)
 {
     XColor color;
     Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
@@ -1519,8 +1494,7 @@ char *name;
     return;
 }
 
-void GetShadeColors (cp)
-ColorPair *cp;
+void GetShadeColors (ColorPair *cp)
 {
     XColor	xcol;
     Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
@@ -1550,8 +1524,7 @@ ColorPair *cp;
     Scr->FirstTime = save;
 }
 
-void GetFont(font)
-MyFont *font;
+void GetFont(MyFont *font)
 {
 #ifdef I18N
     char *deffontname = "fixed,*";
@@ -1630,9 +1603,7 @@ MyFont *font;
 }
 
 
-void SetFocusVisualAttributes (tmp_win, focus)
-TwmWindow *tmp_win;
-Bool focus;
+void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus)
 {
     Bool hil;
 
@@ -1695,8 +1666,7 @@ Bool focus;
     tmp_win->hasfocusvisible = focus;
 }
 
-static void move_to_head (t)
-TwmWindow *t;
+static void move_to_head (TwmWindow *t)
 {
     if (t == NULL) return;
     if (t->prev) t->prev->next = t->next;
@@ -1712,9 +1682,7 @@ TwmWindow *t;
  * SetFocus - separate routine to set focus to make things more understandable
  * and easier to debug
  */
-void SetFocus (tmp_win, time)
-    TwmWindow *tmp_win;
-    Time	time;
+void SetFocus (TwmWindow *tmp_win, Time	time)
 {
     Window w = (tmp_win ? tmp_win->w : PointerRoot);
     int f_iconmgr = 0;
@@ -1808,8 +1776,7 @@ putenv(s)
 #endif /* NOPUTENV */
 
 
-static Pixmap CreateXLogoPixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
+static Pixmap CreateXLogoPixmap (unsigned int *widthp, unsigned int *heightp)
 {
     int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (h < 0) h = 0;
@@ -1843,8 +1810,7 @@ static Pixmap CreateXLogoPixmap (widthp, heightp)
 }
 
 
-static Pixmap CreateResizePixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
+static Pixmap CreateResizePixmap (unsigned int *widthp, unsigned int *heightp)
 {
     int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (h < 1) h = 1;
@@ -1897,8 +1863,7 @@ static Pixmap CreateResizePixmap (widthp, heightp)
     return Scr->tbpm.resize;
 }
 
-static Pixmap CreateDotPixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
+static Pixmap CreateDotPixmap (unsigned int *widthp, unsigned int *heightp)
 {
     int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
 
@@ -1923,8 +1888,7 @@ static Pixmap CreateDotPixmap (widthp, heightp)
     return Scr->tbpm.delete;
 }
 
-static Image *Create3DCrossImage (cp)
-ColorPair cp;
+static Image *Create3DCrossImage (ColorPair cp)
 {
     Image *image;
     int        h;
@@ -1991,8 +1955,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DIconifyImage (cp)
-ColorPair cp;
+static Image *Create3DIconifyImage (ColorPair cp)
 {
     Image *image;
     int     h;
@@ -2024,8 +1987,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DSunkenResizeImage (cp)
-ColorPair cp;
+static Image *Create3DSunkenResizeImage (ColorPair cp)
 {
     int     h;
     Image *image;
@@ -2053,8 +2015,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DBoxImage (cp)
-ColorPair cp;
+static Image *Create3DBoxImage (ColorPair cp)
 {
     int     h;
     Image   *image;
@@ -2079,8 +2040,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DDotImage (cp)
-ColorPair cp;
+static Image *Create3DDotImage (ColorPair cp)
 {
     Image *image;
     int	  h;
@@ -2107,8 +2067,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DBarImage (cp)
-ColorPair cp;
+static Image *Create3DBarImage (ColorPair cp)
 {
     Image *image;
     int	  h;
@@ -2136,8 +2095,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DVertBarImage (cp)
-ColorPair cp;
+static Image *Create3DVertBarImage (ColorPair cp)
 {
     Image *image;
     int	  h;
@@ -2165,8 +2123,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DMenuImage (cp)
-ColorPair cp;
+static Image *Create3DMenuImage (ColorPair cp)
 {
     Image *image;
     int	  h, i;
@@ -2190,8 +2147,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DResizeImage (cp)
-ColorPair cp;
+static Image *Create3DResizeImage (ColorPair cp)
 {
     Image *image;
     int	  h;
@@ -2215,8 +2171,7 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DZoomImage (cp)
-ColorPair cp;
+static Image *Create3DZoomImage (ColorPair cp)
 {
     Image *image;
     int		h;
@@ -2250,9 +2205,9 @@ struct Colori {
     struct Colori *next;
 };
 
-Pixmap Create3DMenuIcon (height, widthp, heightp, cp)
-unsigned int height, *widthp, *heightp;
-ColorPair cp;
+Pixmap Create3DMenuIcon (unsigned int height,
+			 unsigned int *widthp, unsigned int *heightp,
+			 ColorPair cp)
 {
     unsigned int h, w;
     int		i;
@@ -2287,8 +2242,7 @@ ColorPair cp;
 
 #include "siconify.bm"
 
-Pixmap Create3DIconManagerIcon (cp)
-ColorPair cp;
+Pixmap Create3DIconManagerIcon (ColorPair cp)
 {
     unsigned int w, h;
     struct Colori *col;
@@ -2313,9 +2267,8 @@ ColorPair cp;
     return (colori->pix);
 }
 
-static Image *Create3DResizeAnimation (in, left, top, cp)
-Bool in, left, top;
-ColorPair cp;
+static Image *Create3DResizeAnimation (Bool in, Bool left, Bool top,
+				       ColorPair cp)
 {
     int		h, i, j;
     Image	*image, *im, *im1;
@@ -2353,33 +2306,27 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DResizeInTopAnimation (cp)
-ColorPair cp;
+static Image *Create3DResizeInTopAnimation (ColorPair cp)
 {
     return Create3DResizeAnimation (TRUE, FALSE, TRUE, cp);
 }
 
-static Image *Create3DResizeOutTopAnimation (cp)
-ColorPair cp;
+static Image *Create3DResizeOutTopAnimation (ColorPair cp)
 {
     return Create3DResizeAnimation (False, FALSE, TRUE, cp);
 }
 
-static Image *Create3DResizeInBotAnimation (cp)
-ColorPair cp;
+static Image *Create3DResizeInBotAnimation (ColorPair cp)
 {
     return Create3DResizeAnimation (TRUE, TRUE, FALSE, cp);
 }
 
-static Image *Create3DResizeOutBotAnimation (cp)
-ColorPair cp;
+static Image *Create3DResizeOutBotAnimation (ColorPair cp)
 {
     return Create3DResizeAnimation (False, TRUE, FALSE, cp);
 }
 
-static Image *Create3DMenuAnimation (up, cp)
-Bool up;
-ColorPair cp;
+static Image *Create3DMenuAnimation (Bool up, ColorPair cp)
 {
     int               h, i, j;
     Image     *image, *im, *im1;
@@ -2416,23 +2363,17 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DMenuUpAnimation (cp)
-ColorPair cp;
+static Image *Create3DMenuUpAnimation (ColorPair cp)
 {
     return Create3DMenuAnimation (TRUE, cp);
 }
 
-static Image *Create3DMenuDownAnimation (cp)
-ColorPair cp;
+static Image *Create3DMenuDownAnimation (ColorPair cp)
 {
     return Create3DMenuAnimation (False, cp);
 }
 
-static Image *Create3DZoomAnimation (in, out, n, cp)
-int n;
-Bool in;
-Bool out;
-ColorPair cp;
+static Image *Create3DZoomAnimation (Bool in, Bool out, int n, ColorPair cp)
 {
     int		h, i, j, k;
     Image	*image, *im, *im1;
@@ -2468,32 +2409,27 @@ ColorPair cp;
     return (image);
 }
 
-static Image *Create3DMazeInAnimation (cp)
-ColorPair cp;
+static Image *Create3DMazeInAnimation (ColorPair cp)
 {
     return Create3DZoomAnimation(TRUE, FALSE, 6, cp);
 }
 
-static Image *Create3DMazeOutAnimation (cp)
-ColorPair cp;
+static Image *Create3DMazeOutAnimation (ColorPair cp)
 {
     return Create3DZoomAnimation(FALSE, TRUE, 6, cp);
 }
 
-static Image *Create3DZoomInAnimation (cp)
-ColorPair cp;
+static Image *Create3DZoomInAnimation (ColorPair cp)
 {
     return Create3DZoomAnimation(TRUE, FALSE, 0, cp);
 }
 
-static Image *Create3DZoomOutAnimation (cp)
-ColorPair cp;
+static Image *Create3DZoomOutAnimation (ColorPair cp)
 {
     return Create3DZoomAnimation(FALSE, TRUE, 0, cp);
 }
 
-static Image *Create3DZoomInOutAnimation (cp)
-ColorPair cp;
+static Image *Create3DZoomInOutAnimation (ColorPair cp)
 {
     return Create3DZoomAnimation(TRUE, TRUE, 0, cp);
 }
@@ -2503,8 +2439,8 @@ ColorPair cp;
 static char questionmark_bits[] = {
    0x38, 0x7c, 0x64, 0x30, 0x18, 0x00, 0x18, 0x18};
 
-static Pixmap CreateQuestionPixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
+static Pixmap CreateQuestionPixmap (unsigned int *widthp,
+				    unsigned int *heightp)
 {
     *widthp = questionmark_width;
     *heightp = questionmark_height;
@@ -2521,15 +2457,12 @@ static Pixmap CreateQuestionPixmap (widthp, heightp)
 }
 
 
-static Pixmap CreateMenuPixmap (widthp, heightp)
-    int *widthp, *heightp;
+static Pixmap CreateMenuPixmap (unsigned int *widthp, unsigned int *heightp)
 {
     return (CreateMenuIcon (Scr->TBInfo.width - Scr->TBInfo.border * 2,widthp,heightp));
 }
 
-Pixmap CreateMenuIcon (height, widthp, heightp)
-    int	height;
-    int	*widthp, *heightp;
+Pixmap CreateMenuIcon (int height, int *widthp, int *heightp)
 {
     int h, w;
     int ih, iw;
@@ -2607,11 +2540,8 @@ Pixmap CreateMenuIcon (height, widthp, heightp)
     Gcv.background = fix_back;\
     XChangeGC(dpy, gc, GCForeground|GCBackground,&Gcv)
 
-void Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
-Window w;
-int    x, y, width, height, bw;
-ColorPair cp;
-int state, fill, forcebw;
+void Draw3DBorder (Window w, int x, int y, int width, int height, int bw,
+		   ColorPair cp, int state, int fill, int forcebw)
 {
     int		  i;
     XGCValues	  gcv;
@@ -2707,11 +2637,9 @@ int state, fill, forcebw;
     return;
 }
 
-void Draw3DCorner (w, x, y, width, height, thick, bw, cp, type)
-Window		w;
-int		x, y, width, height, thick, bw;
-ColorPair	cp;
-int		type;
+void Draw3DCorner (Window w,
+		   int x, int y, int width, int height, int thick, int bw,
+		   ColorPair cp, int type)
 {
     XRectangle rects [2];
 
@@ -2764,18 +2692,20 @@ int		type;
     return;
 }
 
-void PaintAllDecoration () {
+void PaintAllDecoration (void)
+{
     TwmWindow *tmp_win;
     virtualScreen *vs;
 
     for (tmp_win = Scr->TwmRoot.next; tmp_win != NULL; tmp_win = tmp_win->next) {
 	if (! visible (tmp_win)) continue;
 	if (tmp_win->mapped == TRUE) {
-	    if (tmp_win->frame_bw3D)
+	    if (tmp_win->frame_bw3D) {
 		if (tmp_win->highlight && tmp_win == Scr->Focus)
 		    PaintBorders (tmp_win, True);
 		else
 		    PaintBorders (tmp_win, False);
+	    }
 	    if (tmp_win->title_w)      PaintTitle        (tmp_win);
 	    if (tmp_win->titlebuttons) PaintTitleButtons (tmp_win);
 	}
@@ -2794,9 +2724,7 @@ void PaintAllDecoration () {
     }
 }
 
-void PaintBorders (tmp_win, focus)
-TwmWindow *tmp_win;
-Bool focus;
+void PaintBorders (TwmWindow *tmp_win, Bool focus)
 {
     ColorPair cp;
 
@@ -2882,8 +2810,7 @@ Bool focus;
     }
 }
 
-void PaintTitle (tmp_win)
-TwmWindow *tmp_win;
+void PaintTitle (TwmWindow *tmp_win)
 {
     int width, mwidth, len;
 #ifdef I18N
@@ -2974,8 +2901,7 @@ TwmWindow *tmp_win;
 #endif    
 }
 
-void PaintIcon (tmp_win)
-TwmWindow *tmp_win;
+void PaintIcon (TwmWindow *tmp_win)
 {
     int		width, twidth, mwidth, len, x;
     Icon	*icon;
@@ -3033,9 +2959,7 @@ TwmWindow *tmp_win;
 #endif    
 }
 
-void PaintTitleButton (tmp_win, tbw)
-TwmWindow *tmp_win;
-TBWindow  *tbw;
+void PaintTitleButton (TwmWindow *tmp_win, TBWindow  *tbw)
 {
     TitleButton *tb = tbw->info;
 
@@ -3045,8 +2969,7 @@ TBWindow  *tbw;
     return;
 }
 
-void PaintTitleButtons (tmp_win)
-TwmWindow *tmp_win;
+void PaintTitleButtons (TwmWindow *tmp_win)
 {
     int i;
     TBWindow *tbw;
@@ -3057,7 +2980,8 @@ TwmWindow *tmp_win;
     }
 }
 
-void adoptWindow () {
+void adoptWindow (void)
+{
     unsigned long	data [2];
     Window		localroot, w;
     unsigned char	*prop;
@@ -3122,8 +3046,7 @@ void adoptWindow () {
     return;
 }
 
-void DebugTrace (file)
-char *file;
+void DebugTrace (char *file)
 {
     if (!file) return;
     if (tracefile) {
@@ -3143,9 +3066,7 @@ char *file;
 extern Cursor	TopRightCursor, TopLeftCursor, BottomRightCursor, BottomLeftCursor,
 		LeftCursor, RightCursor, TopCursor, BottomCursor;
 
-void SetBorderCursor (tmp_win, x, y)
-TwmWindow *tmp_win;
-int       x, y;
+void SetBorderCursor (TwmWindow *tmp_win, int x, int y)
 {
   Cursor cursor;
       XSetWindowAttributes attr;
@@ -3163,12 +3084,12 @@ int       x, y;
   h = Scr->TitleHeight + wd;
   fw = tmp_win->frame_width;
   fh = tmp_win->frame_height;
- 
-#if DEBUG
+
+#if defined DEBUG && DEBUG
   fprintf(stderr, "wd=%d h=%d, fw=%d fh=%d x=%d y=%d\n",
 	  wd, h, fw, fh, x, y);
 #endif
- 
+
   /*
    * If not using 3D borders:
    *
@@ -3184,7 +3105,7 @@ int       x, y;
    * Since we only get events when we're actually in the border, we simply
    * allow for both cases at the same time.
    */
- 
+
   if ((x < -wd) || (y < -wd)) cursor = Scr->FrameCursor;
     else
     if (x < wd) {
@@ -3220,9 +3141,7 @@ int       x, y;
     tmp_win->curcurs = cursor;
 }
 
-Image *GetImage (name, cp)
-char      *name;
-ColorPair cp;
+Image *GetImage (char *name, ColorPair cp)
 {
     name_list **list;
     char fullname [256];
@@ -3280,7 +3199,7 @@ ColorPair cp;
 	int    i;
 	static struct {
 	    char *name;
-	    Image* (*proc)();
+	    Image* (*proc)(ColorPair cp);
 	} pmtab[] = {
 	    { TBPM_3DDOT,	Create3DDotImage },
 	    { TBPM_3DRESIZE,	Create3DResizeImage },
@@ -3319,7 +3238,7 @@ ColorPair cp;
 	int    i;
 	static struct {
 	    char *name;
-	    Image* (*proc)();
+	    Image* (*proc)(ColorPair cp);
 	} pmtab[] = {
 	    { "%xpm:menu-up", Create3DMenuUpAnimation },
 	    { "%xpm:menu-down", Create3DMenuDownAnimation },
@@ -3362,7 +3281,7 @@ ColorPair cp;
 	XGCValues gcvalues;
 	static struct {
 	    char *name;
-	    Pixmap (*proc)();
+	    Pixmap (*proc)(unsigned int *widthp, unsigned int *heightp);
 	} pmtab[] = {
 	    { TBPM_DOT,		CreateDotPixmap },
 	    { TBPM_ICONIFY,	CreateDotPixmap },
@@ -3416,8 +3335,7 @@ ColorPair cp;
     return (image);
 }
 
-void FreeImage (image)
-Image *image;
+void FreeImage (Image *image)
 {
     Image *im, *im2;
 
@@ -3432,11 +3350,9 @@ Image *image;
 }
 
 #if !defined(VMS) || defined(HAVE_XWDFILE_H)
-static void compress ();
+static void compress (XImage *image, XColor *colors, int *ncolors);
 
-static Image *LoadXwdImage (filename, cp)
-char	*filename;
-ColorPair cp;
+static Image *LoadXwdImage (char *filename, ColorPair cp)
 {
     FILE	*file;
     char	*fullname;
@@ -3639,9 +3555,7 @@ file_opened:
     return (ret);
 }
 
-static Image *GetXwdImage (name, cp)
-char *name;
-ColorPair cp;
+static Image *GetXwdImage (char *name, ColorPair cp)
 {
     Image *image, *r, *s;
     char  path [128];
@@ -3673,10 +3587,7 @@ ColorPair cp;
     return (image);
 }
 
-static void compress (image, colors, ncolors)
-XImage *image;
-XColor *colors;
-int    *ncolors;
+static void compress (XImage *image, XColor *colors, int *ncolors)
 {
     unsigned char ind  [256];
     unsigned int  used [256];  
@@ -3725,9 +3636,7 @@ int    *ncolors;
 
 static void free_images  ();
 
-static Image *GetImconvImage (filename, width, height)
-char	*filename;
-int	*width, *height;
+static Image *GetImconvImage (char *filename, int *width, int *height)
 {
     TagTable		*toolInTable;
     ImVfb		*sourceVfb;
@@ -3942,9 +3851,7 @@ TagTable *table;
 
 #endif
 
-_swapshort (bp, n)
-    register char *bp;
-    register unsigned n;
+void _swapshort (register char *bp, register unsigned n)
 {
     register char c;
     register char *ep = bp + n;
@@ -3957,9 +3864,7 @@ _swapshort (bp, n)
     }
 }
 
-_swaplong (bp, n)
-    register char *bp;
-    register unsigned n;
+void _swaplong (register char *bp, register unsigned n)
 {
     register char c;
     register char *ep = bp + n;
@@ -3995,9 +3900,7 @@ _swaplong (bp, n)
  ***********************************************************************
  */
 
-char *GetWMPropertyString(w, prop)
-Window w;
-Atom prop;
+char *GetWMPropertyString(Window w, Atom prop)
 {
     XTextProperty	text_prop;
     char 		**text_list;
@@ -4069,9 +3972,7 @@ Atom prop;
 #endif /* NO_LOCALE */
 
 
-static void ConstrainLeftTop (value, border)
-int *value;
-int border;
+static void ConstrainLeftTop (int *value, int border)
 {
   if (*value < border) {
     if (Scr->MoveOffResistance < 0 ||
@@ -4086,11 +3987,7 @@ int border;
     }
 }
 
-static void ConstrainRightBottom (value, size1, border, size2)
-int *value;
-int size1;
-int border;
-int size2;
+static void ConstrainRightBottom (int *value, int size1, int border, int size2)
 {
     if (*value + size1 > size2 - border) {
       if (Scr->MoveOffResistance < 0 ||
@@ -4104,11 +4001,7 @@ int size2;
     }
 }
 
-void ConstrainByBorders1 (left, width, top, height)
-int *left;
-int width;
-int *top;
-int height;
+void ConstrainByBorders1 (int *left, int width, int *top, int height)
 {
     ConstrainRightBottom (left, width, Scr->BorderRight, Scr->rootw);
     ConstrainLeftTop     (left, Scr->BorderLeft);
@@ -4116,12 +4009,8 @@ int height;
     ConstrainLeftTop     (top, Scr->BorderTop);
 }
 
-void ConstrainByBorders (twmwin, left, width, top, height)
-TwmWindow *twmwin;
-int *left;
-int width;
-int *top;
-int height;
+void ConstrainByBorders (TwmWindow *twmwin,
+			 int *left, int width, int *top, int height)
 {
     if (twmwin->winbox) {
 	XWindowAttributes attr;
@@ -4155,8 +4044,7 @@ static void jpeg_error_exit (j_common_ptr cinfo) {
   return;
 }
 
-static Image *GetJpegImage (name)
-char *name;
+static Image *GetJpegImage (char *name)
 {
     Image *image, *r, *s;
     char  path [128];
@@ -4188,15 +4076,14 @@ char *name;
     return (image);
 }
 
-static Image *LoadJpegImage (name)
-char *name;
+static Image *LoadJpegImage (char *name)
 {
   char   *fullname;
   XImage *ximage;
   FILE   *infile;
   Image  *image;
   Pixmap pixret;
-  void   (*store_data) ();
+  void   (*store_data) (int w, int x, int y, int r, int g, int b);
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error jerr;
   JSAMPARRAY buffer;
@@ -4205,7 +4092,6 @@ char *name;
   int g, i, a;
   int bpix;
   GC  gc;
-  XGCValues   gcvalues;
 
   fullname = ExpandPixmapPath (name);
   if (! fullname) return (None);

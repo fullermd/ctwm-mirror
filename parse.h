@@ -61,13 +61,16 @@
  *
  **********************************************************************/
 
+#include "types.h"
+
 #ifndef _PARSE_
 #define _PARSE_
 
-extern int ParseTwmrc(), ParseStringList();
-extern int (*twmInputFunc)();
-extern void twmUnput();
-extern void TwmOutput();
+extern int ParseTwmrc(char *filename);
+extern int ParseStringList(char **sl);
+extern int (*twmInputFunc)(void);
+extern void twmUnput(int c);
+extern void TwmOutput(int c);
 
 #define F_NOP			0
 #define F_BEEP			1
@@ -196,7 +199,25 @@ extern void TwmOutput();
 #define D_EAST			3
 #define D_WEST			4
 
-int ParseJustification ();
-int ParseAlignement ();
+int ParseJustification (register char *s);
+int ParseAlignement (register char *s);
+
+int parse_keyword (char *s, int *nump);
+
+int do_single_keyword(int keyword);
+int do_string_keyword(int keyword, char *s);
+int do_number_keyword(int keyword, int num);
+name_list **do_colorlist_keyword(int keyword, int colormode, char *s);
+int do_color_keyword(int keyword, int colormode, char *s);
+int do_string_savecolor(int colormode, char *s);
+int do_var_savecolor(int key);
+void assign_var_savecolor(void);
+int do_squeeze_entry(name_list **list,	/* squeeze or dont-squeeze list */
+		     char *name,	/* window name */
+		     int justify,	/* left, center, right */
+		     int num,		/* signed num */
+		     int denom		/* 0 or indicates fraction denom */
+		     );
+int twmrc_lineno;
 
 #endif /* _PARSE_ */

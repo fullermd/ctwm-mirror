@@ -33,14 +33,17 @@
 #include <X11/Xatom.h>
 #endif
 #include "screen.h"
+#include "add_window.h"
+#include "resize.h"
 #include "windowbox.h"
 
-name_list **addWindowBox (boxname, geometry)
-char *boxname, *geometry;
+name_list **addWindowBox (char *boxname, char *geometry)
 {
     WindowBox *winbox;
 
-    //printf ("addWindowBox : name = %s, geometry = %s\n", boxname, geometry);
+#if 0
+    printf ("addWindowBox : name = %s, geometry = %s\n", boxname, geometry);
+#endif
     winbox = (WindowBox*) malloc (sizeof (WindowBox));
     winbox->next     = NULL;
     winbox->name     = strdup (boxname);
@@ -50,7 +53,8 @@ char *boxname, *geometry;
     return (&(winbox->winlist));
 }
 
-void createWindowBoxes () {
+void createWindowBoxes (void)
+{
     WindowBox *winbox;
     char title [128];
     XWMHints	  wmhints;
@@ -89,18 +93,17 @@ void createWindowBoxes () {
 	XSetWMHints (dpy, win, &wmhints);
 
 	winbox->window = win;
-        winbox->twmwin = (TwmWindow*) AddWindow (win, 2, (IconMgr*) NULL);
+	winbox->twmwin = AddWindow (win, 2, NULL);
 	if (!winbox->twmwin) {
 	    fprintf (stderr, "cannot create %s window box, exiting...\n", winbox->name);
 	    exit (1);
 	}
-        winbox->twmwin->iswinbox = TRUE;
+	winbox->twmwin->iswinbox = TRUE;
 	XMapWindow (dpy, win);
     }
 }
 
-WindowBox *findWindowBox (twmwin)
-TwmWindow *twmwin;
+WindowBox *findWindowBox (TwmWindow *twmwin)
 {
     WindowBox *winbox;
     if (twmwin->iswinbox) return ((WindowBox*)0);
@@ -116,9 +119,7 @@ TwmWindow *twmwin;
     return ((WindowBox*)0);
 }
 
-void ConstrainedToWinBox (twmwin, x, y, nx, ny)
-TwmWindow *twmwin;
-int x, y, *nx, *ny;
+void ConstrainedToWinBox (TwmWindow *twmwin, int x, int y, int *nx, int *ny)
 {
     XWindowAttributes attr;
 
@@ -130,8 +131,7 @@ int x, y, *nx, *ny;
     if (y > attr.height - 1) *ny = attr.height - 1;
 }
 
-void fittocontent (twmwin)
-TwmWindow *twmwin;
+void fittocontent (TwmWindow *twmwin)
 {
     TwmWindow	*t;
     int minx, miny, maxx, maxy, x, y, w, h;

@@ -87,8 +87,8 @@
 #    include <X11/Xfuncs.h>
 #endif
 #endif
+#include "types.h"
 #include "list.h"
-#include "util.h"
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
@@ -106,7 +106,7 @@
 #define SIGNAL_RETURN return
 #endif
 
-typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
+typedef SIGNAL_T (*SigProc)(int); /* type of function returned by signal() */
 
 #if defined(USE_SIGNALS) && defined(SVR4) && !defined(__sgi)
 #define signal sigset
@@ -189,7 +189,7 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 #define MinSize(a, b)  (((a) > (b)) ? (b) : (a))
 #endif
 
-typedef struct MyFont
+struct MyFont
 {
 #ifdef I18N    
     char *basename;			/* name of the font */
@@ -202,22 +202,22 @@ typedef struct MyFont
 #endif
     int height;			/* height of the font */
     int y;			/* Y coordinate to draw characters */
-} MyFont;
+};
 
-typedef struct ColorPair
+struct ColorPair
 {
     Pixel fore, back, shadc, shadd;
-} ColorPair;
+};
 
 typedef enum {on, off} ButtonState;
 
-typedef struct _TitleButtonFunc {
+struct _TitleButtonFunc {
     int func;                         /* function to execute */
     char *action;                     /* optional action arg */
     struct MenuRoot *menuroot;                /* menu to pop on F_MENU */
-} TitleButtonFunc;
+};
 
-typedef struct _TitleButton {
+struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
     Image *image;			/* image to display in button */
@@ -226,19 +226,19 @@ typedef struct _TitleButton {
     int dstx, dsty;			/* to where to start copying */
     Bool rightside;			/* t: on right, f: on left */
     TitleButtonFunc funs[MAX_BUTTONS];  /* funcs assoc'd to each button */
-} TitleButton;
+};
 
-typedef struct _TBWindow {
+struct _TBWindow {
     Window window;			/* which window in this frame */
     Image *image;			/* image to display in button */
     TitleButton *info;			/* description of this window */
-} TBWindow;
+};
 
-typedef struct _SqueezeInfo {
+struct _SqueezeInfo {
     int justify;			/* left, center, right */
     int num;				/* signed pixel count or numerator */
     int denom;				/* 0 for pix count or denominator */
-} SqueezeInfo;
+};
 
 #define J_UNDEF			0
 #define J_LEFT			1
@@ -251,65 +251,65 @@ typedef struct _SqueezeInfo {
 /* Colormap window entry for each window in WM_COLORMAP_WINDOWS
  * ICCCM property.
  */
-typedef struct TwmColormap
-{	
+struct TwmColormap
+{
     Colormap c;			/* Colormap id */
     int state;			/* install(ability) state */
     unsigned long install_req;	/* request number which installed it */
     Window w;			/* window causing load of color table */
     int refcnt;
-} TwmColormap;
+};
 
 #define CM_INSTALLABLE		1
 #define CM_INSTALLED		2
 #define CM_INSTALL		4
 
-typedef struct ColormapWindow
+struct ColormapWindow
 {
     Window w;			/* Window id */
     TwmColormap *colormap;	/* Colormap for this window */
     int visibility;		/* Visibility of this window */
     int refcnt;
-} ColormapWindow;
+};
 
-typedef struct Colormaps
+struct Colormaps
 {
     ColormapWindow **cwins;	/* current list of colormap windows */
     int number_cwins;		/* number of elements in current list */
     char *scoreboard;		/* conflicts between installable colortables */
-} Colormaps;
+};
 
 #define ColormapsScoreboardLength(cm) ((cm)->number_cwins * \
 				       ((cm)->number_cwins - 1) / 2)
 
-typedef struct WindowRegion {
+struct WindowRegion {
     struct WindowRegion	*next;
     int			x, y, w, h;
     int			grav1, grav2;
     name_list           *clientlist;
     struct WindowEntry	*entries;
-} WindowRegion;
+};
 
-typedef struct WindowEntry {
+struct WindowEntry {
     struct WindowEntry	*next;
     int			x, y, w, h;
     struct TwmWindow	*twm_win;
     short 		used;
-} WindowEntry;
+};
 
-typedef struct _WindowBox {
+struct _WindowBox {
     struct _WindowBox	*next;
     char		*name;
     char		*geometry;
     name_list           *winlist;
     Window		window;
     struct TwmWindow	*twmwin;
-} WindowBox;
+};
 
 /* for each window that is on the display, one of these structures
  * is allocated and linked into a list 
  */
-typedef struct TwmWindow
+struct TwmWindow
 {
     struct TwmWindow *next;	/* next twm window */
     struct TwmWindow *prev;	/* previous twm window */
@@ -319,7 +319,7 @@ typedef struct TwmWindow
     Window title_w;		/* the title bar window */
     Window hilite_wl;		/* the left hilite window */
     Window hilite_wr;		/* the right hilite window */
-    Window lolite_wl;		/* the right lolite window */
+    Window lolite_wl;		/* the left lolite window */
     Window lolite_wr;		/* the right lolite window */
     Cursor curcurs;		/* current resize cursor */
     Pixmap gray;
@@ -424,10 +424,10 @@ typedef struct TwmWindow
     Bool heightEverChangedByUser;
 #endif
 
-} TwmWindow;
+};
 
 #ifdef X11R6
-typedef struct TWMWinConfigEntry
+struct TWMWinConfigEntry
 {
     struct TWMWinConfigEntry *next;
     int tag;
@@ -451,7 +451,7 @@ typedef struct TWMWinConfigEntry
     int occupation;
    /* ====================================================================== */
 
-} TWMWinConfigEntry;
+};
 #endif
 
 #define DoesWmTakeFocus		(1L << 0)
@@ -495,10 +495,13 @@ extern char *malloc(), *calloc(), *realloc(), *getenv();
 extern void free();
 #endif
 #endif
-extern void Reborder();
-extern SIGNAL_T Done();
-void ComputeCommonTitleOffsets();
-void ComputeWindowTitleOffsets(), ComputeTitleLocation();
+extern void Reborder(Time time);
+extern SIGNAL_T Done(int signum);
+void ComputeCommonTitleOffsets(void);
+void ComputeWindowTitleOffsets(TwmWindow *tmp_win, int width, Bool squeeze);
+void ComputeTitleLocation(register TwmWindow *tmp);
+void CreateFonts(void);
+void RestoreWithdrawnLocation (TwmWindow *tmp);
 extern char *ProgramName;
 extern Display *dpy;
 #ifdef X11R6
@@ -542,9 +545,6 @@ extern char **Argv;
 #ifndef VMS
 extern char **Environ;
 #endif
-extern void NewFontCursor();
-extern Pixmap CreateMenuIcon();
-extern Pixmap Create3DMenuIcon();
 
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;
@@ -552,7 +552,7 @@ extern XErrorEvent LastErrorEvent;
 #define ResetError() (ErrorOccurred = False)
 
 extern Bool RestartPreviousState;
-extern Bool GetWMState();
+extern Bool GetWMState(Window w, int *statep, Window *iwp);
 
 extern Atom _XA_MIT_PRIORITY_COLORS;
 extern Atom _XA_WM_CHANGE_STATE;

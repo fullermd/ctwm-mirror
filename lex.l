@@ -75,7 +75,7 @@
 extern char *ProgramName;
 
 extern int ParseError;
-extern int parse_keyword(),twmrc_error_prefix();
+extern void twmrc_error_prefix(void);
 #ifdef FLEX_SCANNER
    int yylineno;
 #  undef YY_INPUT
@@ -132,7 +132,7 @@ number				[0-9]+
 				}
 %%
 #ifndef yywrap
-yywrap() { return(1);}
+int yywrap(void) { return(1);}
 #endif
 
 #ifndef FLEX_SCANNER

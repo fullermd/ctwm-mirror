@@ -38,8 +38,8 @@
 #ifndef _CURSOR_
 #define _CURSOR_
 
-extern void NewFontCursor();
-extern NewBitmapCursor();
-extern Cursor MakeStringCursor ();
+extern void NewFontCursor(Cursor *cp, char *str);
+extern int NewBitmapCursor(Cursor *cp, char *source, char *mask);
+extern Cursor MakeStringCursor (char *string);
 #endif /* _CURSOR_ */
 

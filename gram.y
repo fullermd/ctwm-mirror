@@ -93,14 +93,17 @@ static char *curWorkSpc;
 static char *client, *workspace;
 static MenuItem *lastmenuitem = (MenuItem*) 0;
 
-extern yyerror();
-extern RemoveDQuote();
+extern void yyerror(char *s);
+extern void RemoveDQuote(char *str);
 
-static MenuRoot *GetRoot();
+static MenuRoot *GetRoot(char *name, char *fore, char *back);
 
-static Bool CheckWarpScreenArg(), CheckWarpRingArg();
-static Bool CheckColormapArg();
-static void GotButton(), GotKey(), GotTitleButton();
+static Bool CheckWarpScreenArg(register char *s);
+static Bool CheckWarpRingArg(register char *s);
+static Bool CheckColormapArg(register char *s);
+static void GotButton(int butt, int func);
+static void GotKey(char *key, int func);
+static void GotTitleButton(char *bitmapname, int func, Bool rightside);
 static char *ptr;
 static name_list **list;
 static int cont = 0;
@@ -109,14 +112,9 @@ Bool donttoggleworkspacemanagerstate = FALSE;
 int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 
-extern twmrc_error_prefix();
+extern void twmrc_error_prefix(void);
 
-extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
-extern name_list **do_colorlist_keyword();
-extern int do_color_keyword(), do_string_savecolor();
-extern int do_var_savecolor(), do_squeeze_entry();
-extern int twmrc_lineno;
-extern yylex();
+extern int yylex(void);
 %}
 
 %union
@@ -280,7 +278,7 @@ stmt		: error
 
 			    root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 			    item = AddToMenu (root, "x", Action,
-					NULLSTR, $2, NULLSTR, NULLSTR);
+					NULL, $2, NULLSTR, NULLSTR);
 			    AddFuncButton ($1, C_ROOT, 0, $2, (MenuRoot*) 0, item);
 			}
 			Action = "";
@@ -383,7 +381,7 @@ stmt		: error
 					    root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					    Scr->DefaultFunction.item = 
 						AddToMenu(root,"x",Action,
-							  NULLSTR,$2, NULLSTR, NULLSTR);
+							  NULL,$2, NULLSTR, NULLSTR);
 					  }
 					  Action = "";
 					  pull = NULL;
@@ -392,7 +390,7 @@ stmt		: error
 					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					   Scr->WindowFunction.item = 
 						AddToMenu(root,"x",Action,
-							  NULLSTR,$2, NULLSTR, NULLSTR);
+							  NULL,$2, NULLSTR, NULLSTR);
 					   Action = "";
 					   pull = NULL;
 					}
@@ -400,7 +398,7 @@ stmt		: error
 					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					   Scr->ChangeWorkspaceFunction.item = 
 						AddToMenu(root,"x",Action,
-							  NULLSTR,$2, NULLSTR, NULLSTR);
+							  NULL,$2, NULLSTR, NULLSTR);
 					   Action = "";
 					   pull = NULL;
 					}
@@ -408,7 +406,7 @@ stmt		: error
 					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					   Scr->DeIconifyFunction.item = 
 						AddToMenu(root,"x",Action,
-							  NULLSTR,$2, NULLSTR, NULLSTR);
+							  NULL,$2, NULLSTR, NULLSTR);
 					   Action = "";
 					   pull = NULL;
 					}
@@ -416,7 +414,7 @@ stmt		: error
 					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					   Scr->IconifyFunction.item = 
 						AddToMenu(root,"x",Action,
-							  NULLSTR,$2, NULLSTR, NULLSTR);
+							  NULL,$2, NULLSTR, NULLSTR);
 					   Action = "";
 					   pull = NULL;
 					}
@@ -888,7 +886,7 @@ function_entries: /* Empty */
 		;
 
 function_entry	: action		{ AddToMenu(root, "", Action, NULLSTR, $1,
-						NULLSTR, NULLSTR);
+						NULL, NULLSTR);
 					  Action = "";
 					}
 		;
@@ -992,18 +990,18 @@ number		: NUMBER		{ $$ = $1; }
 		;
 
 %%
-yyerror(s) char *s;
+void yyerror(char *s)
 {
     twmrc_error_prefix();
     fprintf (stderr, "error in input file:  %s\n", s ? s : "");
     ParseError = 1;
 }
-RemoveDQuote(str)
-char *str;
+
+void RemoveDQuote(char *str)
 {
     register char *i, *o;
-    register n;
-    register count;
+    register int n;
+    register int count;
 
     for (i=str+1, o=str; *i && *i != '\"'; o++)
     {
@@ -1082,9 +1080,7 @@ char *str;
     *o = '\0';
 }
 
-static MenuRoot *GetRoot(name, fore, back)
-char *name;
-char *fore, *back;
+static MenuRoot *GetRoot(char *name, char *fore, char *back)
 {
     MenuRoot *tmp;
 
@@ -1106,8 +1102,7 @@ char *fore, *back;
     return tmp;
 }
 
-static void GotButton (butt, func)
-int butt, func;
+static void GotButton (int butt, int func)
 {
     int i;
     MenuItem *item;
@@ -1121,7 +1116,7 @@ int butt, func;
 	}
 	else {
 	    root = GetRoot (TWM_ROOT, NULLSTR, NULLSTR);
-	    item = AddToMenu (root, "x", Action, NULLSTR, func, NULLSTR, NULLSTR);
+	    item = AddToMenu (root, "x", Action, NULL, func, NULLSTR, NULLSTR);
 	    AddFuncButton (butt, i, mods, func, (MenuRoot*) 0, item);
 	}
     }
@@ -1133,9 +1128,7 @@ int butt, func;
     mods = 0;
 }
 
-static void GotKey(key, func)
-char *key;
-int func;
+static void GotKey(char *key, int func)
 {
     int i;
 
@@ -1161,10 +1154,7 @@ int func;
 }
 
 
-static void GotTitleButton (bitmapname, func, rightside)
-    char *bitmapname;
-    int func;
-    Bool rightside;
+static void GotTitleButton (char *bitmapname, int func, Bool rightside)
 {
     if (!CreateTitleButton (bitmapname, func, Action, pull, rightside, True)) {
 	twmrc_error_prefix();
@@ -1176,8 +1166,7 @@ static void GotTitleButton (bitmapname, func, rightside)
     pull = NULL;
 }
 
-static Bool CheckWarpScreenArg (s)
-    register char *s;
+static Bool CheckWarpScreenArg (register char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1191,8 +1180,7 @@ static Bool CheckWarpScreenArg (s)
 }
 
 
-static Bool CheckWarpRingArg (s)
-    register char *s;
+static Bool CheckWarpRingArg (register char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1204,8 +1192,7 @@ static Bool CheckWarpRingArg (s)
 }
 
 
-static Bool CheckColormapArg (s)
-    register char *s;
+static Bool CheckColormapArg (register char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1218,7 +1205,7 @@ static Bool CheckColormapArg (s)
 }
 
 
-twmrc_error_prefix ()
+void twmrc_error_prefix (void)
 {
     fprintf (stderr, "%s:  line %d:  ", ProgramName, twmrc_lineno);
 }

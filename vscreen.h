@@ -23,18 +23,20 @@
  *
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
+#include "types.h"
+
 #ifndef _VSCREEN_
 #define _VSCREEN_
 
-typedef struct virtualScreen {
+struct virtualScreen {
   int   x, y, w, h;
   Window window;
   Boolean main;
   struct WorkSpaceWindow *wsw;
   struct virtualScreen *next;
-} virtualScreen;
+};
 
-void InitVirtualScreens ();
-virtualScreen *getVScreenOf ();
+void InitVirtualScreens (ScreenInfo *scr);
+virtualScreen *getVScreenOf (int x, int y);
 
 #endif /* -VSCREEN- */
