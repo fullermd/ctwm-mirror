@@ -4339,8 +4339,6 @@ static void dumpevent (e)
 {
     char *name = "Unknown event";
 
-    fprintf(stderr,"foo!\n");
-
     if (! tracefile) return;
     switch (e->type) {
       case KeyPress:  name = "KeyPress"; break;
