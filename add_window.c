@@ -613,7 +613,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
 	if (mask_ & XNegative) tmp_win->attr.x += Scr->rootw - tmp_win->attr.width;
 	if (mask_ & YNegative) tmp_win->attr.y += Scr->rooth - tmp_win->attr.height;
-        random_placed = True;
 	ask_user = False;
     }
 
