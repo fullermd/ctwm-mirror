@@ -163,7 +163,7 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLI
 		3dcircle.xpm 3ddimple.xpm 3ddot.xpm 3dfeet.xpm 3dleopard.xpm \
 		3dpie.xpm 3dpyramid.xpm 3dslant.xpm
 
-AllTarget(Makefile ctwm)
+AllTarget(ctwm)
 
 SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(DESTDIR)$(TWMDIR)'/system.ctwmrc"')
 SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="'$(DESTDIR)$(TWMDIR)'/images"')
@@ -222,8 +222,9 @@ dist:	clean gram.h gram.c lex.c deftwmrc.c
 # Make all source files depend on this file, so there will be no more
 # surprises.
 
-$(OBJS): Imakefile
+$(OBJS): Makefile
 
-Makefile:: Imakefile
+#define IHaveSpecialMakefileTarget
+Makefile: Imakefile
 	echo "You need to run 'xmkmf'"
 	exit 1
