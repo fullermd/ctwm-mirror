@@ -90,23 +90,35 @@
 #include "screen.h"
 #include "iconmgr.h"
 #ifdef VMS
-#include <decw$include/Xproto.h>
-#include <decw$include/Xatom.h>
-#include <X11Xmu/Error.h>
-#include "vms_cmd_services.h"
+#  include <decw$include/Xproto.h>
+#  include <decw$include/Xatom.h>
+#  include <X11Xmu/Error.h>
+#  include "vms_cmd_services.h"
 
-#ifndef PIXMAP_DIRECTORY
-#define PIXMAP_DIRECTORY "DECW$BITMAPS:"
-#endif
-#else
-#include <X11/Xproto.h>
-#include <X11/Xatom.h>
-#include <X11/Xmu/Error.h>
+#  ifndef PIXMAP_DIRECTORY
+#    define PIXMAP_DIRECTORY "DECW$BITMAPS:"
+#  endif
+#else /* VMS */
+#  include <X11/Xproto.h>
+#  include <X11/Xatom.h>
+#  include <X11/Xmu/Error.h>
 
-#ifndef PIXMAP_DIRECTORY
-#define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
-#endif
-#endif
+#  ifdef X11R6
+#    include <X11/SM/SMlib.h>
+#  endif /* X11R6 */
+
+#  ifndef NO_LOCALE
+#    include <locale.h>
+#  endif /* NO_LOCALE */
+
+#  ifndef PIXMAP_DIRECTORY
+#    define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
+#  endif /* PIXMAP_DIRECTORY */
+#endif /* VMS */
+
+#  ifdef X11R6
+XtAppContext appContext;	/* Xt application context */
+#endif /* X11R6 */
 
 Display *dpy;			/* which display are we talking to */
 #ifdef USEM4
@@ -119,6 +131,7 @@ Window ResizeWindow;		/* the window we are resizing */
 int    captive     = FALSE;
 
 int MultiScreen = TRUE;		/* try for more than one screen? */
+int Monochrome  = FALSE;	/* Force monochrome, for testing purpose */
 int NumScreens;			/* number of screens in ScreenList */
 int HasShape;			/* server supports shape extension? */
 int ShapeEventBase, ShapeErrorBase;
@@ -132,9 +145,10 @@ static int RedirectError;	/* TRUE ==> another window manager running */
 static int CatchRedirectError();	/* for settting RedirectError */
 static int TwmErrorHandler();	/* for everything else */
 char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
-int InfoLines;
+int InfoLines,InfoWidth,InfoHeight;
 char *InitFile = NULL;
 static Window CreateRootWindow ();
+static void DisplayVersion ();
 
 Cursor	UpperLeftCursor;
 Cursor	TopRightCursor,
@@ -219,6 +233,11 @@ main(argc, argv, environ)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
     extern ColormapWindow *CreateColormapWindow();
+#ifdef X11R6
+    int zero = 0;
+    char *restore_filename = NULL;
+    char *client_id = NULL;
+#endif
     char *welcomefile;
     int  screenmasked;
     static int rootx = 100;
@@ -226,6 +245,10 @@ main(argc, argv, environ)
     static unsigned int rootw = 800;
     static unsigned int rooth = 500;
     Window capwin = (Window) 0;
+
+#ifndef NO_LOCALE
+    (void)setlocale(LC_ALL, NULL);
+#endif
 
 #ifdef VMS
     vms_do_init();
@@ -260,9 +283,27 @@ main(argc, argv, environ)
 		if (++i >= argc) goto usage;
 		InitFile = argv[i];
 		continue;
+	      case 'm':				/* -mono */
+		if (strcmp(argv[i],"-mono")) goto usage;
+		Monochrome = TRUE;
+		continue;
 	      case 'v':				/* -verbose */
+		if (!strcmp(argv[i],"-version")) {
+		    DisplayVersion ();
+		    exit (0);
+		}
 		PrintErrorMessages = True;
 		continue;
+#ifdef X11R6
+	      case 'c':				/* -clientId */
+		if (++i >= argc) goto usage;
+		client_id = argv[i];
+		continue;
+	      case 'r':				/* -restore */
+		if (++i >= argc) goto usage;
+		restore_filename = argv[i];
+		continue;
+#endif
 	      case 'q':				/* -quiet */
 		PrintErrorMessages = False;
 		continue;
@@ -328,7 +369,16 @@ main(argc, argv, environ)
     NoClass.res_name = NoName;
     NoClass.res_class = NoName;
 
+#ifdef X11R6
+    XtToolkitInitialize ();
+    appContext = XtCreateApplicationContext ();
+
+    if (!(dpy = XtOpenDisplay (appContext, display_name, "twm", "twm",
+	NULL, 0, &zero, NULL))) {
+#else
+
     if (!(dpy = XOpenDisplay(display_name))) {
+#endif
 	fprintf (stderr, "%s:  unable to open display \"%s\"\n",
 		 ProgramName, XDisplayName(display_name));
 	exit (1);
@@ -342,7 +392,9 @@ main(argc, argv, environ)
 	exit (1);
     }
 #endif
-
+#ifdef X11R6
+    if (restore_filename) ReadWinConfigFile (restore_filename);
+#endif
     HasShape = XShapeQueryExtension (dpy, &ShapeEventBase, &ShapeErrorBase);
     TwmContext = XUniqueContext();
     MenuContext = XUniqueContext();
@@ -536,7 +588,7 @@ main(argc, argv, environ)
 
 	Scr->XORvalue = (((unsigned long) 1) << Scr->d_depth) - 1;
 
-	if (DisplayCells(dpy, scrnum) < 3)
+	if (Monochrome || DisplayCells(dpy, scrnum) < 3)
 	    Scr->Monochrome = MONOCHROME;
 	else
 	    Scr->Monochrome = COLOR;
@@ -692,6 +744,7 @@ main(argc, argv, environ)
 	    Scr->workSpaceMgr.workspaceWindow.twm_win->mapped = TRUE;
 	}
 	
+	if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->DefaultC);
 	attributes.border_pixel = Scr->DefaultC.fore;
 	attributes.background_pixel = Scr->DefaultC.back;
 	attributes.event_mask = (ExposureMask | ButtonPressMask |
@@ -702,7 +755,7 @@ main(argc, argv, environ)
 		     CWBackingStore | CWCursor);
 	Scr->InfoWindow = XCreateWindow (dpy, Scr->Root, 0, 0, 
 					 (unsigned int) 5, (unsigned int) 5,
-					 (unsigned int) BW, 0,
+					 (unsigned int) 0, 0,
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
@@ -711,15 +764,27 @@ main(argc, argv, environ)
 					   " 8888 x 8888 ", 13);
 	valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
 	attributes.bit_gravity = NorthWestGravity;
-	Scr->SizeWindow = XCreateWindow (dpy, Scr->Root, 0, 0, 
+
+	{
+	    int sx, sy;
+	    if (Scr->CenterFeedbackWindow) {
+		sx = (Scr->MyDisplayWidth  / 2) - (Scr->SizeStringWidth / 2);
+		sy = (Scr->MyDisplayHeight / 2) - ((Scr->SizeFont.height + SIZE_VINDENT*2) / 2);
+		attributes.save_under = True;
+		valuemask |= CWSaveUnder;
+	    } else {
+		sx = 0;
+		sy = 0;
+	    }
+	    Scr->SizeWindow = XCreateWindow (dpy, Scr->Root, sx, sy, 
 					 (unsigned int) Scr->SizeStringWidth,
 					 (unsigned int) (Scr->SizeFont.height +
 							 SIZE_VINDENT*2),
-					 (unsigned int) BW, 0,
+					 (unsigned int) 0, 0,
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
-
+	}
 	Scr->ShapeWindow = XCreateSimpleWindow (dpy, Scr->Root, 0, 0, Scr->MyDisplayWidth,
 				Scr->MyDisplayHeight, 0, 0, 0);
 
@@ -736,7 +801,9 @@ main(argc, argv, environ)
 		   ProgramName);
 	exit (1);
     }
-
+#ifdef X11R6
+    (void) ConnectToSessionManager (client_id);
+#endif
 #ifdef SOUNDS
     play_startup_sound();
 #endif
@@ -746,6 +813,7 @@ main(argc, argv, environ)
     InitEvents();
     StartAnimation ();
     HandleEvents();
+    return (0);
 }
 
 /***********************************************************************
@@ -923,6 +991,10 @@ InitVariables()
     Scr->ShowWinWhenMovingInWmgr = FALSE;
     Scr->ReverseCurrentWorkspace = FALSE;
     Scr->DontWarpCursorInWMap = FALSE;
+    Scr->XMoveGrid = 1;
+    Scr->YMoveGrid = 1;
+    Scr->FastServer = True;
+    Scr->CenterFeedbackWindow = False;
 
     /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"
@@ -1114,8 +1186,8 @@ SIGNAL_T Restart()
 Bool ErrorOccurred = False;
 XErrorEvent LastErrorEvent;
 
-static int TwmErrorHandler(dpy, event)
-    Display *dpy;
+static int TwmErrorHandler(display, event)
+    Display *display;
     XErrorEvent *event;
 {
     LastErrorEvent = *event;
@@ -1125,14 +1197,14 @@ static int TwmErrorHandler(dpy, event)
 	event->error_code != BadWindow &&	/* watch for dead puppies */
 	(event->request_code != X_GetGeometry &&	 /* of all styles */
 	 event->error_code != BadDrawable))
-      XmuPrintDefaultErrorMessage (dpy, event, stderr);
+      XmuPrintDefaultErrorMessage (display, event, stderr);
     return 0;
 }
 
 
 /* ARGSUSED*/
-static int CatchRedirectError(dpy, event)
-    Display *dpy;
+static int CatchRedirectError(display, event)
+    Display *display;
     XErrorEvent *event;
 {
     RedirectError = TRUE;
@@ -1149,6 +1221,9 @@ Atom _XA_WM_PROTOCOLS;
 Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
+Atom _XA_SM_CLIENT_ID;
+Atom _XA_WM_CLIENT_LEADER;
+Atom _XA_WM_WINDOW_ROLE;
 
 InternUsefulAtoms ()
 {
@@ -1163,6 +1238,11 @@ InternUsefulAtoms ()
     _XA_WM_TAKE_FOCUS = XInternAtom (dpy, "WM_TAKE_FOCUS", False);
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
+#ifdef X11R6
+    _XA_SM_CLIENT_ID = XInternAtom (dpy, "SM_CLIENT_ID", False);
+    _XA_WM_CLIENT_LEADER = XInternAtom (dpy, "WM_CLIENT_LEADER", False);
+    _XA_WM_WINDOW_ROLE = XInternAtom (dpy, "WM_WINDOW_ROLE", False);
+#endif
 }
 
 static Window CreateRootWindow (x, y, width, height)
@@ -1171,7 +1251,6 @@ unsigned int	width, height;
 {
     int		scrnum;
     Window	ret;
-    XWMHints	wmhints;
 
     scrnum = DefaultScreen (dpy);
     ret = XCreateSimpleWindow (dpy, RootWindow (dpy, scrnum),
@@ -1180,4 +1259,22 @@ unsigned int	width, height;
     XMapWindow (dpy, ret);
     XStoreName (dpy, ret, "Captive ctwm");
     return (ret);
+}
+
+static void DisplayVersion () {
+    (void) printf ("Twm version:  %s\n", Version);
+    (void) printf ("Compile time options :");
+#ifdef XPM
+    (void) printf (" XPM");
+#endif
+#ifdef IMCONV
+    (void) printf (" IMCONV");
+#endif
+#ifdef USEM4
+    (void) printf (" USEM4");
+#endif
+#ifdef SOUNDS
+    (void) printf (" SOUNDS");
+#endif
+    (void) printf ("\n");
 }

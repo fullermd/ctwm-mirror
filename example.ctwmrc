@@ -5,7 +5,7 @@
 #######################################################################
 
 PixmapDirectory			"/logiciels/public/X11R5/lib/X11/twm"
-UnknownIcon			"@unknown.xpm"
+UnknownIcon			"xpm:unknown.xpm"
 IconJustification		"left"
 RightTitleButton		"%xpm:resize" = f.horizoom
 RandomPlacement			"unmapped"

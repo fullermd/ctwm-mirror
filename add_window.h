@@ -79,5 +79,9 @@ extern int AddingY;
 extern int AddingW;
 extern int AddingH;
 
+#ifndef NO_LOCALE
+extern char *GetWMPropertyString();
+#endif /* NO_LOCALE */
+
 #endif /* _ADD_WINDOW_ */
 

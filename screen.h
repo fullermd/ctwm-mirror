@@ -222,6 +222,9 @@ typedef struct ScreenInfo
     short	ShowWinWhenMovingInWmgr;
     short	ReverseCurrentWorkspace;
     short	DontWarpCursorInWMap;
+    short	XMoveGrid, YMoveGrid;
+    short	FastServer;
+    short	CenterFeedbackWindow;
 
     name_list *BorderColorL;
     name_list *IconBorderColorL;

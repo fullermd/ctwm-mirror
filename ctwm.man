@@ -12,7 +12,7 @@
 .if t .sp .5
 ..
 .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH CTWM 1 "Release 5" "X Version 11"
+.TH CTWM 1 "Version 3.3"
 .SH NAME
 ctwm - Tab Window Manager for the X Window System
 .SH SYNTAX
@@ -27,7 +27,7 @@ several forms of icon management, user-defined macro functions,
 click-to-type and pointer-driven keyboard focus, and user-specified 
 key and pointer button bindings.  It is actually
 twm (Tab Window Manager) from the MIT X11 distribution slightly modified
-to accomodate the use of several virtual screens (workspaces). It is
+to accommodate the use of several virtual screens (workspaces). It is
 heavily inspired from the Hewlett-Packard vuewm window manager. In addition,
 \fIctwm\fP can use coloured, shaped icons and background root pixmaps in XPM
 format [from Arnaud Le Hors],any format understood by the imconv package

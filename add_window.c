@@ -179,13 +179,24 @@ IconMgr *iconp;
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int width, height;			/* tmp variable */
+#ifdef NO_LOCALE
     Atom actual_type;
     int actual_format;
     unsigned long nitems, bytesafter;
+#endif /* NO_LOCALE */
     int ask_user;		/* don't know where to put the window */
     int gravx, gravy;			/* gravity signs for positioning */
     int namelen;
     int bw2;
+#ifdef X11R6
+    short saved_x, saved_y, restore_icon_x, restore_icon_y;
+    unsigned short saved_width, saved_height;
+    Bool restore_iconified = 0;
+    Bool restore_icon_info_present = 0;
+    int restoredFromPrevSession;
+    Bool width_ever_changed_by_user;
+    Bool height_ever_changed_by_user;
+#endif
 
 #ifdef DEBUG
     fprintf(stderr, "AddWindow: w = 0x%x\n", w);
@@ -206,11 +217,46 @@ IconMgr *iconp;
 
     XSelectInput(dpy, tmp_win->w, PropertyChangeMask);
     XGetWindowAttributes(dpy, tmp_win->w, &tmp_win->attr);
+#ifndef NO_LOCALE
+    tmp_win->name = GetWMPropertyString(tmp_win->w, XA_WM_NAME);
+#else /* NO_LOCALE */
     XFetchName(dpy, tmp_win->w, &tmp_win->name);
+#endif /* NO_LOCALE */
     tmp_win->class = NoClass;
     XGetClassHint(dpy, tmp_win->w, &tmp_win->class);
     FetchWmProtocols (tmp_win);
     FetchWmColormapWindows (tmp_win);
+
+#ifdef X11R6
+    if (GetWindowConfig (tmp_win,
+	&saved_x, &saved_y, &saved_width, &saved_height,
+	&restore_iconified, &restore_icon_info_present,
+	&restore_icon_x, &restore_icon_y,
+	&width_ever_changed_by_user, &height_ever_changed_by_user))
+    {
+	tmp_win->attr.x = saved_x;
+	tmp_win->attr.y = saved_y;
+
+	tmp_win->widthEverChangedByUser = width_ever_changed_by_user;
+	tmp_win->heightEverChangedByUser = height_ever_changed_by_user;
+	
+	if (width_ever_changed_by_user)
+	    tmp_win->attr.width = saved_width;
+
+	if (height_ever_changed_by_user)
+	    tmp_win->attr.height = saved_height;
+
+	restoredFromPrevSession = 1;
+    }
+    else
+    {
+	tmp_win->widthEverChangedByUser = False;
+	tmp_win->heightEverChangedByUser = False;
+
+	restoredFromPrevSession = 0;
+    }
+#endif
+
     /*
      * do initial clip; should look at window gravity
      */
@@ -220,6 +266,25 @@ IconMgr *iconp;
       tmp_win->attr.height = Scr->MaxWindowHeight;
 
     tmp_win->wmhints = XGetWMHints(dpy, tmp_win->w);
+
+#ifdef X11R6
+    if (tmp_win->wmhints)
+    {
+	if (restore_iconified)
+	{
+	    tmp_win->wmhints->initial_state = IconicState;
+	    tmp_win->wmhints->flags |= StateHint;
+	}
+
+	if (restore_icon_info_present)
+	{
+	    tmp_win->wmhints->icon_x = restore_icon_x;
+	    tmp_win->wmhints->icon_y = restore_icon_y;
+	    tmp_win->wmhints->flags |= IconPositionHint;
+	}
+    }
+#endif
+
     if (tmp_win->wmhints && !(tmp_win->wmhints->flags & InputHint))
 	tmp_win->wmhints->input = True;
     if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint)) 
@@ -234,6 +299,9 @@ IconMgr *iconp;
 
     tmp_win->transient = Transient(tmp_win->w, &tmp_win->transientfor);
 
+#ifdef X11R6
+    tmp_win->nameChanged = 0;
+#endif
     if (tmp_win->name == NULL)
 	tmp_win->name = NoName;
     if (tmp_win->class.res_name == NULL)
@@ -366,7 +434,22 @@ IconMgr *iconp;
     }
 
     GetWindowSizeHints (tmp_win);
-    GetGravityOffsets (tmp_win, &gravx, &gravy);
+
+#ifdef X11R6
+    if (restoredFromPrevSession)
+    {
+	/*
+	 * When restoring window positions from the previous session,
+	 * we always use NorthWest gravity.
+	 */
+
+	gravx = gravy = -1;
+    }
+    else
+    {
+	GetGravityOffsets (tmp_win, &gravx, &gravy);
+    }
+#endif
 
     /*
      * Don't bother user if:
@@ -391,7 +474,11 @@ IconMgr *iconp;
      */
     SetupOccupation (tmp_win);
 
+#ifdef X11R6
+    if (HandlingEvents && ask_user && !restoredFromPrevSession) {
+#else
     if (HandlingEvents && ask_user) {
+#endif
       if ((Scr->RandomPlacement == RP_ALL) ||
           ((Scr->RandomPlacement == RP_UNMAPPED) &&
 	   ((tmp_win->wmhints && (tmp_win->wmhints->initial_state == IconicState)) ||
@@ -469,12 +556,13 @@ IconMgr *iconp;
 	    Scr->SizeStringOffset = width + XTextWidth (Scr->SizeFont.font, ": ", 2);
 	    
 	    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-				Scr->SizeStringWidth, height);
+				Scr->SizeStringWidth + SIZE_HINDENT, height);
 	    XMapRaised(dpy, Scr->SizeWindow);
 	    InstallRootColormap();
 
 	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
 		Scr->SizeFont.font->fid);
+
 	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
 			      SIZE_HINDENT,
 			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
@@ -490,6 +578,9 @@ IconMgr *iconp;
 	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
 				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
 	    DisplayPosition (tmp_win, AddingX, AddingY);
+
+	    tmp_win->frame_width  = AddingW;
+	    tmp_win->frame_height = AddingH;
 	    /*SetFocus ((TwmWindow *) NULL, CurrentTime);*/
 	    while (TRUE)
 		{
@@ -508,7 +599,8 @@ IconMgr *iconp;
 		if (event.type == ButtonPress) {
 		  AddingX = event.xbutton.x_root;
 		  AddingY = event.xbutton.y_root;
-		  
+
+		  TryToGrid (tmp_win, &AddingX, &AddingY);
 		  /* DontMoveOff prohibits user form off-screen placement */
 		  if (Scr->DontMoveOff)	
   		    {
@@ -544,6 +636,7 @@ IconMgr *iconp;
 		XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
 		    &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
 
+		TryToGrid (tmp_win, &AddingX, &AddingY);
 		if (Scr->DontMoveOff)
 		{
 		    int AddingR, AddingB;
@@ -579,7 +672,8 @@ IconMgr *iconp;
 		Scr->SizeStringOffset = width +
 		  XTextWidth(Scr->SizeFont.font, ": ", 2);
 		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-			       Scr->SizeStringWidth, height);
+			       Scr->SizeStringWidth + SIZE_HINDENT, height);
+
 		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
 				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
 				  ": ", 2);
@@ -713,16 +807,20 @@ IconMgr *iconp;
     tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font, tmp_win->name,
 				     namelen);
 
+#ifndef NO_LOCALE
+    tmp_win->icon_name = GetWMPropertyString(tmp_win->w, XA_WM_ICON_NAME);
+#else /* NO_LOCALE */
     if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
 			    XA_STRING, &actual_type, &actual_format, &nitems,
 			    &bytesafter,(unsigned char **)&tmp_win->icon_name))
 	tmp_win->icon_name = tmp_win->name;
-
+#endif /* NO_LOCALE */
     if (tmp_win->icon_name == NULL)
 	tmp_win->icon_name = tmp_win->name;
 
     if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
 
+    tmp_win->squeezed = FALSE;
     tmp_win->iconified = FALSE;
     tmp_win->isicon = FALSE;
     tmp_win->icon_on = FALSE;
@@ -739,6 +837,13 @@ IconMgr *iconp;
     if (XGetGeometry(dpy, tmp_win->w, &JunkRoot, &JunkX, &JunkY,
 		     &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth) == 0)
     {
+	TwmWindow *prev = tmp_win->ring.prev, *next = tmp_win->ring.next;
+
+	if (prev) prev->ring.next = next;
+	if (next) next->ring.prev = prev;
+	if (Scr->Ring == tmp_win) Scr->Ring = (next != tmp_win ? next : (TwmWindow *) NULL);
+	if (!Scr->Ring || Scr->RingLeader == tmp_win) Scr->RingLeader = Scr->Ring;
+
 	free((char *)tmp_win);
 	XUngrabServer(dpy);
 	return(NULL);
@@ -900,7 +1005,9 @@ IconMgr *iconp;
 	tmp_win->wShaped = boundingShaped;
     }
 
-    if (!tmp_win->iconmgr)
+    if (!tmp_win->iconmgr &&
+	(tmp_win->w != Scr->workSpaceMgr.workspaceWindow.w) &&
+	(tmp_win->w != Scr->workSpaceMgr.occupyWindow.w))
 	XAddToSaveSet(dpy, tmp_win->w);
 	
     XReparentWindow(dpy, tmp_win->w, tmp_win->frame, tmp_win->frame_bw3D,
@@ -1255,13 +1362,13 @@ void ComputeCommonTitleOffsets ()
     Scr->TBInfo.leftx = Scr->TBInfo.rightoff = Scr->FramePadding;
     if (Scr->TBInfo.nleft  > 0) Scr->TBInfo.leftx    += Scr->ButtonIndent;
     if (Scr->TBInfo.nright > 0) Scr->TBInfo.rightoff += (Scr->ButtonIndent +
-			       ((Scr->TBInfo.nright * buttonwidth) -
-				Scr->TBInfo.pad));
+			       (Scr->TBInfo.nright * buttonwidth) -
+				Scr->TBInfo.pad);
 
     Scr->TBInfo.titlex = (Scr->TBInfo.leftx +
-			  (Scr->TBInfo.nleft * buttonwidth) - Scr->TBInfo.pad +
-			  Scr->TitlePadding);
-    return;
+				(Scr->TBInfo.nleft * buttonwidth) -
+				Scr->TBInfo.pad +
+				Scr->TitlePadding);
 }
 
 void ComputeWindowTitleOffsets (tmp_win, width, squeeze)

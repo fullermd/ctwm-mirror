@@ -64,7 +64,7 @@
 #ifndef _UTIL_
 #define _UTIL_
 
-#if defined(ultrix) || defined(sequent) || defined(sony_news)
+#if defined(ultrix) || defined(sequent) || defined(sony_news) || defined(riscix)
 #   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
 #endif
 

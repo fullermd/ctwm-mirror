@@ -101,6 +101,7 @@ XContext  MapWListContext = (XContext) 0;
 static Cursor handCursor  = (Cursor) 0;
 
 extern Bool MaybeAnimate;
+extern FILE *tracefile;
 
 void InitWorkSpaceManager ()
 {
@@ -172,6 +173,8 @@ void CreateWorkSpaceManager () {
     else
 	XSetWindowBackgroundPixmap (dpy, wlist->mapSubwindow.w,
 		Scr->workSpaceMgr.workspaceWindow.curImage->pixmap);
+    XSetWindowBorder (dpy, wlist->mapSubwindow.w,
+		Scr->workSpaceMgr.workspaceWindow.curBorderColor);
     XClearWindow (dpy, wlist->mapSubwindow.w);
 
     len = GetPropertyFromMask (0xFFFFFFFF, wrkSpcList);
@@ -297,6 +300,7 @@ WorkSpaceList *wlist;
     XSetWindowAttributes attr;
     XWindowAttributes    winattrs;
     unsigned long	 eventMask;
+    IconMgr		*iconmgr;
     Window		w;
     unsigned long valuemask;
 
@@ -371,6 +375,15 @@ WorkSpaceList *wlist;
 	    twmWin->list = wl;
 	}
     }
+    wl = (WList*)0;
+    for (iconmgr = newscr->iconmgr; iconmgr; iconmgr = iconmgr->next) {
+	if (iconmgr->first) {
+	    wl = iconmgr->first;
+	    break;
+	}
+    }	
+    CurrentIconManagerEntry (wl);
+
     Scr->workSpaceMgr.activeWSPC = newscr;
     if (Scr->ReverseCurrentWorkspace &&
 	Scr->workSpaceMgr.workspaceWindow.state == MAPSTATE) {
@@ -611,7 +624,7 @@ TwmWindow *twm_win;
 
     len = GetPropertyFromMask (twm_win->occupation, wrkSpcList);
 
-    XGetWindowAttributes(dpy, twm_win->w, &winattrs);
+    if (!XGetWindowAttributes(dpy, twm_win->w, &winattrs)) return;
     eventMask = winattrs.your_event_mask;
     XSelectInput(dpy, twm_win->w, eventMask & ~PropertyChangeMask);
 
@@ -919,7 +932,7 @@ TwmWindow *tmp_win;
 	    return;
 	}
     }
-    XMapWindow      (dpy, tmp_win->w);
+    if (!tmp_win->squeezed) XMapWindow (dpy, tmp_win->w);
     XMapWindow      (dpy, tmp_win->frame);
     SetMapStateProp (tmp_win, NormalState);
 }
@@ -1611,8 +1624,6 @@ int       state;
 	Draw3DBorder (w, 0, 0, bwidth, bheight, Scr->WMgrButtonShadowDepth,
 		cp, state, True, False);
 	if (state == on) {
-	    FB  (cp.back, cp.fore);
-	    XFillRectangle (dpy, w, Scr->NormalGC, 2, 2, bwidth - 4, bheight - 4);
 	    FBF (cp.fore, cp.back, font.font->fid);
 	    XDrawImageString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
 	}
@@ -1987,6 +1998,10 @@ WorkSpaceList *wlist;
     for (i = number - 1; i >= 0; i--) {
 	if (XFindContext (dpy, children [i], TwmContext, (caddr_t *) &win) == XCNOENT) {
 	    continue;
+	}
+	if (tracefile) {
+	    fprintf (tracefile, "WMapRestack : w = %x, win = %x\n", children [i], win);
+	    fflush (tracefile);
 	}
 	if (! OCCUPY (win, wlist)) continue;
 	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
@@ -2463,11 +2478,14 @@ char 	*label;
     if (Scr->use3Dwmap) {
 	Draw3DBorder (window, 0, 0, width, height, 1, cp, off, True, False);
 	FBF(cp.fore, cp.back, font.font->fid);
-	XDrawString (dpy, window, Scr->NormalGC, x, y, label, strlen (label));
     } else {
 	FBF (cp.back, cp.fore, font.font->fid);
 	XFillRectangle (dpy, window, Scr->NormalGC, 0, 0, width, height);
 	FBF (cp.fore, cp.back, font.font->fid);
+    }
+    if (Scr->Monochrome != COLOR) {
+	XDrawImageString (dpy, window, Scr->NormalGC, x, y, label, strlen (label));
+    } else {
 	XDrawString (dpy, window, Scr->NormalGC, x, y, label, strlen (label));
     }
 }

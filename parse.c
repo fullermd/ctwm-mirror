@@ -584,6 +584,7 @@ typedef struct _TwmKeyword {
 #define kw0_Use3DWMap			47
 #define kw0_ReverseCurrentWorkspace	48
 #define kw0_DontWarpCursorInWMap	49
+#define kw0_CenterFeedbackWindow	50
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -633,6 +634,8 @@ typedef struct _TwmKeyword {
 #define kwn_MenuShadowDepth		26
 #define kwn_IconManagerShadowDepth	27
 #define kwn_MovePackResistance		28
+#define kwn_XMoveGrid			29
+#define kwn_YMoveGrid			30
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -682,6 +685,7 @@ static TwmKeyword keytable[] = {
     { "buttonindent",		NKEYWORD, kwn_ButtonIndent },
     { "c",			CONTROL, 0 },
     { "center",			JKEYWORD, J_CENTER },
+    { "centerfeedbackwindow",	KEYWORD, kw0_CenterFeedbackWindow },
     { "changeworkspacefunction", CHANGE_WORKSPACE_FUNCTION, 0 },
     { "clearshadowcontrast",	NKEYWORD, kwn_ClearShadowContrast },
     { "clicktofocus",		KEYWORD, kw0_ClickToFocus },
@@ -719,6 +723,7 @@ static TwmKeyword keytable[] = {
     { "f.cutfile",		FKEYWORD, F_CUTFILE },
     { "f.deiconify",		FKEYWORD, F_DEICONIFY },
     { "f.delete",		FKEYWORD, F_DELETE },
+    { "f.deleteordestroy",	FKEYWORD, F_DELETEORDESTROY },
     { "f.deltastop",		FKEYWORD, F_DELTASTOP },
     { "f.destroy",		FKEYWORD, F_DESTROY },
     { "f.downiconmgr",		FKEYWORD, F_DOWNICONMGR },
@@ -780,6 +785,7 @@ static TwmKeyword keytable[] = {
     { "f.sorticonmgr",		FKEYWORD, F_SORTICONMGR },
     { "f.source",		FSKEYWORD, F_BEEP },  /* XXX - don't work */
     { "f.speedupanimation",	FKEYWORD, F_SPEEDUPANIMATION },
+    { "f.squeeze",		FKEYWORD, F_SQUEEZE },
     { "f.startanimation",	FKEYWORD, F_STARTANIMATION },
     { "f.stopanimation",	FKEYWORD, F_STOPANIMATION },
     { "f.title",		FKEYWORD, F_TITLE },
@@ -959,8 +965,10 @@ static TwmKeyword keytable[] = {
     { "workspace", 		WORKSPACE, 0 },
     { "workspacemanagergeometry", WORKSPCMGR_GEOMETRY, 0 },
     { "workspaces",             WORKSPACES, 0},
+    { "xmovegrid",		NKEYWORD, kwn_XMoveGrid },
     { "xorvalue",		NKEYWORD, kwn_XorValue },
     { "xpmicondirectory",	SKEYWORD, kws_PixmapDirectory },
+    { "ymovegrid",		NKEYWORD, kwn_YMoveGrid },
     { "zoom",			ZOOM, 0 },
 };
 
@@ -1183,6 +1191,10 @@ int do_single_keyword (keyword)
       case kw0_DontWarpCursorInWMap:
 	Scr->DontWarpCursorInWMap = TRUE;
 	return 1;
+
+      case kw0_CenterFeedbackWindow:
+	Scr->CenterFeedbackWindow = TRUE;
+	return 1;
     }
     return 0;
 }
@@ -1364,6 +1376,18 @@ int do_number_keyword (keyword, num)
       case kwn_MovePackResistance:
 	if (num < 0) num = 20;
 	Scr->MovePackResistance = num;
+	return 1;
+
+      case kwn_XMoveGrid:
+	if (num <   1) num =   1;
+	if (num > 100) num = 100;
+	Scr->XMoveGrid = num;
+	return 1;
+
+      case kwn_YMoveGrid:
+	if (num <   1) num =   1;
+	if (num > 100) num = 100;
+	Scr->YMoveGrid = num;
 	return 1;
 
       case kwn_XorValue:
@@ -1862,7 +1886,7 @@ FILE *fraw;
 /* Code taken and munged from xrdb.c */
 #define MAXHOSTNAME 255
 #define Resolution(pixels, mm)  ((((pixels) * 100000 / (mm)) + 50) / 100)
-#define EXTRA   12
+#define EXTRA   16
 
 static char *MkDef(name, def)
 char *name, *def;
@@ -1884,34 +1908,13 @@ char *name, *def;
                 fprintf(stderr, "Can't get %d bytes for arg parm\n", n);
                 exit(468);
         }
-        strcpy(cp, "define(");
-        strcpy(cp+7, name);
-        *(cp + nl + 7) = ',';
-        *(cp + nl + 8) = ' ';
-        strcpy(cp + nl + 9, def);
-        strcat(cp + nl + 9, ")\n");
+	strcpy (cp, "define(`");
+	strcat (cp, name);
+	strcat (cp, "', `");
+	strcat (cp, def);
+	strcat (cp, "')\n");
 
         return(cp);
-}
-
-static char *MkQte(name, def)
-char *name, *def;
-{
-        char *cp, *cp2;
-
-        cp = malloc(2 + strlen(def));
-        if (cp == NULL) {
-                fprintf(stderr, "Can't get %d bytes for arg parm\n", 2 + strlen(
-def));
-                exit(469);
-        }
-        *cp = '\"';
-        strcpy(cp + 1, def);
-        strcat(cp, "\"");
-        cp2 = MkDef(name, cp);
-        free(cp);               /* Not really needed, but good habits die hard..
-. */
-        return(cp2);
 }
 
 static char *MkNum(name, def)
@@ -1942,7 +1945,6 @@ Display *display;
 char *host;
 {
         extern int KeepTmpFile;
-        int i;
         Screen *screen;
         Visual *visual;
         char client[MAXHOSTNAME], server[MAXHOSTNAME], *colon;

@@ -569,7 +569,8 @@ int def_x, def_y;
         if (icon->match == match_none)
 	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
         if ((icon->match == match_none) && (icon_name != NULL)) {
-	    icon->pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+	    icon->pattern = LookPatternInList (Scr->IconNames,
+				tmp_win->full_name, &tmp_win->class);
 	    icon->match = match_class;
 	}
 	if ((image = GetImage (icon_name, icon->iconc)) != None) {
@@ -629,7 +630,8 @@ int def_x, def_y;
 	    icon->x = Scr->IconManagerShadowDepth + 3;
 	}
 	icon->y = icon->height + Scr->IconFont.height + Scr->IconManagerShadowDepth;
-	icon->w_height = icon->height + Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
+	icon->w_height = icon->height + Scr->IconFont.height +
+			 2 * Scr->IconManagerShadowDepth + 6;
 	icon->has_title = True;
 	if (icon->height) icon->border_width = 0;
     }
@@ -706,7 +708,8 @@ int def_x, def_y;
 		rect [0].y = icon->height;
 		rect [0].width  = icon->w_width;
 		rect [0].height = Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
-		XShapeCombineRectangles (dpy, icon->w, ShapeBounding,  0, 0, rect, 1, ShapeUnion, 0);
+		XShapeCombineRectangles (dpy, icon->w, ShapeBounding,
+					0, 0, rect, 1, ShapeUnion, 0);
 	    }
 	}
 	else

@@ -73,6 +73,7 @@
 
 #include <stdio.h>
 #include <signal.h>
+
 #ifdef VMS
 #include <string.h>
 #include <unixio.h>
@@ -101,7 +102,11 @@
 #endif
 #include "version.h"
 
-#if defined(MACH) || defined(sony_news)
+#ifdef X11R6
+#include <X11/SM/SMlib.h>
+#endif
+
+#if defined(MACH) || defined(sony_news) || defined(NeXT)
 #define lrand48 random
 #endif
 #ifdef VMS
@@ -153,6 +158,7 @@ static struct {
     int y;
 } MenuOrigins[MAXMENUDEPTH];
 static Cursor LastCursor;
+static Bool addingdefaults = False;
 
 void WarpAlongRing(), WarpToWindow();
 void DisplayPosition ();
@@ -163,6 +169,7 @@ extern TwmWindow *ButtonWindow, *Tmp_win;
 extern XEvent Event, ButtonEvent;
 extern char *InitFile;
 static void Identify();
+static void Squeeze();
 
 #define SHADOWWIDTH 5			/* in pixels */
 
@@ -234,8 +241,9 @@ Bool AddFuncKey (name, cont, mods, func, menu, win_name, action)
 	if (tmp->keysym == keysym &&
 	    tmp->cont == cont &&
 	    tmp->mods == mods)
-	    return (True);
+	    break;
     }
+    if (tmp && addingdefaults) return (True);
 
     if (tmp == NULL)
     {
@@ -283,8 +291,9 @@ Bool AddFuncButton (num, cont, mods, func, menu, item)
     /* see if there already is a key defined for this context */
     for (tmp = Scr->FuncButtonRoot.next; tmp != NULL; tmp = tmp->next) {
 	if ((tmp->num == num) && (tmp->cont == cont) && (tmp->mods == mods))
-	    return (True);
+	    break;
     }
+    if (tmp && addingdefaults) return (True);
 
     if (tmp == NULL) {
 	tmp = (FuncButton*) malloc (sizeof (FuncButton));
@@ -445,7 +454,9 @@ void InitTitlebarButtons ()
 	        fprintf (stderr, "%s:  unable to add resize button\n", ProgramName);
 	    }
 	}
+	addingdefaults = True;
 	AddDefaultBindings ();
+	addingdefaults = False;
     }
     ComputeCommonTitleOffsets ();
 
@@ -1159,7 +1170,9 @@ MenuRoot *mr;
 	xcol.pixel = Scr->MenuC.back;
 	XQueryColor (dpy, cmap, &xcol);
 	sprintf (colname, "#%04x%04x%04x", 
-		5 * (xcol.red / 6), 5 * (xcol.green / 6), 5 * (xcol.blue / 6));
+		5 * ((int)xcol.red   / 6),
+		5 * ((int)xcol.green / 6),
+		5 * ((int)xcol.blue  / 6));
 	save = Scr->FirstTime;
 	Scr->FirstTime = True;
 	GetColor (Scr->Monochrome, &mr->highlight.back, colname);
@@ -1174,7 +1187,9 @@ MenuRoot *mr;
 	xcol.pixel = Scr->MenuC.fore;
 	XQueryColor (dpy, cmap, &xcol);
 	sprintf (colname, "#%04x%04x%04x",
-		5 * (xcol.red / 6), 5 * (xcol.green / 6), 5 * (xcol.blue / 6));
+		5 * ((int)xcol.red   / 6),
+		5 * ((int)xcol.green / 6),
+		5 * ((int)xcol.blue  / 6));
 	save = Scr->FirstTime;
 	Scr->FirstTime = True;
 	GetColor (Scr->Monochrome, &mr->highlight.fore, colname);
@@ -1215,7 +1230,7 @@ MenuRoot *mr;
     mr->pmenu = NULL;
 
     if (Scr->Monochrome == MONOCHROME || !Scr->InterpolateMenuColors)
-	return (0);
+	return;
 
     start = mr->first;
     while (TRUE)
@@ -1359,15 +1374,16 @@ Bool PopUpMenu (menu, x, y, center)
         for(tmp_win = Scr->TwmRoot.next , WindowNameCount=0;
             tmp_win != NULL;
             tmp_win = tmp_win->next) {
+	  if (tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) continue;
 	  if (all || OCCUPY (tmp_win, wlist)) WindowNameCount++;
 	}
-        WindowNames =
-          (TwmWindow **)malloc(sizeof(TwmWindow *)*WindowNameCount);
+        WindowNames = (TwmWindow **)malloc(sizeof(TwmWindow *)*WindowNameCount);
 	WindowNameCount = 0;
         for(tmp_win = Scr->TwmRoot.next;
             tmp_win != NULL;
             tmp_win = tmp_win->next)
         {
+	    if (tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) continue;
 	    if (!all && ! OCCUPY (tmp_win, wlist)) continue;
             tmp_win2 = tmp_win;
             for (i=0;i<WindowNameCount;i++)
@@ -1772,7 +1788,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (WindowMoved) do_next_action = FALSE;
 	break;
 
-    case F_RESTART:
+    case F_RESTART: {
+#ifdef X11R6
+	extern SmcConn smcConn;
+#endif
 	StopAnimation ();
 	XSync (dpy, 0);
 	Reborder (eventp->xbutton.time);
@@ -1781,11 +1800,14 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	fprintf (stderr, "%s:  restart capabilities not yet supported\n",
 		 ProgramName);
 #else
+#ifdef X11R6
+	if (smcConn) SmcCloseConnection (smcConn, 0, NULL);
 	execvp(*Argv, Argv);
-#endif
+#endif /* X11R6 */
+#endif /* VMS */
 	fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
 	break;
-
+    }
     case F_UPICONMGR:
     case F_DOWNICONMGR:
     case F_LEFTICONMGR:
@@ -1954,7 +1976,6 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	XGrabKeyboard (dpy, Scr->Root, False, GrabModeAsync, GrabModeAsync, CurrentTime);
 	return TRUE;
     }
-
     case F_IDENTIFY:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
@@ -2012,7 +2033,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    return TRUE;
 
 	PopDownMenu();
-
+	if (tmp_win->squeezed) {
+	    XBell (dpy, 0);
+	    break;
+	}
 	if (tmp_win->OpaqueResize) {
 	    int sw, ss;
 
@@ -2089,6 +2113,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     case F_BOTTOMZOOM:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
+	if (tmp_win->squeezed) {
+	    XBell(dpy, 0);
+	    break;
+	}
 	fullzoom(tmp_win, func);
 	break;
 
@@ -2366,6 +2394,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		    w = DragWidth + 2 * JunkBW;
 		    h = DragHeight + 2 * JunkBW;
 
+		    if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
+		        TryToGrid (tmp_win, &xl, &yt);
 		    if (!moving_icon && MoveFunction == F_MOVEPUSH && Scr->OpaqueMove)
 			TryToPush (tmp_win, xl, yt, 0);
 
@@ -2424,6 +2454,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		w = DragWidth + 2 * JunkBW;
 		h = DragHeight + 2 * JunkBW;
 
+		if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
+		    TryToGrid (tmp_win, &xl, &yt);
 		if (!moving_icon && MoveFunction == F_MOVEPUSH && Scr->OpaqueMove)
 		    TryToPush (tmp_win, xl, yt, 0);
 
@@ -2518,6 +2550,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	}
 	break;
 
+    case F_SQUEEZE:
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	    return TRUE;
+
+	Squeeze (tmp_win);
+	break;
+
     case F_RAISELOWER:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
@@ -2588,18 +2627,19 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (DeferExecution(context, func, Scr->DestroyCursor))
 	    return TRUE;
 
-	if (tmp_win->iconmgr)
+	if (tmp_win->iconmgr ||
+	    tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win ||
+	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
 	    XBell(dpy, 0);
-	else {
-	    XKillClient(dpy, tmp_win->w);
+	    break;
+	}
+	XKillClient(dpy, tmp_win->w);
+	if (ButtonPressed != -1) {
+	    XEvent kev;
 
-	    if (ButtonPressed != -1) {
-		XEvent kev;
-
-		XMaskEvent (dpy, ButtonReleaseMask, &kev);
-		if (kev.xbutton.window == tmp_win->w) kev.xbutton.window = Scr->Root;
-		XPutBackEvent (dpy, &kev);
-	    }
+	    XMaskEvent (dpy, ButtonReleaseMask, &kev);
+	    if (kev.xbutton.window == tmp_win->w) kev.xbutton.window = Scr->Root;
+	    XPutBackEvent (dpy, &kev);
 	}
 	break;
 
@@ -2607,19 +2647,53 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (DeferExecution(context, func, Scr->DestroyCursor))
 	    return TRUE;
 
-	if (tmp_win->iconmgr)		/* don't send ourself a message */
-	  HideIconManager ();
-	else if (tmp_win->protocols & DoesWmDeleteWindow)
-	  SendDeleteWindowMessage (tmp_win, LastTimestamp());
-	  if (ButtonPressed != -1) {
+	if (tmp_win->iconmgr) {		/* don't send ourself a message */
+	    HideIconManager ();
+	    break;
+	}
+	if (tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win ||
+	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
+	    XBell (dpy, 0);
+	    break;
+	}
+	if (tmp_win->protocols & DoesWmDeleteWindow) {
+	    SendDeleteWindowMessage (tmp_win, LastTimestamp());
+	    if (ButtonPressed != -1) {
+		XEvent kev;
+
+		XMaskEvent (dpy, ButtonReleaseMask, &kev);
+		if (kev.xbutton.window == tmp_win->w) kev.xbutton.window = Scr->Root;
+		XPutBackEvent (dpy, &kev);
+	    }
+	    break;
+	}
+	XBell (dpy, 0);
+	break;
+
+    case F_DELETEORDESTROY:
+	if (DeferExecution(context, func, Scr->DestroyCursor)) return TRUE;
+
+	if (tmp_win->iconmgr) {
+	    HideIconManager ();
+	    break;
+	}
+	if (tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win ||
+	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
+	    XBell (dpy, 0);
+	    break;
+	}
+	if (tmp_win->protocols & DoesWmDeleteWindow) {
+	    SendDeleteWindowMessage (tmp_win, LastTimestamp());
+	} else {
+	    XKillClient(dpy, tmp_win->w);
+	}
+	if (ButtonPressed != -1) {
 	    XEvent kev;
 
 	    XMaskEvent (dpy, ButtonReleaseMask, &kev);
 	    if (kev.xbutton.window == tmp_win->w) kev.xbutton.window = Scr->Root;
 	    XPutBackEvent (dpy, &kev);
-	  }
-	else
-	  XBell (dpy, 0);
+	}
 	break;
 
     case F_SAVEYOURSELF:
@@ -3042,6 +3116,7 @@ MenuRoot *root;
         case F_LEFTZOOM:
         case F_TOPZOOM:
         case F_BOTTOMZOOM:
+        case F_SQUEEZE:
 	case F_AUTORAISE:
 	    return TRUE;
 	}
@@ -3299,7 +3374,7 @@ TwmWindow *tmp_win;
 	}
     }
 
-    XMapWindow(dpy, tmp_win->w);
+    if (!tmp_win->squeezed) XMapWindow(dpy, tmp_win->w);
     tmp_win->mapped = TRUE;
     if (Scr->NoRaiseDeicon)
 	XMapWindow(dpy, tmp_win->frame);
@@ -3335,7 +3410,7 @@ TwmWindow *tmp_win;
 	      if (tmp_win->icon)
 		Zoom(tmp_win->icon->w, t->frame);
 	      
-	      XMapWindow(dpy, t->w);
+	      if (!t->squeezed) XMapWindow(dpy, t->w);
 	      t->mapped = TRUE;
 	      if (Scr->NoRaiseDeicon)
 		XMapWindow(dpy, t->frame);
@@ -3514,6 +3589,58 @@ int def_x, def_y;
     XSync (dpy, 0);
 }
 
+static void Squeeze (tmp_win)
+TwmWindow *tmp_win;
+{
+    long fy, savey;
+    int nstep = 10;
+    int i, offset;
+    XEvent ev;
+    int    south;
+    int	grav = ((tmp_win->hints.flags & PWinGravity) 
+		      ? tmp_win->hints.win_gravity : NorthWestGravity);
+    XWindowAttributes winattrs;
+    unsigned long eventMask;
+
+    offset = tmp_win->title_height + 2 * tmp_win->frame_bw3D;
+    if (offset < 3) {
+	XBell (dpy, 0);
+	return;
+    }
+    switch (grav) {
+	case SouthWestGravity :
+	case SouthGravity :
+	case SouthEastGravity :
+	    south = True;
+	    break;
+	default :
+	    south = False;
+	    break;
+    }
+    if (tmp_win->title_height) south = False;
+    if (tmp_win->squeezed) {
+	tmp_win->squeezed = False;
+	if (!tmp_win->isicon) XMapWindow(dpy, tmp_win->w);
+	SetupWindow (tmp_win, tmp_win->frame_x, tmp_win->actual_frame_y,
+		tmp_win->frame_width, tmp_win->actual_frame_height, -1);
+    } else {
+	tmp_win->squeezed = True;
+	tmp_win->actual_frame_height = tmp_win->frame_height;
+	savey = fy = tmp_win->frame_y;
+	if (south) fy += tmp_win->frame_height - offset;
+
+	XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
+	eventMask = winattrs.your_event_mask;
+	XSelectInput(dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
+	XUnmapWindow(dpy, tmp_win->w);
+	XSelectInput(dpy, tmp_win->w, eventMask);
+
+	SetupWindow (tmp_win, tmp_win->frame_x, fy,
+			 tmp_win->frame_width, offset, -1);
+	tmp_win->actual_frame_y = savey;
+    }
+}
+
 static void Identify (t)
 TwmWindow *t;
 {
@@ -3573,6 +3700,7 @@ TwmWindow *t;
     if (InfoLines) XUnmapWindow(dpy, Scr->InfoWindow);
 
     width += 10;		/* some padding */
+    height += 10;		/* some padding */
     if (XQueryPointer (dpy, Scr->Root, &JunkRoot, &JunkChild,
 		       &dummy, &dummy, &px, &py, &udummy)) {
 	px -= (width / 2);
@@ -3588,7 +3716,9 @@ TwmWindow *t;
     }
     XMoveResizeWindow(dpy, Scr->InfoWindow, px, py, width, height);
     XMapRaised(dpy, Scr->InfoWindow); 
-    InfoLines = n;
+    InfoLines  = n;
+    InfoWidth  = width;
+    InfoHeight = height;
 }
 
 
@@ -3928,6 +4058,7 @@ XEvent *eventp;
 {
     int    XW, YW, newX, newY, cont;
     Bool   newev;
+    unsigned long event_mask;
     XEvent ev;
 
     if (! ActiveMenu) return (1);
@@ -3943,7 +4074,8 @@ XEvent *eventp;
     newX = ActiveMenu->x;
     newY = ActiveMenu->y;
     cont = TRUE;
-    XMaskEvent (dpy, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, &ev);
+    event_mask = ButtonPressMask | ButtonMotionMask | ButtonReleaseMask | ExposureMask;
+    XMaskEvent (dpy, event_mask, &ev);
     while (cont) {
 	ev.xbutton.x_root -= Scr->MyDisplayX;
 	ev.xbutton.y_root -= Scr->MyDisplayY;
@@ -3989,12 +4121,17 @@ XEvent *eventp;
 		    }
 		}
 		XMoveWindow (dpy, ActiveMenu->w, newX, newY);
-		XMaskEvent (dpy, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, &ev);
+		XMaskEvent (dpy, event_mask, &ev);
 		break;
 	    case ButtonPress :
 		cont = FALSE;
 		newX = ActiveMenu->x;
 		newY = ActiveMenu->y;
+		break;
+	    case Expose:
+                Event = ev;
+                DispatchEvent ();
+		XMaskEvent (dpy, event_mask, &ev);
 		break;
 	}
     }
@@ -4038,6 +4175,12 @@ int x, y;
     }
     (void) sprintf (str, " %c%-4d %c%-4d ", signx, x, signy, y);
     XRaiseWindow (dpy, Scr->SizeWindow);
+
+    Draw3DBorder (Scr->SizeWindow, 0, 0,
+		Scr->SizeStringOffset + Scr->SizeStringWidth + SIZE_HINDENT,
+		Scr->SizeFont.height + SIZE_VINDENT * 2,
+		2, Scr->DefaultC, off, False, False);
+
     FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
     XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
 		      Scr->SizeStringOffset,
@@ -4111,7 +4254,7 @@ int *x, *y;
     TwmWindow	*t;
     int		newx, newy;
     int		w, h;
-    int		winw = tmp_win->frame_width + 2 * tmp_win->frame_bw;
+    int		winw = tmp_win->frame_width  + 2 * tmp_win->frame_bw;
     int		winh = tmp_win->frame_height + 2 * tmp_win->frame_bw;
 
     newx = *x;
@@ -4216,6 +4359,42 @@ int x, y, dir;
     }
 }
 
+void TryToGrid (tmp_win, x, y)
+TwmWindow *tmp_win;
+int *x, *y;
+{
+    int	w    = tmp_win->frame_width  + 2 * tmp_win->frame_bw;
+    int	h    = tmp_win->frame_height + 2 * tmp_win->frame_bw;
+    int	grav = ((tmp_win->hints.flags & PWinGravity) 
+		      ? tmp_win->hints.win_gravity : NorthWestGravity);
+
+    switch (grav) {
+	case ForgetGravity :
+	case StaticGravity :
+	case NorthWestGravity :
+	case NorthGravity :
+	case WestGravity :
+	case CenterGravity :
+	    *x = (*x / Scr->XMoveGrid) * Scr->XMoveGrid;
+	    *y = (*y / Scr->YMoveGrid) * Scr->YMoveGrid;
+	    break;
+	case NorthEastGravity :
+	case EastGravity :
+	    *x = (((*x + w) / Scr->XMoveGrid) * Scr->XMoveGrid) - w;
+	    *y = (*y / Scr->YMoveGrid) * Scr->YMoveGrid;
+	    break;
+	case SouthWestGravity :
+	case SouthGravity :
+	    *x = (*x / Scr->XMoveGrid) * Scr->XMoveGrid;
+	    *y = (((*y + h) / Scr->YMoveGrid) * Scr->YMoveGrid) - h;
+	    break;
+	case SouthEastGravity :
+	    *x = (((*x + w) / Scr->XMoveGrid) * Scr->XMoveGrid) - w;
+	    *y = (((*y + h) / Scr->YMoveGrid) * Scr->YMoveGrid) - h;
+	    break;
+    }
+}
+
 Boolean TryNotToMoveOff (tmp_win, x, y)
 TwmWindow *tmp_win;
 int *x, *y;
@@ -4248,3 +4427,4 @@ int *x, *y;
     }
     return (ret);
 }
+

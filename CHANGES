@@ -764,3 +764,26 @@ LeftTitleButton ":xpm:menu" {
 
 
 
+
+    Changes from version 3.3 to 3.4
+    -------------------------------
+
+    1 - 2 new keywords : XMoveGrid and YMoveGrid with an integer parameter.
+        Constrains window moves so that its x and y coordinates are multiple
+        of the specified values.
+
+    2 - New function : f.deleteordestroy. First tries to delete the window
+        (send it WM_DELETE_WINDOW message), or kills it, if the client doesn't
+        accept such message.
+
+    3 - New function : f.squeeze. It squeezes a window to a null vertical
+        size. Works only for windows with either a title, or a 3D border
+        (in order to have something left on the screen). If the window is
+        already squeezed, it is unsqueezed.
+
+    4 - New built-in title button : :xpm:vbar (a vertical bar).
+
+    5 - CenterFeedbackWindow
+
+    6 - New option -version. Ctwm just print its version and compile time
+        options.

@@ -115,6 +115,10 @@
 #   include "sdsc.h"
 #endif
 
+#if defined(X11R4) && defined(ultrix)
+    typedef struct XWDColor XWDColor;
+#endif
+
 #define MAXANIMATIONSPEED 20
 
 extern int captive;
@@ -141,6 +145,7 @@ static Image  *Create3DDotImage ();
 static Image  *Create3DResizeImage ();
 static Image  *Create3DZoomImage ();
 static Image  *Create3DBarImage ();
+static Image  *Create3DVertBarImage ();
 static Image  *Create3DResizeAnimation ();
 
 extern FILE *tracefile;
@@ -646,10 +651,12 @@ char *name;
     attributes.valuemask |= XpmColormap;
     attributes.valuemask |= XpmDepth;
     attributes.valuemask |= XpmVisual;
+    attributes.valuemask |= XpmCloseness;
 
-    attributes.colormap = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, Scr->screen);
-    attributes.depth    = DefaultDepth  (dpy, Scr->screen);
-    attributes.visual   = DefaultVisual (dpy, Scr->screen);
+    attributes.colormap  = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, Scr->screen);
+    attributes.depth     = Scr->d_depth;
+    attributes.visual    = Scr->d_visual;
+    attributes.closeness = 65535; /* Never fail */
     status = XpmReadFileToPixmap(dpy, Scr->Root, fullname,
 				 &(image->pixmap), &(image->mask), &attributes);
     switch (status) {
@@ -758,7 +765,7 @@ char *file;
     attributes.override_redirect = True;
     attributes.event_mask	 = ExposureMask;
     attributes.cursor		 = waitcursor;
-    attributes.background_pixel	 = BlackPixel (dpy, Scr->screen);
+    attributes.background_pixel	 = Scr->Black;
     Scr->WindowMask = XCreateWindow (dpy, Scr->Root, 0, 0,
 			(unsigned int) Scr->MyDisplayWidth,
 			(unsigned int) Scr->MyDisplayHeight,
@@ -1464,7 +1471,8 @@ Bool focus;
 
 	bs = focus ? on : off;
 	Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
-			tmp_win->title_width  - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
+			tmp_win->title_width - Scr->TBInfo.titlex -
+			Scr->TBInfo.rightoff - Scr->TitlePadding,
 			Scr->TitleHeight, Scr->TitleShadowDepth,
 			tmp_win->title, bs, False, False);
     }
@@ -1734,10 +1742,40 @@ ColorPair cp;
     if (image->pixmap == None) return (None);
 
     Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
-    Draw3DBorder (image->pixmap, Scr->TitleButtonShadowDepth + 2,
+    Draw3DBorder (image->pixmap,
+			Scr->TitleButtonShadowDepth + 2,
 			(h / 2) - idepth,
 			h - 2 * (Scr->TitleButtonShadowDepth + 2),
 			2 * idepth + 1,
+			idepth, cp, off, True, False);
+    image->mask   = None;
+    image->width  = h;
+    image->height = h;
+    image->next   = None;
+    return (image);
+}
+
+static Image *Create3DVertBarImage (cp)
+ColorPair cp;
+{
+    Image *image;
+    int	  h;
+    static int idepth = 2;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    if (! image) return (None);
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    if (image->pixmap == None) return (None);
+
+    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
+    Draw3DBorder (image->pixmap,
+			(h / 2) - idepth,
+			Scr->TitleButtonShadowDepth + 2,
+			2 * idepth + 1,
+			h - 2 * (Scr->TitleButtonShadowDepth + 2),
 			idepth, cp, off, True, False);
     image->mask   = None;
     image->width  = h;
@@ -1852,7 +1890,9 @@ ColorPair cp;
     for (col = colori; col; col = col->next) {
 	if (col->color == cp.back) break;
     }
-    if (col != NULL) return (col->pix);
+    if (col != NULL) {
+	return (col->pix);
+    }
     col = (struct Colori*) malloc (sizeof (struct Colori));
     col->color = cp.back;
     col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
@@ -1881,7 +1921,9 @@ ColorPair cp;
     for (col = colori; col; col = col->next) {
 	if (col->color == cp.back) break;
     }
-    if (col != NULL) return (col->pix);
+    if (col != NULL) {
+	return (col->pix);
+    }
     col = (struct Colori*) malloc (sizeof (struct Colori));
     col->color = cp.back;
     col->pix   = XCreatePixmap (dpy, Scr->Root, w, h, Scr->d_depth);
@@ -1902,7 +1944,7 @@ ColorPair cp;
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = None;
+    image = im1 = None;
     for (i = (in ? 0 : (h/4)-1); (i < h/4) && (i >= 0); i += (in ? 1 : -1)) {
 	im = (Image*) malloc (sizeof (struct _Image));
 	if (! im) return (None);
@@ -1966,7 +2008,7 @@ ColorPair cp;
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = None;
+    image = im1 = None;
     for (j = (up ? 4 : 0); j != (up ? -1 : 5); j+= (up ? -1 : 1)) {
 	im = (Image*) malloc (sizeof (struct _Image));
 	if (! im) return (None);
@@ -2021,7 +2063,7 @@ ColorPair cp;
 
     if (n == 0) n = (h/2) - 2;
 
-    image = None;
+    image = im1 = None;
     for (j = (out ? -1 : 1) ; j < (in ? 2 : 0); j += 2){
 	for(k = (j > 0 ? 0 : n-1) ; (k >= 0) && (k < n); k += j){
 	    im = (Image*) malloc (sizeof (struct _Image));
@@ -2359,8 +2401,11 @@ void PaintAllDecoration () {
 	    if (tmp_win->titlebuttons) PaintTitleButtons (tmp_win);
 	}
 	else
-	if ((tmp_win->icon_on == TRUE) && (tmp_win->icon) && (tmp_win->icon->w) &&
-		! Scr->NoIconTitlebar &&
+	if ((tmp_win->icon_on == TRUE)  &&
+		!tmp_win->icon_not_ours &&
+		!Scr->NoIconTitlebar    &&
+		tmp_win->icon           &&
+		tmp_win->icon->w        &&
 		! LookInList (Scr->NoIconTitle, tmp_win->full_name, &tmp_win->class)) {
 	    PaintIcon (tmp_win);
 	}
@@ -2459,31 +2504,43 @@ Bool focus;
 void PaintTitle (tmp_win)
 TwmWindow *tmp_win;
 {
-    if (Scr->use3Dtitles)
+    int width, mwidth, len;
+
+    if (Scr->use3Dtitles) {
 	if (Scr->SunkFocusWindowTitle && (Scr->Focus == tmp_win) &&
 	    (tmp_win->title_height != 0))
 	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
-		tmp_win->title_width  - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
+		tmp_win->title_width - Scr->TBInfo.titlex -
+		Scr->TBInfo.rightoff - Scr->TitlePadding,
 		Scr->TitleHeight, Scr->TitleShadowDepth,
 		tmp_win->title, on, True, False);
 	else
 	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
-		tmp_win->title_width  - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
+		tmp_win->title_width - Scr->TBInfo.titlex -
+		Scr->TBInfo.rightoff - Scr->TitlePadding,
 		Scr->TitleHeight, Scr->TitleShadowDepth,
 		tmp_win->title, off, True, False);
-
+    }
     FBF(tmp_win->title.fore, tmp_win->title.back, Scr->TitleBarFont.font->fid);
-
     if (Scr->use3Dtitles) {
+	len    = strlen(tmp_win->name);
+	width  = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, len);
+	mwidth = tmp_win->title_width  - Scr->TBInfo.titlex -
+		 Scr->TBInfo.rightoff  - Scr->TitlePadding  -
+		 Scr->TitleShadowDepth - 4;
+	while ((len > 0) && (width > mwidth)) {
+	    len--;
+	    width  = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, len);
+	}
 	if (Scr->Monochrome != COLOR) {
 	    XDrawImageString (dpy, tmp_win->title_w, Scr->NormalGC,
 		 tmp_win->name_x, Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
-		 tmp_win->name, strlen(tmp_win->name));
+		 tmp_win->name, len);
 	}
 	else
 	    XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
 		 tmp_win->name_x, Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
-		 tmp_win->name, strlen(tmp_win->name));
+		 tmp_win->name, len);
     }
     else
         XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
@@ -2494,18 +2551,29 @@ TwmWindow *tmp_win;
 void PaintIcon (tmp_win)
 TwmWindow *tmp_win;
 {
+    int width, mwidth, len;
+
     if (Scr->use3Diconmanagers) {
 	Draw3DBorder (tmp_win->icon->w, 0, tmp_win->icon->height,
-		tmp_win->icon->w_width, Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6,
+		tmp_win->icon->w_width,
+		Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6,
 		Scr->IconManagerShadowDepth, tmp_win->icon->iconc, off, False, False);
-    }
-    FBF(tmp_win->icon->iconc.fore, tmp_win->icon->iconc.back,
-	Scr->IconFont.font->fid);
 
-    XDrawString (dpy, tmp_win->icon->w,
-	Scr->NormalGC,
-	tmp_win->icon->x, tmp_win->icon->y,
-	tmp_win->icon_name, strlen(tmp_win->icon_name));
+	len    = strlen(tmp_win->icon_name);
+	width  = XTextWidth (Scr->IconFont.font, tmp_win->icon_name, len);
+	mwidth = tmp_win->icon->w_width - Scr->IconManagerShadowDepth - 6;
+	while ((len > 0) && (width > mwidth)) {
+	    len--;
+	    width = XTextWidth (Scr->IconFont.font, tmp_win->icon_name, len);
+	}
+    }
+    FBF(tmp_win->icon->iconc.fore, tmp_win->icon->iconc.back, Scr->IconFont.font->fid);
+    XDrawString (dpy,	tmp_win->icon->w,
+			Scr->NormalGC,
+			tmp_win->icon->x,
+			tmp_win->icon->y,
+			tmp_win->icon_name,
+			len);
 }
 
 void PaintTitleButton (tmp_win, tbw)
@@ -2722,6 +2790,7 @@ ColorPair cp;
 	    { TBPM_3DMENU,	Create3DMenuImage },
 	    { TBPM_3DZOOM,	Create3DZoomImage },
 	    { TBPM_3DBAR,	Create3DBarImage },
+	    { TBPM_3DVBAR,	Create3DVertBarImage },
 	};
 	
 	sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
@@ -2729,6 +2798,11 @@ ColorPair cp;
 	    for (i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
 		if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0) {
 		    image = (*pmtab[i].proc) (cp);
+		    if (image == None) {
+			fprintf (stderr,
+			    "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
+			return (None);
+		    }
 		    break;
 		}
 	    }
@@ -2765,6 +2839,11 @@ ColorPair cp;
 	    for (i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
 		if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0) {
 		    image = (*pmtab[i].proc) (cp);
+		    if (image == None) {
+			fprintf (stderr,
+			    "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
+			return (None);
+		    }
 		    break;
 		}
 	    }
@@ -2798,6 +2877,11 @@ ColorPair cp;
 	    for (i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
 		if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0) {
 		    pm = (*pmtab[i].proc) (&width, &height);
+		    if (pm == None) {
+			fprintf (stderr,
+			    "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
+			return (None);
+		    }
 		    break;
 		}
 	    }
@@ -2856,11 +2940,7 @@ ColorPair cp;
     FILE	*file;
     char	*fullname;
     XColor	colors [256];
-#ifdef X11R4
-    struct XWDColor xwdcolors [256];
-#else /* X11R4 */
     XWDColor	xwdcolors [256];
-#endif /* X11R4 */
     unsigned	buffer_size;
     XImage	*image;
     unsigned char *imagedata;
@@ -2931,11 +3011,7 @@ file_opened:
     h       = header.pixmap_height;
     depth   = header.pixmap_depth;
     ncolors = header.ncolors;
-#ifdef X11R4
-    len = fread ((char *) xwdcolors, sizeof (struct XWDColor), ncolors, file);
-#else /* X11R4 */
     len = fread ((char *) xwdcolors, sizeof (XWDColor), ncolors, file);
-#endif /* X11R4 */
     if (len != ncolors) {
 	fprintf (stderr, "file %s has not the correct format\n", filename);
 #ifdef USE_SIGNALS
@@ -3392,4 +3468,81 @@ _swaplong (bp, n)
 	bp += 2;
     }
 }
+
+#ifndef NO_LOCALE
+/***********************************************************************
+ *
+ *  Procedure:
+ *	GetWMPropertyString - Get Window Manager text property and
+ *				convert it to a string.
+ *
+ *  Returned Value:
+ *	(char *) - pointer to the malloc'd string or NULL
+ *
+ *  Inputs:
+ *	w	- the id of the window whose property is to be retrieved
+ *	prop	- property atom (typically WM_NAME or WM_ICON_NAME)
+ *
+ ***********************************************************************
+ */
+
+char *GetWMPropertyString(w, prop)
+Window w;
+Atom prop;
+{
+    XTextProperty	text_prop;
+    char 		**text_list;
+    int 		text_list_count;
+    Atom 		XA_COMPOUND_TEXT = XInternAtom(dpy, "COMPOUND_TEXT", False);
+    char		*stringptr;
+    int			status, len = -1;
+
+    (void)XGetTextProperty(dpy, w, &text_prop, prop);
+    if (text_prop.value != NULL) {
+	if (text_prop.encoding == XA_STRING) {
+	    /* property is encoded as string */
+	    stringptr = strcpy((char*)malloc(text_prop.nitems+1), (char*)text_prop.value);
+	} else if (text_prop.encoding == XA_COMPOUND_TEXT) {
+	    /* property is encoded as compound text - convert to locale string */
+	    status = XmbTextPropertyToTextList(dpy, &text_prop,
+					       &text_list, &text_list_count);
+	    if (status < 0 || text_list_count < 0) {
+		switch (status) {
+		case XConverterNotFound:
+		    fprintf (stderr, "%s: Converter not found; unable to convert property %s of window ID %lx.\n",
+			     ProgramName, XGetAtomName(dpy, prop), w);
+		    break;
+		case XNoMemory:
+		    fprintf (stderr, "%s: Insufficient memory; unable to convert property %s of window ID %lx.\n",
+			     ProgramName, XGetAtomName(dpy, prop), w);
+		    break;
+		case XLocaleNotSupported:
+		    fprintf (stderr, "%s: Locale not supported; unable to convert property %s of window ID %lx.\n",
+			     ProgramName, XGetAtomName(dpy, prop), w);
+		    break;
+		}
+		stringptr = NULL;
+		/*
+		   don't call XFreeStringList - text_list appears to have
+		   invalid address if status is bad
+		   XFreeStringList(text_list);
+		*/
+	    } else {
+		len = strlen(text_list[0]);
+		stringptr = strcpy(malloc(len+1), text_list[0]);
+		XFreeStringList(text_list);
+	    }
+	} else {
+	    /* property is encoded in a format we don't understand */
+	    fprintf (stderr, "%s: Encoding not STRING or COMPOUND_TEXT; unable to decode property %s of window ID %lx.\n",
+		     ProgramName, XGetAtomName(dpy, prop), w);
+	    stringptr = NULL;
+	}
+    } else {
+	stringptr = NULL;
+    }
+
+    return stringptr;
+}
+#endif /* NO_LOCALE */
 

@@ -399,7 +399,7 @@ char *p, *t;
 int regex_match_after_star (p, t)
 char *p, *t;
 {
-    register int match;
+    register int mat;
     register nextp;
 
     while ((*p == '?') || (*p == '*')) {
@@ -413,12 +413,12 @@ char *p, *t;
     nextp = *p;
     if (nextp == '\\') nextp = p[1];
 
-    match = FALSE;
-    while (match == FALSE) {
-	if ( nextp == *t || nextp == '[' ) match = regex_match(p, t);
-	if ( !*t++ ) match = ABORT;
+    mat = FALSE;
+    while (mat == FALSE) {
+	if ( nextp == *t || nextp == '[' ) mat = regex_match(p, t);
+	if ( !*t++ ) mat = ABORT;
     }
-    return (match);
+    return (mat);
 }
 
 int match (p, t)

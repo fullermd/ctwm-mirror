@@ -11,6 +11,7 @@ XCOMM
 #undef  USE_SOUND
 #define XPM
 #define USEM4
+#define X11R6
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
@@ -67,21 +68,31 @@ XCOMM
        SOUNDOBJ = 
 #endif
 
+#ifdef X11R6
+     SESSIONSRC = session.c
+     SESSIONOBJ = session.o
+      X11R6DEFS = -DX11R6
+#else
+     SESSIONSRC = 
+     SESSIONOBJ = 
+      X11R6DEFS = 
+#endif
+
 #ifdef DEBUG
     CDEBUGFLAGS = -g
 #endif
 
 LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)
-        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(SOUND_DEFS)
+        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(X11R6DEFS) $(SOUND_DEFS)
  EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(SOUND_INCLUDES)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
-		cursor.c icons.c workmgr.c ${SOUNDSRC}
+		cursor.c icons.c workmgr.c ${SESSIONSRC} ${SOUNDSRC}
 
            OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
-		cursor.o icons.o workmgr.o ${SOUNDOBJ}
+		cursor.o icons.o workmgr.o ${SESSIONOBJ} ${SOUNDOBJ}
 
   PIXMAPFILES =	xpm/IslandD.xpm        xpm/mail1.xpm          xpm/xgopher.xpm \
 		xpm/IslandW.xpm        xpm/nothing.xpm        xpm/xgrab.xpm \

@@ -203,6 +203,7 @@ extern void RaiseFrame();
 extern void FocusOnRoot();
 extern void TryToPack ();
 extern void TryToPush ();
+extern void TryToGrid ();
 extern Boolean TryNotToMoveOff ();
 
 #endif /* _MENUS_ */

@@ -563,19 +563,11 @@ XEvent  *event;
 	FD_ZERO (&mask);
 	FD_SET  (fd, &mask);
 	timeout = AnimateTimeout;
-	if (tracefile) {
-	    fprintf (tracefile, "Waiting for event\n");
-	    fflush (tracefile);
-	}
 #ifdef __hpux
 	found = select (fd + 1, (int*)&mask, (int*) 0, (int*) 0, tout);
 #else
 	found = select (fd + 1, &mask, (fd_set*) 0, (fd_set*) 0, tout);
 #endif
-	if (tracefile) {
-	    fprintf (tracefile, "Select ending\n");
-	    fflush (tracefile);
-	}
 	if (found < 0) {
 	    perror ("select");
 	    continue;
@@ -986,7 +978,9 @@ HandleKeyPress()
 	item = (MenuItem*) 0;
 
 	keysym = XLookupKeysym  ((XKeyEvent*) &Event, 0);
+	if (! keysym) return;
 	keynam = XKeysymToString (keysym);
+	if (! keynam) return;
 
 	if (!strcmp (keynam, "Down") || !strcmp (keynam, "space")) {
 	    xx = Event.xkey.x;
@@ -1021,6 +1015,7 @@ HandleKeyPress()
 	if (!strcmp (keynam, "Left")) {
 	    MenuRoot *menu;
 
+	    if (ActiveMenu->pinned) return;
 	    if (!ActiveMenu->prev || MenuDepth == 1) {
 		PopDownMenu ();
 		XUngrabPointer  (dpy, CurrentTime);
@@ -1074,6 +1069,7 @@ HandleKeyPress()
 	if (item) {
 	    switch (item->func) {
 		case 0 :
+		case F_TITLE :
 		    break;
 
 		case F_MENU :
@@ -1382,6 +1378,10 @@ HandlePropertyNotify()
 
     switch (Event.xproperty.atom) {
       case XA_WM_NAME:
+#ifndef NO_LOCALE
+	prop = GetWMPropertyString(Tmp_win->w, XA_WM_NAME);
+	if (prop == NULL) return;
+#else /* NO_LOCALE */
 	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L, 
 				MAX_NAME_LEN, False, XA_STRING, &actual,
 				&actual_format, &nitems, &bytesafter,
@@ -1389,11 +1389,14 @@ HandlePropertyNotify()
 	    actual == None)
 	  return;
 	if (!prop) prop = NoName;
+#endif /* NO_LOCALE */
 	free_window_names (Tmp_win, True, True, False);
 
 	Tmp_win->full_name = prop;
 	Tmp_win->name = prop;
-
+#ifdef X11R6
+	Tmp_win->nameChanged = 1;
+#endif
 	Tmp_win->name_width = XTextWidth (Scr->TitleBarFont.font,
 					  Tmp_win->name,
 					  strlen (Tmp_win->name));
@@ -1415,6 +1418,10 @@ HandlePropertyNotify()
 	break;
 
       case XA_WM_ICON_NAME:
+#ifndef NO_LOCALE
+	prop = GetWMPropertyString(Tmp_win->w, XA_WM_ICON_NAME);
+	if (prop == NULL) return;
+#else /* NO_LOCALE */
 	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0, 
 				MAX_ICON_NAME_LEN, False, XA_STRING, &actual,
 				&actual_format, &nitems, &bytesafter,
@@ -1422,6 +1429,7 @@ HandlePropertyNotify()
 	    actual == None)
 	  return;
 	if (!prop) prop = NoName;
+#endif /* NO_LOCALE */
 	icon_change = strcmp (Tmp_win->icon_name, prop);
 	free_window_names (Tmp_win, False, False, True);
 	Tmp_win->icon_name = prop;
@@ -1840,6 +1848,9 @@ HandleExpose()
 	int i;
 	int height;
 
+	Draw3DBorder (Scr->InfoWindow, 0, 0,
+		InfoWidth, InfoHeight, 2, Scr->DefaultC, off, True, False);
+
 	FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
 	    Scr->DefaultFont.font->fid);
 
@@ -1847,7 +1858,7 @@ HandleExpose()
 	for (i = 0; i < InfoLines; i++)
 	{
 	    XDrawString(dpy, Scr->InfoWindow, Scr->NormalGC,
-		5, (i*height) + Scr->DefaultFont.y, Info[i], strlen(Info[i]));
+		5, (i*height) + Scr->DefaultFont.y + 5, Info[i], strlen(Info[i]));
 	}
 	flush_expose (Event.xany.window);
     }
@@ -2125,6 +2136,7 @@ HandleMapRequest()
     }
 
     if (Tmp_win->iconmgr) return;
+    if (Tmp_win->squeezed) return;
 
     if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
 
@@ -2401,7 +2413,9 @@ HandleButtonRelease()
 		xl = ConstMoveX;
 	    }
 	}
-	
+
+	if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
+	    TryToGrid (Tmp_win, &xl, &yt);
 	if (MoveFunction == F_MOVEPUSH &&
 	    Scr->OpaqueMove &&
 	    DragWindow == Tmp_win->frame) TryToPush (Tmp_win,  xl,  yt, 0);
@@ -2479,6 +2493,7 @@ HandleButtonRelease()
 	      case F_FORCEMOVE:
 	      case F_DESTROY:
 	      case F_DELETE:
+	      case F_DELETEORDESTROY:
 		ButtonPressed = -1;
 		break;
 	      case F_CIRCLEUP:

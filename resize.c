@@ -611,6 +611,12 @@ int height;
 
     (void) sprintf (str, " %4d x %-4d ", dwidth, dheight);
     XRaiseWindow(dpy, Scr->SizeWindow);
+
+    Draw3DBorder (Scr->SizeWindow, 0, 0,
+		Scr->SizeStringOffset + Scr->SizeStringWidth + SIZE_HINDENT,
+		Scr->SizeFont.height + SIZE_VINDENT * 2,
+		2, Scr->DefaultC, off, False, False);
+
     FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
     XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
 		      Scr->SizeStringOffset,
@@ -954,10 +960,20 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	
 	XConfigureWindow(dpy, tmp_win->title_w, xwcm, &xwc);
     }
+#ifdef X11R6
+    if (tmp_win->attr.width != w)
+	tmp_win->widthEverChangedByUser = True;
 
-    tmp_win->attr.width  = w - (2 * tmp_win->frame_bw3D);
-    tmp_win->attr.height = h - tmp_win->title_height - (2 * tmp_win->frame_bw3D);
-
+    if (tmp_win->attr.height != (h - tmp_win->title_height))
+	tmp_win->heightEverChangedByUser = True;
+#endif
+    if (!tmp_win->squeezed) {
+	tmp_win->attr.width  = w - (2 * tmp_win->frame_bw3D);
+	tmp_win->attr.height = h - tmp_win->title_height - (2 * tmp_win->frame_bw3D);
+    }
+    if (tmp_win->squeezed && (y != tmp_win->frame_y)) {
+	tmp_win->actual_frame_y += y - tmp_win->frame_y;
+    }
     /* 
      * fix up frame and assign size/location values in tmp_win
      */

@@ -306,6 +306,8 @@ typedef struct TwmWindow
     int frame_height;		/* height of frame */
     int frame_bw;		/* borderwidth of frame */
     int frame_bw3D;		/* 3D borderwidth of frame */
+    int actual_frame_y;		/* save frame_x of frame when squeezed */
+    int actual_frame_height;	/* save height of frame when squeezed */
     int title_x;
     int title_y;
     int title_height;		/* height of the title bar */
@@ -334,6 +336,7 @@ typedef struct TwmWindow
     short isicon;		/* is the window an icon now ? */
     short icon_on;		/* is the icon visible */
     short mapped;		/* is the window mapped ? */
+    short squeezed;		/* is the window squeezed ? */
     short auto_raise;		/* should we auto-raise this window ? */
     short forced;		/* has had an icon forced upon it */
     short icon_not_ours;	/* icon pixmap or window supplied to us */
@@ -368,7 +371,36 @@ typedef struct TwmWindow
     Bool hasfocusvisible;	/* The window has visivle focus*/
     int  occupation;
     Image *HiliteImage;                /* focus highlight window background */
+
+#ifdef X11R6
+    Bool nameChanged;	/* did WM_NAME ever change? */
+    /* did the user ever change the width/height? {yes, no, or unknown} */
+    Bool widthEverChangedByUser;
+    Bool heightEverChangedByUser;
+#endif
+
 } TwmWindow;
+
+#ifdef X11R6
+typedef struct TWMWinConfigEntry
+{
+    struct TWMWinConfigEntry *next;
+    int tag;
+    char *client_id;
+    char *window_role;
+    XClassHint class;
+    char *wm_name;
+    int wm_command_count;
+    char **wm_command;
+    short x, y;
+    unsigned short width, height;
+    short icon_x, icon_y;
+    Bool iconified;
+    Bool icon_info_present;
+    Bool width_ever_changed_by_user;
+    Bool height_ever_changed_by_user;
+} TWMWinConfigEntry;
+#endif
 
 #define DoesWmTakeFocus		(1L << 0)
 #define DoesWmSaveYourself	(1L << 1)
@@ -387,6 +419,7 @@ typedef struct TwmWindow
 #define TBPM_3DMENU ":xpm:menu"	/* name of titlebar pixmap for menus */
 #define TBPM_3DZOOM ":xpm:zoom"
 #define TBPM_3DBAR ":xpm:bar"
+#define TBPM_3DVBAR ":xpm:vbar"
 
 #ifndef X11R4
 #ifdef VMS
@@ -407,6 +440,9 @@ void ComputeCommonTitleOffsets();
 void ComputeWindowTitleOffsets(), ComputeTitleLocation();
 extern char *ProgramName;
 extern Display *dpy;
+#ifdef X11R6
+  extern XtAppContext appContext;
+#endif
 extern Window ResizeWindow;	/* the window we are resizing */
 extern int HasShape;		/* this server supports Shape extension */
 
@@ -437,7 +473,7 @@ extern int JunkX;
 extern int JunkY;
 extern unsigned int JunkWidth, JunkHeight, JunkBW, JunkDepth, JunkMask;
 extern XGCValues Gcv;
-extern int InfoLines;
+extern int InfoLines,InfoWidth,InfoHeight;
 extern char Info[][INFO_SIZE];
 extern int Argc;
 extern char **Argv;
@@ -464,6 +500,11 @@ extern Atom _XA_WM_PROTOCOLS;
 extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
+#ifdef X11R6
+  extern Atom _XA_SM_CLIENT_ID;
+  extern Atom _XA_WM_CLIENT_LEADER;
+  extern Atom _XA_WM_WINDOW_ROLE;
+#endif
 
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
 #define VISIBLE(w) (w->occupation & Scr->workSpaceMgr.visibility)

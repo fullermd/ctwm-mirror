@@ -147,6 +147,8 @@ extern void TwmOutput();
 #define F_RAISEICONS	        73
 #define F_MOVEPACK		74
 #define F_MOVEPUSH		75
+#define F_DELETEORDESTROY	76
+#define F_SQUEEZE		77
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
