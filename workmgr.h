@@ -30,6 +30,11 @@
 #define MAPSTATE      0
 #define BUTTONSSTATE  1
 
+#define STYLE_NORMAL	0
+#define STYLE_STYLE1	1
+#define STYLE_STYLE2	2
+#define STYLE_STYLE3	3
+
 void CreateWorkSpaceManager ();
 void GotoWorkSpaceByName ();
 void GotoPrevWorkSpace ();
@@ -73,6 +78,7 @@ void WMapCreateDefaultBackGround ();
 typedef struct WorkSpaceList WorkSpaceList;
 
 typedef struct winList {
+    WorkSpaceList	*wlist;
     Window		w;
     int			x, y;
     int			width, height;
@@ -105,12 +111,14 @@ typedef struct WorkSpaceWindow {
     int			hspace, vspace;
     ColorPair		cp;
     MyFont		buttonFont;
+    short		buttonStyle;
 
     int			wwidth, wheight;
     name_list		*windowBackgroundL;
     name_list		*windowForegroundL;
     ColorPair		windowcp;
     MyFont		windowFont;
+    Bool		windowcpgiven;
 
     ColorPair		curColors;
     Image		*curImage;

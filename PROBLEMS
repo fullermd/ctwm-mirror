@@ -32,4 +32,8 @@ What to do : Avoid carefully GL tools.
 	AnimationSpeed to zero, or much better, you can try to find what
 	it the problem and send me a patch.
 
+    5 - There is a bug in the SOUND code, either in ctwm or in the rplay lib
+	that cause core dump. If you have unexpected core dump and compiled
+	with USE_SOUND on, first try to undef it and recompile before
+	complaining.
 

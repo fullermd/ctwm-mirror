@@ -50,5 +50,5 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
-char *Version = "MIT X Consortium, R6, ctwm 3.2p1";
+char *Version = "MIT X Consortium, R6, ctwm 3.3";
 

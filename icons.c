@@ -73,8 +73,8 @@ extern Bool AnimationPending;
 extern Bool AnimationActive;
 extern Bool MaybeAnimate;
 
-#define iconWidth(w)	(Scr->IconBorderWidth * 2 + w->icon->w_width)
-#define iconHeight(w)	(Scr->IconBorderWidth * 2 + w->icon->w_height)
+#define iconWidth(w)	(w->icon->border_width * 2 + w->icon->w_width)
+#define iconHeight(w)	(w->icon->border_width * 2 + w->icon->w_height)
 
 static
 splitEntry (ie, grav1, grav2, w, h)
@@ -206,7 +206,23 @@ int *final_x, *final_y;
 		    *final_x = ie->x;
 		break;
 	}
-	*final_y = ie->y + (ie->h - iconHeight (tmp_win)) / 2;
+	switch (Scr->IconRegionAlignement) {
+	    case J_TOP :
+		*final_y = ie->y;
+		break;
+	    case J_CENTER :
+		*final_y = ie->y + (ie->h - iconHeight (tmp_win)) / 2;
+		break;
+	    case J_BOTTOM :
+		*final_y = ie->y + ie->h - iconHeight (tmp_win);
+		break;
+	    case J_BORDER :
+		if (ir->grav1 == D_SOUTH)
+		    *final_y = ie->y + ie->h - iconHeight (tmp_win);
+		else
+		    *final_y = ie->y;
+		break;
+	}
     } else {
 	*final_x = def_x;
 	*final_y = def_y;
@@ -492,20 +508,43 @@ int def_x, def_y;
      */
     if (image == None && tmp_win->wmhints &&
 	tmp_win->wmhints->flags & IconPixmapHint) {
-    
-	image = (Image*) malloc (sizeof (struct _Image));
-	XGetGeometry(dpy, tmp_win->wmhints->icon_pixmap,
-             &JunkRoot, &JunkX, &JunkY,
-	     (unsigned int *)&image->width, (unsigned int *)&image->height, &JunkBW, &JunkDepth);
-
-	image->pixmap = XCreatePixmap (dpy, Scr->Root, image->width, image->height, Scr->d_depth);
-	image->mask   = None;
-	image->next   = None;
-	XCopyPlane (dpy, tmp_win->wmhints->icon_pixmap, image->pixmap, Scr->NormalGC,
+	if (XGetGeometry(dpy, tmp_win->wmhints->icon_pixmap,
+		&JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth)) {
+	    image = (Image*) malloc (sizeof (struct _Image));
+	    image->width  = JunkWidth;
+	    image->height = JunkHeight;
+	    image->pixmap = XCreatePixmap (dpy, Scr->Root, image->width,
+					image->height, Scr->d_depth);
+	    image->mask   = None;
+	    image->next   = None;
+	    if (JunkDepth == Scr->d_depth) 
+		XCopyArea  (dpy, tmp_win->wmhints->icon_pixmap, image->pixmap, Scr->NormalGC,
+			0, 0, image->width, image->height, 0, 0);
+	    else
+		XCopyPlane (dpy, tmp_win->wmhints->icon_pixmap, image->pixmap, Scr->NormalGC,
 			0, 0, image->width, image->height, 0, 0, 1 );
 
-	icon->width   = image->width;
-	icon->height  = image->height;
+	    icon->width   = image->width;
+	    icon->height  = image->height;
+
+	    if ((tmp_win->wmhints->flags & IconMaskHint) &&
+		XGetGeometry(dpy, tmp_win->wmhints->icon_mask,
+		    &JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth) &&
+		(JunkDepth == 1)) {
+		GC gc;
+
+		image->mask = XCreatePixmap (dpy, Scr->Root, JunkWidth, JunkHeight, 1);
+		if (image->mask) {
+		    gc = XCreateGC (dpy, image->mask, 0, NULL);
+		    if (gc) {
+			XCopyArea (dpy, tmp_win->wmhints->icon_mask, image->mask, gc,
+				0, 0, JunkWidth, JunkHeight, 0, 0);
+			XFreeGC (dpy, gc);
+		    }
+		}
+	    }
+	    icon->image = image;
+	}
     }
 
     /* if we still haven't got an icon, let's look in the Icon list 
@@ -562,6 +601,7 @@ int def_x, def_y;
 	attributes.background_pixmap = image->pixmap;
     }
 
+    icon->border_width = Scr->IconBorderWidth;
     if (Scr->NoIconTitlebar ||
 	LookInNameList (Scr->NoIconTitle, tmp_win->icon_name) ||
 	LookInList (Scr->NoIconTitle, tmp_win->full_name, &tmp_win->class))
@@ -575,22 +615,23 @@ int def_x, def_y;
     else {
 	icon->w_width = XTextWidth(Scr->IconFont.font,
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
-	if (icon->w_width > Scr->MaxIconTitleWidth) icon->w_width = Scr->MaxIconTitleWidth;
 
-	icon->w_width += 6;
+	icon->w_width += 2 * Scr->IconManagerShadowDepth + 6;
+	if (icon->w_width > Scr->MaxIconTitleWidth) icon->w_width = Scr->MaxIconTitleWidth;
 	if (icon->w_width < icon->width)
 	{
 	    icon->x = (icon->width - icon->w_width)/2;
-	    icon->x += 3;
+	    icon->x += Scr->IconManagerShadowDepth + 3;
 	    icon->w_width = icon->width;
 	}
 	else
 	{
-	    icon->x = 3;
+	    icon->x = Scr->IconManagerShadowDepth + 3;
 	}
-	icon->y = icon->height + Scr->IconFont.height;
-	icon->w_height = icon->height + Scr->IconFont.height + 6;
+	icon->y = icon->height + Scr->IconFont.height + Scr->IconManagerShadowDepth;
+	icon->w_height = icon->height + Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
 	icon->has_title = True;
+	if (icon->height) icon->border_width = 0;
     }
 
     event_mask = 0;
@@ -616,17 +657,23 @@ int def_x, def_y;
 	icon->w = None;
     }
 
+    if ((image != None) &&
+	 image->mask != None &&
+	 (! (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint))) {
+	    icon->border_width = 0;
+    }
     if (icon->w == None)
     {
 	icon->w = XCreateSimpleWindow(dpy, Scr->Root,
 	    0,0,
 	    icon->w_width, icon->w_height,
-	    Scr->IconBorderWidth, icon->border, icon->iconc.back);
+	    icon->border_width, icon->border, icon->iconc.back);
 	event_mask = ExposureMask;
     }
 
     XSelectInput (dpy, icon->w,
 		  KeyPressMask | ButtonPressMask | ButtonReleaseMask |
+/*		  EnterWindowMask | LeaveWindowMask | */
 		  event_mask);
 
     icon->bm_w = None;
@@ -658,19 +705,20 @@ int def_x, def_y;
 		rect [0].x = 0;
 		rect [0].y = icon->height;
 		rect [0].width  = icon->w_width;
-		rect [0].height = Scr->IconFont.height + 6;
+		rect [0].height = Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
 		XShapeCombineRectangles (dpy, icon->w, ShapeBounding,  0, 0, rect, 1, ShapeUnion, 0);
 	    }
 	}
-	else {
-	    rect [0].x = x;
-	    rect [0].y = 0;
+	else
+	if (icon->has_title) {
+	    rect [0].x      = x;
+	    rect [0].y      = 0;
 	    rect [0].width  = icon->width;
 	    rect [0].height = icon->height;
-	    rect [1].x = 0;
-	    rect [1].y = icon->height;
+	    rect [1].x      = 0;
+	    rect [1].y      = icon->height;
 	    rect [1].width  = icon->w_width;
-	    rect [1].height = Scr->IconFont.height + 6;
+	    rect [1].height = Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
 	    XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, rect, 2, ShapeSet, 0);
 	}
     }

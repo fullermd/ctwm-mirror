@@ -70,6 +70,7 @@
 #include <stdio.h>
 #include "twm.h"
 #include "util.h"
+#include "gram.h"
 #include "screen.h"
 
 /***********************************************************************
@@ -128,19 +129,24 @@ CreateGCs()
     greypixmap = XCreatePixmapFromBitmapData(dpy, Scr->Root,
 				(char *) greypattern, 4, 4, 1, 0, 1);
 
-    gcm  = 0;
-    gcm |= GCStipple;		gcv.stipple    = greypixmap;
-    gcm |= GCFillStyle;		gcv.fill_style = FillOpaqueStippled;
-    gcm |= GCForeground;	gcv.foreground = Scr->Black;
-    gcm |= GCBackground;	gcv.background = Scr->White;
-    Scr->GreyGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
-    XSetDashes (dpy, Scr->GreyGC, 1, dashlist, 2);
-
+    if (Scr->Monochrome != COLOR) {
+	gcm  = 0;
+	gcm |= GCStipple;	gcv.stipple    = greypixmap;
+	gcm |= GCFillStyle;	gcv.fill_style = FillOpaqueStippled;
+	gcm |= GCForeground;	gcv.foreground = Scr->Black;
+	gcm |= GCBackground;	gcv.background = Scr->White;
+	Scr->BorderGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
+	XSetDashes (dpy, Scr->BorderGC, 1, dashlist, 2);
+    }
+    else
     if (Scr->BeNiceToColormap) {
 	gcm  = 0;
 	gcm |= GCLineStyle;
 	gcv.line_style = LineDoubleDash;
-	Scr->ShadGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
-	XSetDashes (dpy, Scr->ShadGC, 0, dashlist, 2);
+	Scr->BorderGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
+	XSetDashes (dpy, Scr->BorderGC, 0, dashlist, 2);
+    }
+    else {
+	Scr->BorderGC = XCreateGC (dpy, Scr->Root, 0, (XGCValues*) 0);
     }
 }

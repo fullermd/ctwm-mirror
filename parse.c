@@ -109,7 +109,9 @@
 #define BUF_LEN 300
 
 static int ParseJustification ();
+static int ParseAlignement ();
 static int ParseRandomPlacement ();
+static int ParseButtonStyle ();
 
 static FILE *twmrc;
 static int ptr = 0;
@@ -577,6 +579,11 @@ typedef struct _TwmKeyword {
 #define kw0_StayUpMenus			42
 #define kw0_ClickToFocus		43
 #define kw0_BorderResizeCursors		44
+#define kw0_ReallyMoveInWorkspaceManager 45
+#define kw0_ShowWinWhenMovingInWmgr	46
+#define kw0_Use3DWMap			47
+#define kw0_ReverseCurrentWorkspace	48
+#define kw0_DontWarpCursorInWMap	49
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -592,9 +599,11 @@ typedef struct _TwmKeyword {
 #define kws_IconJustification		12
 #define kws_TitleJustification		13
 #define kws_IconRegionJustification	14
+#define kws_IconRegionAlignement	15
 #ifdef SOUNDS
-#define kws_SoundHost			15
+#define kws_SoundHost			16
 #endif
+#define kws_WMgrButtonStyle		17
 
 #define kwn_ConstrainedMoveTime		1
 #define kwn_MoveDelta			2
@@ -618,6 +627,12 @@ typedef struct _TwmKeyword {
 #define kwn_AnimationSpeed		20
 #define kwn_ThreeDBorderWidth		21
 #define kwn_MoveOffResistance		22
+#define kwn_BorderShadowDepth		23
+#define kwn_TitleShadowDepth		24
+#define kwn_TitleButtonShadowDepth	25
+#define kwn_MenuShadowDepth		26
+#define kwn_IconManagerShadowDepth	27
+#define kwn_MovePackResistance		28
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -647,7 +662,11 @@ typedef struct _TwmKeyword {
  * search to parse keywords.
  */
 static TwmKeyword keytable[] = { 
+    { "a",			ALTER, 0 },
     { "all",			ALL, 0 },
+    { "alter",			ALTER, 0 },
+    { "alwaysontop",		ALWAYS_ON_TOP, 0 },
+    { "alwaysshowwindowwhenmovingfromworkspacemanager", KEYWORD, kw0_ShowWinWhenMovingInWmgr },
     { "animationspeed",		NKEYWORD, kwn_AnimationSpeed },
     { "autooccupy",		KEYWORD, kw0_AutoOccupy },
     { "autoraise",		AUTO_RAISE, 0 },
@@ -655,6 +674,7 @@ static TwmKeyword keytable[] = {
     { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
     { "borderresizecursors",	KEYWORD, kw0_BorderResizeCursors },
+    { "bordershadowdepth",	NKEYWORD, kwn_BorderShadowDepth },
     { "bordertilebackground",	CLKEYWORD, kwcl_BorderTileBackground },
     { "bordertileforeground",	CLKEYWORD, kwcl_BorderTileForeground },
     { "borderwidth",		NKEYWORD, kwn_BorderWidth },
@@ -681,9 +701,13 @@ static TwmKeyword keytable[] = {
     { "dontmoveoff",		KEYWORD, kw0_DontMoveOff },
     { "dontpaintrootwindow",	KEYWORD, kw0_DontPaintRootWindow },
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
+    { "dontwarpcursorinwmap",	KEYWORD, kw0_DontWarpCursorInWMap },
     { "east",			DKEYWORD, D_EAST },
     { "f",			FRAME, 0 },
+    { "f.addtoworkspace",	FSKEYWORD, F_ADDTOWORKSPACE },
     { "f.adoptwindow",		FKEYWORD, F_ADOPTWINDOW },
+    { "f.altcontext",		FKEYWORD, F_ALTCONTEXT },
+    { "f.altkeymap",		FSKEYWORD, F_ALTKEYMAP },
     { "f.autoraise",		FKEYWORD, F_AUTORAISE },
     { "f.backiconmgr",		FKEYWORD, F_BACKICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
@@ -698,6 +722,7 @@ static TwmKeyword keytable[] = {
     { "f.deltastop",		FKEYWORD, F_DELTASTOP },
     { "f.destroy",		FKEYWORD, F_DESTROY },
     { "f.downiconmgr",		FKEYWORD, F_DOWNICONMGR },
+    { "f.downworkspace",	FKEYWORD, F_DOWNWORKSPACE },
     { "f.exec",			FSKEYWORD, F_EXEC },
     { "f.file",			FSKEYWORD, F_FILE },
     { "f.focus",		FKEYWORD, F_FOCUS },
@@ -715,11 +740,14 @@ static TwmKeyword keytable[] = {
     { "f.iconify",		FKEYWORD, F_ICONIFY },
     { "f.identify",		FKEYWORD, F_IDENTIFY },
     { "f.lefticonmgr",		FKEYWORD, F_LEFTICONMGR },
+    { "f.leftworkspace",	FKEYWORD, F_LEFTWORKSPACE },
     { "f.leftzoom",		FKEYWORD, F_LEFTZOOM },
     { "f.lower",		FKEYWORD, F_LOWER },
     { "f.menu",			FSKEYWORD, F_MENU },
     { "f.move",			FKEYWORD, F_MOVE },
     { "f.movemenu",		FKEYWORD, F_MOVEMENU },
+    { "f.movepack",		FKEYWORD, F_MOVEPACK },
+    { "f.movepush",		FKEYWORD, F_MOVEPUSH },
     { "f.nexticonmgr",		FKEYWORD, F_NEXTICONMGR },
     { "f.nextworkspace",	FKEYWORD, F_NEXTWORKSPACE },
     { "f.nop",			FKEYWORD, F_NOP },
@@ -730,14 +758,17 @@ static TwmKeyword keytable[] = {
     { "f.prevworkspace",	FKEYWORD, F_PREVWORKSPACE },
     { "f.quit",			FKEYWORD, F_QUIT },
     { "f.raise",		FKEYWORD, F_RAISE },
+    { "f.raiseicons",		FKEYWORD, F_RAISEICONS },
     { "f.raiselower",		FKEYWORD, F_RAISELOWER },
     { "f.refresh",		FKEYWORD, F_REFRESH },
+    { "f.removefromworkspace",	FSKEYWORD, F_REMOVEFROMWORKSPACE },
 #ifdef SOUNDS
     { "f.rereadsounds",		FKEYWORD, F_REREADSOUNDS },
 #endif
     { "f.resize",		FKEYWORD, F_RESIZE },
     { "f.restart",		FKEYWORD, F_RESTART },
     { "f.righticonmgr",		FKEYWORD, F_RIGHTICONMGR },
+    { "f.rightworkspace",	FKEYWORD, F_RIGHTWORKSPACE },
     { "f.rightzoom",		FKEYWORD, F_RIGHTZOOM },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
     { "f.separator",		FKEYWORD, F_SEPARATOR },
@@ -752,6 +783,7 @@ static TwmKeyword keytable[] = {
     { "f.startanimation",	FKEYWORD, F_STARTANIMATION },
     { "f.stopanimation",	FKEYWORD, F_STOPANIMATION },
     { "f.title",		FKEYWORD, F_TITLE },
+    { "f.toggleoccupation",	FSKEYWORD, F_TOGGLEOCCUPATION },
 #ifdef SOUNDS
     { "f.togglesound",		FKEYWORD, F_TOGGLESOUND },
 #endif
@@ -761,6 +793,7 @@ static TwmKeyword keytable[] = {
     { "f.twmrc",		FKEYWORD, F_RESTART },
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
     { "f.upiconmgr",		FKEYWORD, F_UPICONMGR },
+    { "f.upworkspace",		FKEYWORD, F_UPWORKSPACE },
     { "f.vanish",		FKEYWORD, F_VANISH },
     { "f.version",		FKEYWORD, F_VERSION },
     { "f.vlzoom",		FKEYWORD, F_LEFTZOOM },
@@ -794,9 +827,11 @@ static TwmKeyword keytable[] = {
     { "iconmanagergeometry",	ICONMGR_GEOMETRY, 0 },
     { "iconmanagerhighlight",	CLKEYWORD, kwcl_IconManagerHighlight },
     { "iconmanagers",		ICONMGRS, 0 },
+    { "iconmanagershadowdepth",	NKEYWORD, kwn_IconManagerShadowDepth },
     { "iconmanagershow",	ICONMGR_SHOW, 0 },
     { "iconmgr",		ICONMGR, 0 },
     { "iconregion",		ICON_REGION, 0 },
+    { "iconregionalignement",	SKEYWORD, kws_IconRegionAlignement },
     { "iconregionjustification",SKEYWORD, kws_IconRegionJustification },
     { "icons",			ICONS, 0 },
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
@@ -817,6 +852,7 @@ static TwmKeyword keytable[] = {
     { "menufont",		SKEYWORD, kws_MenuFont },
     { "menuforeground",		CKEYWORD, kwc_MenuForeground },
     { "menushadowcolor",	CKEYWORD, kwc_MenuShadowColor },
+    { "menushadowdepth",	NKEYWORD, kwn_MenuShadowDepth },
     { "menutitlebackground",	CKEYWORD, kwc_MenuTitleBackground },
     { "menutitleforeground",	CKEYWORD, kwc_MenuTitleForeground },
     { "meta",			META, 0 },
@@ -825,6 +861,7 @@ static TwmKeyword keytable[] = {
     { "move",			MOVE, 0 },
     { "movedelta",		NKEYWORD, kwn_MoveDelta },
     { "moveoffresistance",	NKEYWORD, kwn_MoveOffResistance },
+    { "movepackresistance",	NKEYWORD, kwn_MovePackResistance },
     { "nobackingstore",		KEYWORD, kw0_NoBackingStore },
     { "noborder",		NO_BORDER, 0 },
     { "nocasesensitive",	KEYWORD, kw0_NoCaseSensitive },
@@ -860,9 +897,11 @@ static TwmKeyword keytable[] = {
     { "r",			ROOT, 0 },
     { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
     { "randomplacement",	SKEYWORD, kws_RandomPlacement },
+    { "reallymoveinworkspacemanager",	KEYWORD, kw0_ReallyMoveInWorkspaceManager },
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
     { "restartpreviousstate",	KEYWORD, kw0_RestartPreviousState },
+    { "reversecurrentworkspace",KEYWORD, kw0_ReverseCurrentWorkspace },
     { "right",			JKEYWORD, J_RIGHT },
     { "righttitlebutton",	RIGHT_TITLEBUTTON, 0 },
     { "root",			ROOT, 0 },
@@ -888,11 +927,13 @@ static TwmKeyword keytable[] = {
     { "title",			TITLE, 0 },
     { "titlebackground",	CLKEYWORD, kwcl_TitleBackground },
     { "titlebuttonborderwidth",	NKEYWORD, kwn_TitleButtonBorderWidth },
+    { "titlebuttonshadowdepth",	NKEYWORD, kwn_TitleButtonShadowDepth },
     { "titlefont",		SKEYWORD, kws_TitleFont },
     { "titleforeground",	CLKEYWORD, kwcl_TitleForeground },
     { "titlehighlight",		TITLE_HILITE, 0 },
     { "titlejustification",	SKEYWORD, kws_TitleJustification },
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
+    { "titleshadowdepth",	NKEYWORD, kwn_TitleShadowDepth },
     { "transienthasoccupation",	KEYWORD, kw0_TransientHasOccupation },
     { "transientontop",		NKEYWORD, kwn_TransientOnTop },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
@@ -901,6 +942,7 @@ static TwmKeyword keytable[] = {
     { "usethreediconmanagers",	KEYWORD, kw0_Use3DIconManagers },
     { "usethreedmenus",		KEYWORD, kw0_Use3DMenus },
     { "usethreedtitles",	KEYWORD, kw0_Use3DTitles },
+    { "usethreedwmap",		KEYWORD, kw0_Use3DWMap },
     { "w",			WINDOW, 0 },
     { "wait",			WAITC, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
@@ -911,6 +953,7 @@ static TwmKeyword keytable[] = {
     { "windowfunction",		WINDOW_FUNCTION, 0 },
     { "windowring",		WINDOW_RING, 0 },
     { "wmgrbuttonshadowdepth",	NKEYWORD, kwn_WMgrButtonShadowDepth },
+    { "wmgrbuttonstyle",	SKEYWORD, kws_WMgrButtonStyle },
     { "wmgrhorizbuttonindent",	NKEYWORD, kwn_WMgrHorizButtonIndent },
     { "wmgrvertbuttonindent",	NKEYWORD, kwn_WMgrVertButtonIndent },
     { "workspace", 		WORKSPACE, 0 },
@@ -1077,6 +1120,10 @@ int do_single_keyword (keyword)
 	Scr->use3Dtitles = TRUE;
 	return 1;
 
+      case kw0_Use3DWMap:
+	Scr->use3Dwmap = TRUE;
+	return 1;
+
       case kw0_SunkFocusWindowTitle:
 	Scr->SunkFocusWindowTitle = TRUE;
 	return 1;
@@ -1120,8 +1167,23 @@ int do_single_keyword (keyword)
       case kw0_ClickToFocus:
 	Scr->ClickToFocus = TRUE;
 	return 1;
-    }
 
+      case kw0_ReallyMoveInWorkspaceManager:
+	Scr->ReallyMoveInWorkspaceManager = TRUE;
+	return 1;
+
+      case kw0_ShowWinWhenMovingInWmgr:
+	Scr->ShowWinWhenMovingInWmgr = TRUE;
+	return 1;
+
+      case kw0_ReverseCurrentWorkspace:
+	Scr->ReverseCurrentWorkspace = TRUE;
+	return 1;
+
+      case kw0_DontWarpCursorInWMap:
+	Scr->DontWarpCursorInWMap = TRUE;
+	return 1;
+    }
     return 0;
 }
 
@@ -1231,6 +1293,20 @@ int do_string_keyword (keyword, s)
  	    }
  	    return 1;
  	}
+      case kws_IconRegionAlignement:
+	{
+	    int just = ParseAlignement (s);
+
+ 	    if (just < 0) {
+ 		twmrc_error_prefix();
+ 		fprintf (stderr,
+ 			 "ignoring invalid IconRegionAlignement argument \"%s\"\n", s);
+ 	    } else {
+ 		Scr->IconRegionAlignement = just;
+ 	    }
+ 	    return 1;
+ 	}
+
       case kws_TitleJustification:
 	{
 	    int just = ParseJustification (s);
@@ -1250,6 +1326,19 @@ int do_string_keyword (keyword, s)
         return 1;
 #endif
 		
+      case kws_WMgrButtonStyle:
+	{
+	    int style = ParseButtonStyle (s);
+
+ 	    if (style < 0) {
+ 		twmrc_error_prefix();
+ 		fprintf (stderr,
+ 			 "ignoring invalid WMgrButtonStyle argument \"%s\"\n", s);
+ 	    } else {
+ 		Scr->workSpaceMgr.workspaceWindow.buttonStyle = style;
+ 	    }
+ 	    return 1;
+	}
     }
     return 0;
 }
@@ -1270,6 +1359,11 @@ int do_number_keyword (keyword, num)
 
       case kwn_MoveOffResistance:
 	Scr->MoveOffResistance = num;
+	return 1;
+
+      case kwn_MovePackResistance:
+	if (num < 0) num = 20;
+	Scr->MovePackResistance = num;
 	return 1;
 
       case kwn_XorValue:
@@ -1334,7 +1428,7 @@ int do_number_keyword (keyword, num)
 
       case kwn_WMgrButtonShadowDepth:
 	if (Scr->FirstTime) Scr->WMgrButtonShadowDepth = num;
-	if (Scr->WMgrButtonShadowDepth < 0) Scr->WMgrButtonShadowDepth = 2;
+	if (Scr->WMgrButtonShadowDepth < 1) Scr->WMgrButtonShadowDepth = 1;
 	return 1;
 
       case kwn_MaxIconTitleWidth:
@@ -1357,6 +1451,32 @@ int do_number_keyword (keyword, num)
 	if (num < 0) num = 0;
 	SetAnimationSpeed (num);
 	return 1;
+
+      case kwn_BorderShadowDepth:
+	if (Scr->FirstTime) Scr->BorderShadowDepth = num;
+	if (Scr->BorderShadowDepth < 0) Scr->BorderShadowDepth = 2;
+	return 1;
+
+      case kwn_TitleButtonShadowDepth:
+	if (Scr->FirstTime) Scr->TitleButtonShadowDepth = num;
+	if (Scr->TitleButtonShadowDepth < 0) Scr->TitleButtonShadowDepth = 2;
+	return 1;
+
+      case kwn_TitleShadowDepth:
+	if (Scr->FirstTime) Scr->TitleShadowDepth = num;
+	if (Scr->TitleShadowDepth < 0) Scr->TitleShadowDepth = 2;
+	return 1;
+
+      case kwn_IconManagerShadowDepth:
+	if (Scr->FirstTime) Scr->IconManagerShadowDepth = num;
+	if (Scr->IconManagerShadowDepth < 0) Scr->IconManagerShadowDepth = 2;
+	return 1;
+
+      case kwn_MenuShadowDepth:
+	if (Scr->FirstTime) Scr->MenuShadowDepth = num;
+	if (Scr->MenuShadowDepth < 0) Scr->MenuShadowDepth = 2;
+	return 1;
+
     }
 
     return 0;
@@ -1414,10 +1534,12 @@ name_list **do_colorlist_keyword (keyword, colormode, s)
 
       case kwcl_MapWindowBackground:
 	GetColor (colormode, &Scr->workSpaceMgr.workspaceWindow.windowcp.back, s);
+	Scr->workSpaceMgr.workspaceWindow.windowcpgiven = True;
 	return &Scr->workSpaceMgr.workspaceWindow.windowBackgroundL;
 
       case kwcl_MapWindowForeground:
 	GetColor (colormode, &Scr->workSpaceMgr.workspaceWindow.windowcp.fore, s);
+	Scr->workSpaceMgr.workspaceWindow.windowcpgiven = True;
 	return &Scr->workSpaceMgr.workspaceWindow.windowForegroundL;
     }
     return NULL;
@@ -1608,6 +1730,21 @@ static int ParseJustification (s)
     return (-1);
 }
 
+static int ParseAlignement (s)
+    register char *s;
+{
+    if (strlen (s) == 0) return (-1);
+    if (strcmp (s, "default") == 0) return J_CENTER;
+    XmuCopyISOLatin1Lowered (s, s);
+
+    if (strcmp (s, "default") == 0) return J_CENTER;
+    if (strcmp (s,     "top") == 0) return J_TOP;
+    if (strcmp (s,  "center") == 0) return J_CENTER;
+    if (strcmp (s,  "bottom") == 0) return J_BOTTOM;
+    if (strcmp (s,  "border") == 0) return J_BORDER;
+    return (-1);
+}
+
 static int ParseUsePPosition (s)
     register char *s;
 {
@@ -1623,6 +1760,19 @@ static int ParseUsePPosition (s)
     return (-1);
 }
 
+static int ParseButtonStyle (s)
+    register char *s;
+{
+    if (strlen (s) == 0) return (-1);
+    if (strcmp (s,  "default") == 0) return STYLE_NORMAL;
+    XmuCopyISOLatin1Lowered (s, s);
+
+    if (strcmp (s, "normal") == 0) return STYLE_NORMAL;
+    if (strcmp (s, "style1") == 0) return STYLE_STYLE1;
+    if (strcmp (s, "style2") == 0) return STYLE_STYLE2;
+    if (strcmp (s, "style3") == 0) return STYLE_STYLE3;
+    return (-1);
+}
 
 do_squeeze_entry (list, name, justify, num, denom)
     name_list **list;			/* squeeze or dont-squeeze list */

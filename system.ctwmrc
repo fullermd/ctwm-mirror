@@ -23,6 +23,7 @@ UseThreeDMenus
 UseThreeDTitles
 UseThreeDIconManagers
 UseThreeDBorders
+UseThreeDWMap
 SunkFocusWindowTitle
 
 workspacemanagergeometry        "360x60+60-0" 4
@@ -64,14 +65,13 @@ Color
     IconBorderColor       "gray85"
     IconManagerBackground "DeepSkyBlue1" {"Axe" "DeepSkyBlue3" "xload" "DeepSkyBlue2"}
     IconManagerForeground "Black"
-    MapWindowBackground   "White" {
-	"root*" "DarkSlateBlue"
-	"Axe"   "White"
+    MapWindowBackground   "DeepSkyBlue1" {
+	"root*" "Red"
+	"xterm" "DeepSkyBlue3"
+	"Axe"	"Yellow"
     }
     MapWindowForeground   "Black" {
-	"root*" "White"
-	"xterm" "Black"
-	"Axe"   "Black"
+	"xterm" "White"
     }
 }
 

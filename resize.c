@@ -661,7 +661,7 @@ EndResize()
     }
 
     if (!Scr->NoRaiseResize)
-        XRaiseWindow(dpy, tmp_win->frame);
+        RaiseWindow(tmp_win);
 
     UninstallRootColormap();
 
@@ -982,8 +982,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
      */
     if (tmp_win->title_height && tmp_win->hilite_wl)
     {
-	xwc.width = (tmp_win->name_x - tmp_win->highlightxl);
-	if (Scr->use3Dtitles) xwc.width -= 4;
+	xwc.width = (tmp_win->name_x - tmp_win->highlightxl - 2);
         if (xwc.width <= 0) {
             xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
             xwc.width = 1;
@@ -998,7 +997,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     {
 	xwc.width = (tmp_win->rightx - tmp_win->highlightxr);
 	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
-	if (Scr->use3Dtitles) xwc.width -= 4;
+	if (Scr->use3Dtitles) xwc.width -= Scr->TitleButtonShadowDepth;
         if (xwc.width <= 0) {
             xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
             xwc.width = 1;
@@ -1013,10 +1012,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (HasShape && reShape) {
 	SetFrameShape (tmp_win);
     }
-    WMapSetupWindow (tmp_win, x + tmp_win->frame_bw3D,
-		y + tmp_win->title_height + tmp_win->frame_bw3D,
-		tmp_win->attr.width, tmp_win->attr.height);
-
+    WMapSetupWindow (tmp_win, x, y, w, h);
     if (sendEvent)
     {
         client_event.type = ConfigureNotify;
@@ -1142,7 +1138,7 @@ int flag;
       }
 
     if (!Scr->NoRaiseResize)
-        XRaiseWindow(dpy, tmp_win->frame);
+        RaiseWindow(tmp_win);
 
     ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 
@@ -1205,11 +1201,11 @@ SetFrameShape (tmp)
 	    newBounding[0].x = tmp->title_x - tmp->frame_bw3D;
 	    newBounding[0].y = tmp->title_y - tmp->frame_bw3D;
 	    newBounding[0].width = tmp->title_width + fbw2 + 2 * tmp->frame_bw3D;
-	    newBounding[0].height = tmp->title_height + tmp->frame_bw3D;
+	    newBounding[0].height = tmp->title_height;
 	    newBounding[1].x = -tmp->frame_bw;
-	    newBounding[1].y = Scr->TitleHeight + tmp->frame_bw3D;
+	    newBounding[1].y = Scr->TitleHeight;
 	    newBounding[1].width = tmp->attr.width + fbw2 + 2 * tmp->frame_bw3D;
-	    newBounding[1].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
+	    newBounding[1].height = tmp->attr.height + fbw2 + 2 * tmp->frame_bw3D;
 	    XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
 				     newBounding, 2, ShapeSet, YXBanded);
 	    /* insides */
@@ -1218,9 +1214,9 @@ SetFrameShape (tmp)
 	    newClip[0].width = tmp->title_width + 2 * tmp->frame_bw3D;
 	    newClip[0].height = Scr->TitleHeight + tmp->frame_bw3D;
 	    newClip[1].x = 0;
-	    newClip[1].y = tmp->title_height + tmp->frame_bw3D;
+	    newClip[1].y = tmp->title_height;
 	    newClip[1].width = tmp->attr.width + 2 * tmp->frame_bw3D;
-	    newClip[1].height = tmp->attr.height + tmp->frame_bw3D;
+	    newClip[1].height = tmp->attr.height + 2 * tmp->frame_bw3D;
 	    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
 				     newClip, 2, ShapeSet, YXBanded);
 	} else {

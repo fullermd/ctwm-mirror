@@ -475,8 +475,8 @@ changequote(``,'')
 	window, this property contains the null separated list of all the
 	workspaces. Now the WM_OCCUPATION property on each window is a null
 	separated list instead of a space separated list, it was wrong since
-	workspace names can contain spaces. So, the first you will start the
-	this version, your windows will show up anywhere.
+	workspace names can contain spaces. So, the first time you will start
+	the this version, your windows will show up anywhere.
 
    18 - A new library libctwm.a and an include file ctwm.h are given. The
 	library contains functions for an external program to have some
@@ -552,30 +552,30 @@ ChangeWorkspaceFunction !"cat /users/lecom/sounds/bom.au 2>/dev/null 1>/dev/audi
 	don't expect a good support if you have problems with it.
 
    12 - A new keyword : NoBorder with a window list argument. These windows
-	won't have border. Thanks to J.P. Albers van der Linden
+	won't have borders. Thanks to J.P. Albers van der Linden
 	(albers@pasichva.serigate.philips.nl) for this patch.
 
    13 - Ctwm has a new option selectable with the flag -w, if used, ctwm will
 	not take over the whole screen(s), instead it will create a new window
 	and manage it. The -w has an optional argument which is a window id
 	of an existing window, if specified, ctwm will try to manage this window.
-	This is totally useless, but I like. The f.adoptwindow function can
+	This is totally useless, but I like it. The f.adoptwindow function can
 	be used to capture an existing window into such a captive ctwm. A possible
 	use of such mode can be to test new configuration file without restarting
 	ctwm.
 
-   14 - Now the welcome file can be of any type understanded by ctwm. So
+   14 - Now the welcome file can be of any type understood by ctwm. So
 	it must be prefixed with its type. The default is xpm:welcome.xpm
 	if the XPM option is compiled in, else it is xwd:welcome.xwd. You
 	use for example :
 
 setenv CTWM_WELCOME_FILE "|(giftoppm | pnmtoxwd) < ~/images/2010.gif"
 
-   15 - You can have now 3D window borders with the keyword : UseThreeDBorders.
+   15 - You can now have 3D window borders with the keyword : UseThreeDBorders.
 	In which case the 3D border witdh is given with : ThreeDBorderWidth.
 	The default value is 6.  The color is BorderColor for the window that has
 	focus and BorderTileBackground for all others windows. Note : The 3D
-	borders does not merge very well with squeezed titles, as the top edge
+	borders do not merge very well with squeezed titles, as the top edge
 	of the window where the title is missing does not get a 3d border.
 
    16 - Now, WindowRing can be specified without argument, in this case all the
@@ -646,7 +646,7 @@ LeftTitleButton ":xpm:menu" {
         then the second letter activates it.
 
    12 - Support for VMS. Patch from Peter Chang (peterc@v2.ph.man.ac.uk).
-        Completely untested. If you have problems to build on VMS ask to
+        Completely untested. If you have problems to build on VMS ask
         Peter Chang.
 
    13 - New keyword : MoveOffResistance. (idea borrowed to fvwm) : If you set
@@ -671,8 +671,96 @@ LeftTitleButton ":xpm:menu" {
 
    16 - The xpm files are now installed in $(TWMDIR)/images instead of $(TWMDIR).
 
-   17 - Due to the many problems I had with signals beeing slightly different
-	on different systems, I rewrote the animation handling to not use signals
-	anymore. I hope it is more portable. The old code is still available if
-	you define USE_SIGNALS.
+   17 - Due to the many problems I had with signals being slightly different
+	on different systems, I rewrote the animation handling without using
+	signals anymore. I hope it is more portable. The old code is still
+	available if you define USE_SIGNALS.
+
+    Changes from version 3.2 to 3.3
+    -------------------------------
+
+    1 - Better 3D borders with SqueezeTitle.
+
+    2 - New keywords : BorderShadowDepth, TitleButtonShadowDepth,
+        TitleShadowDepth, MenuShadowDepth and IconManagerShadowDepth. You can
+        modify the depth of the 3D shadow of all the objects.
+
+    3 - f.altcontext. a new context named "alter" is introduced. The next key
+        or button event after a call to f.altcontext will be interpreted using
+        the alternate context. To define bindings in the alternate context, use
+        the keyword alter in the context field of the binding command.
+
+    4 - f.altkeymap. Up to 5 alternate modifiers (a1 to a5). The next key
+        or button event after a call to f.altkeymap will be interpreted with
+        this alternate modifies set. To define bindings with an alternate
+        modifier, use the keyword 'a' followed by the number of the modifier in
+        the modifier field of the binding command. Only the root, window, icon
+        and iconmgr context are allowed when an alternate modified is used.
+
+    5 - Default menu entry : If a menu entry name begins with a '*' (star),
+        this star won't be displayed and the corresponding entry will be the
+        default entry for this menu. When a menu has a default entry and is used
+        as a pull-right in another menu, this default entry action will be executed
+        automatically when this submenu is selected without beeing displayed.
+        It's hard to explain, but easy to understand.
+
+    6 - New keywords : ReallyMoveInWorkspaceManager and
+        AlwaysShowWindowWhenMovingFromWorkspaceManager.
+        ReallyMoveInWorkspaceManager tells ctwm to move the actual window when
+        the user is moving the small windows in the WorkSpaceMap window.
+        AlwaysShowWindowWhenMovingFromWorkspaceManager tells ctwm to always
+        map the actual window during the move, regardless of whether it crosses
+        the current workspace or not. The Shift key toggles this behaviour.
+
+    7 - 4 new functions :f.rightworkspace, f.leftworkspace, f.upworkspace
+        and f.downworkspace. Do what you expect.
+
+    8 - The function f.raiseicons (from Rickard Westman <ricwe@ida.liu.se>).
+        Raises all icons.
+
+    9 - A new keyword : IconRegionAlignement. Like IconRegionJustification
+        but align vertically. The parameter is "top", "center", "bottom" or
+        "border".
+
+   10 - f.addtoworkspace, f.removefromworkspace and f.toggleoccupation. (idea
+        from Kai Grossjohann <grossjoh@linus.informatik.uni-dortmund.de>). They
+        take one argument that is a workspace name. When applied to a window,
+        they add to, remove from, or toggle the occupation of this window in
+        this workspace.
+
+   11 - AlwaysOnTop (from Stefan Monnier <monnier@di.epfl.ch>). Accept a list
+        of windows as argument. Ctwm will do it's best to keep these windows
+        on top of the screen. Not perfect.
+
+   12 - f.movepack, f.movepush, MovePackResistance. f.movepack is like f.move,
+        but it tries to avoid overlapping of windows on the screen.  When the
+        moving window begin to overlap with another window, the move is stopped.
+        If you go too far over the other window (more that MovePackResistance
+        pixels), the move is resumed and the moving window can overlap with
+        the other window. Useful to pack windows closely. Instead of stopping
+        the move, f.movepush tries to push the other window to avoid overlap.
+        f.movepush is here mainly because I found it amusing to do it. Is is
+        not very useful.
+
+   13 - TitleJustification : Takes one string argument : "left", "center", or
+        "right". Tells ctwm how to justify the window titles.
+
+
+   14 - UseThreeDWMap : Tells ctwm to use 3D decorations for the small windows
+	in the workspace map.
+
+
+   15 - ReverseCurrentWorkspace : Tells ctwm to reverse the background and
+	foreground colors in the small windows in the workspace map for the
+	current workspace.
+
+   16 - DontWarpCursorInWMap : Tells ctwm not to warp the cursor to the
+	corresponding actual window when you click in a small window in the
+	workspace map.
+
+   17 - If there is neither MapWindowBackground, nor MapWindowForeground in the
+	config file,the window title colors are used for the small windows in the
+	workspace map.
+
+
 

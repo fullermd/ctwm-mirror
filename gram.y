@@ -111,7 +111,7 @@ extern int yylineno;
 
 %token <num> LB RB LP RP MENUS MENU BUTTON DEFAULT_FUNCTION PLUS MINUS
 %token <num> ALL OR CURSORS PIXMAPS ICONS COLOR SAVECOLOR MONOCHROME FUNCTION 
-%token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ICONMGRS
+%token <num> ICONMGR_SHOW ICONMGR ALTER WINDOW_FUNCTION ZOOM ICONMGRS
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_BORDER NO_ICON_TITLE NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION 
@@ -121,7 +121,7 @@ extern int yylineno;
 %token <num> MOVE RESIZE WAITC SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON 
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD 
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
-%token <num> NO_STACKMODE WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
+%token <num> NO_STACKMODE ALWAYS_ON_TOP WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
 %token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
 %token <num> OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
 %token <num> CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
@@ -260,6 +260,8 @@ stmt		: error
 		  win_list
 		| NO_HILITE		{ if (Scr->FirstTime)
 						Scr->Highlight = FALSE; }
+		| ALWAYS_ON_TOP		{ list = &Scr->AlwaysOnTopL; }
+		  win_list
 		| NO_STACKMODE		{ list = &Scr->NoStackModeL; }
 		  win_list
 		| NO_STACKMODE		{ if (Scr->FirstTime)
@@ -407,6 +409,16 @@ key		: META			{ mods |= Mod1Mask; }
 		| SHIFT			{ mods |= ShiftMask; }
 		| LOCK			{ mods |= LockMask; }
 		| CONTROL		{ mods |= ControlMask; }
+		| ALTER number		{ if ($2 < 1 || $2 > 5) {
+					     twmrc_error_prefix();
+					     fprintf (stderr, 
+				"bad modifier number (%d), must be 1-5\n",
+						      $2);
+					     ParseError = 1;
+					  } else {
+					     mods |= (Alt1Mask << ($2 - 1));
+					  }
+					}
 		| META number		{ if ($2 < 1 || $2 > 5) {
 					     twmrc_error_prefix();
 					     fprintf (stderr, 
@@ -431,6 +443,7 @@ context		: WINDOW		{ cont |= C_WINDOW_BIT; }
 		| FRAME			{ cont |= C_FRAME_BIT; }
 		| ICONMGR		{ cont |= C_ICONMGR_BIT; }
 		| META			{ cont |= C_ICONMGR_BIT; }
+		| ALTER                 { cont |= C_ALTER_BIT; }
 		| ALL			{ cont |= C_ALL_BITS; }
 		| OR			{  }
 		;
@@ -447,6 +460,7 @@ contextkey	: WINDOW		{ cont |= C_WINDOW_BIT; }
 		| ICONMGR		{ cont |= C_ICONMGR_BIT; }
 		| META			{ cont |= C_ICONMGR_BIT; }
 		| ALL			{ cont |= C_ALL_BITS; }
+		| ALTER                 { cont |= C_ALTER_BIT; }
 		| OR			{ }
 		| string		{ Name = $1; cont |= C_NAME_BIT; }
 		;

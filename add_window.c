@@ -245,19 +245,22 @@ IconMgr *iconp;
     namelen = strlen (tmp_win->name);
 
     tmp_win->highlight = Scr->Highlight && 
-	(!(short)(int) LookInList(Scr->NoHighlight, tmp_win->full_name, 
+	(!LookInList(Scr->NoHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
 
     tmp_win->stackmode = Scr->StackMode &&
-	(!(short)(int) LookInList(Scr->NoStackModeL, tmp_win->full_name, 
+	(!LookInList(Scr->NoStackModeL, tmp_win->full_name, 
 	    &tmp_win->class));
+
+    tmp_win->ontoppriority = (LookInList(Scr->AlwaysOnTopL,
+	tmp_win->full_name, &tmp_win->class)) ? ONTOP_MAX : ONTOP_DEFAULT;
 
     tmp_win->titlehighlight = Scr->TitleHighlight && 
 	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
 
     tmp_win->auto_raise = Scr->AutoRaiseDefault ||
-      (short)(int) LookInList(Scr->AutoRaise, tmp_win->full_name,
+	LookInList(Scr->AutoRaise, tmp_win->full_name,
 			      &tmp_win->class);
     if (tmp_win->auto_raise) Scr->NumAutoRaises++;
     tmp_win->iconify_by_unmapping = Scr->IconifyByUnmapping;
@@ -665,6 +668,7 @@ IconMgr *iconp;
 		ConstrainSize (tmp_win, &AddingW, &AddingH);  /* w/o borders */
 		AddingW += bw2;
 		AddingH += bw2;
+		XMaskEvent(dpy, ButtonReleaseMask, &event);
 	    }
 	    else
 	    {
@@ -855,10 +859,11 @@ IconMgr *iconp;
     else
 	tmp_win->gray = None;
 
+    RaiseWindow(tmp_win);
 	
     if (tmp_win->title_w) {
-	CreateWindowTitlebarButtons (tmp_win);
 	ComputeTitleLocation (tmp_win);
+	CreateWindowTitlebarButtons (tmp_win);
 	XMoveWindow (dpy, tmp_win->title_w,
 		     tmp_win->title_x, tmp_win->title_y);
 	XDefineCursor(dpy, tmp_win->title_w, Scr->TitleCursor);
@@ -1040,6 +1045,8 @@ AddDefaultBindings ()
  ***********************************************************************
  */
 
+#define AltMask (Alt1Mask | Alt2Mask | Alt3Mask | Alt4Mask | Alt5Mask)
+
 void
 GrabButtons(tmp_win)
 TwmWindow *tmp_win;
@@ -1100,6 +1107,7 @@ TwmWindow *tmp_win;
 	switch (tmp->cont)
 	{
 	case C_WINDOW:
+	    if (tmp->mods & AltMask) break;
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
 		GrabModeAsync, GrabModeAsync);
 	    break;
@@ -1155,7 +1163,6 @@ static void CreateHighlightWindows (tmp_win)
     unsigned long valuemask;
     int h = (Scr->TitleHeight - 2 * Scr->FramePadding);
     int y = Scr->FramePadding;
-    Window w;
 
     if (! tmp_win->titlehighlight) {
 	tmp_win->hilite_wl = (Window) 0;
@@ -1220,8 +1227,8 @@ static void CreateHighlightWindows (tmp_win)
     }
 
     if (Scr->use3Dtitles) {
-	y += 2;
-	h -= 4;
+	y += Scr->TitleShadowDepth;
+	h -= 2 * Scr->TitleShadowDepth;
     }
     if (Scr->TitleJustification == J_LEFT)
 	tmp_win->hilite_wl = (Window) 0;
@@ -1266,30 +1273,29 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
     switch (Scr->TitleJustification) {
 	case J_LEFT :
 	    tmp_win->name_x = Scr->TBInfo.titlex;
-	    if (Scr->use3Dtitles) tmp_win->name_x += 4;
+	    if (Scr->use3Dtitles) tmp_win->name_x += Scr->TitleShadowDepth + 2;
 	    break;
 	case J_CENTER :
 	    tmp_win->name_x = Scr->TBInfo.titlex + (titlew - tmp_win->name_width) / 2;
 	    break;
 	case J_RIGHT :
 	    tmp_win->name_x = Scr->TBInfo.titlex + titlew - tmp_win->name_width;
-	    if (Scr->use3Dtitles) tmp_win->name_x -= 4;
+	    if (Scr->use3Dtitles) tmp_win->name_x -= Scr->TitleShadowDepth - 2;
 	    break;
     }
     if (Scr->use3Dtitles) {
-	if (tmp_win->name_x < (Scr->TBInfo.titlex + 4))
-		tmp_win->name_x = Scr->TBInfo.titlex + 4;
+	if (tmp_win->name_x < (Scr->TBInfo.titlex + 2 * Scr->TitleShadowDepth))
+		tmp_win->name_x = Scr->TBInfo.titlex + 2 * Scr->TitleShadowDepth;
     }
     else
     if (tmp_win->name_x < Scr->TBInfo.titlex) {
 	tmp_win->name_x = Scr->TBInfo.titlex;
     }
     tmp_win->highlightxl = Scr->TBInfo.titlex;
-    tmp_win->highlightxr = tmp_win->name_x + tmp_win->name_width;
+    tmp_win->highlightxr = tmp_win->name_x + tmp_win->name_width + 2;
 
     if (Scr->use3Dtitles) {
-	tmp_win->highlightxl += 2;
-	tmp_win->highlightxr += 2;
+	tmp_win->highlightxl += Scr->TitleShadowDepth;
     }
     if (tmp_win->hilite_wr || Scr->TBInfo.nright > 0) 
       tmp_win->highlightxr += Scr->TitlePadding;
@@ -1321,7 +1327,7 @@ void ComputeTitleLocation (tmp)
 	register SqueezeInfo *si = tmp->squeeze_info;
 	int basex;
 	int maxwidth = tmp->frame_width;
-	int tw = tmp->title_width;
+	int tw = tmp->title_width + 2 * tmp->frame_bw3D;
 
 	/*
 	 * figure label base from squeeze info (justification fraction)
@@ -1353,8 +1359,8 @@ void ComputeTitleLocation (tmp)
 	    basex -= tw - 1;
 	    break;
 	}
-	if (basex > maxwidth - tw + 1)
-	  basex = maxwidth - tw + 1;
+	if (basex > maxwidth - tw)
+	  basex = maxwidth - tw;
 	if (basex < 0) basex = 0;
 
 	tmp->title_x = basex - tmp->frame_bw + tmp->frame_bw3D;
@@ -1745,4 +1751,3 @@ TwmWindow *t;
     }
     t->HiliteImage = image->next;
 }
-

@@ -116,6 +116,7 @@ void CreateIconManagers()
     if (Scr->NoIconManagers)
 	return;
 
+    if (Scr->use3Diconmanagers) iconmgr_textx += Scr->IconManagerShadowDepth;
     if (Scr->siconifyPm == None)
     {
 	Scr->siconifyPm = XCreatePixmapFromBitmapData(dpy, Scr->Root,
@@ -371,7 +372,7 @@ void MoveIconManager(dir)
 
     /* raise the frame so the icon manager is visible */
     if (ip->twm_win->mapped) {
-	XRaiseWindow(dpy, ip->twm_win->frame);
+	RaiseWindow(ip->twm_win);
 	XWarpPointer(dpy, None, tmp->icon, 0,0,0,0, 5, 5);
     } else {
 	if (tmp->twm->title_height) {
@@ -451,7 +452,7 @@ void JumpIconManager(dir)
     }
 
     /* raise the frame so it is visible */
-    XRaiseWindow(dpy, tmp_ip->twm_win->frame);
+    RaiseWindow(tmp_ip->twm_win);
     if (tmp_ip->active)
 	XWarpPointer(dpy, None, tmp_ip->active->icon, 0,0,0,0, 5, 5);
     else
@@ -473,7 +474,7 @@ WList *AddIconManager(tmp_win)
     TwmWindow *tmp_win;
 {
     WList *tmp, *old;
-    int h;
+    int h, offs;
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     IconMgr *ip;
@@ -523,8 +524,10 @@ WList *AddIconManager(tmp_win)
     if (Scr->use3Diconmanagers) {
 	if (!Scr->BeNiceToColormap) GetShadeColors (&tmp->cp);
 	tmp->iconifypm = Create3DIconManagerIcon (tmp->cp);
+	h = Scr->IconManagerFont.height + 2 * Scr->IconManagerShadowDepth + 6;
     }
-    h = Scr->IconManagerFont.height + 10;
+    else
+	h = Scr->IconManagerFont.height + 10;
     if (h < (siconify_height + 4))
 	h = siconify_height + 4;
 
@@ -545,23 +548,15 @@ WList *AddIconManager(tmp_win)
 			    CopyFromParent, (unsigned int) CopyFromParent,
 			    (Visual *) CopyFromParent, valuemask, &attributes);
 
-/* for an unknown reason, this window creation fails when in captive mode
-and welcome on, same thing for workspace manager subwindows
-{
-    XWindowAttributes winattrs;
-    Status status;
-    
-printf ("tmp->w = %x\n", tmp->w);
-status = XGetWindowAttributes(dpy, tmp->w, &winattrs);
-if (! status) printf ("XGetWindowAttributes failed on %x\n", tmp->w);
-}*/
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
     attributes.background_pixel = tmp->cp.back;
     attributes.border_pixel = Scr->Black;
     attributes.event_mask = (ButtonReleaseMask| ButtonPressMask |
 			     ExposureMask);
     attributes.cursor = Scr->ButtonCursor;
-    tmp->icon = XCreateWindow (dpy, tmp->w, 5, (int) (h - siconify_height)/2,
+    offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
+    tmp->icon = XCreateWindow (dpy, tmp->w, offs + 3,
+			       (int) (h - siconify_height)/2,
 			       (unsigned int) siconify_width,
 			       (unsigned int) siconify_height,
 			       (unsigned int) 0, CopyFromParent,
@@ -770,14 +765,11 @@ void DrawIconManagerBorder(tmp, fill)
     int fill;
 {
     if (Scr->use3Diconmanagers) {
-	int shadow_width;
-
-	shadow_width = 2;
 	if (tmp->active && Scr->Highlight)
-	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, Scr->IconManagerShadowDepth,
 				tmp->cp, on, fill, False);
 	else
-	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, Scr->IconManagerShadowDepth,
 				tmp->cp, off, fill, False);
     }
     else {
@@ -860,7 +852,11 @@ void PackIconManager(ip)
     int mask, bw;
     unsigned int JunkW, JunkH;
 
-    wheight = Scr->IconManagerFont.height + 10;
+    if (Scr->use3Diconmanagers) {
+	wheight = Scr->IconManagerFont.height + 2 * Scr->IconManagerShadowDepth + 6;
+    } else {
+	wheight = Scr->IconManagerFont.height + 10;
+    }
     if (wheight < (siconify_height + 4))
 	wheight = siconify_height + 4;
 

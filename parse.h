@@ -139,6 +139,14 @@ extern void TwmOutput();
 #endif
 #define F_TRACE			66
 #define F_WINWARP		67
+#define F_ALTCONTEXT		68
+#define F_LEFTWORKSPACE		69
+#define F_RIGHTWORKSPACE	70
+#define F_UPWORKSPACE		71
+#define F_DOWNWORKSPACE		72
+#define F_RAISEICONS	        73
+#define F_MOVEPACK		74
+#define F_MOVEPUSH		75
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
@@ -152,6 +160,10 @@ extern void TwmOutput();
 #define F_COLORMAP		110	/* string */
 #define F_GOTOWORKSPACE		111	/* string */
 #define F_WARPHERE		112	/* string */
+#define F_ALTKEYMAP		113	/* string */
+#define F_ADDTOWORKSPACE	114	/* string */
+#define F_REMOVEFROMWORKSPACE	115	/* string */
+#define F_TOGGLEOCCUPATION	116	/* string */
 
 #define D_NORTH			1
 #define D_SOUTH			2

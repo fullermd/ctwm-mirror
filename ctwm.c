@@ -219,7 +219,6 @@ main(argc, argv, environ)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
     extern ColormapWindow *CreateColormapWindow();
-    char geom [256];
     char *welcomefile;
     int  screenmasked;
     static int rootx = 100;
@@ -383,8 +382,6 @@ main(argc, argv, environ)
     FirstScreen = TRUE;
     for (scrnum = firstscrn ; scrnum <= lastscrn; scrnum++)
     {
-	Window root;
-
 	if (captive) {
 	    XWindowAttributes wa;
 	    if (capwin && XGetWindowAttributes (dpy, capwin, &wa)) {
@@ -463,6 +460,7 @@ main(argc, argv, environ)
 	Scr->IconNames = NULL;
 	Scr->NoHighlight = NULL;
 	Scr->NoStackModeL = NULL;
+	Scr->AlwaysOnTopL = NULL;
 	Scr->NoTitleHighlight = NULL;
 	Scr->DontIconify = NULL;
 	Scr->IconMgrNoShow = NULL;
@@ -614,7 +612,12 @@ main(argc, argv, environ)
 	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
 	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
 	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
+	    Scr->TitleShadowDepth	= 0;
+	    Scr->TitleButtonShadowDepth	= 0;
 	}
+	if (! Scr->use3Dborders)	Scr->BorderShadowDepth = 0;
+	if (! Scr->use3Dmenus)		Scr->MenuShadowDepth = 0;
+	if (! Scr->use3Diconmanagers)	Scr->IconManagerShadowDepth = 0;
 
 	if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
 	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
@@ -630,7 +633,7 @@ main(argc, argv, environ)
 
 	Scr->TitleBarFont.y += Scr->FramePadding;
 	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
-	if (Scr->use3Dtitles) Scr->TitleHeight += 4;
+	if (Scr->use3Dtitles) Scr->TitleHeight += 2 * Scr->TitleShadowDepth;
 	/* make title height be odd so buttons look nice and centered */
 	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
 
@@ -775,6 +778,7 @@ InitVariables()
     FreeList(&Scr->IconNames);
     FreeList(&Scr->NoHighlight);
     FreeList(&Scr->NoStackModeL);
+    FreeList(&Scr->AlwaysOnTopL);
     FreeList(&Scr->NoTitleHighlight);
     FreeList(&Scr->DontIconify);
     FreeList(&Scr->IconMgrNoShow);
@@ -798,6 +802,7 @@ InitVariables()
     NewFontCursor(&Scr->WaitCursor, "watch");
     NewFontCursor(&Scr->SelectCursor, "dot");
     NewFontCursor(&Scr->DestroyCursor, "pirate");
+    NewFontCursor(&Scr->AlterCursor, "question_arrow");
 
     Scr->workSpaceManagerActive = FALSE;
     Scr->Ring = NULL;
@@ -859,6 +864,11 @@ InitVariables()
     Scr->WMgrButtonShadowDepth = 2;
     Scr->WMgrVertButtonIndent  = 5;
     Scr->WMgrHorizButtonIndent = 5;
+    Scr->BorderShadowDepth = 2;
+    Scr->TitleShadowDepth = 2;
+    Scr->TitleButtonShadowDepth = 2;
+    Scr->MenuShadowDepth = 2;
+    Scr->IconManagerShadowDepth = 2;
     Scr->AutoOccupy = FALSE;
     Scr->TransientHasOccupation = FALSE;
     Scr->DontPaintRootWindow = FALSE;
@@ -877,6 +887,7 @@ InitVariables()
     Scr->TitleHighlight = TRUE;
     Scr->MoveDelta = 1;		/* so that f.deltastop will work */
     Scr->MoveOffResistance = -1;
+    Scr->MovePackResistance = 20;
     Scr->ZoomCount = 8;
     Scr->SortIconMgr = FALSE;
     Scr->Shadow = TRUE;
@@ -896,6 +907,7 @@ InitVariables()
     Scr->use3Dmenus = FALSE;
     Scr->use3Dtitles = FALSE;
     Scr->use3Dborders = FALSE;
+    Scr->use3Dwmap = FALSE;
     Scr->SunkFocusWindowTitle = FALSE;
     Scr->ClearShadowContrast = 50;
     Scr->DarkShadowContrast  = 40;
@@ -903,9 +915,14 @@ InitVariables()
     Scr->BorderCursors = FALSE;
     Scr->IconJustification = J_CENTER;
     Scr->IconRegionJustification = J_CENTER;
+    Scr->IconRegionAlignement = J_CENTER;
     Scr->TitleJustification = J_LEFT;
     Scr->SmartIconify = FALSE;
     Scr->MaxIconTitleWidth = Scr->MyDisplayWidth;
+    Scr->ReallyMoveInWorkspaceManager = FALSE;
+    Scr->ShowWinWhenMovingInWmgr = FALSE;
+    Scr->ReverseCurrentWorkspace = FALSE;
+    Scr->DontWarpCursorInWMap = FALSE;
 
     /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"

@@ -95,6 +95,7 @@ typedef struct MenuRoot
     struct MenuItem *first;	/* first item in menu */
     struct MenuItem *last;	/* last item in menu */
     struct MenuItem *lastactive; /* last active item in menu */
+    struct MenuItem *defaultitem;	/* default item in menu */
     struct MenuRoot *prev;	/* previous root menu if pull right */
     struct MenuRoot *next;	/* next in list of root menus */
     char *name;			/* name of root */
@@ -185,11 +186,23 @@ extern void InitMenus();
 extern MenuRoot *NewMenuRoot();
 extern MenuItem *AddToMenu();
 extern Bool PopUpMenu();
+extern void MakeWorkspacesMenu ();
 extern MenuRoot *FindMenuRoot();
 extern Bool AddFuncKey();
 extern int ExecuteFunction();
 extern int DeferExecution();
 extern void Execute();
+extern void ShowIconManager ();
+extern void HideIconManager ();
+extern void RaiseWindow();
+extern void LowerWindow();
+extern void RaiseLower();
+extern void RaiseLowerFrame();
+extern void MapRaised();
+extern void RaiseFrame();
 extern void FocusOnRoot();
+extern void TryToPack ();
+extern void TryToPush ();
+extern Boolean TryNotToMoveOff ();
 
 #endif /* _MENUS_ */

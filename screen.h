@@ -180,7 +180,8 @@ typedef struct ScreenInfo
     short ClearShadowContrast;  /* The contrast of the clear shadow */
     short DarkShadowContrast;   /* The contrast of the dark shadow */
     short IconJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
-    short IconRegionJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
+    short IconRegionJustification;	/* J_LEFT, J_CENTER J_RIGHT or J_BORDER */
+    short IconRegionAlignement;	/* J_TOP, J_CENTER, J_BOTTOM or J_BORDER */
     short TitleJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
     short SmartIconify;
     int   MaxIconTitleWidth;	/* */
@@ -195,7 +196,8 @@ typedef struct ScreenInfo
     Cursor WaitCursor;		/* wait a while cursor */
     Cursor MenuCursor;		/* menu cursor */
     Cursor SelectCursor;	/* dot cursor for f.move, etc. from menus */
-    Cursor DestroyCursor;		/* skull and cross bones, f.destroy */
+    Cursor DestroyCursor;	/* skull and cross bones, f.destroy */
+    Cursor AlterCursor;		/* cursor for alternate keymaps */
 
     WorkSpaceMgr workSpaceMgr;
     short	workSpaceManagerActive;
@@ -204,12 +206,22 @@ typedef struct ScreenInfo
     short 	use3Dtitles;
     short 	use3Diconmanagers;
     short 	use3Dborders;
+    short 	use3Dwmap;
     short	SunkFocusWindowTitle;
     short	WMgrVertButtonIndent;
     short	WMgrHorizButtonIndent;
     short	WMgrButtonShadowDepth;
     short	BeNiceToColormap;
     short	BorderCursors;
+    short	BorderShadowDepth;
+    short	TitleButtonShadowDepth;
+    short	TitleShadowDepth;
+    short	MenuShadowDepth;
+    short	IconManagerShadowDepth;
+    short	ReallyMoveInWorkspaceManager;
+    short	ShowWinWhenMovingInWmgr;
+    short	ReverseCurrentWorkspace;
+    short	DontWarpCursorInWMap;
 
     name_list *BorderColorL;
     name_list *IconBorderColorL;
@@ -230,6 +242,7 @@ typedef struct ScreenInfo
     name_list *IconNames;	/* list of window names and icon names */
     name_list *NoHighlight;	/* list of windows to not highlight */
     name_list *NoStackModeL;	/* windows to ignore stack mode requests */
+    name_list *AlwaysOnTopL;	/* windows to keep on top */
     name_list *NoTitleHighlight;/* list of windows to not highlight the TB*/
     name_list *DontIconify;	/* don't iconify by unmapping */
     name_list *IconMgrNoShow;	/* don't show in the icon manager */
@@ -250,8 +263,7 @@ typedef struct ScreenInfo
     GC NormalGC;		/* normal GC for everything */
     GC MenuGC;			/* gc for menus */
     GC DrawGC;			/* GC to draw lines for move and resize */
-    GC GreyGC;			/* for shadowing on monochrome displays */
-    GC ShadGC;			/* for shadowing on with patterns */
+    GC BorderGC;		/* for drawing 3D borders */
     GC rootGC;                  /* used for allocating pixmaps in FindPixmap (util.c) */
 
     unsigned long Black;
@@ -295,6 +307,7 @@ typedef struct ScreenInfo
     short NoRaiseWarp;		/* don't raise window on warp */
     short DontMoveOff;		/* don't allow windows to be moved off */
     int MoveOffResistance;	/* nb of pixel before moveOff gives up */
+    int MovePackResistance;	/* nb of pixel before f.movepack gives up */
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
     short IconManagerFocus;	/* focus on window in title bar ? */
@@ -356,5 +369,8 @@ extern int FirstScreen;
 #define RP_OFF 0
 #define RP_ALL 1
 #define RP_UNMAPPED 2
+
+#define ONTOP_MAX 16
+#define ONTOP_DEFAULT 8
 
 #endif /* _SCREEN_ */

@@ -125,6 +125,12 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 #define INFO_SIZE 200
 
 /* contexts for button presses */
+#define Alt1Mask 	(1<<8)
+#define Alt2Mask 	(1<<9)
+#define Alt3Mask 	(1<<10)
+#define Alt4Mask 	(1<<11)
+#define Alt5Mask 	(1<<12)
+
 #define C_NO_CONTEXT	-1
 #define C_WINDOW	0
 #define C_TITLE		1
@@ -134,7 +140,8 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 #define C_ICONMGR	5
 #define C_NAME		6
 #define C_IDENTIFY      7
-#define NUM_CONTEXTS	8
+#define C_ALTERNATE     8
+#define NUM_CONTEXTS	9
 
 #define C_WINDOW_BIT	(1 << C_WINDOW)
 #define C_TITLE_BIT	(1 << C_TITLE)
@@ -143,6 +150,7 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 #define C_FRAME_BIT	(1 << C_FRAME)
 #define C_ICONMGR_BIT	(1 << C_ICONMGR)
 #define C_NAME_BIT	(1 << C_NAME)
+#define C_ALTER_BIT	(1 << C_ALTERNATE)
 
 #define C_ALL_BITS	(C_WINDOW_BIT | C_TITLE_BIT | C_ICON_BIT |\
 			 C_ROOT_BIT | C_FRAME_BIT | C_ICONMGR_BIT)
@@ -217,6 +225,8 @@ typedef struct _SqueezeInfo {
 #define J_CENTER		2
 #define J_RIGHT			3
 #define J_BORDER		4
+#define J_TOP			5
+#define J_BOTTOM		6
 
 /* Colormap window entry for each window in WM_COLORMAP_WINDOWS
  * ICCCM property.
@@ -270,6 +280,7 @@ typedef struct Icon
     Pixel	border;		/* border color */
     ColorPair	iconc;
     Bool	has_title;
+    int		border_width;
 } Icon;
 
 /* for each window that is on the display, one of these structures
@@ -329,6 +340,7 @@ typedef struct TwmWindow
     short icon_moved;		/* user explicitly moved the icon */
     short highlight;		/* should highlight this window */
     short stackmode;		/* honor stackmode requests */
+    short ontoppriority;	/* how much on top should that be */
     short iconify_by_unmapping;	/* unmap window to iconify it */
     short iconmgr;		/* this is an icon manager window */
     short transient;		/* this is a transient window */
