@@ -77,8 +77,12 @@ DEBUGPARSER_DEFS = -DYYDEBUG=1
 #endif
 
 #ifdef GNOME
+      GNOMESRC = gnome.c
+      GNOMEOBJ = gnome.o
   GNOMEDEFINES = -DGNOME
 #else
+      GNOMESRC = 
+      GNOMEOBJ = 
   GNOMEDEFINES = 
 #endif
 
@@ -123,12 +127,12 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLI
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
 		cursor.c icons.c workmgr.c windowbox.c clicktofocus.c vscreen.c \
-		gnome.c ${SESSIONSRC} ${SOUNDSRC}
+		$(GNOMESRC) ${SESSIONSRC} ${SOUNDSRC}
 
            OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
 		cursor.o icons.o workmgr.o windowbox.o clicktofocus.o vscreen.o \
-		gnome.o ${SESSIONOBJ} ${SOUNDOBJ}
+		$(GNOMEOBJ) ${SESSIONOBJ} ${SOUNDOBJ}
 
   PIXMAPFILES =	xpm/IslandD.xpm        xpm/mail1.xpm          xpm/xgopher.xpm \
 		xpm/IslandW.xpm        xpm/nothing.xpm        xpm/xgrab.xpm \
