@@ -1209,3 +1209,5 @@ VirtualScreens {
 	If used, CTWM will only parse the configuration file and indicate
 	if it found errors or not.
 
+	This was contributed by Matthew D. Fuller.
+
