@@ -100,6 +100,10 @@
 #include <netdb.h>
 #endif
 
+#if defined(ultrix)
+#define NOSTEMP
+#endif
+
 #ifndef SYSTEM_INIT_FILE
 #ifdef VMS
 #define SYSTEM_INIT_FILE "DECW$SYSTEM_DEFAULTS:SYSTEM.CTWMRC"

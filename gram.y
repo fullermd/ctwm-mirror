@@ -494,7 +494,7 @@ contextkey	: WINDOW		{ cont |= C_WINDOW_BIT; }
 		;
 
 
-binding_list    : LB binding_entries RB
+binding_list    : LB binding_entries RB {}
                 ;
 
 binding_entries : /* Empty */

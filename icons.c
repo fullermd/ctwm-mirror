@@ -810,7 +810,7 @@ TwmWindow *tmp_win;
     if (!tmp_win || !tmp_win->icon) return;
     icon = tmp_win->icon;
     if (!icon->has_title) return;
-    if (icon->bm_w == icon->width) return;
+    if (icon->w_width == icon->width) return;
     if (icon->height  == 0) return;
 
     rect.x      = GetIconOffset (icon);
@@ -833,7 +833,7 @@ TwmWindow *tmp_win;
     icon = tmp_win->icon;
     if (!icon->has_title) return;
     if (icon->w_width == icon->width) return;
-    if (icon->bm_w  == 0) return;
+    if (icon->height  == 0) return;
 
     rect.x      = 0;
     rect.y      = icon->height;
@@ -849,22 +849,26 @@ void ReshapeIcon (icon)
 Icon *icon;
 {
     int x;
-    XRectangle	rects [2];
+    XRectangle	rect;
 
     if (!icon) return;
-
     x = GetIconOffset (icon);
     XMoveWindow (dpy, icon->bm_w, x, 0);
 
-    rects [0].x      = x;
-    rects [0].y      = 0;
-    rects [0].width  = icon->width;
-    rects [0].height = icon->height;
-    rects [1].x      = x;
-    rects [1].y      = icon->height;
-    rects [1].width  = icon->width;
-    rects [1].height = icon->w_height - icon->height;
-    XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, rects, 2, ShapeSet, 0);
+    if (icon->image && icon->image->mask) {
+	XShapeCombineMask (dpy, icon->w, ShapeBounding, x, 0, icon->image->mask, ShapeSet);
+    } else {
+	rect.x      = x;
+	rect.y      = 0;
+	rect.width  = icon->width;
+	rect.height = icon->height;
+	XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, &rect, 1, ShapeSet, 0);
+    }
+    rect.x      = x;
+    rect.y      = icon->height;
+    rect.width  = icon->width;
+    rect.height = icon->w_height - icon->height;
+    XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, &rect, 1, ShapeUnion, 0);
 }
 
 int GetIconOffset (icon)
