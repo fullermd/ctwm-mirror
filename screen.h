@@ -66,6 +66,10 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #endif
+
+#ifdef GNOME
+#  include "gnome.h"
+#endif /* GNOME */
 #include "list.h"
 #include "menus.h"
 #include "iconmgr.h"
@@ -415,6 +419,10 @@ typedef struct ScreenInfo
 
     FuncKey FuncKeyRoot;
     FuncButton FuncButtonRoot;
+
+#ifdef GNOME
+    GnomeData *gnomedata;
+#endif /* GNOME */
 } ScreenInfo;
 
 extern int MultiScreen;

@@ -20,13 +20,6 @@
 Atom _XA_WIN_WORKSPACE;
 Atom _XA_WIN_STATE;
 static Atom _XA_WIN_CLIENT_LIST;
-static Window *ws;
-static int wsSize;
-static int numWins;
-
-void InitGnome();
-void GnomeAddClientList();
-void GnomeDeleteClientWindow();
 
 
 void InitGnome () {
@@ -79,34 +72,45 @@ void InitGnome () {
 
   XSelectInput (dpy, Scr->Root, eventMask);
 
-  ws = malloc(sizeof(Window));
-  if (ws) {
-    wsSize = 1;
-    numWins = 0;
-  } else wsSize = numWins = 0;
+  Scr->gnomedata = (GnomeData*) malloc (sizeof (GnomeData));
+  Scr->gnomedata->ws = malloc (sizeof (Window));
+  if (Scr->gnomedata->ws) {
+    Scr->gnomedata->wsSize = 1;
+    Scr->gnomedata->numWins = 0;
+  } else {
+    Scr->gnomedata->wsSize = 0;
+    Scr->gnomedata->numWins = 0;
+  }
   XChangeProperty (dpy, Scr->Root, _XA_WIN_CLIENT_LIST, XA_CARDINAL, 32, 
-		   PropModeReplace, (unsigned char *)ws, numWins);
+		   PropModeReplace, (unsigned char *)Scr->gnomedata->ws,
+		   Scr->gnomedata->numWins);
 }
-
 
 void GnomeAddClientWindow (TwmWindow *new_win) {
   XWindowAttributes winattrs;
   unsigned long eventMask;
 
+  if (Scr->gnomedata->wsSize == 0) return;
   if ((!LookInList (Scr->IconMgrNoShow, new_win->full_name, &new_win->class)) && 
       (new_win->w != Scr->workSpaceMgr.occupyWindow->w) && 
       (!new_win->iconmgr)) {
-    if (++numWins > wsSize) ws = realloc(ws, sizeof(Window) * (wsSize *= 2));
-    if (ws) ws [numWins - 1] = new_win->w;
+    Scr->gnomedata->numWins++;
+    if (Scr->gnomedata->numWins > Scr->gnomedata->wsSize) {
+      Scr->gnomedata->wsSize *= 2;
+      Scr->gnomedata->ws = realloc(Scr->gnomedata->ws, sizeof(Window) * Scr->gnomedata->wsSize);
+    }
+    if (Scr->gnomedata->ws) Scr->gnomedata->ws [Scr->gnomedata->numWins - 1] = new_win->w;
     else {
-      fprintf (stderr, "Unable to allocate memory for GNOME client list.");
+      Scr->gnomedata->numWins--;
+      fprintf (stderr, "Unable to allocate memory for GNOME client list.\n");
       return;
     }
     XGetWindowAttributes (dpy, Scr->Root, &winattrs);
     eventMask = winattrs.your_event_mask;
     XSelectInput(dpy, Scr->Root, eventMask & ~PropertyChangeMask);		
     XChangeProperty(dpy, Scr->Root, _XA_WIN_CLIENT_LIST, XA_CARDINAL, 32, 
-		    PropModeReplace, (unsigned char *)ws, numWins);
+		    PropModeReplace, (unsigned char *)Scr->gnomedata->ws,
+		    Scr->gnomedata->numWins);
     XSelectInput(dpy, Scr->Root, eventMask);
   }
 }
@@ -115,17 +119,23 @@ void GnomeDeleteClientWindow (TwmWindow *new_win) {
   XWindowAttributes winattrs;
   unsigned long eventMask;
   int i;
+
+  if (Scr->gnomedata->wsSize == 0) return;
   if ((!LookInList(Scr->IconMgrNoShow, new_win->full_name, &new_win->class)) && 
       (new_win->w != Scr->workSpaceMgr.occupyWindow->w) && 
       (!new_win->iconmgr)) {
-    for (i = 0; i < numWins; i++){
-      if(ws[i] == new_win->w){
-	numWins--;
-	ws[i] = ws[numWins];
-	ws[numWins] = 0;
-	if((numWins * 3) < wsSize)
-	  ws = realloc (ws, sizeof (Window) * (wsSize /= 2));
+    for (i = 0; i < Scr->gnomedata->numWins; i++){
+      if(Scr->gnomedata->ws[i] == new_win->w){
+	Scr->gnomedata->numWins--;
+	Scr->gnomedata->ws[i] = Scr->gnomedata->ws[Scr->gnomedata->numWins];
+	Scr->gnomedata->ws[Scr->gnomedata->numWins] = 0;
+	if(Scr->gnomedata->numWins &&
+	   (Scr->gnomedata->numWins * 3) < Scr->gnomedata->wsSize) {
+	  Scr->gnomedata->wsSize /= 2;
+	  Scr->gnomedata->ws = realloc (Scr->gnomedata->ws,
+					sizeof (Window) * Scr->gnomedata->wsSize);
 	  /* memory shrinking, shouldn't have problems */
+	}
 	break;
       }
     }
@@ -133,7 +143,8 @@ void GnomeDeleteClientWindow (TwmWindow *new_win) {
     eventMask = winattrs.your_event_mask;
     XSelectInput(dpy, Scr->Root, eventMask & ~PropertyChangeMask);		
     XChangeProperty(dpy, Scr->Root, _XA_WIN_CLIENT_LIST, XA_CARDINAL, 32, 
-		    PropModeReplace, (unsigned char *)ws, numWins);
+		    PropModeReplace, (unsigned char *)Scr->gnomedata->ws,
+		    Scr->gnomedata->numWins);
     XSelectInput(dpy, Scr->Root, eventMask);
   }
 }
