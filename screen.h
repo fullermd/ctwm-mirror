@@ -417,7 +417,7 @@ typedef struct ScreenInfo
     short IgnoreLockModifier;	/* Should we ignore the lock modifier */
     unsigned int IgnoreModifier;
     short IgnoreCaseInMenuSelection;	/* Should we ignore case in menu selection */
-  short NoImagesInWorkSpaceManager;   /* do not display mini images of the desktop background images on WSmap */
+    short NoImagesInWorkSpaceManager;   /* do not display mini images of the desktop background images on WSmap */
 
     FuncKey FuncKeyRoot;
     FuncButton FuncButtonRoot;
