@@ -410,6 +410,8 @@ WorkSpace *ws;
     unsigned long	 eventMask;
     IconMgr		 *iconmgr;
     Window		 cachew;
+    Window		 oldw;
+    Window		 neww;
     unsigned long	 valuemask;
     TwmWindow		 *focuswindow;
     TwmWindow		 *last_twmWin;
@@ -522,8 +524,8 @@ WorkSpace *ws;
     oldws->iconmgr = Scr->iconmgr;
     Scr->iconmgr = newws->iconmgr;
 
-    Window oldw = vs->wsw->mswl [oldws->number]->w;
-    Window neww = vs->wsw->mswl [newws->number]->w;
+    oldw = vs->wsw->mswl [oldws->number]->w;
+    neww = vs->wsw->mswl [newws->number]->w;
     if (useBackgroundInfo) {
 	if (oldws->image == None)
 	    XSetWindowBackground       (dpy, oldw, oldws->backcp.back);
