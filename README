@@ -60,6 +60,7 @@ GNOME		If defined, build to work with Gnome.
 X11R6		If defined, build to work with X11R6 (basically, add
 		session management capabilities)
 I18N		If defined, build with i18n capabilities.
+		DO NOT DEFINE, IT DOESN'T WORK (at least with my tests)!
 USE_SOUND	if defined, build with sound support.  Disable if
 		librplay isn't present.
 
