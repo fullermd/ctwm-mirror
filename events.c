@@ -1953,7 +1953,7 @@ void HandleClientMessage(void)
 #ifdef GNOME
     /* 6/19/1999 nhd for GNOME compliance */	
     if (Event.xclient.message_type == _XA_WIN_WORKSPACE) {
-      GotoWorkSpaceByNumber (NULL, Event.xclient.data.l[0]);
+      GotoWorkSpaceByNumber (/* XXXXX */ NULL, Event.xclient.data.l[0]);
       return;
     }
     if (Event.xclient.message_type == _XA_WIN_STATE) {
