@@ -89,6 +89,7 @@ static struct {
 static Cursor LastCursor;
 
 void WarpAlongRing(), WarpToWindow();
+void DisplayPosition ();
 
 extern char *Action;
 extern int Context;
@@ -125,6 +126,9 @@ InitMenus()
     Scr->DefaultFunction.func = 0;
     Scr->WindowFunction.func  = 0;
 
+/* if someone can explain to me what this piece of code is for (except to make twm
+   core dump on some OS), i'll be very glad. (C. Lecommandeur).
+
     if (FirstScreen)
     {
 	for (key = Scr->FuncKeyRoot.next; key != NULL;)
@@ -136,6 +140,8 @@ InitMenus()
 	}
 	Scr->FuncKeyRoot.next = NULL;
     }
+*/
+    Scr->FuncKeyRoot.next = NULL;
 
 }
 
@@ -293,7 +299,10 @@ void InitTitlebarButtons ()
      */
     Scr->TBInfo.width = (Scr->TitleHeight -
 			 2 * (Scr->FramePadding + Scr->ButtonIndent));
-    Scr->TBInfo.pad = ((Scr->TitlePadding > 1)
+    if (Scr->use3Dtitles) 
+	Scr->TBInfo.pad = ((Scr->TitlePadding > 1)
+		       ? ((Scr->TitlePadding + 1) / 2) : 0);
+	Scr->TBInfo.pad = ((Scr->TitlePadding > 1)
 		       ? ((Scr->TitlePadding + 1) / 2) : 1);
     h = Scr->TBInfo.width - 2 * Scr->TBInfo.border;
 
@@ -303,15 +312,25 @@ void InitTitlebarButtons ()
      */
     if (!Scr->NoDefaults) {
 	/* insert extra buttons */
-	if (!CreateTitleButton (TBPM_ICONIFY, F_ICONIFY, "", (MenuRoot *) NULL,
+	if (Scr->use3Dtitles) {
+	    if (!CreateTitleButton (TBPM_3DDOT, F_ICONIFY, "", (MenuRoot *) NULL,
 				False, False)) {
-	    fprintf (stderr, "%s:  unable to add iconify button\n",
-		     ProgramName);
-	}
-	if (!CreateTitleButton (TBPM_RESIZE, F_RESIZE, "", (MenuRoot *) NULL,
+	        fprintf (stderr, "%s:  unable to add iconify button\n", ProgramName);
+	    }
+	    if (!CreateTitleButton (TBPM_3DRESIZE, F_RESIZE, "", (MenuRoot *) NULL,
 				True, True)) {
-	    fprintf (stderr, "%s:  unable to add resize button\n",
-		     ProgramName);
+	        fprintf (stderr, "%s:  unable to add resize button\n", ProgramName);
+	    }
+	}
+	else {
+	    if (!CreateTitleButton (TBPM_ICONIFY, F_ICONIFY, "", (MenuRoot *) NULL,
+				False, False)) {
+	        fprintf (stderr, "%s:  unable to add iconify button\n", ProgramName);
+	    }
+	    if (!CreateTitleButton (TBPM_RESIZE, F_RESIZE, "", (MenuRoot *) NULL,
+				True, True)) {
+	        fprintf (stderr, "%s:  unable to add resize button\n", ProgramName);
+	    }
 	}
 	AddDefaultBindings ();
     }
@@ -322,8 +341,9 @@ void InitTitlebarButtons ()
      */
 
     for (tb = Scr->TBInfo.head; tb; tb = tb->next) {
-	tb->bitmap = FindBitmap (tb->name, &tb->width, &tb->height);
+	tb->bitmap = FindPixmap (tb->name, &tb->width, &tb->height, &tb->depth, Scr->TitleC);
 	if (!tb->bitmap) {
+	    tb->depth  = 1;
 	    tb->bitmap = FindBitmap (TBPM_QUESTION, &tb->width, &tb->height);
 	    if (!tb->bitmap) {		/* cannot happen (see util.c) */
 		fprintf (stderr,
@@ -352,8 +372,75 @@ void InitTitlebarButtons ()
 }
 
 
-
 PaintEntry(mr, mi, exposure)
+MenuRoot *mr;
+MenuItem *mi;
+int exposure;
+{
+    if (Scr->use3Dmenus) Paint3DEntry (mr, mi, exposure);
+    else PaintNormalEntry (mr, mi, exposure);
+}
+
+Paint3DEntry(mr, mi, exposure)
+MenuRoot *mr;
+MenuItem *mi;
+int exposure;
+{
+    int y_offset;
+    int text_y;
+    GC gc;
+
+    y_offset = mi->item_num * Scr->EntryHeight + 2;
+    text_y = y_offset + Scr->MenuFont.y + 2;
+
+    if (mi->func != F_TITLE) {
+	int x, y;
+
+	if (mi->state) {
+	    Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+				mi->highlight, off, True, False);
+	    FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
+	    XDrawImageString(dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
+	    gc = Scr->NormalGC;
+	}
+	else {
+	    if (mi->user_colors || !exposure) {
+		XSetForeground (dpy, Scr->NormalGC, mi->normal.back);
+		XFillRectangle (dpy, mr->w, Scr->NormalGC, 2, y_offset,
+			mr->width - 4, Scr->EntryHeight);
+		FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
+		gc = Scr->NormalGC;
+	    }
+	    else {
+		gc = Scr->MenuGC;
+	    }
+	    XDrawImageString (dpy, mr->w, gc, mi->x + 2, text_y, mi->item, mi->strlen);
+	}
+
+	if (mi->func == F_MENU) {
+	    /* create the pull right pixmap if needed */
+	    if (Scr->pullPm == None)
+	    {
+		Scr->pullPm = Create3DMenuIcon (Scr->MenuFont.height, &Scr->pullW,
+				&Scr->pullH, Scr->MenuC);
+	    }
+	    x = mr->width - Scr->pullW - 5;
+	    y = y_offset + ((Scr->MenuFont.height - Scr->pullH) / 2) + 2;
+	    XCopyArea (dpy, Scr->pullPm, mr->w, gc, 0, 0, Scr->pullW, Scr->pullH, x, y);
+	}
+    }
+    else
+    {
+	Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+			mi->normal, off, True, False);
+	FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
+	XDrawImageString (dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
+    }
+}
+    
+
+
+PaintNormalEntry(mr, mi, exposure)
 MenuRoot *mr;
 MenuItem *mi;
 int exposure;
@@ -371,12 +458,11 @@ int exposure;
 
 	if (mi->state)
 	{
-	    XSetForeground(dpy, Scr->NormalGC, mi->hi_back);
+	    XSetForeground(dpy, Scr->NormalGC, mi->highlight.back);
 
 	    XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
 		mr->width, Scr->EntryHeight);
-
-	    FBF(mi->hi_fore, mi->hi_back, Scr->MenuFont.font->fid);
+	    FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
 
 	    XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
 		text_y, mi->item, mi->strlen);
@@ -387,12 +473,12 @@ int exposure;
 	{
 	    if (mi->user_colors || !exposure)
 	    {
-		XSetForeground(dpy, Scr->NormalGC, mi->back);
+		XSetForeground(dpy, Scr->NormalGC, mi->normal.back);
 
 		XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
 		    mr->width, Scr->EntryHeight);
 
-		FBF(mi->fore, mi->back, Scr->MenuFont.font->fid);
+		FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
 		gc = Scr->NormalGC;
 	    }
 	    else {
@@ -401,6 +487,9 @@ int exposure;
 
 	    XDrawString(dpy, mr->w, gc, mi->x,
 		text_y, mi->item, mi->strlen);
+	    if (mi->separated)
+		XDrawLine (dpy, mr->w, gc, 0, y_offset + Scr->MenuFont.y + 5,
+				mr->width, y_offset + Scr->MenuFont.y + 5);
 	}
 
 	if (mi->func == F_MENU)
@@ -421,14 +510,14 @@ int exposure;
     {
 	int y;
 
-	XSetForeground(dpy, Scr->NormalGC, mi->back);
+	XSetForeground(dpy, Scr->NormalGC, mi->normal.back);
 
 	/* fill the rectangle with the title background color */
 	XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
 	    mr->width, Scr->EntryHeight);
 
 	{
-	    XSetForeground(dpy, Scr->NormalGC, mi->fore);
+	    XSetForeground(dpy, Scr->NormalGC, mi->normal.fore);
 	    /* now draw the dividing lines */
 	    if (y_offset)
 	      XDrawLine (dpy, mr->w, Scr->NormalGC, 0, y_offset,
@@ -437,21 +526,22 @@ int exposure;
 	    XDrawLine(dpy, mr->w, Scr->NormalGC, 0, y, mr->width, y);
 	}
 
-	FBF(mi->fore, mi->back, Scr->MenuFont.font->fid);
+	FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
 	/* finally render the title */
 	XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
 	    text_y, mi->item, mi->strlen);
     }
 }
     
-
-
 PaintMenu(mr, e)
 MenuRoot *mr;
 XEvent *e;
 {
     MenuItem *mi;
 
+    if (Scr->use3Dmenus) {
+	Draw3DBorder (mr->w, 0, 0, mr->width, mr->height, 2, Scr->MenuC, off, False, False);
+    }
     for (mi = mr->first; mi != NULL; mi = mi->next)
     {
 	int y_offset = mi->item_num * Scr->EntryHeight;
@@ -502,7 +592,6 @@ UpdateMenu()
 	if (!DispatchEvent ())
 	    continue;
 
-/*	if ((! ActiveMenu) || (Event.type == ButtonRelease) || Cancel) {*/
 	if ((! ActiveMenu) || Cancel) {
 	  menuFromFrameOrWindowOrTitlebar = FALSE;
 	  fromMenu = FALSE;
@@ -565,7 +654,7 @@ UpdateMenu()
 	if (!done)
 	{
 	    ActiveItem = mi;
-	    if (ActiveItem->func != F_TITLE && !ActiveItem->state)
+	    if (ActiveItem && ActiveItem->func != F_TITLE && !ActiveItem->state)
 	    {
 		ActiveItem->state = 1;
 		PaintEntry(ActiveMenu, ActiveItem, False);
@@ -573,8 +662,8 @@ UpdateMenu()
 	}
 
 	/* now check to see if we were over the arrow of a pull right entry */
-	if (ActiveItem->func == F_MENU && 
-	    ((ActiveMenu->width - x) < (ActiveMenu->width >> 1)))
+	if (ActiveItem && ActiveItem->func == F_MENU && 
+	   ((ActiveMenu->width - x) < (ActiveMenu->width / 3)))
 	{
 	    MenuRoot *save = ActiveMenu;
 	    int savex = MenuOrigins[MenuDepth - 1].x; 
@@ -582,7 +671,7 @@ UpdateMenu()
 
 	    if (MenuDepth < MAXMENUDEPTH) {
 		PopUpMenu (ActiveItem->sub, 
-			   (savex + (ActiveMenu->width >> 1)), 
+			   (savex + (((2 * ActiveMenu->width) / 3) - 1)), 
 			   (savey + ActiveItem->item_num * Scr->EntryHeight)
 			   /*(savey + ActiveItem->item_num * Scr->EntryHeight +
 			    (Scr->EntryHeight >> 1))*/, False);
@@ -630,8 +719,8 @@ NewMenuRoot(name)
 #define UNUSED_PIXEL ((unsigned long) (~0))	/* more than 24 bits */
 
     tmp = (MenuRoot *) malloc(sizeof(MenuRoot));
-    tmp->hi_fore = UNUSED_PIXEL;
-    tmp->hi_back = UNUSED_PIXEL;
+    tmp->highlight.fore = UNUSED_PIXEL;
+    tmp->highlight.back = UNUSED_PIXEL;
     tmp->name = name;
     tmp->prev = NULL;
     tmp->first = NULL;
@@ -728,6 +817,7 @@ AddToMenu(menu, item, action, sub, func, fore, back)
     tmp->sub = NULL;
     tmp->state = 0;
     tmp->func = func;
+    tmp->separated = 0;
 
     if (!Scr->HaveFonts) CreateFonts();
     width = XTextWidth(Scr->MenuFont.font, item, tmp->strlen);
@@ -743,8 +833,9 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 
 	save = Scr->FirstTime;
 	Scr->FirstTime = TRUE;
-	GetColor(COLOR, &tmp->fore, fore);
-	GetColor(COLOR, &tmp->back, back);
+	GetColor(COLOR, &tmp->normal.fore, fore);
+	GetColor(COLOR, &tmp->normal.back, back);
+	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&tmp->normal);
 	Scr->FirstTime = save;
 	tmp->user_colors = TRUE;
     }
@@ -769,7 +860,7 @@ MakeMenus()
 	if (mr->real_menu == FALSE)
 	    continue;
 
-	mr->pinned = FALSE;
+	mr->pinned = False;
 	MakeMenu(mr);
     }
 }
@@ -786,7 +877,7 @@ MenuRoot *mr;
     int num, i;
     int fred, fgreen, fblue;
     int bred, bgreen, bblue;
-    int width;
+    int width, borderwidth;
     unsigned long valuemask;
     XSetWindowAttributes attributes;
     Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
@@ -815,6 +906,7 @@ MenuRoot *mr;
 	    }
 	}
 	mr->height = mr->items * Scr->EntryHeight;
+	if (Scr->use3Dmenus) mr->height += 4;
 	mr->width += 10;
 
 	if (Scr->Shadow && ! mr->pinned)
@@ -863,8 +955,9 @@ MenuRoot *mr;
 	    valuemask |= CWBackingStore;
 	    attributes.backing_store = Always;
 	}
+	borderwidth = Scr->use3Dmenus ? 0 : 1;
 	mr->w = XCreateWindow (dpy, Scr->Root, 0, 0, (unsigned int) mr->width,
-			       (unsigned int) mr->height, (unsigned int) 1,
+			       (unsigned int) mr->height, (unsigned int) borderwidth,
 			       CopyFromParent, (unsigned int) CopyFromParent,
 			       (Visual *) CopyFromParent,
 			       valuemask, &attributes);
@@ -876,28 +969,65 @@ MenuRoot *mr;
 	mr->mapped = UNMAPPED;
     }
 
+    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) &&  (mr->highlight.back == UNUSED_PIXEL)) {
+	XColor xcol;
+	char colname [32];
+	short save;
+
+	xcol.pixel = Scr->MenuC.back;
+	XQueryColor (dpy, cmap, &xcol);
+	sprintf (colname, "#%04x%04x%04x", 
+		5 * (xcol.red / 6), 5 * (xcol.green / 6), 5 * (xcol.blue / 6));
+	save = Scr->FirstTime;
+	Scr->FirstTime = True;
+	GetColor (Scr->Monochrome, &mr->highlight.back, colname);
+	Scr->FirstTime = save;
+    }
+
+    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) && (mr->highlight.fore == UNUSED_PIXEL)) {
+	XColor xcol;
+	char colname [32];
+	short save;
+
+	xcol.pixel = Scr->MenuC.fore;
+	XQueryColor (dpy, cmap, &xcol);
+	sprintf (colname, "#%04x%04x%04x",
+		5 * (xcol.red / 6), 5 * (xcol.green / 6), 5 * (xcol.blue / 6));
+	save = Scr->FirstTime;
+	Scr->FirstTime = True;
+	GetColor (Scr->Monochrome, &mr->highlight.fore, colname);
+	Scr->FirstTime = save;
+    }
+    if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&mr->highlight);
+
     /* get the default colors into the menus */
     for (tmp = mr->first; tmp != NULL; tmp = tmp->next)
     {
 	if (!tmp->user_colors) {
 	    if (tmp->func != F_TITLE) {
-		tmp->fore = Scr->MenuC.fore;
-		tmp->back = Scr->MenuC.back;
+		tmp->normal.fore = Scr->MenuC.fore;
+		tmp->normal.back = Scr->MenuC.back;
 	    } else {
-		tmp->fore = Scr->MenuTitleC.fore;
-		tmp->back = Scr->MenuTitleC.back;
+		tmp->normal.fore = Scr->MenuTitleC.fore;
+		tmp->normal.back = Scr->MenuTitleC.back;
 	    }
 	}
 
-	if (mr->hi_fore != UNUSED_PIXEL)
+	if (mr->highlight.fore != UNUSED_PIXEL)
 	{
-	    tmp->hi_fore = mr->hi_fore;
-	    tmp->hi_back = mr->hi_back;
+	    tmp->highlight.fore = mr->highlight.fore;
+	    tmp->highlight.back = mr->highlight.back;
 	}
 	else
 	{
-	    tmp->hi_fore = tmp->back;
-	    tmp->hi_back = tmp->fore;
+	    tmp->highlight.fore = tmp->normal.back;
+	    tmp->highlight.back = tmp->normal.fore;
+	}
+	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) {
+	    if (tmp->func != F_TITLE)
+		GetShadeColors (&tmp->highlight);
+	    else
+		GetShadeColors (&tmp->normal);
 	}
     }
     mr->pmenu = NULL;
@@ -927,14 +1057,14 @@ MenuRoot *mr;
 	/* we have a start and end to interpolate between */
 	num = end->item_num - start->item_num;
 
-	f1.pixel = start->fore;
+	f1.pixel = start->normal.fore;
 	XQueryColor(dpy, cmap, &f1);
-	f2.pixel = end->fore;
+	f2.pixel = end->normal.fore;
 	XQueryColor(dpy, cmap, &f2);
 
-	b1.pixel = start->back;
+	b1.pixel = start->normal.back;
 	XQueryColor(dpy, cmap, &b1);
-	b2.pixel = end->back;
+	b2.pixel = end->normal.back;
 	XQueryColor(dpy, cmap, &b2);
 
 	fred = ((int)f2.red - (int)f1.red) / num;
@@ -966,8 +1096,8 @@ MenuRoot *mr;
 
 	    XAllocColor(dpy, cmap, &f3);
 	    XAllocColor(dpy, cmap, &b3);
-	    cur->hi_back = cur->fore = f3.pixel;
-	    cur->hi_fore = cur->back = b3.pixel;
+	    cur->highlight.back = cur->normal.fore = f3.pixel;
+	    cur->highlight.fore = cur->normal.back = b3.pixel;
 	    cur->user_colors = True;
 
 	    f3 = save_fore;
@@ -1021,6 +1151,8 @@ Bool PopUpMenu (menu, x, y, center)
 	menu->items = 0;
 	menu->width = 0;
 	menu->mapped = NEVER_MAPPED;
+	menu->highlight.fore = UNUSED_PIXEL;
+	menu->highlight.back = UNUSED_PIXEL;
   	AddToMenu(menu, "TWM Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
   
         WindowNameOffset=(char *)Scr->TwmRoot.next->name -
@@ -1058,7 +1190,7 @@ Bool PopUpMenu (menu, x, y, center)
         }
         free(WindowNames);
 
-	menu->pinned = FALSE;
+	menu->pinned = False;
 	MakeMenu(menu);
     }
 
@@ -1157,12 +1289,7 @@ PopDownMenu()
 
     for (tmp = ActiveMenu; tmp != NULL; tmp = tmp->prev)
     {
-	if (tmp->pinned) break;
-	if (Scr->Shadow) {
-	    XUnmapWindow (dpy, tmp->shadow);
-	}
-	XUnmapWindow(dpy, tmp->w);
-	tmp->mapped = UNMAPPED;
+	if (! tmp->pinned) HideMenu (tmp);
 	UninstallRootColormap();
     }
 
@@ -1175,6 +1302,18 @@ PopDownMenu()
 }
 
 
+
+HideMenu (menu)
+MenuRoot *menu;
+{
+    if (!menu) return False;
+
+    if (Scr->Shadow) {
+	XUnmapWindow (dpy, menu->shadow);
+    }
+    XUnmapWindow (dpy, menu->w);
+    menu->mapped = UNMAPPED;
+}
 
 /***********************************************************************
  *
@@ -1480,7 +1619,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
     case F_PIN :
 	if (! ActiveMenu) break;
+/*
 	if (Context == C_WINDOW || Context == C_FRAME || Context == C_TITLE) break;
+*/
 	if (ActiveMenu->pinned) {
 	    XUnmapWindow (dpy, ActiveMenu->w);
 	    ActiveMenu->mapped = UNMAPPED;
@@ -1591,14 +1732,28 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	PopDownMenu();
 
+	if (tmp_win->OpaqueResize) {
+	    int sw, ss;
+
+	    sw = tmp_win->frame_width * tmp_win->frame_height;
+	    ss = Scr->MyDisplayWidth  * Scr->MyDisplayHeight;
+	    if (sw > ((ss * Scr->OpaqueResizeThreshold) / 100))
+		Scr->OpaqueResize = FALSE;
+	    else
+		Scr->OpaqueResize = TRUE;
+	}
+	else
+	    Scr->OpaqueResize = FALSE;
+
 	if (pulldown)
 	    XWarpPointer(dpy, None, Scr->Root, 
 		0, 0, 0, 0, eventp->xbutton.x_root, eventp->xbutton.y_root);
 
 	if (!tmp_win->icon || (w != tmp_win->icon->w)) {	/* can't resize icons */
 
+	  fromMenu = False; /* ????? */
 	  if ((Context == C_FRAME || Context == C_WINDOW || Context == C_TITLE)
-	      && fromMenu) 
+	      && fromMenu)
 	    resizeFromCenter(w, tmp_win);
 	  else {
 	    /*
@@ -1661,6 +1816,19 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    return TRUE;
 
 	PopDownMenu();
+	if (tmp_win->OpaqueMove) {
+	    int sw, ss;
+
+	    sw = tmp_win->frame_width * tmp_win->frame_height;
+	    ss = Scr->MyDisplayWidth  * Scr->MyDisplayHeight;
+	    if (sw > ((ss * Scr->OpaqueMoveThreshold) / 100))
+		Scr->OpaqueMove = FALSE;
+	    else
+		Scr->OpaqueMove = TRUE;
+	}
+	else
+	    Scr->OpaqueMove = FALSE;
+
 	rootw = eventp->xbutton.root;
 	MoveFunction = func;
 
@@ -1674,6 +1842,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (!Scr->NoGrabServer || !Scr->OpaqueMove) {
 	    XGrabServer(dpy);
 	}
+
+	Scr->SizeStringOffset = SIZE_HINDENT;
+	XResizeWindow (dpy, Scr->SizeWindow,
+		   Scr->SizeStringWidth + SIZE_HINDENT * 2, 
+		   Scr->SizeFont.height + SIZE_VINDENT * 2);
+	XMapRaised (dpy, Scr->SizeWindow);
+
 	XGrabPointer(dpy, eventp->xbutton.root, True,
 	    ButtonPressMask | ButtonReleaseMask |
 	    ButtonMotionMask | PointerMotionMask, /* PointerMotionHintMask */
@@ -1779,6 +1954,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	  XFlush(dpy);
 	}
 	
+	DisplayPosition (tmp_win, CurrentDragX, CurrentDragY);
 	while (TRUE)
 	{
 	    long releaseEvent = menuFromFrameOrWindowOrTitlebar ? 
@@ -1969,8 +2145,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			tmp_win->frame_bw,
 			moving_icon ? 0 : tmp_win->title_height);
 	    }
-
+	    DisplayPosition (tmp_win, CurrentDragX, CurrentDragY);
 	}
+	XUnmapWindow (dpy, Scr->SizeWindow);
 
 	if (!Scr->OpaqueMove && DragWindow == None)
 	    UninstallRootColormap();
@@ -2025,18 +2202,24 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	if (!WindowMoved) {
 	    XWindowChanges xwc;
+	    int	sp, sc;
 
 	    if (!tmp_win->icon || w != tmp_win->icon->w) {
 	      w = tmp_win->frame;
 	      WMapRaiseLower (tmp_win);
 	    }
+	    sp = tmp_win->frame_width * tmp_win->frame_height;
 	    xwc.stack_mode = Below;
 	    xwc.sibling    = w;
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 		if ((t->transient && t->transientfor == tmp_win->w) ||
 		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
 		    (tmp_win->group != t->w))) {
-		    if (t->frame) XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		    if (t->frame) {
+			sc = t->frame_width * t->frame_height;
+			if (sc < ((sp * Scr->TransientOnTop) / 100))
+			    XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		    }
 		}
 	    }
 	    xwc.stack_mode = Opposite;
@@ -2047,7 +2230,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		if ((t->transient && t->transientfor == tmp_win->w) ||
 		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
 		    (tmp_win->group != t->w))) {
-		    if (t->frame) XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		    if (t->frame) {
+			sc = t->frame_width * t->frame_height;
+			if (sc < ((sp * Scr->TransientOnTop) / 100))
+			    XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		    }
 		}
 	    }
 	}
@@ -2061,12 +2248,18 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (tmp_win->icon && (w == tmp_win->icon->w) && Context != C_ROOT) 
 	    XRaiseWindow(dpy, tmp_win->icon->w);
 	else {
+	    int	sp, sc;
+
 	    XRaiseWindow(dpy, tmp_win->frame);
+	    sp = tmp_win->frame_width * tmp_win->frame_height;
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 		if ((t->transient && t->transientfor == tmp_win->w) ||
 		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
 		    (tmp_win->group != t->w))) {
-		    if (t->frame) XRaiseWindow(dpy, t->frame);
+		    if (t->frame) {
+			sc = t->frame_width * t->frame_height;
+			if (sc < ((sp * Scr->TransientOnTop) / 100)) XRaiseWindow(dpy, t->frame);
+		    }
 		}
 	    }
 	    WMapRaise (tmp_win);
@@ -2081,15 +2274,21 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    XLowerWindow(dpy, tmp_win->icon->w);
 	else {
 	    XWindowChanges xwc;
+	    int	sp, sc;
 
 	    XLowerWindow(dpy, tmp_win->frame);
+	    sp = tmp_win->frame_width * tmp_win->frame_height;
 	    xwc.stack_mode = Above;
 	    xwc.sibling    = tmp_win->frame;
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 		if ((t->transient && t->transientfor == tmp_win->w) ||
 		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
 		    (tmp_win->group != t->w))) {
-		    if (t->frame) XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		    if (t->frame) {
+			sc = t->frame_width * t->frame_height;
+			if (sc < ((sp * Scr->TransientOnTop) / 100))
+			    XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		    }
 		}
 	    }
 	    WMapLower (tmp_win);
@@ -2610,6 +2809,7 @@ TwmWindow *tmp_win;
     WList *wl;
 
     /* de-iconify the main window */
+    if (windowmask) XRaiseWindow (dpy, windowmask);
     if (tmp_win->isicon)
     {
 	if (tmp_win->icon_on)
@@ -2704,8 +2904,14 @@ int def_x, def_y;
 	    CreateIconWindow(tmp_win, def_x, def_y);
 	else
 	    IconUp(tmp_win);
-	if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC))
-	XMapRaised(dpy, tmp_win->icon->w);
+	if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) {
+	    if (windowmask) {
+		XRaiseWindow (dpy, windowmask);
+		XMapWindow(dpy, tmp_win->icon->w);
+	    }
+	    else
+		XMapRaised(dpy, tmp_win->icon->w);
+	}
     }
     if (tmp_win->list)
       for (wl = tmp_win->list; wl != NULL; wl = wl->nextv)
@@ -2799,6 +3005,17 @@ TwmWindow *t;
 
     n = 0;
     (void) sprintf(Info[n++], "Twm version:  %s", Version);
+    (void) sprintf(Info[n], "Compile time options :");
+#ifdef XPM
+    (void) strcat (Info[n], " XPM");
+#endif
+#ifdef IMCONV
+    (void) strcat (Info[n], ", IMCONV");
+#endif
+#ifdef USEM4
+    (void) strcat (Info[n], ", USEM4");
+#endif
+    n++;
     Info[n++][0] = '\0';
 
     if (t) {
@@ -3218,5 +3435,32 @@ XEvent *eventp;
     ActiveMenu->y = newY;
     MenuOrigins [MenuDepth - 1].x = newX;
     MenuOrigins [MenuDepth - 1].y = newY;
+}
+
+/***********************************************************************
+ *
+ *  Procedure:
+ *      DisplayPosition - display the position in the dimensions window
+ *
+ *  Inputs:
+ *      tmp_win - the current twm window
+ *      x, y    - position of the window
+ *
+ ***********************************************************************
+ */
+
+void DisplayPosition (tmp_win, x, y)
+TwmWindow *tmp_win;
+int x, y;
+{
+    char str [100];
+
+    (void) sprintf (str, " +%-4d +%-4d ", x, y);
+    XRaiseWindow (dpy, Scr->SizeWindow);
+    FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
+    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
+		      Scr->SizeStringOffset,
+		      Scr->SizeFont.font->ascent + SIZE_VINDENT,
+		      str, 13);
 }
 

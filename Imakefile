@@ -8,6 +8,7 @@ XCOMM
 
 #define XPM
 #define IMCONV
+#define USEM4
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
@@ -38,9 +39,21 @@ XCOMM
   IMCONVDEFINES = 
 #endif
 
-LOCAL_LIBRARIES = $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEFINES = $(SIGNAL_DEFINES) $(IMCONVDEFINES) $(XPMDEFINES)
- EXTRA_INCLUDES = $(IMCONVINCDIR) $(XPMINCDIR)
+#ifdef USEM4
+   M4LIBDIR =
+   M4INCDIR =
+  M4DEFINES = -DUSEM4
+      M4LIB = $(M4LIBDIR)
+#else
+   M4LIBDIR = 
+   M4INCDIR = 
+  M4DEFINES = 
+      M4LIB = 
+#endif
+
+LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB)
+        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES)
+ EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
@@ -60,25 +73,35 @@ LOCAL_LIBRARIES = $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB)
 		xpm/datebook.xpm       xpm/xarchie.xpm        xpm/xrn.nonews.xpm \
 		xpm/emacs.xpm          xpm/xcalc.xpm          xpm/xrn.xpm \
 		xpm/hpterm.xpm         xpm/xcalc2.xpm         xpm/xterm.xpm \
-		xpm/mail0.xpm          xpm/xedit.xpm
+		xpm/mail0.xpm          xpm/xedit.xpm          xpm/welcome.xpm \
+		xpm/audio_editor.xpm   xpm/clipboard.xpm      xpm/ghostview.xpm \
+		xpm/xirc.xpm           xpm/xmosaic.xpm        xpm/unknown1.xpm \
+		xpm/xrn-compose.xpm \
+		xpm/3D_Expand15.xpm    xpm/3D_Iconify15.xpm   xpm/3D_Lightning15.xpm \
+		xpm/3D_Menu15.xpm      xpm/3D_Resize15.xpm    xpm/3D_Zoom15.xpm \
+		xpm/background1.xpm    xpm/background2.xpm    xpm/background3.xpm \
+		xpm/background4.xpm    xpm/background5.xpm    xpm/background6.xpm \
+		xpm/background7.xpm    xpm/background8.xpm    xpm/background9.xpm
 
 AllTarget(ctwm)
 
 SpecialObjectRule(parse.o,NullParameter,'-DSYSTEM_INIT_FILE="'$(TWMDIR)'/system.ctwmrc"')
+SpecialObjectRule(ctwm.o,NullParameter,'-DPIXMAP_DIRECTORY="'$(TWMDIR)'"')
 #if !HasPutenv
 SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
 #endif
 
 depend:: lex.c gram.c deftwmrc.c 
 
+NormalLibraryTarget(ctwm, libctwm.o)
 ComplexProgramTarget(ctwm)
 InstallNonExecFile(system.ctwmrc,$(TWMDIR))
 #ifdef XPM
-InstallMultiple($(PIXMAPFILES),$(TWMDIR))
+InstallMultipleFlags($(PIXMAPFILES),$(TWMDIR),$(INSTLIBFLAGS))
 #endif
 
 gram.h gram.c: gram.y
-	yacc $(YFLAGS) gram.y
+	$(YACC) $(YFLAGS) gram.y
 	$(MV) y.tab.c gram.c
 	$(MV) y.tab.h gram.h
 

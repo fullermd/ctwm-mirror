@@ -921,6 +921,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     {
 	xwc.width = (tmp_win->rightx - tmp_win->highlightx);
 	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
+	if (Scr->use3Dtitles) xwc.width -= 4;
         if (xwc.width <= 0) {
             xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
             xwc.width = 1;

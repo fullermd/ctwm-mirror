@@ -62,6 +62,9 @@ CreateGCs()
     static ScreenInfo *prevScr = NULL;
     XGCValues	    gcv;
     unsigned long   gcm;
+    static unsigned char greypattern [] = {0x0f, 0x05, 0x0f, 0x0a};
+    Pixmap        greypixmap;
+    static char	dashlist [2] = {1, 1};
 
     if (!Scr->FirstTime || prevScr == Scr)
 	return;
@@ -96,4 +99,23 @@ CreateGCs()
     gcm |= GCLineWidth;	    gcv.line_width = 0;
 
     Scr->NormalGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
+
+    greypixmap = XCreatePixmapFromBitmapData(dpy, Scr->Root,
+				(char *) greypattern, 4, 4, 1, 0, 1);
+
+    gcm  = 0;
+    gcm |= GCStipple;		gcv.stipple    = greypixmap;
+    gcm |= GCFillStyle;		gcv.fill_style = FillOpaqueStippled;
+    gcm |= GCForeground;	gcv.foreground = Scr->Black;
+    gcm |= GCBackground;	gcv.background = Scr->White;
+    Scr->GreyGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
+    XSetDashes (dpy, Scr->GreyGC, 1, dashlist, 2);
+
+    if (Scr->BeNiceToColormap) {
+	gcm  = 0;
+	gcm |= GCLineStyle;
+	gcv.line_style = LineDoubleDash;
+	Scr->ShadGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
+	XSetDashes (dpy, Scr->ShadGC, 0, dashlist, 2);
+    }
 }

@@ -85,6 +85,7 @@ typedef struct ScreenInfo
     Pixmap pullPm;		/* pull right menu icon */
     int	pullW, pullH;		/* size of pull right menu icon */
     Pixmap hilitePm;		/* focus highlight window background */
+    int hilite_pm_depth;
     int hilite_pm_width, hilite_pm_height;  /* cache the size */
 
     MenuRoot *MenuList;		/* head of the menu list */
@@ -124,6 +125,7 @@ typedef struct ScreenInfo
 	int leftx;			/* start of left buttons */
 	int titlex;			/* start of title string */
 	int rightoff;			/* offset back from right edge */
+	int titlew;			/* width of title part */
     } TBInfo;
     ColorPair BorderTileC;	/* border tile colors */
     ColorPair TitleC;		/* titlebar colors */
@@ -136,6 +138,8 @@ typedef struct ScreenInfo
     Pixel MenuShadowColor;	/* menu shadow color */
     Pixel IconBorderColor;	/* icon border color */
     Pixel IconManagerHighlight;	/* icon manager highlight */
+    short ClearShadowContrast;  /* The contrast of the clear shadow */
+    short DarkShadowContrast;   /* The contrast of the dark shadow */
 
     Cursor TitleCursor;		/* title bar cursor */
     Cursor FrameCursor;		/* frame cursor */
@@ -149,9 +153,16 @@ typedef struct ScreenInfo
     Cursor SelectCursor;	/* dot cursor for f.move, etc. from menus */
     Cursor DestroyCursor;		/* skull and cross bones, f.destroy */
 
-    WorkSpaceMgr   workSpaceMgr;	/* C.L. */
-    int	      workSpaceManagerActive;
-    name_list *OccupyAll;	/* list of window names occupying all workspaces at startup */
+    WorkSpaceMgr workSpaceMgr;
+    short	workSpaceManagerActive;
+    name_list	*OccupyAll;	/* list of window names occupying all workspaces at startup */
+    short 	use3Dmenus;
+    short 	use3Dtitles;
+    short 	use3Diconmanagers;
+    short	SunkFocusWindowTitle;
+    short	WMgrVertButtonIndent;
+    short	WMgrHorizButtonIndent;
+    short	BeNiceToColormap;
 
     name_list *BorderColorL;
     name_list *IconBorderColorL;
@@ -164,6 +175,7 @@ typedef struct ScreenInfo
     name_list *IconManagerFL;
     name_list *IconManagerBL;
     name_list *IconMgrs;
+    name_list *NoIconTitle;	/* list of window names with no icon title */
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
     name_list *AutoRaise;	/* list of window names to auto-raise */
@@ -182,9 +194,16 @@ typedef struct ScreenInfo
     name_list *WindowRingL;	/* windows in ring */
     name_list *WarpCursorL;	/* windows to warp cursor to on deiconify */
 
+    name_list *OpaqueMoveList;
+    name_list *NoOpaqueMoveList;
+    name_list *OpaqueResizeList;
+    name_list *NoOpaqueResizeList;
+
     GC NormalGC;		/* normal GC for everything */
     GC MenuGC;			/* gc for menus */
     GC DrawGC;			/* GC to draw lines for move and resize */
+    GC GreyGC;			/* for shadowing on monochrome displays */
+    GC ShadGC;			/* for shadowing on with patterns */
 
     unsigned long Black;
     unsigned long White;
@@ -199,7 +218,7 @@ typedef struct ScreenInfo
     struct IconRegion *FirstRegion;	/* pointer to icon regions */
     struct IconRegion *LastRegion;	/* pointer to the last icon region */
     char *IconDirectory;	/* icon directory to search */
-    char *XPMIconDirectory;	/* XPM icon directory to search */
+    char *PixmapDirectory;	/* Pixmap directory to search */
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */
@@ -213,6 +232,7 @@ typedef struct ScreenInfo
     int TitlePadding;		/* distance between items in titlebar */
     int ButtonIndent;		/* amount to shrink buttons on each side */
     int NumAutoRaises;		/* number of autoraise windows on screen */
+    int TransientOnTop;		/* Percentage of the surface of it's leader */
     short AutoRaiseDefault;	/* AutoRaise all windows if true */
     short NoDefaults;		/* do not add in default UI stuff */
     short UsePPosition;		/* what do with PPosition, see values below */
@@ -228,6 +248,7 @@ typedef struct ScreenInfo
     short DontMoveOff;		/* don't allow windows to be moved off */
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
+    short NoIconTitlebar;	/* put title bars on icons */
     short NoTitlebar;		/* put title bars on windows */
     short DecorateTransients;	/* put title bars on transients */
     short IconifyByUnmapping;	/* simply unmap windows when iconifying */
@@ -241,7 +262,11 @@ typedef struct ScreenInfo
     short SaveUnder;		/* use save under's for menus */
     short RandomPlacement;	/* randomly place windows that no give hints */
     short OpaqueMove;		/* move the window rather than outline */
+    short DoOpaqueMove;		/* move the window rather than outline */
+    short OpaqueMoveThreshold;		/*  */
+    short DoOpaqueResize;		/* resize the window rather than outline */
     short OpaqueResize;		/* resize the window rather than outline */
+    short OpaqueResizeThreshold;	/*  */
     short Highlight;		/* should we highlight the window borders */
     short StackMode;		/* should we honor stack mode requests */
     short TitleHighlight;	/* should we highlight the titlebar */
@@ -266,6 +291,7 @@ extern int NumScreens;
 extern ScreenInfo **ScreenList;
 extern ScreenInfo *Scr;
 extern int FirstScreen;
+extern Window windowmask;
 
 #define PPOS_OFF 0
 #define PPOS_ON 1

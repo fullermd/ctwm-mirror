@@ -342,7 +342,7 @@ Occupy {
 	     xwd    X Window System window dump image file
 
 	- You can find the imconv package at ftp.sdsc.edu. in the directory
-	  [.sdscpub] (it's a VAX).
+	  /pub/sdsc/graphics/imtools.
 	- If (width > screenwidth / 2) || (height > screenheight / 2) the image is
 	  centered else it is tiled.
 	- If you don't have the libim library or don't want to use it, undefine
@@ -376,3 +376,123 @@ Occupy {
 Is there any good pixmap designer out there, that i can add beautiful
 icons and background to the distribution. Don't use too many colors,
 try to use the same few already used in the example icons.
+
+
+    Changes from version 2.2 to 3.0
+    -------------------------------
+
+    1 - A few bugs fixes.
+
+    2 - A 3D presentation of menus, titles and IconManagers can be selected with :
+	UseThreeDMenus, UseThreeDTitles and UseThreeDIconManagers. If
+	UseThreeDTitles is set the default values for TitleButtonBorderWidth,
+	FramePadding, TitlePadding, ButtonIndent are set to 0 pixels. I am not
+	that proud of the appearance of 3D titles but 3D menus look nice. If
+	UseThreeDTitles is set the flag SunkFocusWindowTitle tells ctwm to sunk
+	the title of the window that the focus. 3D features look ugly on
+	monochrome displays, but I have no such display for testing purpose. If a
+	monochrome display owner can have a look, he is welcome. The contrast
+	of the clear and dark shadows can be tuned via the ClearShadowContrast
+	and DarkShadowContrast parameters. These parameters are percentages.
+	The formulas used are :
+
+		clear.{RGB} = (65535 - color.{RGB}) * (ClearShadowContrast / 100),
+		dark.{RGB}  = color.{RGB} * ((100 - DarkShadowContrast) / 100),
+
+	If you choose UseThreeDIconManagers, icon titles are also 3D. By defaults
+	new colors are allocated for shadows, but you can specify BeNiceToColormap
+	to inform ctwm to use stipple instead of new colors, the effect is
+	less beautiful, but acceptable.
+
+
+    3 - A new keyword : NoIconTitle with an optionnal window list.
+
+    4 - A new keyword : TransientOnTop with an integer parameter. This
+	paramater is a percentage and tells ctwm to put transient (and
+	non-group leader) windows always on top of their leader only if
+	their surface is smaller than this fraction of the surface of
+	their leader.
+
+    5 - OpaqueMove and OpaqueResize now accept an optionnal list of windows
+	as parameter. They also have their NoOpaqueMove and NoOpaqueResize
+	counterpart with the same syntax.
+
+    6 - Two new keywords : OpaqueMoveThreshold and OpaqueResizeThreshold
+	with one integer parameter. The parameter represent a percentage of
+	the screen surface. If Opaque{Move,Resize} is active for a window,
+	(via point 4) the opaque {move, resize} is done only if the window
+	surface is smaller than this percentage of the screen. The default
+	is large enough.
+
+    7 - Startup is optionally piped into m4 before ctwm parse it, ypu can
+	now have a common startup file for ctwm, tvtwm, etc ... It can be
+	disabled at compile time by undefining USEM4 in Imakefile. It can
+	be disabled at execution time by using the -n option. Take care if
+	you have backquotes (`) in your .ctwmrc file. This character is
+	special to m4. In that case, put something like :
+
+changequote(``,'')
+
+	at the beginning of your .ctwmrc.
+
+    8 - The startup looks nicer (I think). If you use XPM and the file
+	welcome.xpm is present in your PixmapDirectory, it is displayed
+	while the startup is in progress. Unfortunately, the PixmapDirectory
+	is known only after the .ctwmrc is loaded, and this loading is
+	a large part of the startup time. So you can define the environnement
+	variable CTWM_WELCOME_FILE to point to an XPM file, in which case
+	it will be displayed very quickly.
+	
+    9 - A new function : f.separator, valid only in menus. The effect is to
+	add a line separator between the previous and the following entry.
+	The name selector part in the menu is not used. f.separator works
+	only with conventionnal menus, not with 3D menus.
+
+   10 - Thanks to bret@essex.ac.uk, the man page is integrated with the original
+	twm one, and is of a much better quality.
+
+   11 - While moving a window, the position is displayed in a similar way as
+	the size when resizing.
+
+   12 - The info window now display the compile time options of the current
+	version of ctwm.
+
+   13 - A default IconRegion is now appended at the end of the user provided
+	list to help the (numerous) people which do not configure them correctly.
+
+   14 - You can now specify xpm pixmap title buttons and TitleHighlight.
+	There is 5 built-in scalable pixmap for buttons, :xpm:menu, :xpm:dot,
+	:xpm:resize, :xpm:zoom and :xpm:bar.
+
+   15 - Ctwm now restarts when receiving signal SIGHUP, so to restart it from
+	a shell, use : kill -1 the_ctwm_pid
+
+   16 - 2 New keywords : WMgrVertButtonIndent and WMgrHorizButtonIndent with
+	1 parameter, specifying the vertical and horizontal space beetween
+	buttons in the workspace manager.
+
+   17 - Some more xpm files given. Among them several backgrounds.
+
+   18 - Ctwm set the property WM_WORKSPACELIST (type STRING) on the root
+	window, this property contains the null separated list of all the
+	workspaces. Now the WM_OCCUPATION property on each window is a null
+	separated list instead of a space separated list, it was wrong since
+	workspace names can contain spaces. So, the first you will start the
+	this version, your windows will show up anywhere.
+
+   19 - A new library libctwm.a and an include file ctwm.h are given. The
+	library contains functions for an external program to have some
+	control over ctwm. The functions are :
+
+	Bool    CtwmIsRunning                   ();
+	char    **CtwmWorkspaces                ();
+	char    *CtwmCurrentWorkspace           ();
+	int     CtwmChangeWorkspace             ();
+	char    **CtwmCurrentOccupation         ();
+	int     CtwmSetOccupation               ();
+	int     CtwmAddToCurrentWorkspace       ();
+
+	There is no documentation. A program demolib.c is given to help.
+
+
+

@@ -52,16 +52,15 @@ typedef struct MenuItem
     struct MenuRoot *root;	/* back pointer to my MenuRoot */
     char *item;			/* the character string displayed */
     char *action;		/* action to be performed */
-    Pixel fore;			/* foreground color */
-    Pixel back;			/* background color */
-    Pixel hi_fore;		/* highlight foreground */
-    Pixel hi_back;		/* highlight background */
+    ColorPair normal;		/* unhiglight colors */
+    ColorPair highlight;	/* highlight colors */
     short item_num;		/* item number of this menu */
     short x;			/* x coordinate for text */
     short func;			/* twm built in function */
     short state;		/* video state, 0 = normal, 1 = reversed */
     short strlen;		/* strlen(item) */
     short user_colors;		/* colors were specified */
+    short separated;		/* separated from the next item */
 } MenuItem;
 
 typedef struct MenuRoot
@@ -73,8 +72,7 @@ typedef struct MenuRoot
     char *name;			/* name of root */
     Window w;			/* the window of the menu */
     Window shadow;		/* the shadow window */
-    Pixel hi_fore;		/* highlight foreground */
-    Pixel hi_back;		/* highlight background */
+    ColorPair highlight;	/* highlight colors */
     short mapped;		/* NEVER_MAPPED, UNMAPPED, or MAPPED */
     short height;		/* height of the menu */
     short width;		/* width of the menu */

@@ -455,17 +455,21 @@ WList *AddIconManager(tmp_win)
 
     tmp->twm = tmp_win;
 
-    tmp->fore = Scr->IconManagerC.fore;
-    tmp->back = Scr->IconManagerC.back;
+    tmp->cp.fore = Scr->IconManagerC.fore;
+    tmp->cp.back = Scr->IconManagerC.back;
     tmp->highlight = Scr->IconManagerHighlight;
 
     GetColorFromList(Scr->IconManagerFL, tmp_win->full_name, &tmp_win->class,
-	&tmp->fore);
+	&tmp->cp.fore);
     GetColorFromList(Scr->IconManagerBL, tmp_win->full_name, &tmp_win->class,
-	&tmp->back);
+	&tmp->cp.back);
     GetColorFromList(Scr->IconManagerHighlightL, tmp_win->full_name,
 	&tmp_win->class, &tmp->highlight);
 
+    if (Scr->use3Diconmanagers) {
+	if (!Scr->BeNiceToColormap) GetShadeColors (&tmp->cp);
+	tmp->iconifypm = Create3DIconManagerIcon (tmp->cp);
+    }
     h = Scr->IconManagerFont.height + 10;
     if (h < (siconify_height + 4))
 	h = siconify_height + 4;
@@ -476,8 +480,8 @@ WList *AddIconManager(tmp_win)
     tmp->y = -1;
     
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
-    attributes.background_pixel = tmp->back;
-    attributes.border_pixel = tmp->back;
+    attributes.background_pixel = tmp->cp.back;
+    attributes.border_pixel = tmp->cp.back;
     attributes.event_mask = (KeyPressMask | ButtonPressMask |
 			     ButtonReleaseMask | ExposureMask |
 			     EnterWindowMask | LeaveWindowMask);
@@ -489,7 +493,7 @@ WList *AddIconManager(tmp_win)
 
 
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
-    attributes.background_pixel = tmp->back;
+    attributes.background_pixel = tmp->cp.back;
     attributes.border_pixel = Scr->Black;
     attributes.event_mask = (ButtonReleaseMask| ButtonPressMask |
 			     ExposureMask);
@@ -504,6 +508,7 @@ WList *AddIconManager(tmp_win)
 
     ip->count += 1;
     PackIconManager(ip);
+    if (windowmask) XRaiseWindow (dpy, windowmask);
     XMapWindow(dpy, tmp->w);
 
     XSaveContext(dpy, tmp->w, IconManagerContext, (caddr_t) tmp);
@@ -635,7 +640,7 @@ void RemoveIconManager(tmp_win)
     TwmWindow *tmp_win;
 {
     IconMgr *ip;
-    WList *tmp, *tmp1;
+    WList *tmp, *tmp1, *save;
 
     if (tmp_win->list == NULL)
 	return;
@@ -660,7 +665,6 @@ void RemoveIconManager(tmp_win)
     XDeleteContext(dpy, tmp->w, ScreenContext);
     XDestroyWindow(dpy, tmp->w);
     ip->count -= 1;
-    free((char *) tmp);
 
     PackIconManager(ip);
 
@@ -672,7 +676,9 @@ void RemoveIconManager(tmp_win)
     if (tmp1 == NULL) tmp_win->list = tmp_win->list->nextv;
     else tmp1->nextv = tmp->nextv;
 
+    save = tmp;
     tmp = tmp->nextv;
+    free((char *) save);
   }
 }
 
@@ -682,39 +688,43 @@ void ActiveIconManager(active)
     active->active = TRUE;
     Active = active;
     Active->iconmgr->active = active;
-    DrawIconManagerBorder(active);
+    DrawIconManagerBorder(active, False);
 }
 
 void NotActiveIconManager(active)
     WList *active;
 {
     active->active = FALSE;
-    DrawIconManagerBorder(active);
+    DrawIconManagerBorder(active, False);
 }
 
-void DrawIconManagerBorder(tmp)
+void DrawIconManagerBorder(tmp, fill)
     WList *tmp;
+    int fill;
 {
-/*
-    for (; tmp != NULL; tmp = tmp->nextv)
-    {
-*/
-	XSetForeground(dpy, Scr->NormalGC, tmp->fore);
-	    XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2,
-		tmp->width-5, tmp->height-5);
+    if (Scr->use3Diconmanagers) {
+	int shadow_width;
+
+	shadow_width = 2;
+	if (tmp->active && Scr->Highlight)
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+				tmp->cp, on, fill, False);
+	else
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+				tmp->cp, off, fill, False);
+    }
+    else {
+	XSetForeground(dpy, Scr->NormalGC, tmp->cp.fore);
+	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2, tmp->width-5, tmp->height-5);
 
 	if (tmp->active && Scr->Highlight)
 	    XSetForeground(dpy, Scr->NormalGC, tmp->highlight);
 	else
-	    XSetForeground(dpy, Scr->NormalGC, tmp->back);
+	    XSetForeground(dpy, Scr->NormalGC, tmp->cp.back);
 
-	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 0, 0,
-	    tmp->width-1, tmp->height-1);
-	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 1, 1,
-	    tmp->width-3, tmp->height-3);
-/*
+        XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 0, 0, tmp->width-1, tmp->height-1);
+        XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 1, 1, tmp->width-3, tmp->height-3);
     }
-*/
 }
 
 /***********************************************************************

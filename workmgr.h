@@ -5,12 +5,11 @@
 #define MAPSTATE      0
 #define BUTTONSSTATE  1
 
-#if defined(ultrix) || defined(sequent)
+#if defined(ultrix) || defined(sequent) || defined(sony_news)
 #   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
 #endif
 
 void CreateWorkSpaceManager ();
-void PaintWorkSpaceManager  ();
 
 typedef struct WorkSpaceList WorkSpaceList;
 

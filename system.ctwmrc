@@ -19,6 +19,7 @@ MenuFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
 IconFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
 IconManagerFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*"
 #ClientBorderWidth
+ShowWorkSpaceManager			# start with workspcace manager up
 
 workspacemanagergeometry        "360x60+60-0" 4
 WorkSpaces {

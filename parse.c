@@ -53,6 +53,14 @@
 #include "parse.h"
 #include <X11/Xatom.h> 
 
+/* For m4... */
+#ifdef USEM4
+#include <sys/param.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
+
 #ifndef SYSTEM_INIT_FILE
 #define SYSTEM_INIT_FILE "/usr/lib/X11/twm/system.twmrc"
 #endif
@@ -66,6 +74,10 @@ static char overflowbuff[20];		/* really only need one */
 static int overflowlen;
 static char **stringListSource, *currentString;
 static int ParseUsePPosition();
+#ifdef USEM4
+static FILE *start_m4();
+static char *m4_defs();
+#endif
 
 extern int yylineno;
 extern int mods;
@@ -75,6 +87,9 @@ int ConstrainedMoveTime = 400;		/* milliseconds, event times */
 int RaiseDelay = 0;			/* msec, for AutoRaise */
 
 static int twmFileInput(), twmStringListInput();
+#ifdef USEM4
+static int  m4twmFileInput ();
+#endif
 void twmUnput();
 int (*twmInputFunc)();
 
@@ -125,18 +140,27 @@ int ParseTwmrc (filename)
     int homelen = 0;
     char *cp = NULL;
     char tmpfilename[257];
+#ifdef USEM4
+    static FILE *raw;
+    extern int GoThroughM4;
+#endif
 
     /*
-     * If filename given, try it, else try ~/.twmrc.# then ~/.twmrc.  Then
-     * try system.twmrc; finally using built-in defaults.
+     * Check for the twmrc file in the following order:
+     *   0.  -f filename
+     *   1.  .ctwmrc.#
+     *   2.  .ctwmrc
+     *   3.  .twmrc.#
+     *   4.  .twmrc
+     *   5.  system.ctwmrc
      */
-    for (twmrc = NULL, i = 0; !twmrc && i < 4; i++) {
+    for (twmrc = NULL, i = 0; !twmrc && i < 6; i++) {
 	switch (i) {
 	  case 0:			/* -f filename */
 	    cp = filename;
 	    break;
 
-	  case 1:			/* ~/.twmrc.screennum */
+	  case 1:			/* ~/.ctwmrc.screennum */
 	    if (!filename) {
 		home = getenv ("HOME");
 		if (home) {
@@ -149,21 +173,50 @@ int ParseTwmrc (filename)
 	    }
 	    continue;
 
-	  case 2:			/* ~/.twmrc */
+	  case 2:			/* ~/.ctwmrc */
 	    if (home) {
-		tmpfilename[homelen + 8] = '\0'; /* C.L. */
+		tmpfilename[homelen + 8] = '\0';
 	    }
 	    break;
 
-	  case 3:			/* system.twmrc */
+	  case 3:			/* ~/.twmrc.screennum */
+	    if (!filename) {
+		home = getenv ("HOME");
+		if (home) {
+		    homelen = strlen (home);
+		    cp = tmpfilename;
+		    (void) sprintf (tmpfilename, "%s/.twmrc.%d",
+				    home, Scr->screen);
+		    break;
+		}
+	    }
+	    continue;
+
+	  case 4:			/* ~/.twmrc */
+	    if (home) {
+		tmpfilename[homelen + 7] = '\0'; /* C.L. */
+	    }
+	    break;
+
+	  case 5:			/* system.twmrc */
 	    cp = SYSTEM_INIT_FILE;
 	    break;
 	}
 
-	if (cp) twmrc = fopen (cp, "r");
+	if (cp) {
+            twmrc = fopen (cp, "r");
+#ifdef USEM4
+            raw = twmrc;
+#endif
+
+        }
     }
 
+#ifdef USEM4
+    if (raw) {
+#else
     if (twmrc) {
+#endif
 	int status;
 
 	if (filename && cp != filename) {
@@ -171,8 +224,16 @@ int ParseTwmrc (filename)
 		     "%s:  unable to open twmrc file %s, using %s instead\n",
 		     ProgramName, filename, cp);
 	}
+#ifdef USEM4
+	if (GoThroughM4) twmrc = start_m4(raw);
+	status = doparse (m4twmFileInput, "file", cp);
+	wait (0);
+	fclose (twmrc);
+        fclose (raw);
+#else
 	status = doparse (twmFileInput, "file", cp);
 	fclose (twmrc);
+#endif
 	return status;
     } else {
 	if (filename) {
@@ -204,22 +265,94 @@ int ParseStringList (sl)
  ***********************************************************************
  */
 
+
+#ifndef USEM4
+
+/* This has Tom's include() funtionality.  This is utterly useless if you
+ * can use m4 for the same thing.               Chris P. Ross */
+
+#define MAX_INCLUDES 10
+
+static struct incl {
+     FILE *fp;
+     char *name;
+     int lineno;
+} rc_includes[MAX_INCLUDES];
+static int include_file = 0;
+
+
 static int twmFileInput()
 {
     if (overflowlen) return (int) overflowbuff[--overflowlen];
 
     while (ptr == len)
     {
+        while (include_file) {
+            if (fgets(buff, BUF_LEN, rc_includes[include_file].fp) == NULL) {
+                free(rc_includes[include_file].name);
+                fclose(rc_includes[include_file].fp);
+                yylineno = rc_includes[include_file--].lineno;
+            } else
+                break;
+        }
+
+        if (!include_file)
 	if (fgets(buff, BUF_LEN, twmrc) == NULL)
 	    return 0;
-
 	yylineno++;
 
+        if (strncmp(buff, "include", 7) == 0) {
+             /* Whoops, an include file! */
+             char *p = buff + 7, *q;
+             FILE *fp;
+
+             while (isspace(*p)) p++;
+             for (q = p; *q && !isspace(*q); q++)
+                  continue;
+             *q = 0;
+
+             if ((fp = fopen(p, "r")) == NULL) {
+                  fprintf(stderr, "%s: Unable to open included init file %s\n",
+                          ProgramName, p);
+                  continue;
+             }
+             if (++include_file >= MAX_INCLUDES) {
+                  fprintf(stderr, "%s: init file includes nested too deep\n",
+                          ProgramName);
+                  continue;
+             }
+             rc_includes[include_file].fp = fp;
+             rc_includes[include_file].lineno = yylineno;
+             yylineno = 0;
+             rc_includes[include_file].name = malloc(strlen(p)+1);
+             strcpy(rc_includes[include_file].name, p);
+             continue;
+        }
 	ptr = 0;
 	len = strlen(buff);
     }
     return ((int)buff[ptr++]);
 }
+#else /* USEM4 */
+/* If you're going to use m4, use this version instead.  Much simpler.
+ * m4 ism's credit to Josh Osborne (stripes) */
+
+static int m4twmFileInput()
+{
+        if (overflowlen) return((int) overflowbuff[--overflowlen]);
+
+        while (ptr == len) {
+                if (fgets(buff, BUF_LEN, twmrc) == NULL) return(0);
+
+                yylineno++;
+
+                ptr = 0;
+                len = strlen(buff);
+        }
+        return ((int)buff[ptr++]);
+}
+#endif /* USEM4 */
+
 
 static int twmStringListInput()
 {
@@ -257,7 +390,7 @@ void twmUnput (c)
 	overflowbuff[overflowlen++] = (char) c;
     } else {
 	twmrc_error_prefix ();
-	fprintf (stderr, "unable to unput character (%d)\n",
+	fprintf (stderr, "unable to unput character (%c)\n",
 		 c);
     }
 }
@@ -297,7 +430,6 @@ typedef struct _TwmKeyword {
 #define kw0_AutoRelativeResize		2
 #define kw0_ForceIcons			3
 #define kw0_NoIconManagers		4
-#define kw0_OpaqueMove			5
 #define kw0_InterpolateMenuColors	6
 #define kw0_NoVersion			7
 #define kw0_SortIconManager		8
@@ -318,13 +450,17 @@ typedef struct _TwmKeyword {
 #define kw0_NoCaseSensitive		23
 #define kw0_NoRaiseOnWarp		24
 #define kw0_WarpUnmapped		25
-#define kw0_OpaqueResize		26
 #define kw0_ShowWorkspaceManager	27
 #define kw0_StartInMapState		28
 #define kw0_NoShowOccupyAll		29
 #define kw0_AutoOccupy			30
 #define kw0_TransientHasOccupation	31
 #define kw0_DontPaintRootWindow		32
+#define kw0_Use3DMenus			33
+#define kw0_Use3DTitles			34
+#define kw0_Use3DIconManagers		35
+#define kw0_SunkFocusWindowTitle	36
+#define kw0_BeNiceToColormap		37
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -335,7 +471,7 @@ typedef struct _TwmKeyword {
 #define kws_UnknownIcon			7
 #define kws_IconDirectory		8
 #define kws_MaxWindowSize		9
-#define kws_XPMIconDirectory		10
+#define kws_PixmapDirectory		10
 
 #define kwn_ConstrainedMoveTime		1
 #define kwn_MoveDelta			2
@@ -347,6 +483,13 @@ typedef struct _TwmKeyword {
 #define kwn_IconBorderWidth		8
 #define kwn_TitleButtonBorderWidth	9
 #define kwn_RaiseDelay			10
+#define kwn_TransientOnTop		11
+#define kwn_OpaqueMoveThreshold		12
+#define kwn_OpaqueResizeThreshold	13
+#define kwn_WMgrVertButtonIndent	14
+#define kwn_WMgrHorizButtonIndent	15
+#define kwn_ClearShadowContrast		16
+#define kwn_DarkShadowContrast		17
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -381,6 +524,7 @@ static TwmKeyword keytable[] = {
     { "autooccupy",		KEYWORD, kw0_AutoOccupy },
     { "autoraise",		AUTO_RAISE, 0 },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
+    { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
     { "bordertilebackground",	CLKEYWORD, kwcl_BorderTileBackground },
     { "bordertileforeground",	CLKEYWORD, kwcl_BorderTileForeground },
@@ -389,11 +533,13 @@ static TwmKeyword keytable[] = {
     { "buttonindent",		NKEYWORD, kwn_ButtonIndent },
     { "c",			CONTROL, 0 },
     { "center",			JKEYWORD, J_CENTER },
+    { "clearshadowcontrast",	NKEYWORD, kwn_ClearShadowContrast },
     { "clientborderwidth",	KEYWORD, kw0_ClientBorderWidth },
     { "color",			COLOR, 0 },
     { "constrainedmovetime",	NKEYWORD, kwn_ConstrainedMoveTime },
     { "control",		CONTROL, 0 },
     { "cursors",		CURSORS, 0 },
+    { "darkshadowcontrast",	NKEYWORD, kwn_DarkShadowContrast },
     { "decoratetransients",	KEYWORD, kw0_DecorateTransients },
     { "defaultbackground",	CKEYWORD, kwc_DefaultBackground },
     { "defaultforeground",	CKEYWORD, kwc_DefaultForeground },
@@ -458,6 +604,7 @@ static TwmKeyword keytable[] = {
     { "f.righticonmgr",		FKEYWORD, F_RIGHTICONMGR },
     { "f.rightzoom",		FKEYWORD, F_RIGHTZOOM },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
+    { "f.separator",		FKEYWORD, F_SEPARATOR },
     { "f.setbuttonsstate",	FKEYWORD, F_SETBUTTONSTATE },
     { "f.setmapstate",		FKEYWORD, F_SETMAPSTATE },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
@@ -535,7 +682,10 @@ static TwmKeyword keytable[] = {
     { "nograbserver",		KEYWORD, kw0_NoGrabServer },
     { "nohighlight",		NO_HILITE, 0 },
     { "noiconmanagers",		KEYWORD, kw0_NoIconManagers },
+    { "noicontitle",		NO_ICON_TITLE, 0  },
     { "nomenushadows",		KEYWORD, kw0_NoMenuShadows },
+    { "noopaquemove",		NOOPAQUEMOVE, 0 },
+    { "noopaqueresize",		NOOPAQUERESIZE, 0 },
     { "noraiseondeiconify",	KEYWORD, kw0_NoRaiseOnDeiconify },
     { "noraiseonmove",		KEYWORD, kw0_NoRaiseOnMove },
     { "noraiseonresize",	KEYWORD, kw0_NoRaiseOnResize },
@@ -550,9 +700,11 @@ static TwmKeyword keytable[] = {
     { "noversion",		KEYWORD, kw0_NoVersion },
     { "occupy",			OCCUPYLIST, 0 },
     { "occupyall",		OCCUPYALL, 0 },
-    { "opaquemove",		KEYWORD, kw0_OpaqueMove },
-    { "opaqueresize",		KEYWORD, kw0_OpaqueResize },
-    { "pixmapdirectory",	SKEYWORD, kws_XPMIconDirectory },
+    { "opaquemove",		OPAQUEMOVE, 0 },
+    { "opaquemovethreshold",	NKEYWORD, kwn_OpaqueMoveThreshold },
+    { "opaqueresize",		OPAQUERESIZE, 0 },
+    { "opaqueresizethreshold",	NKEYWORD, kwn_OpaqueResizeThreshold },
+    { "pixmapdirectory",	SKEYWORD, kws_PixmapDirectory },
     { "pixmaps",		PIXMAPS, 0 },
     { "r",			ROOT, 0 },
     { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
@@ -574,6 +726,7 @@ static TwmKeyword keytable[] = {
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
     { "startinmapstate",	KEYWORD, kw0_StartInMapState },
+    { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
     { "t",			TITLE, 0 },
     { "title",			TITLE, 0 },
     { "titlebackground",	CLKEYWORD, kwcl_TitleBackground },
@@ -583,21 +736,27 @@ static TwmKeyword keytable[] = {
     { "titlehighlight",		TITLE_HILITE, 0 },
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
     { "transienthasoccupation",	KEYWORD, kw0_TransientHasOccupation },
+    { "transientontop",		NKEYWORD, kwn_TransientOnTop },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
     { "usepposition",		SKEYWORD, kws_UsePPosition },
+    { "usethreediconmanagers",	KEYWORD, kw0_Use3DIconManagers },
+    { "usethreedmenus",		KEYWORD, kw0_Use3DMenus },
+    { "usethreedtitles",	KEYWORD, kw0_Use3DTitles },
     { "w",			WINDOW, 0 },
-    { "wait",			WAIT, 0 },
+    { "wait",			WAITC, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
     { "west",			DKEYWORD, D_WEST },
     { "window",			WINDOW, 0 },
     { "windowfunction",		WINDOW_FUNCTION, 0 },
     { "windowring",		WINDOW_RING, 0 },
+    { "wmgrhorizbuttonindent",	NKEYWORD, kwn_WMgrHorizButtonIndent },
+    { "wmgrvertbuttonindent",	NKEYWORD, kwn_WMgrVertButtonIndent },
     { "workspace", 		WORKSPACE, 0 },
     { "workspacemanagergeometry", WORKSPCMGR_GEOMETRY, 0 },
     { "workspaces",             WORKSPACES, 0},
     { "xorvalue",		NKEYWORD, kwn_XorValue },
-    { "xpmicondirectory",	SKEYWORD, kws_XPMIconDirectory },
+    { "xpmicondirectory",	SKEYWORD, kws_PixmapDirectory },
     { "zoom",			ZOOM, 0 },
 };
 
@@ -651,14 +810,6 @@ int do_single_keyword (keyword)
 
       case kw0_NoIconManagers:
 	Scr->NoIconManagers = TRUE;
-	return 1;
-
-      case kw0_OpaqueMove:
-	Scr->OpaqueMove = TRUE;
-	return 1;
-
-      case kw0_OpaqueResize:
-	Scr->OpaqueResize = TRUE;
 	return 1;
 
       case kw0_InterpolateMenuColors:
@@ -753,6 +904,26 @@ int do_single_keyword (keyword)
 	Scr->DontPaintRootWindow = TRUE;
 	return 1;
 
+      case kw0_Use3DIconManagers:
+	Scr->use3Diconmanagers = TRUE;
+	return 1;
+
+      case kw0_Use3DMenus:
+	Scr->use3Dmenus = TRUE;
+	return 1;
+
+      case kw0_Use3DTitles:
+	Scr->use3Dtitles = TRUE;
+	return 1;
+
+      case kw0_SunkFocusWindowTitle:
+	Scr->SunkFocusWindowTitle = TRUE;
+	return 1;
+
+      case kw0_BeNiceToColormap:
+	Scr->BeNiceToColormap = TRUE;
+	return 1;
+
       case kw0_NoCaseSensitive:
 	Scr->CaseSensitive = FALSE;
 	return 1;
@@ -816,8 +987,8 @@ int do_string_keyword (keyword, s)
 	if (Scr->FirstTime) Scr->IconDirectory = ExpandFilename (s);
 	return 1;
 
-      case kws_XPMIconDirectory:
-	if (Scr->FirstTime) Scr->XPMIconDirectory = ExpandFilename (s);
+      case kws_PixmapDirectory:
+	if (Scr->FirstTime) Scr->PixmapDirectory = ExpandFilename (s);
 	return 1;
 
       case kws_MaxWindowSize:
@@ -864,7 +1035,9 @@ int do_number_keyword (keyword, num)
 	return 1;
 
       case kwn_TitlePadding:
-	if (Scr->FirstTime) Scr->TitlePadding = num;
+	if (Scr->FirstTime) {
+	    Scr->TitlePadding = num;
+	}
 	return 1;
 
       case kwn_ButtonIndent:
@@ -887,6 +1060,39 @@ int do_number_keyword (keyword, num)
 	RaiseDelay = num;
 	return 1;
 
+      case kwn_TransientOnTop:
+	if (Scr->FirstTime) Scr->TransientOnTop = num;
+	return 1;
+
+      case kwn_OpaqueMoveThreshold:
+	if (Scr->FirstTime) Scr->OpaqueMoveThreshold = num;
+	return 1;
+
+      case kwn_OpaqueResizeThreshold:
+	if (Scr->FirstTime) Scr->OpaqueResizeThreshold = num;
+	return 1;
+
+      case kwn_WMgrVertButtonIndent:
+	if (Scr->FirstTime) Scr->WMgrVertButtonIndent = num;
+	if (Scr->WMgrVertButtonIndent < 0) Scr->WMgrVertButtonIndent = 0;
+	return 1;
+
+      case kwn_WMgrHorizButtonIndent:
+	if (Scr->FirstTime) Scr->WMgrHorizButtonIndent = num;
+	if (Scr->WMgrHorizButtonIndent < 0) Scr->WMgrHorizButtonIndent = 0;
+	return 1;
+
+      case kwn_ClearShadowContrast:
+	if (Scr->FirstTime) Scr->ClearShadowContrast = num;
+	if (Scr->ClearShadowContrast <   0) Scr->ClearShadowContrast =   0;
+	if (Scr->ClearShadowContrast > 100) Scr->ClearShadowContrast = 100;
+	return 1;
+
+      case kwn_DarkShadowContrast:
+	if (Scr->FirstTime) Scr->DarkShadowContrast = num;
+	if (Scr->DarkShadowContrast <   0) Scr->DarkShadowContrast =   0;
+	if (Scr->DarkShadowContrast > 100) Scr->DarkShadowContrast = 100;
+	return 1;
     }
 
     return 0;
@@ -1171,3 +1377,200 @@ do_squeeze_entry (list, name, justify, num, denom)
 	AddToList (list, name, (char *) sinfo);
     }
 }
+
+#ifdef USEM4
+
+static FILE *start_m4(fraw)
+FILE *fraw;
+{
+        int fno;
+        int fids[2];
+        int fres;               /* Fork result */
+
+        fno = fileno(fraw);
+        /* if (-1 == fcntl(fno, F_SETFD, 0)) perror("fcntl()"); */
+        pipe(fids);
+        fres = fork();
+        if (fres < 0) {
+                perror("Fork for m4 failed");
+                exit(23);
+        }
+        if (fres == 0) {
+                extern Display *dpy;
+                extern char *display_name;
+                char *tmp_file;
+
+                /* Child */
+                close(0);                       /* stdin */
+                close(1);                       /* stdout */
+                dup2(fno, 0);           /* stdin = fraw */
+                dup2(fids[1], 1);       /* stdout = pipe to parent */
+                /* get_defs("m4", dpy, display_name) */
+                tmp_file = m4_defs(dpy, display_name);
+                execlp("m4", "m4", tmp_file, "-", NULL);
+                /* If we get here we are screwed... */
+                perror("Can't execlp() m4");
+                exit(124);
+        }
+        /* Parent */
+        close(fids[1]);
+        return(fdopen(fids[0], "r"));
+}
+
+/* Code taken and munged from xrdb.c */
+#define MAXHOSTNAME 255
+#define Resolution(pixels, mm)  ((((pixels) * 100000 / (mm)) + 50) / 100)
+#define EXTRA   12
+
+static char *MkDef(name, def)
+char *name, *def;
+{
+        static char *cp = NULL;
+        static int maxsize = 0;
+        int n, nl;
+
+        /* The char * storage only lasts for 1 call... */
+        if ((n = EXTRA + ((nl = strlen(name)) +  strlen(def))) > maxsize) {
+		maxsize = n;
+                if (cp) free(cp);
+
+                cp = malloc(n);
+        }
+        /* Otherwise cp is aready big 'nuf */
+        if (cp == NULL) {
+                fprintf(stderr, "Can't get %d bytes for arg parm\n", n);
+                exit(468);
+        }
+        strcpy(cp, "define(");
+        strcpy(cp+7, name);
+        *(cp + nl + 7) = ',';
+        *(cp + nl + 8) = ' ';
+        strcpy(cp + nl + 9, def);
+        strcat(cp + nl + 9, ")\n");
+
+        return(cp);
+}
+
+static char *MkQte(name, def)
+char *name, *def;
+{
+        char *cp, *cp2;
+
+        cp = malloc(2 + strlen(def));
+        if (cp == NULL) {
+                fprintf(stderr, "Can't get %d bytes for arg parm\n", 2 + strlen(
+def));
+                exit(469);
+        }
+        *cp = '\"';
+        strcpy(cp + 1, def);
+        strcat(cp, "\"");
+        cp2 = MkDef(name, cp);
+        free(cp);               /* Not really needed, but good habits die hard..
+. */
+        return(cp2);
+}
+
+static char *MkNum(name, def)
+char *name;
+int def;
+{
+        char num[20];
+
+        sprintf(num, "%d", def);
+        return(MkDef(name, num));
+}
+
+#ifdef NOSTEMP
+int mkstemp(str)
+char *str;
+{
+        int fd;
+
+        mktemp(str);
+        fd = creat(str, 0744);
+        if (fd == -1) perror("mkstemp's creat");
+        return(fd);
+}
+#endif
+
+static char *m4_defs(display, host)
+Display *display;
+char *host;
+{
+        extern int KeepTmpFile;
+        int i;
+        Screen *screen;
+        Visual *visual;
+        char client[MAXHOSTNAME], server[MAXHOSTNAME], *colon;
+        struct hostent *hostname;
+        char *vc;               /* Visual Class */
+        static char tmp_name[] = "/tmp/twmrcXXXXXX";
+        int fd;
+        FILE *tmpf;
+
+        fd = mkstemp(tmp_name);                 /* I *hope* mkstemp exists, beca
+use */
+                                                                        /* I tri
+ed to find the "portable" */
+                                                                        /* mktmp
+... */
+        if (fd < 0) {
+                perror("mkstemp failed in m4_defs");
+                exit(377);
+        }
+        tmpf = fdopen(fd, "w+");
+        XmuGetHostname(client, MAXHOSTNAME);
+        hostname = gethostbyname(client);
+        strcpy(server, XDisplayName(host));
+        colon = index(server, ':');
+        if (colon != NULL) *colon = '\0';
+        if ((server[0] == '\0') || (!strcmp(server, "unix")))
+                strcpy(server, client); /* must be connected to :0 or unix:0 */
+        /* The machine running the X server */
+        fputs(MkDef("SERVERHOST", server), tmpf);
+        /* The machine running the window manager process */
+        fputs(MkDef("CLIENTHOST", client), tmpf);
+        if (hostname)
+                fputs(MkDef("HOSTNAME", hostname->h_name), tmpf);
+        else
+                fputs(MkDef("HOSTNAME", client), tmpf);
+        fputs(MkDef("USER", getenv("USER")), tmpf);
+        fputs(MkDef("HOME", getenv("HOME")), tmpf);
+        fputs(MkNum("VERSION", ProtocolVersion(display)), tmpf);
+        fputs(MkNum("REVISION", ProtocolRevision(display)), tmpf);
+        fputs(MkDef("VENDOR", ServerVendor(display)), tmpf);
+        fputs(MkNum("RELEASE", VendorRelease(display)), tmpf);
+        screen = ScreenOfDisplay(display, Scr->screen);
+        visual = DefaultVisualOfScreen(screen);
+        fputs(MkNum("WIDTH", screen->width), tmpf);
+        fputs(MkNum("HEIGHT", screen->height), tmpf);
+        fputs(MkNum("X_RESOLUTION",Resolution(screen->width,screen->mwidth)), tmpf);
+        fputs(MkNum("Y_RESOLUTION",Resolution(screen->height,screen->mheight)),tmpf);
+        fputs(MkNum("PLANES",DisplayPlanes(display, Scr->screen)), tmpf);
+        fputs(MkNum("BITS_PER_RGB", visual->bits_per_rgb), tmpf);
+        fputs(MkDef("TWM_TYPE", "ctwm"), tmpf);
+        switch(visual->class) {
+                case(StaticGray):       vc = "StaticGray";      break;
+                case(GrayScale):        vc = "GrayScale";       break;
+                case(StaticColor):      vc = "StaticColor";     break;
+                case(PseudoColor):      vc = "PseudoColor";     break;
+                case(TrueColor):        vc = "TrueColor";       break;
+                case(DirectColor):      vc = "DirectColor";     break;
+                default:                vc = "NonStandard";     break;
+        }
+        fputs(MkDef("CLASS", vc), tmpf);
+        if (visual->class != StaticGray && visual->class != GrayScale) {
+                fputs(MkDef("COLOR", "Yes"), tmpf);
+        } else {
+                fputs(MkDef("COLOR", "No"), tmpf);
+        }
+        if (KeepTmpFile) {
+                fprintf(stderr, "Left file: %s\n", tmp_name);
+        } else {
+                fprintf(tmpf, "syscmd(/bin/rm %s)\n", tmp_name);
+        }
+        fclose(tmpf);
+        return(tmp_name);
+}
+#endif /* USEM4 */

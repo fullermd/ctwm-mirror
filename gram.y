@@ -56,6 +56,7 @@ static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
 static char *curWorkSpc;
 static char *client, *workspace;
+static MenuItem *lastmenuitem = (MenuItem*) 0;
 
 static MenuRoot *GetRoot();
 
@@ -86,15 +87,16 @@ extern int yylineno;
 %token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ICONMGRS
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
-%token <num> NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION 
+%token <num> NO_ICON_TITLE NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION 
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME 
 %token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
-%token <num> MOVE RESIZE WAIT SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON 
+%token <num> MOVE RESIZE WAITC SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON 
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD 
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
 %token <num> NO_STACKMODE WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
 %token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
+%token <num> OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
 %token <ptr> STRING
 
 %type <ptr> string
@@ -155,6 +157,20 @@ stmt		: error
 		  win_list
 		| ICONIFY_BY_UNMAPPING	{ if (Scr->FirstTime) 
 		    Scr->IconifyByUnmapping = TRUE; }
+
+		| OPAQUEMOVE	{ list = &Scr->OpaqueMoveList; }
+		  win_list
+		| OPAQUEMOVE	{ if (Scr->FirstTime) Scr->DoOpaqueMove = TRUE; }
+		| NOOPAQUEMOVE	{ list = &Scr->NoOpaqueMoveList; }
+		  win_list
+		| NOOPAQUEMOVE	{ if (Scr->FirstTime) Scr->DoOpaqueMove = FALSE; }
+		| OPAQUERESIZE	{ list = &Scr->OpaqueMoveList; }
+		  win_list
+		| OPAQUERESIZE	{ if (Scr->FirstTime) Scr->DoOpaqueResize = TRUE; }
+		| NOOPAQUERESIZE	{ list = &Scr->NoOpaqueResizeList; }
+		  win_list
+		| NOOPAQUERESIZE	{ if (Scr->FirstTime) Scr->DoOpaqueResize = FALSE; }
+
 		| LEFT_TITLEBUTTON string EQUALS action { 
 					  GotTitleButton ($2, $4, False);
 					}
@@ -215,6 +231,10 @@ stmt		: error
 		  win_list
 		| NO_STACKMODE		{ if (Scr->FirstTime)
 						Scr->StackMode = FALSE; }
+		| NO_ICON_TITLE		{ list = &Scr->NoIconTitle; }
+		  win_list
+		| NO_ICON_TITLE		{ if (Scr->FirstTime)
+						Scr->NoIconTitlebar = TRUE; }
 		| NO_TITLE		{ list = &Scr->NoTitle; }
 		  win_list
 		| NO_TITLE		{ if (Scr->FirstTime)
@@ -411,9 +431,9 @@ cursor_entry	: FRAME string string {
 			NewBitmapCursor(&Scr->ResizeCursor, $2, $3); }
 		| RESIZE string {
 			NewFontCursor(&Scr->ResizeCursor, $2); }
-		| WAIT string string {
+		| WAITC string string {
 			NewBitmapCursor(&Scr->WaitCursor, $2, $3); }
-		| WAIT string {
+		| WAITC string {
 			NewFontCursor(&Scr->WaitCursor, $2); }
 		| MENU string string {
 			NewBitmapCursor(&Scr->MenuCursor, $2, $3); }
@@ -673,24 +693,33 @@ function_entry	: action		{ AddToMenu(root, "", Action, NULLSTR, $1,
 					}
 		;
 
-menu		: LB menu_entries RB
+menu		: LB menu_entries RB {lastmenuitem = (MenuItem*) 0;}
 		;
 
 menu_entries	: /* Empty */
 		| menu_entries menu_entry
 		;
 
-menu_entry	: string action		{ AddToMenu(root, $1, Action, pull, $2,
-						NULLSTR, NULLSTR);
-					  Action = "";
-					  pull = NULL;
-					}
+menu_entry	: string action		{
+			if ($2 == F_SEPARATOR) {
+			    if (lastmenuitem) lastmenuitem->separated = 1;
+			}
+			else {
+			    lastmenuitem = AddToMenu(root, $1, Action, pull, $2, NULLSTR, NULLSTR);
+			    Action = "";
+			    pull = NULL;
+			}
+		}
 		| string LP string COLON string RP action {
-					  AddToMenu(root, $1, Action, pull, $7,
-						$3, $5);
-					  Action = "";
-					  pull = NULL;
-					}
+			if ($7 == F_SEPARATOR) {
+			    if (lastmenuitem) lastmenuitem->separated = 1;
+			}
+			else {
+			    lastmenuitem = AddToMenu(root, $1, Action, pull, $7, $3, $5);
+			    Action = "";
+			    pull = NULL;
+			}
+		}
 		;
 
 action		: FKEYWORD	{ $$ = $1; }
@@ -867,8 +896,8 @@ char *fore, *back;
 
 	save = Scr->FirstTime;
 	Scr->FirstTime = TRUE;
-	GetColor(COLOR, &tmp->hi_fore, fore);
-	GetColor(COLOR, &tmp->hi_back, back);
+	GetColor(COLOR, &tmp->highlight.fore, fore);
+	GetColor(COLOR, &tmp->highlight.back, back);
 	Scr->FirstTime = save;
     }
 

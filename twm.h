@@ -143,13 +143,16 @@ typedef struct MyFont
 
 typedef struct ColorPair
 {
-    Pixel fore, back;
+    Pixel fore, back, shadc, shadd;
 } ColorPair;
+
+typedef enum {on, off} ButtonState;
 
 typedef struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
     Pixmap bitmap;			/* image to display in button */
+    int depth;				/* depth of the image to display in button */
     int srcx, srcy;			/* from where to start copying */
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
@@ -161,6 +164,7 @@ typedef struct _TitleButton {
 
 typedef struct _TBWindow {
     Window window;			/* which window in this frame */
+    Pixmap bitmap;			/* image to display in button */
     TitleButton *info;			/* description of this window */
 } TBWindow;
 
@@ -303,7 +307,9 @@ typedef struct TwmWindow
 	int curs_x, curs_y;
     } ring;
 
-    int  occupation; /* C.L. */
+    short OpaqueMove;
+    short OpaqueResize;
+    int  occupation;
 
 } TwmWindow;
 
@@ -318,6 +324,12 @@ typedef struct TwmWindow
 #define TBPM_DELETE ":delete"	/* same image as xlogo */
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
+
+#define TBPM_3DDOT ":xpm:dot"		/* name of titlebar pixmap for dot */
+#define TBPM_3DRESIZE ":xpm:resize"	/* name of titlebar pixmap for resize button */
+#define TBPM_3DMENU ":xpm:menu"	/* name of titlebar pixmap for menus */
+#define TBPM_3DZOOM ":xpm:zoom"
+#define TBPM_3DBAR ":xpm:bar"
 
 #ifndef X11R4
 #    include <X11/Xosdefs.h>
@@ -371,6 +383,7 @@ extern char **Argv;
 extern char **Environ;
 extern void NewFontCursor();
 extern Pixmap CreateMenuIcon();
+extern Pixmap Create3DMenuIcon();
 
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;

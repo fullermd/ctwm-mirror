@@ -113,6 +113,7 @@ int *final_x, *final_y;
     IconRegion	*ir;
     IconEntry	*ie;
     int		w = 0, h = 0;
+    static int  ranX = 10, ranY = 10;
 
     ie = 0;
     for (ir = Scr->FirstRegion; ir; ir = ir->next) {
@@ -133,7 +134,21 @@ int *final_x, *final_y;
 	ie->twm_win = tmp_win;
 	*final_x = ie->x + (ie->w - iconWidth (tmp_win)) / 2;
 	*final_y = ie->y + (ie->h - iconHeight (tmp_win)) / 2;
-    } else {
+    }
+    else
+    if ((def_x == -100) && (def_y == -100)) {
+	w = iconWidth  (tmp_win);
+	h = iconHeight (tmp_win);
+	if ((ranX + w) > Scr->MyDisplayWidth) {
+	    ranX  = 10;
+	    ranY += 80;
+	    if ((ranY + h) > Scr->MyDisplayHeight) ranY = 10;
+	}
+	*final_x = ranX;
+	*final_y = ranY;
+	ranX += w + 10;
+    }
+    else {
 	*final_x = def_x;
 	*final_y = def_y;
     }
@@ -350,6 +365,7 @@ int def_x, def_y;
     Pixmap pm = None;			/* tmp pixmap variable */
     int final_x, final_y;
     int x;
+    int		hastitle;
     Icon	*icon;
     Matchtype	match;
     int		icontype = BitmapType;
@@ -373,6 +389,7 @@ int def_x, def_y;
 	&icon->iconc.fore);
     GetColorFromList(Scr->IconBackgroundL, tmp_win->full_name, &tmp_win->class,
 	&icon->iconc.back);
+    if (Scr->use3Diconmanagers && !Scr->BeNiceToColormap) GetShadeColors (&icon->iconc);
 
     FB(icon->iconc.fore, icon->iconc.back);
 
@@ -631,22 +648,34 @@ int def_x, def_y;
 	attributes.background_pixmap = pm;
     }
 
-    icon->w_width = XTextWidth(Scr->IconFont.font,
-	tmp_win->icon_name, strlen(tmp_win->icon_name));
+    if (Scr->NoIconTitlebar ||
+	LookInList(Scr->NoIconTitle, tmp_win->full_name, &tmp_win->class))
+    {
+	icon->w_width  = icon->width;
+	icon->w_height = icon->height;
+	icon->x = 0;
+	icon->y = 0;
+	hastitle = False;
+    }
+    else {
+	icon->w_width = XTextWidth(Scr->IconFont.font,
+		tmp_win->icon_name, strlen(tmp_win->icon_name));
 
-    icon->w_width += 6;
-    if (icon->w_width < icon->width)
-    {
-	icon->x = (icon->width - icon->w_width)/2;
-	icon->x += 3;
-	icon->w_width = icon->width;
+	icon->w_width += 6;
+	if (icon->w_width < icon->width)
+	{
+	    icon->x = (icon->width - icon->w_width)/2;
+	    icon->x += 3;
+	    icon->w_width = icon->width;
+	}
+	else
+	{
+	    icon->x = 3;
+	}
+	icon->y = icon->height + Scr->IconFont.height;
+	icon->w_height = icon->height + Scr->IconFont.height + 6;
+	hastitle = True;
     }
-    else
-    {
-	icon->x = 3;
-    }
-    icon->y = icon->height + Scr->IconFont.height;
-    icon->w_height = icon->height + Scr->IconFont.height + 4;
 
     event_mask = 0;
     if (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)
@@ -709,13 +738,14 @@ int def_x, def_y;
 	    Pixmap     title;
 
 	    XShapeCombineMask(dpy, icon->w, ShapeBounding, x, y, xpmicon->mask, ShapeSet);
-	    rect.x = 0;
-	    rect.y = icon->height;
-	    rect.width  = icon->w_width;
-	    rect.height = Scr->IconFont.height + 4;
-	    XShapeCombineRectangles (dpy,  icon->w, ShapeBounding,  0,
+	    if (hastitle) {
+		rect.x = 0;
+		rect.y = icon->height;
+		rect.width  = icon->w_width;
+		rect.height = Scr->IconFont.height + 6;
+		XShapeCombineRectangles (dpy,  icon->w, ShapeBounding,  0,
 					0, &rect, 1, ShapeUnion, 0);
-
+	    }
 	    XShapeCombineMask(dpy, icon->bm_w, ShapeBounding, 0, 0, xpmicon->mask, ShapeSet);
 	}
 #endif
@@ -743,10 +773,12 @@ int def_x, def_y;
     if (final_x > Scr->MyDisplayWidth)
 	final_x = Scr->MyDisplayWidth - icon->w_width -
 	    (2 * Scr->IconBorderWidth);
+    if (final_x < 0) final_x = 0;
 
     if (final_y > Scr->MyDisplayHeight)
 	final_y = Scr->MyDisplayHeight - icon->height -
-	    Scr->IconFont.height - 4 - (2 * Scr->IconBorderWidth);
+	    Scr->IconFont.height - 6 - (2 * Scr->IconBorderWidth);
+    if (final_y < 0) final_y = 0;
 
     XMoveWindow(dpy, icon->w, final_x, final_y);
   }

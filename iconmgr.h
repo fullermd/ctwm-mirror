@@ -44,7 +44,9 @@ typedef struct WList
     int x, y, width, height;
     int row, col;
     int me;
-    Pixel fore, back, highlight;
+    ColorPair cp;
+    Pixel highlight;
+    Pixmap iconifypm;
     unsigned top, bottom;
     short active;
     short down;

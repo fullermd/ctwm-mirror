@@ -59,7 +59,16 @@
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
 
+#ifndef PIXMAP_DIRECTORY
+#define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
+#endif
+
 Display *dpy;			/* which display are we talking to */
+#ifdef USEM4
+char *display_name = NULL;      /* JMO 2/13/90 for m4 */
+int KeepTmpFile = False;        /* JMO 3/28/90 for m4 */
+int GoThroughM4 = True;
+#endif
 Window ResizeWindow;		/* the window we are resizing */
 
 int MultiScreen = TRUE;		/* try for more than one screen? */
@@ -70,6 +79,7 @@ ScreenInfo **ScreenList;	/* structures for each screen */
 ScreenInfo *Scr = NULL;		/* the cur and prev screens */
 int PreviousScreen;		/* last screen that we were on */
 int FirstScreen;		/* TRUE ==> first screen of display */
+Window windowmask = (Window) 0;		/* window to mask the screen at startup */
 Bool PrintErrorMessages = False;	/* controls error messages */
 static int RedirectError;	/* TRUE ==> another window manager running */
 static int CatchRedirectError();	/* for settting RedirectError */
@@ -115,6 +125,9 @@ Bool RestartPreviousState = False;	/* try to restart in previous state */
 unsigned long black, white;
 
 extern void assign_var_savecolor();
+SIGNAL_T Restart();
+
+extern Atom _XA_WM_WORKSPACESLIST;
 
 /***********************************************************************
  *
@@ -137,6 +150,9 @@ main(argc, argv, environ)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
     extern ColormapWindow *CreateColormapWindow();
+    char geom [256];
+    char *welcomefile;
+    int  screenmasked;
 
     ProgramName = argv[0];
     Argc = argc;
@@ -163,6 +179,14 @@ main(argc, argv, environ)
 	      case 'q':				/* -quiet */
 		PrintErrorMessages = False;
 		continue;
+#ifdef USEM4
+	      case 'k':				/* -keep m4 tmp file */
+		KeepTmpFile = True;
+		continue;
+	      case 'n':				/* -don't preprocess through m4 */
+		GoThroughM4 = False;
+		continue;
+#endif
 	    }
 	}
       usage:
@@ -172,13 +196,13 @@ main(argc, argv, environ)
 	exit (1);
     }
 
-#define newhandler(sig) \
-    if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, Done)
+#define newhandler(sig, action) \
+    if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, action)
 
-    newhandler (SIGINT);
-    newhandler (SIGHUP);
-    newhandler (SIGQUIT);
-    newhandler (SIGTERM);
+    newhandler (SIGINT, Done);
+    newhandler (SIGHUP, Restart);
+    newhandler (SIGQUIT, Done);
+    newhandler (SIGTERM, Done);
 
 #undef newhandler
 
@@ -289,6 +313,7 @@ main(argc, argv, environ)
 	Scr->TitleBackgroundL = NULL;
 	Scr->IconForegroundL = NULL;
 	Scr->IconBackgroundL = NULL;
+	Scr->NoIconTitle = NULL;
 	Scr->NoTitle = NULL;
 	Scr->OccupyAll = NULL;
 	Scr->MakeTitle = NULL;
@@ -309,6 +334,10 @@ main(argc, argv, environ)
 	Scr->DontSqueezeTitleL = NULL;
 	Scr->WindowRingL = NULL;
 	Scr->WarpCursorL = NULL;
+	Scr->OpaqueMoveList = NULL;
+	Scr->NoOpaqueMoveList = NULL;
+	Scr->OpaqueResizeList = NULL;
+	Scr->NoOpaqueResizeList = NULL;
 
 	/* remember to put an initialization in InitVariables also
 	 */
@@ -339,7 +368,8 @@ main(argc, argv, environ)
 
 	Scr->TBInfo.nleft = Scr->TBInfo.nright = 0;
 	Scr->TBInfo.head = NULL;
-	Scr->TBInfo.border = 1;
+	Scr->TBInfo.border = -100; /* trick to have different default value if ThreeDTitles
+					is set or not */
 	Scr->TBInfo.width = 0;
 	Scr->TBInfo.leftx = 0;
 	Scr->TBInfo.titlex = 0;
@@ -379,7 +409,7 @@ main(argc, argv, environ)
 	AllocateIconManager ("TWM", "Icons", "", 1);
 
 	Scr->IconDirectory = NULL;
-	Scr->XPMIconDirectory = NULL;
+	Scr->PixmapDirectory = PIXMAP_DIRECTORY;
 	Scr->siconifyPm = None;
 	Scr->pullPm = None;
 	Scr->hilitePm = None;
@@ -388,12 +418,42 @@ main(argc, argv, environ)
 	Scr->tbpm.question = None;
 	Scr->tbpm.menu = None;
 	Scr->tbpm.delete = None;
+
+	screenmasked = 0;
+	if ((welcomefile = getenv ("CTWM_WELCOME_FILE")) != NULL) {
+	    screenmasked = 1;
+	    MaskScreen (welcomefile);
+	}
 	InitVariables();
 	InitMenus();
 	InitWorkSpaceManager ();
 
 	/* Parse it once for each screen. */
 	ParseTwmrc(InitFile);
+	if (! screenmasked) MaskScreen (NULL);
+	ConfigureWorkSpaceManager ();
+
+	if (Scr->use3Dtitles) {
+	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 0;
+	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 0;
+	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 0;
+	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 0;
+	}
+	else {
+	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 2; /* values that look */
+	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
+	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
+	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
+	}
+/*
+	sprintf (geom, "%dx%d+0+0", Scr->MyDisplayWidth, Scr->MyDisplayHeight);
+	AddIconRegion (geom, D_NORTH, D_WEST, 80, 70);
+*/
+
+	if (Scr->use3Dtitles && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
+	if (Scr->use3Dmenus  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
+	if (Scr->use3Dmenus  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
+
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
 	if (Scr->SqueezeTitle == -1) Scr->SqueezeTitle = FALSE;
 	if (!Scr->HaveFonts) CreateFonts();
@@ -402,6 +462,7 @@ main(argc, argv, environ)
 
 	Scr->TitleBarFont.y += Scr->FramePadding;
 	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
+	if (Scr->use3Dtitles) Scr->TitleHeight += 4;
 	/* make title height be odd so buttons look nice and centered */
 	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
 
@@ -499,6 +560,7 @@ main(argc, argv, environ)
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 
+	UnmaskScreen ();
 	XUngrabServer(dpy);
 
 	FirstScreen = FALSE;
@@ -539,6 +601,7 @@ InitVariables()
     FreeList(&Scr->IconManagerFL);
     FreeList(&Scr->IconManagerBL);
     FreeList(&Scr->IconMgrs);
+    FreeList(&Scr->NoIconTitle);
     FreeList(&Scr->NoTitle);
     FreeList(&Scr->OccupyAll);
     FreeList(&Scr->MakeTitle);
@@ -593,15 +656,17 @@ InitVariables()
     Scr->IconManagerC.back = white;
     Scr->IconManagerHighlight = black;
 
-    Scr->FramePadding = 2;		/* values that look "nice" on */
-    Scr->TitlePadding = 8;		/* 75 and 100dpi displays */
-    Scr->ButtonIndent = 1;
+    Scr->FramePadding = -100;	/* trick to have different default value if ThreeDTitles
+				is set or not */
+    Scr->TitlePadding = -100;
+    Scr->ButtonIndent = -100;
     Scr->SizeStringOffset = 0;
     Scr->BorderWidth = BW;
     Scr->IconBorderWidth = BW;
     Scr->UnknownWidth = 0;
     Scr->UnknownHeight = 0;
     Scr->NumAutoRaises = 0;
+    Scr->TransientOnTop = 30;
     Scr->NoDefaults = FALSE;
     Scr->UsePPosition = PPOS_OFF;
     Scr->FocusRoot = TRUE;
@@ -616,11 +681,14 @@ InitVariables()
     Scr->DontMoveOff = FALSE;
     Scr->DoZoom = FALSE;
     Scr->TitleFocus = TRUE;
+    Scr->NoIconTitlebar = FALSE;
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;
     Scr->IconifyByUnmapping = FALSE;
     Scr->ShowIconManager = FALSE;
     Scr->ShowWorkspaceManager = FALSE;
+    Scr->WMgrVertButtonIndent  = 5;
+    Scr->WMgrHorizButtonIndent = 5;
     Scr->AutoOccupy = FALSE;
     Scr->TransientHasOccupation = FALSE;
     Scr->DontPaintRootWindow = FALSE;
@@ -628,8 +696,12 @@ InitVariables()
     Scr->BackingStore = TRUE;
     Scr->SaveUnder = TRUE;
     Scr->RandomPlacement = FALSE;
+    Scr->DoOpaqueMove = FALSE;
     Scr->OpaqueMove = FALSE;
+    Scr->OpaqueMoveThreshold = 1000;
     Scr->OpaqueResize = FALSE;
+    Scr->DoOpaqueResize = FALSE;
+    Scr->OpaqueResizeThreshold = 1000;
     Scr->Highlight = TRUE;
     Scr->StackMode = TRUE;
     Scr->TitleHighlight = TRUE;
@@ -647,6 +719,13 @@ InitVariables()
     Scr->HaveFonts = FALSE;		/* i.e. not loaded yet */
     Scr->CaseSensitive = TRUE;
     Scr->WarpUnmapped = FALSE;
+    Scr->use3Diconmanagers = FALSE;
+    Scr->use3Dmenus = FALSE;
+    Scr->use3Dtitles = FALSE;
+    Scr->SunkFocusWindowTitle = FALSE;
+    Scr->ClearShadowContrast = 50;
+    Scr->DarkShadowContrast  = 40;
+    Scr->BeNiceToColormap = FALSE;
 
     /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"
@@ -778,9 +857,20 @@ Time time;
 SIGNAL_T Done()
 {
     Reborder (CurrentTime);
+    XDeleteProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
     XCloseDisplay(dpy);
     exit(0);
-    SIGNAL_RETURN;
+}
+
+
+SIGNAL_T Restart()
+{
+    XSync (dpy, 0);
+    Reborder (CurrentTime);
+    XSync (dpy, 0);
+    execvp(*Argv, Argv);
+    fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
+    exit (1);
 }
 
 
