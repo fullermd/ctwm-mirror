@@ -205,6 +205,6 @@ dist:	clean gram.h gram.c lex.c deftwmrc.c
 	tardy --user_number=0  --user_name=ctwm \
 	      --group_number=0 --group_name=ctwm \
 	      --prefix=ctwm-$$version - |\
-	gzip --best >../ctwm-$$version.gz; \
+	gzip --best >../ctwm-$$version.tar.gz; \
 	rm -f ../ctwm-$$version.list; \
-	ls -l ../ctwm-$$version.gz
+	ls -l ../ctwm-$$version.tar.gz
