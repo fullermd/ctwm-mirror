@@ -46,10 +46,10 @@ DEBUGPARSER_DEFS = -DYYDEBUG=1
     JPEGDEFINES = -DJPEG
         JPEGLIB = $(JPEGLIBDIR) -ljpeg
 #else
-         XPMLIB = 
-      XPMLIBDIR = 
-      XPMINCDIR = 
-     XPMDEFINES = 
+        JPEGLIB = 
+     JPEGLIBDIR = 
+     JPEGINCDIR = 
+    JPEGDEFINES = 
 #endif
 
 #ifdef IMCONV
