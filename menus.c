@@ -4672,7 +4672,7 @@ void WarpToWindow (t)
 	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
 	    if (OCCUPY (t, wlist)) break;
 	}
-	if (wlist != NULL) GotoWorkSpace (wlist);
+	if (wlist != NULL) GotoWorkSpace (Scr->currentvs, wlist);
     }
     XWarpPointer (dpy, None, t->frame, 0, 0, 0, 0, x, y);
 }
