@@ -43,7 +43,12 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <errno.h>
 #include <sys/time.h>
+#if defined(__sgi) && defined(_SYSTYPE_SVR4)
+#include <sys/select.h>
+#endif
+
 #include "twm.h"
 #include <X11/Xatom.h>
 #include "add_window.h"
@@ -57,9 +62,25 @@
 #include "iconmgr.h"
 #include "version.h"
 
+#define MAX(x,y) ((x)>(y)?(x):(y))
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#define ABS(x) ((x)<0?-(x):(x))
+
 extern int iconifybox_width, iconifybox_height;
 extern unsigned int mods_used;
 extern int menuFromFrameOrWindowOrTitlebar;
+
+extern int captive;
+
+extern Bool AnimationActive;
+extern Bool AnimationPending;
+extern Bool MaybeAnimate;
+
+static void CtwmNextEvent ();
+static void RedoIcon();
+#ifdef SOUNDS
+extern play_sounds();
+#endif
 
 #define MAX_X_EVENT 256
 event_proc EventHandler[MAX_X_EVENT]; /* event handler jump table */
@@ -109,7 +130,21 @@ extern Atom _XA_WM_CURRENTWORKSPACE;
 void AutoRaiseWindow (tmp)
     TwmWindow *tmp;
 {
+    int	sp, sc;
+    TwmWindow *t;
+
     XRaiseWindow (dpy, tmp->frame);
+    sp = tmp->frame_width * tmp->frame_height;
+    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+	if ((t->transient && t->transientfor == tmp->w) ||
+	    ((tmp->group == tmp->w) && (tmp->group == t->group) &&
+	    (tmp->group != t->w))) {
+	    if (t->frame) {
+		sc = t->frame_width * t->frame_height;
+		if (sc < ((sp * Scr->TransientOnTop) / 100)) XRaiseWindow (dpy, t->frame);
+	    }
+	}
+    }
     XSync (dpy, 0);
     enter_win = NULL;
     enter_flag = TRUE;
@@ -265,6 +300,38 @@ Window WindowOfEvent (e)
     return None;
 }
 
+void FixRootEvent (e)
+XEvent *e;
+{
+    switch (e->type) {
+      case KeyPress:
+      case KeyRelease:
+	  e->xkey.x_root -= Scr->MyDisplayX;
+	  e->xkey.y_root -= Scr->MyDisplayY;
+	  e->xkey.root    = Scr->Root;
+	  break;
+      case ButtonPress:
+      case ButtonRelease:
+	  e->xbutton.x_root -= Scr->MyDisplayX;
+	  e->xbutton.y_root -= Scr->MyDisplayY;
+	  e->xbutton.root    = Scr->Root;
+	  break;
+      case MotionNotify:
+	  e->xmotion.x_root -= Scr->MyDisplayX;
+	  e->xmotion.y_root -= Scr->MyDisplayY;
+	  e->xmotion.root    = Scr->Root;
+	  break;
+      case EnterNotify:
+      case LeaveNotify:
+	  e->xcrossing.x_root -= Scr->MyDisplayX;
+	  e->xcrossing.y_root -= Scr->MyDisplayY;
+	  e->xcrossing.root    = Scr->Root;
+	  break;
+      default:
+	  break;
+    }
+}
+
 
 
 /***********************************************************************
@@ -272,7 +339,7 @@ Window WindowOfEvent (e)
  *  Procedure:
  *	DispatchEvent2 - 
  *      handle a single X event stored in global var Event
- *      this rouitine for is for a call during an f.move
+ *      this routine for is for a call during an f.move
  *
  ***********************************************************************
  */
@@ -289,6 +356,11 @@ Bool DispatchEvent2 ()
     }
 
     if (!Scr) return False;
+    if (captive) FixRootEvent (&Event);
+
+#ifdef SOUNDS
+    play_sound(Event.type);
+#endif
 
     if (menuFromFrameOrWindowOrTitlebar && Event.type == Expose)
       HandleExpose();
@@ -321,7 +393,18 @@ Bool DispatchEvent ()
 
     if (!Scr) return False;
 
+    if (captive) {
+        if ((Event.type == ConfigureNotify) &&
+	    (Event.xconfigure.window == Scr->Root)) {
+	    ConfigureRootWindow (&Event);
+	    return (True);
+	}
+	FixRootEvent (&Event);
+    }
     if (Event.type>= 0 && Event.type < MAX_X_EVENT) {
+#ifdef SOUNDS
+        play_sound(Event.type);
+#endif
 	(*EventHandler[Event.type])();
     }
 
@@ -354,8 +437,44 @@ HandleEvents()
 	    InstallWindowColormaps(ColormapNotify, (TwmWindow *) NULL);
 	}
 	WindowMoved = FALSE;
-	XNextEvent(dpy, &Event);
+	if (AnimationActive && MaybeAnimate)
+	    CtwmNextEvent (dpy, &Event);
+	else
+	    XNextEvent(dpy, &Event);
 	(void) DispatchEvent ();
+    }
+}
+
+static void CtwmNextEvent (dpy, event)
+Display *dpy;
+XEvent  *event;
+{
+    int		found;
+    fd_set	mask;
+    int		fd;
+
+    if (QLength (dpy) != 0) {
+	XNextEvent (dpy, event);
+	return;
+    }
+    if (AnimationPending) Animate ();
+
+    fd = ConnectionNumber (dpy);
+    while (1) {
+	FD_ZERO (&mask);
+	FD_SET  (fd, &mask);
+	found = select (fd + 1, &mask, (int*) 0, (int*) 0, 0);
+	if (found < 0) {
+	    if (errno == EINTR) {
+		Animate ();
+	    }
+	    else perror ("select");
+	    continue;
+	}
+	if (FD_ISSET (fd, &mask)) {
+	    XNextEvent (dpy, event);
+	    return;
+	}
     }
 }
 
@@ -930,7 +1049,8 @@ HandlePropertyNotify()
 	    (Tmp_win->wmhints->flags & IconPixmapHint)) {
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
 			       &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon->width, 
-			       (unsigned int *)&Tmp_win->icon->height, &JunkBW, &JunkDepth)) {
+			       (unsigned int *)&Tmp_win->icon->height, &JunkBW,
+				&JunkDepth)) {
 		return;
 	    }
 
@@ -956,21 +1076,45 @@ HandlePropertyNotify()
 			     (unsigned int) CopyFromParent, Scr->d_visual,
 			     valuemask, &attributes);
 
+	    if (! (Tmp_win->wmhints->flags & IconMaskHint)) {
+		XRectangle rect;
+
+		rect.x      = (Tmp_win->icon->w_width - Tmp_win->icon->width) / 2;
+		rect.y      = 0;
+		rect.width  = Tmp_win->icon->width;
+		rect.height = Tmp_win->icon->height;
+		XShapeCombineRectangles (dpy, Tmp_win->icon->w, ShapeBounding, 0,
+					0, &rect, 1, ShapeUnion, 0);
+	    }
 	    XFreePixmap (dpy, pm);
 	    RedoIconName();
 	}
 	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced && Tmp_win->wmhints &&
 	    (Tmp_win->wmhints->flags & IconMaskHint)) {
-		XShapeCombineMask(dpy, Tmp_win->icon->bm_w, ShapeBounding,
+		int x;
+
+		x = (Tmp_win->icon->w_width - Tmp_win->icon->width) / 2;
+		XShapeCombineMask (dpy, Tmp_win->icon->bm_w, ShapeBounding,
 				  0, 0, Tmp_win->wmhints->icon_mask, ShapeSet);
+		XShapeCombineMask (dpy, Tmp_win->icon->w, ShapeBounding,
+				  x, 0, Tmp_win->wmhints->icon_mask, ShapeSet);
 	}
 		    
 	break;
 
       case XA_WM_NORMAL_HINTS:
-	GetWindowSizeHints (Tmp_win);
-	break;
+      {
+	int fw, fh;
 
+	GetWindowSizeHints (Tmp_win);
+	fw = Tmp_win->frame_width;
+	fh = Tmp_win->frame_height;
+	ConstrainSize (Tmp_win, &fw, &fh);
+	if ((fw != Tmp_win->frame_width) || (fh != Tmp_win->frame_height)) {
+	    SetupFrame (Tmp_win, Tmp_win->frame_x, Tmp_win->frame_y, fw, fh, -1, True);
+	}
+	break;
+      }
       default:
 	if (Event.xproperty.atom == _XA_WM_COLORMAP_WINDOWS) {
 	    FetchWmColormapWindows (Tmp_win);	/* frees old data */
@@ -991,7 +1135,7 @@ HandlePropertyNotify()
 
 
 
-RedoIcon()
+static void RedoIcon()
 {
     int x, y;
     Icon *icon;
@@ -1078,6 +1222,8 @@ RedoIconName()
 
     Tmp_win->icon->w_width = XTextWidth(Scr->IconFont.font,
 	Tmp_win->icon_name, strlen(Tmp_win->icon_name));
+    if (Tmp_win->icon->w_width > Scr->MaxIconTitleWidth)
+	Tmp_win->icon->w_width = Scr->MaxIconTitleWidth;
 
     Tmp_win->icon->w_width += 6;
     if (Tmp_win->icon->w_width < Tmp_win->icon->width)
@@ -1091,40 +1237,43 @@ RedoIconName()
 	Tmp_win->icon->x = 3;
     }
 
-    if (Tmp_win->icon->w_width == Tmp_win->icon->width)
-	x = 0;
-    else
-	x = (Tmp_win->icon->w_width - Tmp_win->icon->width)/2;
+    switch (Scr->IconJustification) {
+	case J_LEFT :
+	    x = 0;
+	    break;
+	case J_CENTER :
+	    x = (Tmp_win->icon->w_width - Tmp_win->icon->width) / 2;
+	    break;
+	case J_RIGHT :
+	    x = Tmp_win->icon->w_width - Tmp_win->icon->width;
+	    break;
+    }
 
-    y = 0;
-
-    Tmp_win->icon->w_height = Tmp_win->icon->height + Scr->IconFont.height + 4;
+    Tmp_win->icon->w_height = Tmp_win->icon->height + Scr->IconFont.height + 6;
     Tmp_win->icon->y = Tmp_win->icon->height + Scr->IconFont.height;
 
     XResizeWindow(dpy, Tmp_win->icon->w, Tmp_win->icon->w_width,
 	Tmp_win->icon->w_height);
     if (Tmp_win->icon->bm_w)
     {
-	XMoveWindow(dpy, Tmp_win->icon->bm_w, x, y);
+	XMoveWindow(dpy, Tmp_win->icon->bm_w, x, 0);
 	XMapWindow(dpy, Tmp_win->icon->bm_w);
-#ifdef XPM
-	if ((Tmp_win->icon->xpmicon != None) && Tmp_win->icon->xpmicon->mask) {
+	if ((Tmp_win->icon->image != None) && Tmp_win->icon->image->mask) {
 	    XRectangle rect;
 	    Pixmap     title;
 
-	    XShapeCombineMask(dpy, Tmp_win->icon->w, ShapeBounding, x, y,
-				Tmp_win->icon->xpmicon->mask, ShapeSet);
+	    XShapeCombineMask(dpy, Tmp_win->icon->w, ShapeBounding, x, 0,
+				Tmp_win->icon->image->mask, ShapeSet);
 	    rect.x = 0;
 	    rect.y = Tmp_win->icon->height;
 	    rect.width  = Tmp_win->icon->w_width;
-	    rect.height = Scr->IconFont.height + 4;
+	    rect.height = Scr->IconFont.height + 6;
 	    XShapeCombineRectangles (dpy,  Tmp_win->icon->w, ShapeBounding, 0,
 					0, &rect, 1, ShapeUnion, 0);
 
 	    XShapeCombineMask(dpy, Tmp_win->icon->bm_w, ShapeBounding, 0, 0,
-				Tmp_win->icon->xpmicon->mask, ShapeSet);
+				Tmp_win->icon->image->mask, ShapeSet);
 	}
-#endif
     }
     if (Tmp_win->isicon)
     {
@@ -1212,87 +1361,39 @@ HandleExpose()
     }
     else if (Tmp_win != NULL)
     {
+	if (Scr->use3Dborders && (Event.xany.window == Tmp_win->frame)) {
+	    PaintBorders (Tmp_win, ((Tmp_win == Scr->Focus) ? True : False));
+	    flush_expose (Event.xany.window);
+	    return;
+	}
+	else
 	if (Event.xany.window == Tmp_win->title_w)
 	{
-	    if (Scr->use3Dtitles)
-		if (Scr->SunkFocusWindowTitle && (Scr->Focus == Tmp_win) &&
-		    (Tmp_win->title_height != 0))
-		    Draw3DBorder (Tmp_win->title_w, Scr->TBInfo.titlex, 0,
-			Tmp_win->title_width  - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
-			Scr->TitleHeight, 2,
-			Tmp_win->title, on, True, False);
-		else
-		    Draw3DBorder (Tmp_win->title_w, Scr->TBInfo.titlex, 0,
-			Tmp_win->title_width  - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
-			Scr->TitleHeight, 2,
-			Tmp_win->title, off, True, False);
-
-	    FBF(Tmp_win->title.fore, Tmp_win->title.back,
-		Scr->TitleBarFont.font->fid);
-
-	    if (Scr->use3Dtitles) {
-		if (Scr->Monochrome != COLOR) {
-		    XDrawImageString (dpy, Tmp_win->title_w, Scr->NormalGC,
-			 Scr->TBInfo.titlex + 4, Scr->TitleBarFont.y + 2, 
-			 Tmp_win->name, strlen(Tmp_win->name));
-		}
-		else
-		    XDrawString (dpy, Tmp_win->title_w, Scr->NormalGC,
-			 Scr->TBInfo.titlex + 4, Scr->TitleBarFont.y + 2, 
-			 Tmp_win->name, strlen(Tmp_win->name));
-	    }
-	    else
-	        XDrawString (dpy, Tmp_win->title_w, Scr->NormalGC,
-			 Scr->TBInfo.titlex, Scr->TitleBarFont.y, 
-			 Tmp_win->name, strlen(Tmp_win->name));
-
+	    PaintTitle (Tmp_win);
 	    flush_expose (Event.xany.window);
+	    return;
 	}
 	else if (Tmp_win->icon && (Event.xany.window == Tmp_win->icon->w) &&
 		! Scr->NoIconTitlebar &&
 		! LookInList (Scr->NoIconTitle, Tmp_win->full_name, &Tmp_win->class))
 	{
-	    if (Scr->use3Diconmanagers) {
-		Draw3DBorder (Tmp_win->icon->w, 0, Tmp_win->icon->height,
-			Tmp_win->icon->w_width, Scr->IconFont.height + 6,
-			2, Tmp_win->icon->iconc, off, False, False);
-	    }
-	    FBF(Tmp_win->icon->iconc.fore, Tmp_win->icon->iconc.back,
-		Scr->IconFont.font->fid);
-
-	    XDrawString (dpy, Tmp_win->icon->w,
-		Scr->NormalGC,
-		Tmp_win->icon->x, Tmp_win->icon->y,
-		Tmp_win->icon_name, strlen(Tmp_win->icon_name));
+	    PaintIcon (Tmp_win);
 	    flush_expose (Event.xany.window);
 	    return;
 	} else if (Tmp_win->titlebuttons) {
 	    int i;
+	    TBWindow *tbw;
 	    Window w = Event.xany.window;
-	    register TBWindow *tbw;
 	    int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
 
 	    for (i = 0, tbw = Tmp_win->titlebuttons; i < nb; i++, tbw++) {
 		if (w == tbw->window) {
-		    register TitleButton *tb = tbw->info;
-
-		    if (tb->depth == Scr->d_depth) {
-			XCopyArea (dpy, tbw->bitmap, w, Scr->NormalGC,
-				tb->srcx, tb->srcy, tb->width, tb->height,
-				tb->dstx, tb->dsty);
-		    }
-		    else {
-			FB(Tmp_win->title.fore, Tmp_win->title.back);
-			XCopyPlane (dpy, tbw->bitmap, w, Scr->NormalGC,
-				tb->srcx, tb->srcy, tb->width, tb->height,
-				tb->dstx, tb->dsty, 1);
-		    }
-		    flush_expose (w);
-		    return;
-		}
-	    }
+		    PaintTitleButton (Tmp_win, tbw);
+		    flush_expose (tbw->window);
+                    return;
+                }
+            }
 	}
-
 	if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) {
 	    WMgrHandleExposeEvent (&Event);
 	    flush_expose (Event.xany.window);
@@ -1524,7 +1625,7 @@ HandleMapRequest()
 
     if (Tmp_win->iconmgr) return;
 
-    if (windowmask) XRaiseWindow (dpy, windowmask);
+    if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
 
     /* If it's not merely iconified, and we have hints, use them. */
     if (! Tmp_win->isicon)
@@ -1575,6 +1676,7 @@ HandleMapRequest()
       }
     }
     if (Tmp_win->mapped) WMapMapWindow (Tmp_win);
+    MaybeAnimate = True;
 }
 
 
@@ -1657,19 +1759,14 @@ HandleUnmapNotify()
 	    Tmp_win = NULL;
     }
 
+    if (Tmp_win == NULL || Event.xunmap.window == Tmp_win->frame ||
+	(Tmp_win->icon && Event.xunmap.window == Tmp_win->icon->w) ||
+	(!Tmp_win->mapped && !Tmp_win->isicon))
+	return;
+/*
     if (Tmp_win == NULL || (!Tmp_win->mapped && !Tmp_win->isicon))
 	return;
-
-#ifdef BUGGY_SUN_SERVER
-/*
-   Work around what seems a bug in the sun server.
-   the Sun server sends unwanted unmap notify and ctwm
-   thinks the clients has unmapped the window, but this
-   introduce a new bug
 */
-
-    if (Tmp_win->mapped == FALSE) return;
-#endif
     /*
      * The program may have unmapped the client window, from either
      * NormalState or IconicState.  Handle the transition to WithdrawnState.
@@ -1726,6 +1823,7 @@ HandleMotionNotify()
 	    &(Event.xmotion.x), &(Event.xmotion.y),
 	    &JunkMask);
 
+	if (captive) FixRootEvent (&Event);
 	/* Set WindowMoved appropriately so that f.deltastop will
 	   work with resize as well as move. */
 	if (abs (Event.xmotion.x - ResizeOrigX) >= Scr->MoveDelta
@@ -1873,10 +1971,7 @@ HandleButtonRelease()
 	    /* if we are not executing a defered command, then take down the
 	     * menu
 	     */
-	    if ((RootFunction == 0) && ActiveMenu)
-	    {
-		PopDownMenu();
-	    }
+	    if (/*(RootFunction == 0) &&*/ ActiveMenu) PopDownMenu();
 	}
 	else
 	    PopDownMenu();
@@ -1961,6 +2056,8 @@ HandleButtonPress()
     unsigned int modifier;
     Cursor cur;
     MenuRoot *mr;
+    FuncButton *tmp;
+    int func;
 
     /* pop down the menu, if any */
 
@@ -2033,13 +2130,16 @@ HandleButtonPress()
 
 	for (i = 0, tbw = Tmp_win->titlebuttons; i < nb; i++, tbw++) {
 	    if (Event.xany.window == tbw->window) {
-		if (tbw->info->func == F_MENU) {
-		    Context = C_TITLE;
-		    ButtonEvent = Event;
-		    ButtonWindow = Tmp_win;
-		    do_menu (tbw->info->menuroot, tbw->window);
-		} else {
-		    ExecuteFunction (tbw->info->func, tbw->info->action,
+		switch (tbw->info->func) {
+		    case F_MENU :
+			Context = C_TITLE;
+			ButtonEvent = Event;
+			ButtonWindow = Tmp_win;
+			do_menu (tbw->info->menuroot, tbw->window);
+			break;
+
+		    default :
+			ExecuteFunction (tbw->info->func, tbw->info->action,
 				     Event.xany.window, Tmp_win, &Event,
 				     C_TITLE, FALSE);
 		}
@@ -2066,8 +2166,8 @@ HandleButtonPress()
 		Event.xbutton.x, Event.xbutton.y, 
 		&JunkX, &JunkY, &JunkChild);
 
-	    Event.xbutton.x = JunkX;
-	    Event.xbutton.y = JunkY - Tmp_win->title_height;
+	    Event.xbutton.x = JunkX - Tmp_win->frame_bw3D;
+	    Event.xbutton.y = JunkY - Tmp_win->title_height - Tmp_win->frame_bw3D;
 	    Event.xany.window = Tmp_win->w;
 	    Context = C_WINDOW;
 	      }
@@ -2096,12 +2196,16 @@ HandleButtonPress()
 	     */
 	    if (Event.xbutton.subwindow == Tmp_win->w) {
 	      Event.xbutton.window = Tmp_win->w;
-              Event.xbutton.y -= Tmp_win->title_height;
+              Event.xbutton.x -= Tmp_win->frame_bw3D;
+              Event.xbutton.y -= (Tmp_win->title_height + Tmp_win->frame_bw3D);
 /*****
               Event.xbutton.x -= Tmp_win->frame_bw;
 *****/
 	      Context = C_WINDOW;
 	    }
+	    else
+	    if (Event.xbutton.subwindow && (Event.xbutton.subwindow == Tmp_win->title_w))
+		Context = C_TITLE;
             else Context = C_FRAME;
 	}
 	else if ((Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) ||
@@ -2182,20 +2286,28 @@ HandleButtonPress()
 	return;
 
     RootFunction = 0;
-  if (Scr->Mouse[Event.xbutton.button][Context][modifier]) {
-    if (Scr->Mouse[Event.xbutton.button][Context][modifier]->func == F_MENU)
-    {
-	do_menu (Scr->Mouse[Event.xbutton.button][Context][modifier]->menu,
-		 (Window) None);
+
+    /* see if there already is a key defined for this context */
+    for (tmp = Scr->FuncButtonRoot.next; tmp != NULL; tmp = tmp->next) {
+	if ((tmp->num  == Event.xbutton.button) &&
+	    (tmp->cont == Context) && (tmp->mods == modifier))
+	    break;
     }
-    else if (Scr->Mouse[Event.xbutton.button][Context][modifier]->func != 0)
-    {
-	Action = Scr->Mouse[Event.xbutton.button][Context][modifier]->item ?
-	    Scr->Mouse[Event.xbutton.button][Context][modifier]->item->action : NULL;
-	ExecuteFunction(Scr->Mouse[Event.xbutton.button][Context][modifier]->func,
-	    Action, Event.xany.window, Tmp_win, &Event, Context, FALSE);
+    if (tmp) {
+	func = tmp->func;
+	switch (func) {
+	    case F_MENU :
+		do_menu (tmp->menu, (Window) None);
+		break;
+
+	    default :
+		if (func != 0) {
+		    Action = tmp->item ? tmp->item->action : NULL;
+		    ExecuteFunction (func,
+			Action, Event.xany.window, Tmp_win, &Event, Context, FALSE);
+		}
+	}
     }
-  }
     else if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) /* Baaad */
     {
 	WMgrHandleButtonEvent (&Event);
@@ -2580,7 +2692,6 @@ HandleLeaveNotify()
     HLNScanArgs scanArgs;
     XEvent dummy;
 
-
     if (ActiveMenu && ActiveMenu->pinned && (Event.xcrossing.window == ActiveMenu->w)) {
 	PopDownMenu ();
     }
@@ -2765,16 +2876,18 @@ HandleConfigureRequest()
 
     if (cre->value_mask & CWX) {	/* override even if border change */
 	x = cre->x - bw;
+	x -= ((gravx < 0) ? 0 : Tmp_win->frame_bw3D);
     }
     if (cre->value_mask & CWY) {
 	y = cre->y - ((gravy < 0) ? 0 : Tmp_win->title_height) - bw;
+	y -= ((gravy < 0) ? 0 : Tmp_win->frame_bw3D);
     }
 
     if (cre->value_mask & CWWidth) {
-	width = cre->width;
+	width = cre->width + 2 * Tmp_win->frame_bw3D;
     }
     if (cre->value_mask & CWHeight) {
-	height = cre->height + Tmp_win->title_height;
+	height = cre->height + Tmp_win->title_height + 2 * Tmp_win->frame_bw3D;
     }
 
     if (width != Tmp_win->frame_width || height != Tmp_win->frame_height)
@@ -2942,11 +3055,11 @@ InstallWindowColormaps (type, tmp)
 	 * force loaded.
 	 */
 	if (Scr->cmapInfo.root_pushes)
-	    return;
+	    return (0);
 	/* Don't reload the currend window colormap list.
 	 */
 	if (Scr->cmapInfo.cmaps == &tmp->cmaps)
-	    return;
+	    return (0);
 	if (Scr->cmapInfo.cmaps)
 	    for (i = Scr->cmapInfo.cmaps->number_cwins,
 		 cwins = Scr->cmapInfo.cmaps->cwins; i-- > 0; cwins++)
@@ -2968,11 +3081,14 @@ InstallWindowColormaps (type, tmp)
 
     state = CM_INSTALLED;
 
+      for (i = n = 0; i < number_cwins; i++) {
+	cwins[i]->colormap->state &= ~CM_INSTALL;
+      }
       for (i = n = 0; i < number_cwins && n < Scr->cmapInfo.maxCmaps; i++) {
 	cwin = cwins[i];
 	cmap = cwin->colormap;
+	if (cmap->state & CM_INSTALL) continue;
 	cmap->state |= CM_INSTALLABLE;
-	cmap->state &= ~CM_INSTALL;
 	cmap->w = cwin->w;
 	if (cwin->visibility != VisibilityFullyObscured) {
 	    row = scoreboard + (i*(i-1)/2);
@@ -2988,7 +3104,7 @@ InstallWindowColormaps (type, tmp)
     }
     Scr->cmapInfo.first_req = NextRequest(dpy);
 
-    for ( ; n > 0; maxcwin--) {
+    for ( ; n > 0 && maxcwin >= &cwins[0]; maxcwin--) {
 	cmap = (*maxcwin)->colormap;
 	if (cmap->state & CM_INSTALL) {
 	    cmap->state &= ~CM_INSTALL;
@@ -3082,6 +3198,21 @@ UninstallRootColormap()
 	if (!args)
 	    InstallWindowColormaps(0, Scr->cmapInfo.pushed_window);
     }
+}
+
+ConfigureRootWindow (ev)
+XEvent *ev;
+{
+    Window root, child;
+    int    x, y;
+    unsigned int w, h, bw, d;
+
+    XGetGeometry (dpy, Scr->Root, &root, &x, &y, &w, &h, &bw, &d);
+    XTranslateCoordinates (dpy, Scr->Root, root, 0, 0, &Scr->MyDisplayX,
+				&Scr->MyDisplayY, &child);
+
+    Scr->MyDisplayWidth  = ev->xconfigure.width;
+    Scr->MyDisplayHeight = ev->xconfigure.height;
 }
 
 #ifdef TRACE

@@ -38,6 +38,7 @@ typedef struct IconRegion
     int			x, y, w, h;
     int			grav1, grav2;
     int			stepx, stepy;	/* allocation granularity */
+    name_list           *clientlist;
     struct IconEntry	*entries;
 } IconRegion;
 
@@ -48,5 +49,7 @@ typedef struct IconEntry
     TwmWindow		*twm_win;
     short 		used;
 }IconEntry;
+
+extern name_list **AddIconRegion();
 
 #endif /* ICONS_H */

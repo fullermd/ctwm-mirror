@@ -9,7 +9,7 @@ little variation of twm.
     It adds the  ability to use and manage up to  32 virtual screens.
 You swap from one to another by clicking on a button in a panel.
     You can  custom each  screens by  choosing  different colors  and
-bitmaps for the buttons and background root windows.
+pixmaps for the buttons and background root windows.
 
     The sources files  are just the twm ones plus two : workmgr.[ch].
 workmgr.[ch]  were built from scratch,  but the twm ones are slightly
@@ -22,7 +22,7 @@ tolerant.
 
     If you are happy with ctwm, or find bugs, send me a note to :
 
-            lecom@sic.epfl.ch
+            Claude.Lecommandeur@epfl.ch
 
 
     Installation :
@@ -30,10 +30,13 @@ tolerant.
 funny prompt> xmkmf
 funny prompt> make
 
-   If you don't have xpm, fetch it from export.lcs.mit.edu or comment
-out the #define XPM in Imakefile. Also, if you don't have/want to use
-the IMCONV package  (from the San Diego Supercomputer Center) comment
-out the #define IMCONV line in Imakefile.
+   If you don't have xpm, fetch it from ftp.x.org or comment out the
+#define XPM  in Imakefile.  Also, if you don't have/want  to use the
+IMCONV package (from the San Diego Supercomputer Center) comment out
+the  #define IMCONV  line in  Imakefile.  If you  don't have the  m4
+preprocessor (or don't want to use it) comment out #define USEM4, if
+you have  the rplay package  replace  #undef USE_SOUND,  by  #define
+USE_SOUND.
 
     There is a man,  but not quite complete  (any volunteer ?).  Many
 useful informations are only in the CHANGES file, so, read it.

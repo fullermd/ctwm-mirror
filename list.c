@@ -90,7 +90,7 @@ char *ptr;
     }
 
     nptr->next = *list_head;
-    nptr->name = name;
+    nptr->name = (char*) strdup (name);
     nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
     *list_head = nptr;
 }    

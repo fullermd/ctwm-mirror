@@ -176,7 +176,7 @@ Bool fromtitlebar;
         MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
 		 dragy - tmp_win->frame_bw, dragWidth + 2 * tmp_win->frame_bw,
 		 dragHeight + 2 * tmp_win->frame_bw,
-		 tmp_win->frame_bw, tmp_win->title_height);
+		 tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 }
 
 
@@ -214,7 +214,7 @@ int x, y, w, h;
 		 dragy - tmp_win->frame_bw, 
 		 dragWidth + 2 * tmp_win->frame_bw,
 		 dragHeight + 2 * tmp_win->frame_bw,
-		 tmp_win->frame_bw, tmp_win->title_height);
+		 tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 }
 
 /***********************************************************************
@@ -361,7 +361,7 @@ TwmWindow *tmp_win;
             dragy - tmp_win->frame_bw,
             dragWidth + 2 * tmp_win->frame_bw,
             dragHeight + 2 * tmp_win->frame_bw,
-	    tmp_win->frame_bw, tmp_win->title_height);
+	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -488,7 +488,7 @@ TwmWindow *tmp_win;
             dragy - tmp_win->frame_bw,
             dragWidth + 2 * tmp_win->frame_bw,
             dragHeight + 2 * tmp_win->frame_bw,
-	    tmp_win->frame_bw, tmp_win->title_height);
+	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -523,8 +523,8 @@ int height;
     last_width = width;
     last_height = height;
 
-    dheight = height - tmp_win->title_height;
-    dwidth = width;
+    dheight = height - tmp_win->title_height - 2 * tmp_win->frame_bw3D;
+    dwidth = width - 2 * tmp_win->frame_bw3D;
 
     /*
      * ICCCM says that PMinSize is the default is no PBaseSize is given,
@@ -592,8 +592,8 @@ EndResize()
 	int ncols = tmp_win->iconmgrp->cur_columns;
 	if (ncols == 0) ncols = 1;
 
-	tmp_win->iconmgrp->width = (int) ((dragWidth *
-					   (long) tmp_win->iconmgrp->columns)
+	tmp_win->iconmgrp->width = (int) (((dragWidth - 2 * tmp_win->frame_bw3D) *
+			(long) tmp_win->iconmgrp->columns)
 					  / ncols);
         PackIconManager(tmp_win->iconmgrp);
     }
@@ -669,7 +669,8 @@ ConstrainSize (tmp_win, widthp, heightp)
     int dwidth = *widthp, dheight = *heightp;
 
 
-    dheight -= tmp_win->title_height;
+    dwidth  -= 2 * tmp_win->frame_bw3D;
+    dheight -= (tmp_win->title_height + 2 * tmp_win->frame_bw3D);
 
     if (tmp_win->hints.flags & PMinSize) {
         minWidth = tmp_win->hints.min_width;
@@ -776,8 +777,8 @@ ConstrainSize (tmp_win, widthp, heightp)
     /*
      * Fourth, account for border width and title height
      */
-    *widthp = dwidth;
-    *heightp = dheight + tmp_win->title_height;
+    *widthp = dwidth + 2 * tmp_win->frame_bw3D;
+    *heightp = dheight + tmp_win->title_height + 2 * tmp_win->frame_bw3D;
 }
 
 
@@ -839,8 +840,8 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
       bw = tmp_win->frame_bw;		/* -1 means current frame width */
 
     if (tmp_win->iconmgr) {
-	tmp_win->iconmgrp->width = w;
-        h = tmp_win->iconmgrp->height + tmp_win->title_height;
+	tmp_win->iconmgrp->width = w - (2 * tmp_win->frame_bw3D);
+        h = tmp_win->iconmgrp->height + tmp_win->title_height + (2 * tmp_win->frame_bw3D);
     }
 
     /*
@@ -854,9 +855,8 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
       sendEvent = TRUE;
 
     xwcm = CWWidth;
-    title_width = xwc.width = w;
+    title_width  = xwc.width = w - (2 * tmp_win->frame_bw3D);
     title_height = Scr->TitleHeight + bw;
-
     ComputeWindowTitleOffsets (tmp_win, xwc.width, True);
 
     reShape = (tmp_win->wShaped ? TRUE : FALSE);
@@ -885,19 +885,16 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (tmp_win->title_w) {
 	if (bw != tmp_win->frame_bw) {
 	    xwc.border_width = bw;
-	    tmp_win->title_x = xwc.x = -bw;
-	    tmp_win->title_y = xwc.y = -bw;
+	    tmp_win->title_x = xwc.x = tmp_win->frame_bw3D - bw;
+	    tmp_win->title_y = xwc.y = tmp_win->frame_bw3D - bw;
 	    xwcm |= (CWX | CWY | CWBorderWidth);
 	}
 	
 	XConfigureWindow(dpy, tmp_win->title_w, xwcm, &xwc);
     }
 
-    tmp_win->attr.width = w;
-    tmp_win->attr.height = h - tmp_win->title_height;
-
-    XMoveResizeWindow (dpy, tmp_win->w, 0, tmp_win->title_height,
-		       w, h - tmp_win->title_height);
+    tmp_win->attr.width  = w - (2 * tmp_win->frame_bw3D);
+    tmp_win->attr.height = h - tmp_win->title_height - (2 * tmp_win->frame_bw3D);
 
     /* 
      * fix up frame and assign size/location values in tmp_win
@@ -913,6 +910,10 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     frame_wc.height = tmp_win->frame_height = h;
     frame_mask |= (CWX | CWY | CWWidth | CWHeight);
     XConfigureWindow (dpy, tmp_win->frame, frame_mask, &frame_wc);
+
+    XMoveResizeWindow (dpy, tmp_win->w, tmp_win->frame_bw3D,
+			tmp_win->title_height + tmp_win->frame_bw3D,
+			tmp_win->attr.width, tmp_win->attr.height);
 
     /*
      * fix up highlight window
@@ -936,7 +937,9 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (HasShape && reShape) {
 	SetFrameShape (tmp_win);
     }
-    WMapSetupWindow (tmp_win, x, y + tmp_win->title_height, w, h - tmp_win->title_height);
+    WMapSetupWindow (tmp_win, x + tmp_win->frame_bw3D,
+		y + tmp_win->title_height + tmp_win->frame_bw3D,
+		tmp_win->attr.width, tmp_win->attr.height);
 
     if (sendEvent)
     {
@@ -944,12 +947,13 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
         client_event.xconfigure.display = dpy;
         client_event.xconfigure.event = tmp_win->w;
         client_event.xconfigure.window = tmp_win->w;
-        client_event.xconfigure.x = (x + tmp_win->frame_bw - tmp_win->old_bw);
+        client_event.xconfigure.x = (x + tmp_win->frame_bw - tmp_win->old_bw
+					+ tmp_win->frame_bw3D);
         client_event.xconfigure.y = (y + tmp_win->frame_bw +
-				     tmp_win->title_height - tmp_win->old_bw);
-        client_event.xconfigure.width = tmp_win->frame_width;
-        client_event.xconfigure.height = tmp_win->frame_height -
-                tmp_win->title_height;
+				     tmp_win->title_height - tmp_win->old_bw
+					+ tmp_win->frame_bw3D);
+        client_event.xconfigure.width = tmp_win->attr.width;
+        client_event.xconfigure.height = tmp_win->attr.height;
         client_event.xconfigure.border_width = tmp_win->old_bw;
         /* Real ConfigureNotify events say we're above title window, so ... */
 	/* what if we don't have a title ????? */
@@ -1067,7 +1071,9 @@ int flag;
     ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 
     SetupWindow (tmp_win, dragx , dragy , dragWidth, dragHeight, -1);
+/* I don't understand the reason of this. Claude.
     XUngrabPointer (dpy, CurrentTime);
+*/
     XUngrabServer (dpy);
 }
 
@@ -1094,7 +1100,7 @@ SetFrameShape (tmp)
 	 * need to do general case
 	 */
 	XShapeCombineShape (dpy, tmp->frame, ShapeBounding,
-			    0, tmp->title_height, tmp->w,
+			    tmp->frame_bw3D, tmp->title_height + tmp->frame_bw3D, tmp->w,
 			    ShapeBounding, ShapeSet);
 	if (tmp->title_w) {
 	    XShapeCombineShape (dpy, tmp->frame, ShapeBounding,
@@ -1120,25 +1126,25 @@ SetFrameShape (tmp)
 	     * The frame_width and frame_height do *not* include borders.
 	     */
 	    /* border */
-	    newBounding[0].x = tmp->title_x;
-	    newBounding[0].y = tmp->title_y;
-	    newBounding[0].width = tmp->title_width + fbw2;
-	    newBounding[0].height = tmp->title_height;
+	    newBounding[0].x = tmp->title_x - tmp->frame_bw3D;
+	    newBounding[0].y = tmp->title_y - tmp->frame_bw3D;
+	    newBounding[0].width = tmp->title_width + fbw2 + 2 * tmp->frame_bw3D;
+	    newBounding[0].height = tmp->title_height + tmp->frame_bw3D;
 	    newBounding[1].x = -tmp->frame_bw;
-	    newBounding[1].y = Scr->TitleHeight;
-	    newBounding[1].width = tmp->attr.width + fbw2;
-	    newBounding[1].height = tmp->attr.height + fbw2;
+	    newBounding[1].y = Scr->TitleHeight + tmp->frame_bw3D;
+	    newBounding[1].width = tmp->attr.width + fbw2 + 2 * tmp->frame_bw3D;
+	    newBounding[1].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
 	    XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
 				     newBounding, 2, ShapeSet, YXBanded);
 	    /* insides */
-	    newClip[0].x = tmp->title_x + tmp->frame_bw;
+	    newClip[0].x = tmp->title_x + tmp->frame_bw - tmp->frame_bw3D;
 	    newClip[0].y = 0;
-	    newClip[0].width = tmp->title_width;
-	    newClip[0].height = Scr->TitleHeight;
+	    newClip[0].width = tmp->title_width + 2 * tmp->frame_bw3D;
+	    newClip[0].height = Scr->TitleHeight + tmp->frame_bw3D;
 	    newClip[1].x = 0;
-	    newClip[1].y = tmp->title_height;
-	    newClip[1].width = tmp->attr.width;
-	    newClip[1].height = tmp->attr.height;
+	    newClip[1].y = tmp->title_height + tmp->frame_bw3D;
+	    newClip[1].width = tmp->attr.width + 2 * tmp->frame_bw3D;
+	    newClip[1].height = tmp->attr.height + tmp->frame_bw3D;
 	    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
 				     newClip, 2, ShapeSet, YXBanded);
 	} else {

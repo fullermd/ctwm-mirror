@@ -98,6 +98,17 @@ typedef struct MouseButton
     MenuItem *item;		/* action to perform if func != F_MENU */
 } MouseButton;
 
+typedef struct FuncButton
+{
+    struct FuncButton *next;	/* next in the list of function buttons */
+    int num;			/* button number */
+    int cont;			/* context */
+    int mods;			/* modifiers */
+    int func;			/* the function number */
+    MenuRoot *menu;		/* menu if func is F_MENU */
+    MenuItem *item;		/* action to perform if func != F_MENU */
+} FuncButton;
+
 typedef struct FuncKey
 {
     struct FuncKey *next;	/* next in the list of function keys */

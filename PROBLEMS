@@ -33,12 +33,11 @@ Why : This server is buggy.
 What to do : define BUGGY_HP700_SERVER in your Imakefile.
 
 
-    4 - The workspace manager is not redrawn when it is uncovered by a save-under
-	window. You probably have the mit X11R5 server.
+    4 - On SGI boxes, many GL applications don't behave very well with ctwm.
+	If an Xpert having a SGI Xserver can have a look at this, I will be
+	very pleased.
 
-Why : Don't know, i think it is a bug in this server. It doesn't redraw the
-      workspace manager window, nor send Expose events.
+What to do : Avoid carefully GL tools.
 
-What to do : Don't look too often at the workspace manager window.
 
 

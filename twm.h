@@ -41,18 +41,14 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Intrinsic.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
 #ifndef X11R4
 #    include <X11/Xfuncs.h>
 #endif
 #include "list.h"
-
-#include <X11/Intrinsic.h>
-
-#if defined(XPM)
-#   include "util.h"
-#endif
+#include "util.h"
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
@@ -151,8 +147,7 @@ typedef enum {on, off} ButtonState;
 typedef struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
-    Pixmap bitmap;			/* image to display in button */
-    int depth;				/* depth of the image to display in button */
+    Image *image;			/* image to display in button */
     int srcx, srcy;			/* from where to start copying */
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
@@ -164,7 +159,7 @@ typedef struct _TitleButton {
 
 typedef struct _TBWindow {
     Window window;			/* which window in this frame */
-    Pixmap bitmap;			/* image to display in button */
+    Image *image;			/* image to display in button */
     TitleButton *info;			/* description of this window */
 } TBWindow;
 
@@ -219,18 +214,17 @@ typedef struct Icon
     Matchtype	match;
     Window	w;		/* the icon window */
     Window	bm_w;		/* the icon bitmap window */
-#if defined (XPM)
-    XpmIcon	*xpmicon;	/* xpm icon structure */
-#endif
+    Image	*image;		/* image icon structure */
     int		x;		/* icon text x coordinate */
     int		y;		/* icon text y coordiante */
     int		w_width;	/* width of the icon window */
     int		w_height;	/* height of the icon window */
-    int		width;		/* width of the icon bitmap */
-    int		height;		/* height of the icon bitmap */
+    int		width;          /* width of the icon bitmap */
+    int		height;         /* height of the icon bitmap */
     char	*pattern;	/* Why this icon was choosed */
     Pixel	border;		/* border color */
     ColorPair	iconc;
+    Bool	has_title;
 } Icon;
 
 /* for each window that is on the display, one of these structures
@@ -253,6 +247,7 @@ typedef struct TwmWindow
     int frame_width;		/* width of frame */
     int frame_height;		/* height of frame */
     int frame_bw;		/* borderwidth of frame */
+    int frame_bw3D;		/* 3D borderwidth of frame */
     int title_x;
     int title_y;
     int title_height;		/* height of the title bar */
@@ -272,7 +267,7 @@ typedef struct TwmWindow
     /***********************************************************************
      * color definitions per window
      **********************************************************************/
-    Pixel border;		/* border color */
+    ColorPair borderC;		/* border color */
     ColorPair border_tile;
     ColorPair title;
     short iconified;		/* has the window ever been iconified? */
@@ -310,7 +305,7 @@ typedef struct TwmWindow
     short OpaqueMove;
     short OpaqueResize;
     int  occupation;
-
+    Image *HiliteImage;                /* focus highlight window background */
 } TwmWindow;
 
 #define DoesWmTakeFocus		(1L << 0)

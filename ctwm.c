@@ -42,6 +42,10 @@
  *
  ***********************************************************************/
 
+#ifdef __sgi
+#  define _BSD_SIGNALS
+#endif
+
 #include <stdio.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -71,6 +75,8 @@ int GoThroughM4 = True;
 #endif
 Window ResizeWindow;		/* the window we are resizing */
 
+int    captive     = FALSE;
+
 int MultiScreen = TRUE;		/* try for more than one screen? */
 int NumScreens;			/* number of screens in ScreenList */
 int HasShape;			/* server supports shape extension? */
@@ -79,7 +85,6 @@ ScreenInfo **ScreenList;	/* structures for each screen */
 ScreenInfo *Scr = NULL;		/* the cur and prev screens */
 int PreviousScreen;		/* last screen that we were on */
 int FirstScreen;		/* TRUE ==> first screen of display */
-Window windowmask = (Window) 0;		/* window to mask the screen at startup */
 Bool PrintErrorMessages = False;	/* controls error messages */
 static int RedirectError;	/* TRUE ==> another window manager running */
 static int CatchRedirectError();	/* for settting RedirectError */
@@ -87,6 +92,7 @@ static int TwmErrorHandler();	/* for everything else */
 char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
 int InfoLines;
 char *InitFile = NULL;
+static Window CreateRootWindow ();
 
 Cursor UpperLeftCursor;		/* upper Left corner cursor */
 Cursor RightButt;
@@ -126,6 +132,7 @@ unsigned long black, white;
 
 extern void assign_var_savecolor();
 SIGNAL_T Restart();
+SIGNAL_T Crash();
 
 extern Atom _XA_WM_WORKSPACESLIST;
 
@@ -153,6 +160,11 @@ main(argc, argv, environ)
     char geom [256];
     char *welcomefile;
     int  screenmasked;
+    static int rootx = 100;
+    static int rooty = 100;
+    static unsigned int rootw = 800;
+    static unsigned int rooth = 500;
+    Window capwin = (Window) 0;
 
     ProgramName = argv[0];
     Argc = argc;
@@ -179,6 +191,14 @@ main(argc, argv, environ)
 	      case 'q':				/* -quiet */
 		PrintErrorMessages = False;
 		continue;
+	      case 'w':				/* -quiet */
+		captive     = True;
+		MultiScreen = False;
+		if ((i + 1) >= argc) continue;
+		if (*(argv [i + 1]) == '-') continue;
+		if (sscanf (argv [i + 1], "%x", &capwin) != 1) continue;
+		i++;
+		continue;
 #ifdef USEM4
 	      case 'k':				/* -keep m4 tmp file */
 		KeepTmpFile = True;
@@ -203,6 +223,11 @@ main(argc, argv, environ)
     newhandler (SIGHUP, Restart);
     newhandler (SIGQUIT, Done);
     newhandler (SIGTERM, Done);
+    signal (SIGALRM, SIG_IGN);
+#ifndef GIVECORE
+    signal (SIGSEGV, Crash);
+    signal (SIGBUS,  Crash);
+#endif
 
 #undef newhandler
 
@@ -267,15 +292,39 @@ main(argc, argv, environ)
     FirstScreen = TRUE;
     for (scrnum = firstscrn ; scrnum <= lastscrn; scrnum++)
     {
+	Window root;
+
+	if (captive) {
+	    XWindowAttributes wa;
+	    if (capwin && XGetWindowAttributes (dpy, capwin, &wa)) {
+		Window junk;
+
+		root  = capwin;
+		rootw = wa.width;
+		rooth = wa.height;
+		XTranslateCoordinates (dpy, capwin, wa.root, 0, 0, &rootx, &rooty, &junk);
+	    }
+	    else
+		root = CreateRootWindow (rootx, rooty, rootw, rooth);
+	}
+	else {
+	    root = RootWindow (dpy, scrnum);
+	}
         /* Make sure property priority colors is empty */
-        XChangeProperty (dpy, RootWindow(dpy, scrnum), _XA_MIT_PRIORITY_COLORS,
+        XChangeProperty (dpy, root, _XA_MIT_PRIORITY_COLORS,
 			 XA_CARDINAL, 32, PropModeReplace, NULL, 0);
 	RedirectError = FALSE;
 	XSetErrorHandler(CatchRedirectError);
-	XSelectInput(dpy, RootWindow (dpy, scrnum),
-	    ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
-	    SubstructureRedirectMask | KeyPressMask |
-	    ButtonPressMask | ButtonReleaseMask);
+	if (captive) 
+	    XSelectInput(dpy, root,
+		ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
+		SubstructureRedirectMask | KeyPressMask |
+		ButtonPressMask | ButtonReleaseMask | StructureNotifyMask);
+	else
+	    XSelectInput(dpy, root,
+		ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
+		SubstructureRedirectMask | KeyPressMask |
+		ButtonPressMask | ButtonReleaseMask);
 	XSync(dpy, 0);
 	XSetErrorHandler(TwmErrorHandler);
 
@@ -313,6 +362,7 @@ main(argc, argv, environ)
 	Scr->TitleBackgroundL = NULL;
 	Scr->IconForegroundL = NULL;
 	Scr->IconBackgroundL = NULL;
+	Scr->NoBorder = NULL;
 	Scr->NoIconTitle = NULL;
 	Scr->NoTitle = NULL;
 	Scr->OccupyAll = NULL;
@@ -338,6 +388,9 @@ main(argc, argv, environ)
 	Scr->NoOpaqueMoveList = NULL;
 	Scr->OpaqueResizeList = NULL;
 	Scr->NoOpaqueResizeList = NULL;
+	Scr->ImageCache = NULL;
+	Scr->HighlightPixmapName = NULL;
+
 
 	/* remember to put an initialization in InitVariables also
 	 */
@@ -345,7 +398,7 @@ main(argc, argv, environ)
 	Scr->screen = scrnum;
 	Scr->d_depth = DefaultDepth(dpy, scrnum);
 	Scr->d_visual = DefaultVisual(dpy, scrnum);
-	Scr->Root = RootWindow(dpy, scrnum);
+	Scr->Root = root;
 	XSaveContext (dpy, Scr->Root, ScreenContext, (caddr_t) Scr);
 
 	Scr->TwmRoot.cmaps.number_cwins = 1;
@@ -374,8 +427,19 @@ main(argc, argv, environ)
 	Scr->TBInfo.leftx = 0;
 	Scr->TBInfo.titlex = 0;
 
-	Scr->MyDisplayWidth = DisplayWidth(dpy, scrnum);
-	Scr->MyDisplayHeight = DisplayHeight(dpy, scrnum);
+	if (captive) {
+	    Scr->MyDisplayX      = rootx;
+	    Scr->MyDisplayY      = rooty;
+	    Scr->MyDisplayWidth  = rootw;
+	    Scr->MyDisplayHeight = rooth;
+	}
+	else {
+	    Scr->MyDisplayX      = 0;
+	    Scr->MyDisplayY      = 0;
+	    Scr->MyDisplayWidth  = DisplayWidth(dpy, scrnum);
+	    Scr->MyDisplayHeight = DisplayHeight(dpy, scrnum);
+	}
+
 	Scr->MaxWindowWidth = 32767 - Scr->MyDisplayWidth;
 	Scr->MaxWindowHeight = 32767 - Scr->MyDisplayHeight;
 
@@ -412,13 +476,13 @@ main(argc, argv, environ)
 	Scr->PixmapDirectory = PIXMAP_DIRECTORY;
 	Scr->siconifyPm = None;
 	Scr->pullPm = None;
-	Scr->hilitePm = None;
 	Scr->tbpm.xlogo = None;
 	Scr->tbpm.resize = None;
 	Scr->tbpm.question = None;
 	Scr->tbpm.menu = None;
 	Scr->tbpm.delete = None;
 
+	Scr->WindowMask = (Window) 0;
 	screenmasked = 0;
 	if ((welcomefile = getenv ("CTWM_WELCOME_FILE")) != NULL) {
 	    screenmasked = 1;
@@ -445,14 +509,12 @@ main(argc, argv, environ)
 	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
 	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
 	}
-/*
-	sprintf (geom, "%dx%d+0+0", Scr->MyDisplayWidth, Scr->MyDisplayHeight);
-	AddIconRegion (geom, D_NORTH, D_WEST, 80, 70);
-*/
 
-	if (Scr->use3Dtitles && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
-	if (Scr->use3Dmenus  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
-	if (Scr->use3Dmenus  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
+	if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
+	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
+	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
+	if (Scr->use3Dborders && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
+	if (! Scr->use3Dborders) Scr->ThreeDBorderWidth = 0;
 
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
 	if (Scr->SqueezeTitle == -1) Scr->SqueezeTitle = FALSE;
@@ -519,6 +581,7 @@ main(argc, argv, environ)
 	    Scr->iconmgr->twm_win->isicon = FALSE;
 	    if (Scr->iconmgr->count)
 	    {
+		if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
 		SetMapStateProp (Scr->iconmgr->twm_win, NormalState);
 		XMapWindow(dpy, Scr->iconmgr->w);
 		XMapWindow(dpy, Scr->iconmgr->twm_win->frame);
@@ -526,6 +589,7 @@ main(argc, argv, environ)
 	}
 	if (Scr->ShowWorkspaceManager && Scr->workSpaceManagerActive)
 	{
+	    if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
 	    SetMapStateProp (Scr->workSpaceMgr.workspaceWindow.twm_win, NormalState);
 	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w);
 	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.twm_win->frame);
@@ -560,8 +624,11 @@ main(argc, argv, environ)
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 
-	UnmaskScreen ();
+	Scr->ShapeWindow = XCreateSimpleWindow (dpy, Scr->Root, 0, 0, Scr->MyDisplayWidth,
+				Scr->MyDisplayHeight, 0, 0, 0);
+
 	XUngrabServer(dpy);
+	UnmaskScreen ();
 
 	FirstScreen = FALSE;
     	Scr->FirstTime = FALSE;
@@ -574,9 +641,14 @@ main(argc, argv, environ)
 	exit (1);
     }
 
+#ifdef SOUNDS
+    play_startup_sound();
+#endif
+
     RestartPreviousState = True;
     HandlingEvents = TRUE;
     InitEvents();
+    StartAnimation ();
     HandleEvents();
 }
 
@@ -601,6 +673,7 @@ InitVariables()
     FreeList(&Scr->IconManagerFL);
     FreeList(&Scr->IconManagerBL);
     FreeList(&Scr->IconMgrs);
+    FreeList(&Scr->NoBorder);
     FreeList(&Scr->NoIconTitle);
     FreeList(&Scr->NoTitle);
     FreeList(&Scr->OccupyAll);
@@ -639,7 +712,8 @@ InitVariables()
 
     Scr->DefaultC.fore = black;
     Scr->DefaultC.back = white;
-    Scr->BorderColor = black;
+    Scr->BorderColorC.fore = black;
+    Scr->BorderColorC.back = white;
     Scr->BorderTileC.fore = black;
     Scr->BorderTileC.back = white;
     Scr->TitleC.fore = black;
@@ -661,10 +735,9 @@ InitVariables()
     Scr->TitlePadding = -100;
     Scr->ButtonIndent = -100;
     Scr->SizeStringOffset = 0;
+    Scr->ThreeDBorderWidth = 6;
     Scr->BorderWidth = BW;
     Scr->IconBorderWidth = BW;
-    Scr->UnknownWidth = 0;
-    Scr->UnknownHeight = 0;
     Scr->NumAutoRaises = 0;
     Scr->TransientOnTop = 30;
     Scr->NoDefaults = FALSE;
@@ -687,6 +760,7 @@ InitVariables()
     Scr->IconifyByUnmapping = FALSE;
     Scr->ShowIconManager = FALSE;
     Scr->ShowWorkspaceManager = FALSE;
+    Scr->WMgrButtonShadowDepth = 2;
     Scr->WMgrVertButtonIndent  = 5;
     Scr->WMgrHorizButtonIndent = 5;
     Scr->AutoOccupy = FALSE;
@@ -695,7 +769,7 @@ InitVariables()
     Scr->IconManagerDontShow =FALSE;
     Scr->BackingStore = TRUE;
     Scr->SaveUnder = TRUE;
-    Scr->RandomPlacement = FALSE;
+    Scr->RandomPlacement = RP_OFF;
     Scr->DoOpaqueMove = FALSE;
     Scr->OpaqueMove = FALSE;
     Scr->OpaqueMoveThreshold = 1000;
@@ -719,13 +793,19 @@ InitVariables()
     Scr->HaveFonts = FALSE;		/* i.e. not loaded yet */
     Scr->CaseSensitive = TRUE;
     Scr->WarpUnmapped = FALSE;
+    Scr->WindowRingAll = FALSE;
+    Scr->WarpRingAnyWhere = TRUE;
     Scr->use3Diconmanagers = FALSE;
     Scr->use3Dmenus = FALSE;
     Scr->use3Dtitles = FALSE;
+    Scr->use3Dborders = FALSE;
     Scr->SunkFocusWindowTitle = FALSE;
     Scr->ClearShadowContrast = 50;
     Scr->DarkShadowContrast  = 40;
     Scr->BeNiceToColormap = FALSE;
+    Scr->IconJustification = J_CENTER;
+    Scr->SmartIconify = FALSE;
+    Scr->MaxIconTitleWidth = Scr->MyDisplayWidth;
 
     /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"
@@ -772,6 +852,8 @@ RestoreWithdrawnLocation (tmp)
 
 	GetGravityOffsets (tmp, &gravx, &gravy);
 	if (gravy < 0) xwc.y -= tmp->title_height;
+	xwc.x += gravx * tmp->frame_bw3D;
+	xwc.y += gravy * tmp->frame_bw3D;
 
 	if (bw != tmp->old_bw) {
 	    int xoff, yoff;
@@ -856,15 +938,35 @@ Time time;
 
 SIGNAL_T Done()
 {
+#ifdef SOUNDS
+    play_exit_sound();
+#endif
     Reborder (CurrentTime);
     XDeleteProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
     XCloseDisplay(dpy);
     exit(0);
 }
 
+SIGNAL_T Crash ()
+{
+    Reborder (CurrentTime);
+    XDeleteProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
+    XCloseDisplay(dpy);
+
+    fprintf (stderr, "\nCongratulations, you have found a bug in ctwm\n");
+    fprintf (stderr, "If a core file was generated in your directory,\n");
+    fprintf (stderr, "can you please try extract the stack trace,\n");
+    fprintf (stderr, "and mail the results, and a description of what you were doing,\n");
+    fprintf (stderr, "to Claude.Lecommandeur@epfl.ch.  Thank you for your support.\n");
+    fprintf (stderr, "...exiting ctwm now.\n\n");
+
+    abort ();
+}
+
 
 SIGNAL_T Restart()
 {
+    StopAnimation ();
     XSync (dpy, 0);
     Reborder (CurrentTime);
     XSync (dpy, 0);
@@ -932,4 +1034,21 @@ InternUsefulAtoms ()
     _XA_WM_TAKE_FOCUS = XInternAtom (dpy, "WM_TAKE_FOCUS", False);
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
+}
+
+static Window CreateRootWindow (x, y, width, height)
+int		x, y;
+unsigned int	width, height;
+{
+    int		scrnum;
+    Window	ret;
+    XWMHints	wmhints;
+
+    scrnum = DefaultScreen (dpy);
+    ret = XCreateSimpleWindow (dpy, RootWindow (dpy, scrnum),
+			x, y, width, height, 2, WhitePixel (dpy, scrnum),
+			BlackPixel (dpy, scrnum));
+    XMapWindow (dpy, ret);
+    XStoreName (dpy, ret, "Captive ctwm");
+    return (ret);
 }

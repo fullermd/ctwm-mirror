@@ -64,6 +64,8 @@ typedef struct ScreenInfo
     int d_depth;		/* copy of DefaultDepth(dpy, screen) */
     Visual *d_visual;		/* copy of DefaultVisual(dpy, screen) */
     int Monochrome;		/* is the display monochrome ? */
+    int MyDisplayX;		/* The x coordinate of the root window if captive */
+    int MyDisplayY;		/* The y coordinate of the root window if captive */
     int MyDisplayWidth;		/* my copy of DisplayWidth(dpy, screen) */
     int MyDisplayHeight;	/* my copy of DisplayHeight(dpy, screen) */
     int MaxWindowWidth;		/* largest window to allow */
@@ -74,30 +76,33 @@ typedef struct ScreenInfo
     Window Root;		/* the root window */
     Window SizeWindow;		/* the resize dimensions window */
     Window InfoWindow;		/* the information window */
+    Window WindowMask;		/* the window masking the screen at startup */
+    Window ShapeWindow;		/* an utilitary window for animated icons */
 
-    name_list *Icons;		/* list of icon pixmaps */
+    Image   *WelcomeImage;
+    GC       WelcomeGC;
+    Colormap WelcomeCmap;
+
+    name_list *ImageCache;	/* list of pixmaps */
     TitlebarPixmaps tbpm;	/* titlebar pixmaps */
-    Pixmap UnknownPm;		/* the unknown icon pixmap */
-#ifdef XPM
-    XpmIcon *UnknownXpmIcon;
-#endif
+    Image *UnknownImage;	/* the unknown icon pixmap */
     Pixmap siconifyPm;		/* the icon manager iconify pixmap */
     Pixmap pullPm;		/* pull right menu icon */
     int	pullW, pullH;		/* size of pull right menu icon */
-    Pixmap hilitePm;		/* focus highlight window background */
-    int hilite_pm_depth;
-    int hilite_pm_width, hilite_pm_height;  /* cache the size */
+    char *HighlightPixmapName;	/* name of the hilite image if any */
 
     MenuRoot *MenuList;		/* head of the menu list */
     MenuRoot *LastMenu;		/* the last menu (mostly unused?) */
     MenuRoot *Windows;		/* the TwmWindows menu */
 
     TwmWindow *Ring;		/* one of the windows in window ring */
-    TwmWindow *RingLeader;	/* current winodw in ring */
+    TwmWindow *RingLeader;	/* current window in ring */
 
-    MouseButton *Mouse[MAX_BUTTONS+1][NUM_CONTEXTS][MOD_SIZE];
     MouseButton DefaultFunction;
     MouseButton WindowFunction;
+    MouseButton ChangeWorkspaceFunction;
+    MouseButton DeIconifyFunction;
+    MouseButton IconifyFunction;
 
     struct {
       Colormaps *cmaps; 	/* current list of colormap windows */
@@ -134,12 +139,15 @@ typedef struct ScreenInfo
     ColorPair IconC;		/* icon colors */
     ColorPair IconManagerC;	/* icon manager colors */
     ColorPair DefaultC;		/* default colors */
-    Pixel BorderColor;		/* color of window borders */
+    ColorPair BorderColorC;	/* color of window borders */
     Pixel MenuShadowColor;	/* menu shadow color */
     Pixel IconBorderColor;	/* icon border color */
     Pixel IconManagerHighlight;	/* icon manager highlight */
     short ClearShadowContrast;  /* The contrast of the clear shadow */
     short DarkShadowContrast;   /* The contrast of the dark shadow */
+    short IconJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
+    short SmartIconify;
+    int   MaxIconTitleWidth;	/* */
 
     Cursor TitleCursor;		/* title bar cursor */
     Cursor FrameCursor;		/* frame cursor */
@@ -159,9 +167,11 @@ typedef struct ScreenInfo
     short 	use3Dmenus;
     short 	use3Dtitles;
     short 	use3Diconmanagers;
+    short 	use3Dborders;
     short	SunkFocusWindowTitle;
     short	WMgrVertButtonIndent;
     short	WMgrHorizButtonIndent;
+    short	WMgrButtonShadowDepth;
     short	BeNiceToColormap;
 
     name_list *BorderColorL;
@@ -175,6 +185,7 @@ typedef struct ScreenInfo
     name_list *IconManagerFL;
     name_list *IconManagerBL;
     name_list *IconMgrs;
+    name_list *NoBorder;	/* list of window without borders          */
     name_list *NoIconTitle;	/* list of window names with no icon title */
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
@@ -222,9 +233,8 @@ typedef struct ScreenInfo
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */
+    int ThreeDBorderWidth;	/* 3D border width of twm windows */
     int IconBorderWidth;	/* border width of icon windows */
-    int UnknownWidth;		/* width of the unknown icon */
-    int UnknownHeight;		/* height of the unknown icon */
     int TitleHeight;		/* height of the title bar window */
     TwmWindow *Focus;		/* the twm window that has focus */
     int EntryHeight;		/* menu entry height */
@@ -282,8 +292,11 @@ typedef struct ScreenInfo
     short FirstTime;		/* first time we've read .twmrc */
     short CaseSensitive;	/* be case-sensitive when sorting names */
     short WarpUnmapped;		/* allow warping to unmapped windows */
+    short WindowRingAll;	/* add all windows to the ring */
+    short WarpRingAnyWhere;	/* warp to ring even if window is not visible */
 
     FuncKey FuncKeyRoot;
+    FuncButton FuncButtonRoot;
 } ScreenInfo;
 
 extern int MultiScreen;
@@ -291,12 +304,15 @@ extern int NumScreens;
 extern ScreenInfo **ScreenList;
 extern ScreenInfo *Scr;
 extern int FirstScreen;
-extern Window windowmask;
 
 #define PPOS_OFF 0
 #define PPOS_ON 1
 #define PPOS_NON_ZERO 2
 /* may eventually want an option for having the PPosition be the initial
    location for the drag lines */
+
+#define RP_OFF 0
+#define RP_ALL 1
+#define RP_UNMAPPED 2
 
 #endif /* _SCREEN_ */

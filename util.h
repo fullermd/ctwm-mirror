@@ -39,28 +39,48 @@
 #ifndef _UTIL_
 #define _UTIL_
 
+#if defined(ultrix) || defined(sequent) || defined(sony_news)
+#   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
+#endif
+
 extern void	Zoom();
 extern void	MoveOutline();
 extern Pixmap	GetBitmap(), FindBitmap();
 extern void	GetUnknownIcon();
 extern char 	*ExpandFilename();
-extern int	GetColor();
+
+void MaskScreen ();
+void StartAnimation ();
+void StopAnimation ();
+void SetAnimationSpeed ();
+void ModifyAnimationSpeed ();
+void Animate ();
+void InsertRGBColormap ();
+void RemoveRGBColormap ();
+void LocateStandardColormaps ();
+void GetColor ();
+void GetShadeColors ();
+void GetFont();
+void SetFocus ();
+void Draw3DBorder ();
+void Draw3DCorner ();
+void PaintBorders ();
+void PaintAllDecoration ();
+void PaintTitle ();
+void PaintIcon ();
+void PaintTitleButton ();
+void PaintTitleButtons ();
+void adoptWindow ();
 
 extern int HotX, HotY;
 
-#if defined (XPM)
-#   include <X11/xpm.h>
-
-typedef struct _XpmIcon {
+typedef struct _Image {
     Pixmap pixmap;
     Pixmap mask;
-    XpmAttributes attributes;
-} XpmIcon;
-extern XpmIcon *GetXpmPixmap ();
-#endif
+    int    width;
+    int    height;
+    struct _Image *next;
+} Image;
 
-#if defined (IMCONV)
-Pixmap      im_read_file ();
-#endif
-
+extern Image *GetImage ();
 #endif /* _UTIL_ */

@@ -42,6 +42,11 @@
 extern char *ProgramName;
 
 extern int ParseError;
+#ifdef FLEX_SCANNER
+   int yylineno;
+#  undef YY_INPUT
+#  define YY_INPUT(buf,result,max_size) {buf[0]=twmInputFunc();result=(buf[0]>0);}
+#endif
 
 %}
 
@@ -87,6 +92,7 @@ number				[0-9]+
 				  ParseError = 1;
 				}
 %%
+#ifndef FLEX_SCANNER
 yywrap() { return(1);}
 
 #undef unput
@@ -97,3 +103,4 @@ yywrap() { return(1);}
 #define input()		(*twmInputFunc)()
 #define output(c)	TwmOutput(c)
 #define feof()		(1)
+#endif

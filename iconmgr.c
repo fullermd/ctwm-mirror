@@ -97,12 +97,12 @@ void CreateIconManagers()
 			      (unsigned int *) &p->width, (unsigned int *)&p->height);
 
 	if (mask & XNegative)
-	    JunkX = Scr->MyDisplayWidth - p->width - 
-	      (2 * Scr->BorderWidth) + JunkX;
+	    JunkX += Scr->MyDisplayWidth - p->width - 
+	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
 
 	if (mask & YNegative)
-	    JunkY = Scr->MyDisplayHeight - p->height - 
-	      (2 * Scr->BorderWidth) + JunkY;
+	    JunkY += Scr->MyDisplayHeight - p->height - 
+	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
 
 	background = Scr->IconManagerC.back;
 	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
@@ -123,7 +123,13 @@ void CreateIconManagers()
 
 	Scr->workSpaceMgr.activeWSPC = wlist;
 	p->twm_win = AddWindow(p->w, TRUE, p);
+
 	SetMapStateProp (p->twm_win, WithdrawnState);
+	if (p->twm_win && p->twm_win->wmhints &&
+	    (p->twm_win->wmhints->initial_state == IconicState)) {
+	    p->twm_win->mapped = FALSE;
+	    p->twm_win->isicon = TRUE;
+	}
       }
       if (wlist != NULL) wlist = wlist->next;
     }
@@ -508,7 +514,7 @@ WList *AddIconManager(tmp_win)
 
     ip->count += 1;
     PackIconManager(ip);
-    if (windowmask) XRaiseWindow (dpy, windowmask);
+    if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
     XMapWindow(dpy, tmp->w);
 
     XSaveContext(dpy, tmp->w, IconManagerContext, (caddr_t) tmp);
@@ -521,6 +527,7 @@ WList *AddIconManager(tmp_win)
 	ip->twm_win->mapped = FALSE;
 	ip->twm_win->isicon = TRUE;
     }
+
     if (!ip->twm_win->isicon)
     {
       if (OCCUPY (ip->twm_win, Scr->workSpaceMgr.activeWSPC)) {
@@ -534,7 +541,7 @@ WList *AddIconManager(tmp_win)
     old = tmp;
     ip = ip->nextv;
   }
-    if (tmp == NULL) return;
+    if (tmp == NULL) return NULL;
     tmp_win->list = tmp;
     if (! OCCUPY (tmp->iconmgr->twm_win, Scr->workSpaceMgr.activeWSPC)) {
 	old = tmp;
@@ -790,6 +797,8 @@ void PackIconManager(ip)
     int new_x, new_y;
     int savewidth;
     WList *tmp;
+    int mask, bw;
+    unsigned int JunkW, JunkH;
 
     wheight = Scr->IconManagerFont.height + 10;
     if (wheight < (siconify_height + 4))
@@ -844,10 +853,19 @@ void PackIconManager(ip)
 
     XResizeWindow(dpy, ip->w, newwidth, ip->height);
 
+    bw   = ip->twm_win->frame_bw3D ? ip->twm_win->frame_bw3D : ip->twm_win->frame_bw;
+    mask = XParseGeometry (ip->geometry, &JunkX, &JunkY, &JunkW, &JunkH);
+    if (mask & XNegative) JunkX += Scr->MyDisplayWidth  - ip->width  - 2 * bw;
+    if (mask & YNegative) JunkY += Scr->MyDisplayHeight - ip->height - 2 * bw -
+				   ip->twm_win->title_height;
+    ip->twm_win->frame_x = JunkX;
+    ip->twm_win->frame_y = JunkY;
+
     savewidth = ip->width;
     if (ip->twm_win)
       SetupWindow (ip->twm_win,
 		   ip->twm_win->frame_x, ip->twm_win->frame_y,
-		   newwidth, ip->height + ip->twm_win->title_height, -1);
+		   newwidth + 2 * ip->twm_win->frame_bw3D,
+		   ip->height + ip->twm_win->title_height + 2 * ip->twm_win->frame_bw3D, -1);
     ip->width = savewidth;
 }

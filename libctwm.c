@@ -83,12 +83,12 @@ int	scrnum;
     int			actual_format;
 
     _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", True);
-    if (_XA_WM_CURRENTWORKSPACE == None) return (NULL);
+    if (_XA_WM_CURRENTWORKSPACE == None) return ((char*) 0);
 
     if (XGetWindowProperty (dpy, RootWindow (dpy, scrnum), _XA_WM_CURRENTWORKSPACE, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
-			&bytesafter, &prop) != Success) return (NULL);
-    if (len == 0) return (NULL);
+			&bytesafter, &prop) != Success) return ((char*) 0);
+    if (len == 0) return ((char*) 0);
     return ((char*) prop);
 }
 

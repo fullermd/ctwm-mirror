@@ -103,6 +103,15 @@ extern void TwmOutput();
 #define F_NEXTWORKSPACE		56
 #define F_PREVWORKSPACE		57
 #define F_SEPARATOR		58
+#define F_ADOPTWINDOW		59
+#define F_STARTANIMATION	60
+#define F_STOPANIMATION		61
+#define F_SPEEDUPANIMATION	62
+#define F_SLOWDOWNANIMATION	63
+#ifdef SOUNDS
+#define F_TOGGLESOUND		64
+#define F_REREADSOUNDS		65
+#endif
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */

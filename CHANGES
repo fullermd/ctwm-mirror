@@ -431,6 +431,7 @@ try to use the same few already used in the example icons.
 	you have backquotes (`) in your .ctwmrc file. This character is
 	special to m4. In that case, put something like :
 
+changequote(,)
 changequote(``,'')
 
 	at the beginning of your .ctwmrc.
@@ -457,30 +458,27 @@ changequote(``,'')
    12 - The info window now display the compile time options of the current
 	version of ctwm.
 
-   13 - A default IconRegion is now appended at the end of the user provided
-	list to help the (numerous) people which do not configure them correctly.
-
-   14 - You can now specify xpm pixmap title buttons and TitleHighlight.
+   13 - You can now specify xpm pixmap title buttons and TitleHighlight.
 	There is 5 built-in scalable pixmap for buttons, :xpm:menu, :xpm:dot,
 	:xpm:resize, :xpm:zoom and :xpm:bar.
 
-   15 - Ctwm now restarts when receiving signal SIGHUP, so to restart it from
+   14 - Ctwm now restarts when receiving signal SIGHUP, so to restart it from
 	a shell, use : kill -1 the_ctwm_pid
 
-   16 - 2 New keywords : WMgrVertButtonIndent and WMgrHorizButtonIndent with
+   15 - 2 New keywords : WMgrVertButtonIndent and WMgrHorizButtonIndent with
 	1 parameter, specifying the vertical and horizontal space beetween
 	buttons in the workspace manager.
 
-   17 - Some more xpm files given. Among them several backgrounds.
+   16 - Some more xpm files given. Among them several backgrounds.
 
-   18 - Ctwm set the property WM_WORKSPACELIST (type STRING) on the root
+   17 - Ctwm set the property WM_WORKSPACELIST (type STRING) on the root
 	window, this property contains the null separated list of all the
 	workspaces. Now the WM_OCCUPATION property on each window is a null
 	separated list instead of a space separated list, it was wrong since
 	workspace names can contain spaces. So, the first you will start the
 	this version, your windows will show up anywhere.
 
-   19 - A new library libctwm.a and an include file ctwm.h are given. The
+   18 - A new library libctwm.a and an include file ctwm.h are given. The
 	library contains functions for an external program to have some
 	control over ctwm. The functions are :
 
@@ -496,3 +494,91 @@ changequote(``,'')
 
 
 
+    Changes from version 3.0 to 3.1
+    -------------------------------
+
+    1 - Ctwm is moving. You can now have animated images for icons, root backgrounds,
+	title buttons and focus window title image. This adds one new keyword :
+	AnimationSpeed, and 4 new function :f.startanimation, f.stopanimation,
+	f.speedupanimation and f.slowdownanimation. An image name is considered
+	an animation if it contains the percent (%) character. In which case
+	ctwm replaces this character by numbers starting a 1, and will play
+	an animation with all these images. There is only 2 examples : ball%.xpm
+	suitable for icons, and supman%.xbm suitable for title highlight.
+	Another example (much more beautiful) can be found in the Mosaic
+	distribution. There is also one built-in animation for title buttons :
+	"%xpm:resize", for example :
+
+RightTitleButton		"%xpm:resize" = f.resize
+
+    2 - Add the WMgrButtonShadowDepth keyword to control the depth of the
+	shadow of the workspace manager buttons.
+
+    3 - The RandomPlacement command has now an optionnal parameter :
+	"on", "off", "all" or "unmapped".
+
+    4 - Three new keywords : ChangeWorkspaceFunction, IconifyFunction and
+	DeIconifyFunction, the argument is the name of a function that is
+	executed whenever the corresponding event occurs. Useful for sounds :
+
+ChangeWorkspaceFunction !"cat /users/lecom/sounds/bom.au 2>/dev/null 1>/dev/audio&"
+
+    5 - A new keyword : IconJustification with 1 argument, either :"left", "center"
+	or "right". Tells ctwm how to justify the icon image on the icon title
+	(if any).
+
+    6 - flex is now supported.
+
+    7 - The IconRegion keyword now support an optionnal winlist argument.
+	Thanks to Mike Hoswell (hoswell@ncar.ucar.edu) for adding this.
+
+    8 - f.separator now works (does something) with 3D menus.
+
+    9 - The format xwd is now accepted for images (icons, background, ...). You
+	have to prefix the image file name with xwd: to use this format.
+	If the first character of an image file name is |, the filename is
+	supposed to be a command that output a xwd image, and it is executed.
+	For example, to use a gif file, use :
+
+"|(giftoppm | pnmtoxwd) < /users/lecom/images/2010.gif"
+
+   10 - A new keyword : MaxIconTitleWidth with an integer argument. If an icon
+	title is larger than this integer, it is truncated.
+
+   11 - A sound extension is supported. To use it you have to define USE_SOUND
+	in the Imakefile (not defined by default). In order to use this option
+	you need the rplay package. The documentation for this extension is in
+	sounds.doc. Warning : this extension is not mine, and I don't use it, so
+	don't expect a good support if you have problems with it.
+
+   12 - A new keyword : NoBorder with a window list argument. These windows
+	won't have border. Thanks to J.P. Albers van der Linden
+	(albers@pasichva.serigate.philips.nl) for this patch.
+
+   13 - Ctwm has a new option selectable with the flag -w, if used, ctwm will
+	not take over the whole screen(s), instead it will create a new window
+	and manage it. The -w has an optional argument which is a window id
+	of an existing window, if specified, ctwm will try to manage this window.
+	This is totally useless, but I like. The f.adoptwindow function can
+	be used to capture an existing window into such a captive ctwm. A possible
+	use of such mode can be to test new configuration file without restarting
+	ctwm.
+
+   14 - Now the welcome file can be of any type understanded by ctwm. So
+	it must be prefixed with its type. The default is xpm:welcome.xpm
+	if the XPM option is compiled in, else it is xwd:welcome.xwd. You
+	use for example :
+
+setenv CTWM_WELCOME_FILE "|(giftoppm | pnmtoxwd) < ~/images/2010.gif"
+
+   15 - You can have now 3D window borders with the keyword : UseThreeDBorders.
+	In which case the 3D border witdh is given with : ThreeDBorderWidth.
+	The default value is 6.  The color is BorderColor for the window that has
+	focus and BorderTileBackground for all others windows. Note : The 3D
+	borders does merge very well with squeezed titles.
+
+   16 - Now, WindowRing can be specified without argument, in this case all the
+	windows are in the ring. (Alec Wolman <wolman@blue.cs.washington.edu>)
+
+   17 - New keyword : WarpRingOnScreen, if present, tells ctwm that f.warpring
+	should warp pointer only to windows visible in the current workspace.

@@ -44,6 +44,7 @@
 #include <ctype.h>
 #include "twm.h"
 #include "menus.h"
+#include "icons.h"
 #include "list.h"
 #include "util.h"
 #include "screen.h"
@@ -87,7 +88,7 @@ extern int yylineno;
 %token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ICONMGRS
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
-%token <num> NO_ICON_TITLE NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION 
+%token <num> NO_BORDER NO_ICON_TITLE NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION 
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME 
 %token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
@@ -97,6 +98,7 @@ extern int yylineno;
 %token <num> NO_STACKMODE WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
 %token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
 %token <num> OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
+%token <num> CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
 %token <ptr> STRING
 
 %type <ptr> string
@@ -117,8 +119,13 @@ stmt		: error
 		| sarg
 		| narg
 		| squeeze
-		| ICON_REGION string DKEYWORD DKEYWORD number number
-					{ AddIconRegion($2, $3, $4, $5, $6); }
+		| ICON_REGION string DKEYWORD DKEYWORD number number {
+		      (void) AddIconRegion($2, $3, $4, $5, $6);
+		  }
+		| ICON_REGION string DKEYWORD DKEYWORD number number {
+		      list = AddIconRegion($2, $3, $4, $5, $6);
+		  }
+		  win_list
 		| ICONMGR_GEOMETRY string number	{ if (Scr->FirstTime)
 						  {
 						    Scr->iconmgr->geometry= $2;
@@ -179,24 +186,20 @@ stmt		: error
 					}
 		| button string		{
 		    root = GetRoot($2, NULLSTR, NULLSTR);
-			if (Scr->Mouse[$1][C_ROOT][0] == NULL)
-			Scr->Mouse[$1][C_ROOT][0] = (MouseButton*) malloc (sizeof (MouseButton));
-			Scr->Mouse[$1][C_ROOT][0]->func = F_MENU;
-			Scr->Mouse[$1][C_ROOT][0]->menu = root;
+		    AddFuncButton ($1, C_ROOT, 0, F_MENU, root, (MenuItem*) 0);
 		}
 		| button action		{
-			if (Scr->Mouse[$1][C_ROOT][0] == NULL)
-			Scr->Mouse[$1][C_ROOT][0] = (MouseButton*) malloc (sizeof (MouseButton));
-			Scr->Mouse[$1][C_ROOT][0]->func = $2;
 			if ($2 == F_MENU) {
 			    pull->prev = NULL;
-			    Scr->Mouse[$1][C_ROOT][0]->menu = pull;
+			    AddFuncButton ($1, C_ROOT, 0, $2, pull, (MenuItem*) 0);
 			}
 			else {
+			    MenuItem *item;
+
 			    root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
-			    Scr->Mouse[$1][C_ROOT][0]->item = 
-					AddToMenu(root,"x",Action,
-					NULLSTR,$2,NULLSTR,NULLSTR);
+			    item = AddToMenu (root, "x", Action,
+					NULLSTR, $2, NULLSTR, NULLSTR);
+			    AddFuncButton ($1, C_ROOT, 0, $2, (MenuRoot*) 0, item);
 			}
 			Action = "";
 			pull = NULL;
@@ -231,6 +234,8 @@ stmt		: error
 		  win_list
 		| NO_STACKMODE		{ if (Scr->FirstTime)
 						Scr->StackMode = FALSE; }
+		| NO_BORDER		{ list = &Scr->NoBorder; }
+		  win_list
 		| NO_ICON_TITLE		{ list = &Scr->NoIconTitle; }
 		  win_list
 		| NO_ICON_TITLE		{ if (Scr->FirstTime)
@@ -285,14 +290,38 @@ stmt		: error
 					   Action = "";
 					   pull = NULL;
 					}
+		| CHANGE_WORKSPACE_FUNCTION action { Scr->ChangeWorkspaceFunction.func = $2;
+					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
+					   Scr->ChangeWorkspaceFunction.item = 
+						AddToMenu(root,"x",Action,
+							  NULLSTR,$2, NULLSTR, NULLSTR);
+					   Action = "";
+					   pull = NULL;
+					}
+		| DEICONIFY_FUNCTION action { Scr->DeIconifyFunction.func = $2;
+					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
+					   Scr->DeIconifyFunction.item = 
+						AddToMenu(root,"x",Action,
+							  NULLSTR,$2, NULLSTR, NULLSTR);
+					   Action = "";
+					   pull = NULL;
+					}
+		| ICONIFY_FUNCTION action { Scr->IconifyFunction.func = $2;
+					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
+					   Scr->IconifyFunction.item = 
+						AddToMenu(root,"x",Action,
+							  NULLSTR,$2, NULLSTR, NULLSTR);
+					   Action = "";
+					   pull = NULL;
+					}
 		| WARP_CURSOR		{ list = &Scr->WarpCursorL; }
 		  win_list
 		| WARP_CURSOR		{ if (Scr->FirstTime) 
 					    Scr->WarpCursor = TRUE; }
 		| WINDOW_RING		{ list = &Scr->WindowRingL; }
 		  win_list
+		| WINDOW_RING           { Scr->WindowRingAll = TRUE; }
 		;
-
 
 noarg		: KEYWORD		{ if (!do_single_keyword ($1)) {
 					    twmrc_error_prefix();
@@ -312,6 +341,14 @@ sarg		: SKEYWORD string	{ if (!do_string_keyword ($1, $2)) {
 					    ParseError = 1;
 					  }
 					}
+ 		| SKEYWORD 		{ if (!do_string_keyword ($1, "default")) {
+ 					    twmrc_error_prefix();
+ 					    fprintf (stderr,
+ 				"unknown string keyword %d (no value)\n",
+ 						     $1);
+ 					    ParseError = 1;
+ 					  }
+ 					}
 		;
 
 narg		: NKEYWORD number	{ if (!do_number_keyword ($1, $2)) {
@@ -904,29 +941,24 @@ char *fore, *back;
     return tmp;
 }
 
-static void GotButton(butt, func)
+static void GotButton (butt, func)
 int butt, func;
 {
     int i;
+    MenuRoot *menu;
+    MenuItem *item;
 
-    for (i = 0; i < NUM_CONTEXTS; i++)
-    {
-	if ((cont & (1 << i)) == 0)
-	    continue;
+    for (i = 0; i < NUM_CONTEXTS; i++) {
+	if ((cont & (1 << i)) == 0) continue;
 
-	if (Scr->Mouse[butt][i][mods] == NULL)
-	    Scr->Mouse[butt][i][mods] = (MouseButton*) malloc (sizeof (MouseButton));
-	Scr->Mouse[butt][i][mods]->func = func;
-	if (func == F_MENU)
-	{
+	if (func == F_MENU) {
 	    pull->prev = NULL;
-	    Scr->Mouse[butt][i][mods]->menu = pull;
+	    AddFuncButton (butt, i, mods, func, pull, (MenuItem*) 0);
 	}
-	else
-	{
-	    root = GetRoot(TWM_ROOT, NULLSTR, NULLSTR);
-	    Scr->Mouse[butt][i][mods]->item = AddToMenu(root,"x",Action,
-		    NULLSTR, func, NULLSTR, NULLSTR);
+	else {
+	    root = GetRoot (TWM_ROOT, NULLSTR, NULLSTR);
+	    item = AddToMenu (root, "x", Action, NULLSTR, func, NULLSTR, NULLSTR);
+	    AddFuncButton (butt, i, mods, func, (MenuRoot*) 0, item);
 	}
     }
 

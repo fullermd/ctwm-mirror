@@ -177,7 +177,8 @@ char *source, *mask;
 	fprintf (stderr, 
 		 "%s:  cursor bitmaps \"%s\" and \"%s\" not the same size\n",
 		 ProgramName, source, mask);
-	return;
+	return (1);
     }
     *cp = XCreatePixmapCursor(dpy, spm, mpm, &fore, &back, hotx,hoty);
+    return (0);
 }

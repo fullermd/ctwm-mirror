@@ -5,11 +5,45 @@
 #define MAPSTATE      0
 #define BUTTONSSTATE  1
 
-#if defined(ultrix) || defined(sequent) || defined(sony_news)
-#   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
-#endif
-
 void CreateWorkSpaceManager ();
+void GotoWorkSpaceByName ();
+void GotoPrevWorkSpace ();
+void GotoNextWorkSpace ();
+void GotoWorkSpace ();
+void AddWorkSpace ();
+void SetupOccupation ();
+void Occupy ();
+void OccupyHandleButtonEvent ();
+void OccupyAll ();
+void AllocateOthersIconManagers ();
+void ChangeOccupation ();
+void WmgrRedoOccupation ();
+void WMgrRemoveFromCurrentWosksace ();
+void WMgrAddToCurrentWosksaceAndWarp ();
+void WMgrHandleExposeEvent ();
+void PaintWorkSpaceManager ();
+void PaintOccupyWindow ();
+void AddToClientsList ();
+void WMapToggleState ();
+void WMapSetMapState ();
+void WMapSetButtonsState ();
+void WMapAddWindow ();
+void WMapDestroyWindow ();
+void WMapMapWindow ();
+void WMapSetupWindow ();
+void WMapIconify ();
+void WMapDeIconify ();
+void WMapRaiseLower ();
+void WMapLower ();
+void WMapRaise ();
+void WMapRestack ();
+void WMapUpdateIconName ();
+void WMgrHandleKeyReleaseEvent ();
+void WMgrHandleKeyPressEvent ();
+void WMgrHandleButtonEvent ();
+void WMapRedrawName ();
+void WMapCreateCurrentBackGround ();
+void WMapCreateDefaultBackGround ();
 
 typedef struct WorkSpaceList WorkSpaceList;
 
@@ -54,11 +88,11 @@ typedef struct WorkSpaceWindow {
     MyFont		windowFont;
 
     ColorPair		curColors;
-    Pixmap		curPixmap;
+    Image		*curImage;
     unsigned long	curBorderColor;
 
     ColorPair		defColors;
-    Pixmap		defPixmap;
+    Image		*defImage;
     unsigned long	defBorderColor;
 } WorkSpaceWindow;
 
@@ -89,7 +123,7 @@ struct WorkSpaceList {
     ColorPair		cp;
     IconMgr		*iconmgr;
     ColorPair		backcp;
-    Pixmap		backpix;
+    Image		*image;
     name_list		*clientlist;
     MapSubwindow	mapSubwindow;
     struct WorkSpaceList *next;
