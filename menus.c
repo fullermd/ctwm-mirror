@@ -170,6 +170,7 @@ static Bool addingdefaults = False;
 void WarpAlongRing(), WarpToWindow();
 void DisplayPosition ();
 void packwindow(), fillwindow();
+void jump ();
 int FindConstraint ();
 int CreateFonts();		/* in ctwm.c */
 int match ();			/* in list.c */
@@ -992,6 +993,9 @@ NewMenuRoot(name)
     if (strcmp(name, TWM_WINDOWS) == 0)
 	Scr->Windows = tmp;
 
+    if (strcmp(name, TWM_ICONS) == 0)
+	Scr->Icons = tmp;
+
     if (strcmp(name, TWM_WORKSPACES) == 0) {
 	Scr->Workspaces = tmp;
 	if (!Scr->Windows) NewMenuRoot (TWM_WINDOWS);
@@ -1060,6 +1064,12 @@ AddToMenu(menu, item, action, sub, func, fore, back)
     }
     menu->last = tmp;
 
+    if ((menu == Scr->Workspaces) ||
+	(menu == Scr->Windows) ||
+	(menu == Scr->Icons) ||
+	(menu == Scr->AllWindows)) {
+	itemname = item;
+    } else
     if (*item == '*') {
 	itemname = item + 1;
 	menu->defaultitem = tmp;
@@ -1418,16 +1428,19 @@ Bool PopUpMenu (menu, x, y, center)
 
     InstallRootColormap();
 
-    if ((menu == Scr->Windows) || (menu == Scr->AllWindows))
+    if ((menu == Scr->Windows) ||
+	(menu == Scr->Icons) ||
+	(menu == Scr->AllWindows))
     {
 	TwmWindow *tmp_win;
 	WorkSpaceList *wlist;
-	Boolean all;
+	Boolean all, icons;
 	int func;
 
 	/* this is the twm windows menu,  let's go ahead and build it */
 
 	all = (menu == Scr->AllWindows);
+	icons = (menu == Scr->Icons);
 	DestroyMenu (menu);
 
 	menu->first = NULL;
@@ -1439,6 +1452,9 @@ Bool PopUpMenu (menu, x, y, center)
 	menu->highlight.back = UNUSED_PIXEL;
 	if (menu == Scr->Windows) 
   	    AddToMenu(menu, "TWM Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
+	else
+	if (menu == Scr->Icons) 
+  	    AddToMenu(menu, "TWM Icons", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
 	else
   	    AddToMenu(menu, "TWM All Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
   
@@ -1460,7 +1476,9 @@ Bool PopUpMenu (menu, x, y, center)
 		tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) continue;
 	  if (Scr->ShortAllWindowsMenus && tmp_win->iconmgr) continue;
 
-	  if (all || OCCUPY (tmp_win, wlist)) WindowNameCount++;
+	  if (!all && !OCCUPY (tmp_win, wlist)) continue;
+	  if (icons && !tmp_win->isicon) continue;
+	  WindowNameCount++;
 	}
         WindowNames = (TwmWindow **)malloc(sizeof(TwmWindow *)*WindowNameCount);
 	WindowNameCount = 0;
@@ -1474,6 +1492,7 @@ Bool PopUpMenu (menu, x, y, center)
 	    if (Scr->ShortAllWindowsMenus && tmp_win->iconmgr) continue;
 
 	    if (!all && ! OCCUPY (tmp_win, wlist)) continue;
+	    if (icons && !tmp_win->isicon) continue;
             tmp_win2 = tmp_win;
             for (i=0;i<WindowNameCount;i++)
             {
@@ -2108,6 +2127,83 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	Identify(tmp_win);
 	break;
 
+    case F_INITSIZE: {
+	int grav, x, y, w, h, sw, sh;
+
+	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+	grav = ((tmp_win->hints.flags & PWinGravity) 
+		      ? tmp_win->hints.win_gravity : NorthWestGravity);
+
+	if (!(tmp_win->hints.flags & USSize) && !(tmp_win->hints.flags & PSize)) break;
+
+	w  = tmp_win->hints.width  + 2 * tmp_win->frame_bw3D;
+	h  = tmp_win->hints.height + 2 * tmp_win->frame_bw3D + tmp_win->title_height;
+	ConstrainSize (tmp_win, &w, &h);
+
+	x  = tmp_win->frame_x;
+	y  = tmp_win->frame_y;
+	sw = tmp_win->frame_width;
+	sh = tmp_win->frame_height;
+	switch (grav) {
+	    case ForgetGravity :
+	    case StaticGravity :
+	    case NorthWestGravity :
+	    case NorthGravity :
+	    case WestGravity :
+	    case CenterGravity :
+		break;
+
+	    case NorthEastGravity :
+	    case EastGravity :
+		x += sw - w;
+		break;
+
+	    case SouthWestGravity :
+	    case SouthGravity :
+		y += sh - h;
+		break;
+
+	    case SouthEastGravity :
+		x += sw - w;
+		y += sh - h;
+		break;
+	}
+	SetupWindow (tmp_win, x, y, w, h, -1);
+	break;
+    }
+
+    case F_MOVERESIZE: {
+	int x, y, mask;
+	unsigned int w, h;
+	int px = 20, py = 30;
+
+	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+	mask = XParseGeometry (action, &x, &y, &w, &h);
+	if (!(mask &  WidthValue)) w = tmp_win->frame_width;
+	else w += 2 * tmp_win->frame_bw3D;
+	if (!(mask & HeightValue)) h = tmp_win->frame_height;
+	else h += 2 * tmp_win->frame_bw3D + tmp_win->title_height;
+	ConstrainSize (tmp_win, &w, &h);
+	if (mask & XValue) {
+	    if (mask & XNegative) x += Scr->MyDisplayWidth  - w;
+	} else x = tmp_win->frame_x;
+	if (mask & YValue) {
+	    if (mask & YNegative) y += Scr->MyDisplayHeight - h;
+	} else y = tmp_win->frame_y;
+
+	{
+	    int		 junkX, junkY;
+	    unsigned int junkK;
+	    Window	 junkW;
+	    XQueryPointer (dpy, Scr->Root, &junkW, &junkW, &junkX, &junkY, &px, &py, &junkK);
+	}
+	px -= tmp_win->frame_x; if (px > w) px = w / 2;
+	py -= tmp_win->frame_y; if (py > h) px = h / 2;
+	SetupWindow (tmp_win, x, y, w, h, -1);
+	XWarpPointer (dpy, Scr->Root, Scr->Root, 0, 0, 0, 0, x + px, y + py);
+	break;
+    }
+
     case F_VERSION:
 	Identify ((TwmWindow *) NULL);
 	break;
@@ -2119,6 +2215,15 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	tmp_win->auto_raise = !tmp_win->auto_raise;
 	if (tmp_win->auto_raise) ++(Scr->NumAutoRaises);
 	else --(Scr->NumAutoRaises);
+	break;
+
+    case F_AUTOLOWER:
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	    return TRUE;
+
+	tmp_win->auto_lower = !tmp_win->auto_lower;
+	if (tmp_win->auto_lower) ++(Scr->NumAutoLowers);
+	else --(Scr->NumAutoLowers);
 	break;
 
     case F_BEEP:
@@ -2257,6 +2362,27 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	fillwindow (tmp_win, action);
 	break;
 
+    case F_JUMPLEFT:
+	if (DeferExecution(context, func, Scr->MoveCursor)) return TRUE;
+	if (tmp_win->squeezed) { XBell(dpy, 0); break; }
+	jump (tmp_win, J_LEFT, action);
+	break;
+    case F_JUMPRIGHT:
+	if (DeferExecution(context, func, Scr->MoveCursor)) return TRUE;
+	if (tmp_win->squeezed) { XBell(dpy, 0); break; }
+	jump (tmp_win, J_RIGHT, action);
+	break;
+    case F_JUMPDOWN:
+	if (DeferExecution(context, func, Scr->MoveCursor)) return TRUE;
+	if (tmp_win->squeezed) { XBell(dpy, 0); break; }
+	jump (tmp_win, J_BOTTOM, action);
+	break;
+    case F_JUMPUP:
+	if (DeferExecution(context, func, Scr->MoveCursor)) return TRUE;
+	if (tmp_win->squeezed) { XBell(dpy, 0); break; }
+	jump (tmp_win, J_TOP, action);
+	break;
+
     case F_SAVEGEOMETRY:
 	if (DeferExecution(context, func, Scr->SelectCursor)) return TRUE;
 	savegeometry (tmp_win);
@@ -2322,6 +2448,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	XFreeCursor (dpy, cursor);
 	break;
     }
+
     case F_MOVE:
     case F_FORCEMOVE:
     case F_MOVEPACK:
@@ -2609,7 +2736,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 		if (ConstMoveDir != MOVE_NONE)
 		{
-		    int xl, yt, xr, yb, w, h;
+		    int xl, yt, w, h;
 
 		    xl = ConstMoveX;
 		    yt = ConstMoveY;
@@ -2627,24 +2754,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 		    if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		    {
-			xr = xl + w;
-			yb = yt + h;
-
-			if ((xl < 0) && ((Scr->MoveOffResistance < 0) 
-					 || (xl > -Scr->MoveOffResistance)))
-			    xl = 0;
-			if ((xr > Scr->MyDisplayWidth) 
-			    && ((Scr->MoveOffResistance < 0) 
-				|| (xr < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
-			    xl = Scr->MyDisplayWidth - w;
-
-			if ((yt < 0) && ((Scr->MoveOffResistance < 0) 
-					 || (yt > -Scr->MoveOffResistance)))
-			    yt = 0;
-			if ((yb > Scr->MyDisplayHeight)
-			    && ((Scr->MoveOffResistance < 0) 
-				|| (yb < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
-			    yt = Scr->MyDisplayHeight - h;
+                        ConstrainByBorders (&xl, w, &yt, h);
 		    }
 		    CurrentDragX = xl;
 		    CurrentDragY = yt;
@@ -2664,7 +2774,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    }
 	    else if (DragWindow != None)
 	    {
-		int xl, yt, xr, yb, w, h;
+		int xl, yt, w, h;
 		if (!menuFromFrameOrWindowOrTitlebar) {
 		  xl = eventp->xmotion.x_root - DragX - JunkBW;
 		  yt = eventp->xmotion.y_root - DragY - JunkBW;
@@ -2687,24 +2797,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 		if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		{
-		    xr = xl + w;
-		    yb = yt + h;
-
-		    if ((xl < 0) && ((Scr->MoveOffResistance < 0) 
-				     || (xl > -Scr->MoveOffResistance)))
-			xl = 0;
-		    if ((xr > Scr->MyDisplayWidth) 
-			&& ((Scr->MoveOffResistance < 0)
-			    || (xr < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
-			xl = Scr->MyDisplayWidth - w;
-
-		    if ((yt < 0) && ((Scr->MoveOffResistance < 0)
-				     || (yt > -Scr->MoveOffResistance)))
-			yt = 0;
-		    if ((yb > Scr->MyDisplayHeight)
-			&& ((Scr->MoveOffResistance < 0)
-			    || (yb < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
-			yt = Scr->MyDisplayHeight - h;
+                    ConstrainByBorders (&xl, w, &yt, h);
 		}
 
 		CurrentDragX = xl;
@@ -2737,6 +2830,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	    if ((mroot = FindMenuRoot(action)) == NULL)
 	    {
+		if (!action) action = "undef";
 		fprintf (stderr, "%s: couldn't find function \"%s\"\n", 
 			 ProgramName, action);
 		return TRUE;
@@ -3086,6 +3180,40 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	}
 	break;
 	
+    case F_RING:  /* Taken from vtwm version 5.3 */
+	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+	if ( tmp_win->ring.next || tmp_win->ring.prev ) {
+	    /* It's in the ring, let's take it out. */
+	   TwmWindow *prev = tmp_win->ring.prev, *next = tmp_win->ring.next;
+
+	    /*
+	    * 1. Unlink window
+	    * 2. If window was only thing in ring, null out ring
+	    * 3. If window was ring leader, set to next (or null)
+	    */
+	    if (prev) prev->ring.next = next;
+	    if (next) next->ring.prev = prev;
+	    if (Scr->Ring == tmp_win)
+		Scr->Ring = (next != tmp_win ? next : (TwmWindow *) NULL);
+
+	    if (!Scr->Ring || Scr->RingLeader == tmp_win)
+		Scr->RingLeader = Scr->Ring;
+	    tmp_win->ring.next = tmp_win->ring.prev = NULL;
+	} else {
+	    /* Not in the ring, so put it in. */
+	    if (Scr->Ring) {
+		tmp_win->ring.next = Scr->Ring->ring.next;
+		if (Scr->Ring->ring.next->ring.prev)
+		    Scr->Ring->ring.next->ring.prev = tmp_win;
+		Scr->Ring->ring.next = tmp_win;
+		tmp_win->ring.prev = Scr->Ring;
+	    } else {
+		tmp_win->ring.next = tmp_win->ring.prev = Scr->Ring = tmp_win;
+	    }
+	}
+	tmp_win->ring.cursor_valid = False;
+	break;
+
     case F_WARPRING:
 	switch (action[0]) {
 	  case 'n':
@@ -3342,6 +3470,7 @@ MenuRoot *root;
         case F_BOTTOMZOOM:
         case F_SQUEEZE:
 	case F_AUTORAISE:
+	case F_AUTOLOWER:
 	    return TRUE;
 	}
     }
@@ -3907,8 +4036,10 @@ TwmWindow *tmp_win;
     XUnmapWindow(dpy, tmp_win->w);
     XSelectInput(dpy, tmp_win->w, eventMask);
 
-    if (fx + neww >= Scr->MyDisplayWidth)  fx = Scr->MyDisplayWidth  - neww;
-    if (fy + newh >= Scr->MyDisplayHeight) fy = Scr->MyDisplayHeight - newh;
+    if (fx + neww >= Scr->MyDisplayWidth - Scr->BorderRight)
+        fx = Scr->MyDisplayWidth - Scr->BorderRight - neww;
+    if (fy + newh >= Scr->MyDisplayHeight - Scr->BorderBottom)
+        fy = Scr->MyDisplayHeight - Scr->BorderBottom - newh;
     SetupWindow (tmp_win, fx, fy, neww, newh, -1);
     tmp_win->actual_frame_x = savex;
     tmp_win->actual_frame_y = savey;
@@ -4404,28 +4535,10 @@ XEvent *eventp;
 		}
         	newX = ev.xbutton.x_root - XW;
         	newY = ev.xbutton.y_root - YW;
-		if (Scr->DontMoveOff) {
-		    int w = ActiveMenu->width;
-		    int h = ActiveMenu->height;
-
-		    if ((newX < 0) && ((Scr->MoveOffResistance < 0) ||
-			(newX > -Scr->MoveOffResistance))) {
-			newX = 0;
-		    }
-		    if (((newX + w) > Scr->MyDisplayWidth) &&
-			((Scr->MoveOffResistance < 0) ||
-			((newX + w) < Scr->MyDisplayWidth + Scr->MoveOffResistance))) {
-			newX = Scr->MyDisplayWidth - w;
-		    }
-		    if ((newY < 0) && ((Scr->MoveOffResistance < 0) ||
-			(newY > -Scr->MoveOffResistance))) {
-			newY = 0;
-		    }
-		    if (((newY + h) > Scr->MyDisplayHeight) &&
-			((Scr->MoveOffResistance < 0) ||
-			((newY + h) < Scr->MyDisplayHeight + Scr->MoveOffResistance))) {
-			newY = Scr->MyDisplayHeight - h;
-		    }
+		if (Scr->DontMoveOff)
+                {
+                    ConstrainByBorders (&newX, ActiveMenu->width,
+                                        &newY, ActiveMenu->height);
 		}
 		XMoveWindow (dpy, ActiveMenu->w, newX, newY);
 		XMaskEvent (dpy, event_mask, &ev);
@@ -4636,7 +4749,9 @@ char *direction;
 	    newh = winh;
 	    save = neww;
 	    ConstrainSize (tmp_win, &neww, &newh);
-	    if ((neww != winw) || (newh != winh) || (cons == Scr->MyDisplayWidth)) break;
+	    if ((neww != winw) || (newh != winh) ||
+                (cons == Scr->MyDisplayWidth - Scr->BorderRight))
+                break;
 	    neww = save;
 	    SetupWindow (tmp_win, newx, newy, neww, newh, -1);
 	}
@@ -4660,12 +4775,68 @@ char *direction;
 	    newh = cons - winy;
 	    save = newh;
 	    ConstrainSize (tmp_win, &neww, &newh);
-	    if ((neww != winw) || (newh != winh) || (cons == Scr->MyDisplayHeight)) break;
+	    if ((neww != winw) || (newh != winh) ||
+                (cons == Scr->MyDisplayHeight - Scr->BorderBottom))
+                break;
 	    newh = save;
 	    SetupWindow (tmp_win, newx, newy, neww, newh, -1);
 	}
     } else return;
     SetupWindow (tmp_win, newx, newy, neww, newh, -1);
+}
+
+void jump (tmp_win, direction, action)
+TwmWindow *tmp_win;
+int  direction;
+char *action;
+{
+    int			fx, fy, px, py, step, stat, cons;
+    int			fwidth, fheight;
+    int			junkX, junkY;
+    unsigned int	junkB, junkD, junkK;
+    Window		junkW;
+
+    if (! action) return;
+    stat = sscanf (action, "%d", &step);
+    if (stat != 1) return;
+    if (step < 1) return;
+
+    fx = tmp_win->frame_x;
+    fy = tmp_win->frame_y;
+    XQueryPointer (dpy, Scr->Root, &junkW, &junkW, &junkX, &junkY, &px, &py, &junkK);
+    px -= fx; py -= fy;
+
+    fwidth  = tmp_win->frame_width  + 2 * tmp_win->frame_bw;
+    fheight = tmp_win->frame_height + 2 * tmp_win->frame_bw;
+    switch (direction) {
+	case J_LEFT   :
+	    cons  = FindConstraint (tmp_win, J_LEFT);
+	    if (cons == -1) return;
+	    fx -= step * Scr->XMoveGrid;
+	    if (fx < cons) fx = cons;
+	    break;
+	case J_RIGHT  :
+	    cons  = FindConstraint (tmp_win, J_RIGHT);
+	    if (cons == -1) return;
+	    fx += step * Scr->XMoveGrid;
+	    if (fx + fwidth > cons) fx = cons - fwidth;
+	    break;
+	case J_TOP    :
+	    cons  = FindConstraint (tmp_win, J_TOP);
+	    if (cons == -1) return;
+	    fy -= step * Scr->YMoveGrid;
+	    if (fy < cons) fy = cons;
+	    break;
+	case J_BOTTOM :
+	    cons  = FindConstraint (tmp_win, J_BOTTOM);
+	    if (cons == -1) return;
+	    fy += step * Scr->YMoveGrid;
+	    if (fy + fheight > cons) fy = cons - fheight;
+	    break;
+    }
+    XWarpPointer (dpy, Scr->Root, Scr->Root, 0, 0, 0, 0, fx + px, fy + py);
+    XRaiseWindow (dpy, tmp_win->frame);
+    SetupWindow (tmp_win, fx, fy, tmp_win->frame_width, tmp_win->frame_height, -1);
 }
 
 int FindConstraint (tmp_win, direction)
@@ -4681,14 +4852,14 @@ int direction;
     int 	ret;
 
     switch (direction) {
-	case J_LEFT   : if (winx < 0) return -1;
-			ret = 0; break;
-	case J_RIGHT  : if (winx + winw > Scr->MyDisplayWidth) return -1;
-			ret = Scr->MyDisplayWidth; break;
-	case J_TOP    : if (winy < 0) return -1;
-			ret = 0; break;
-	case J_BOTTOM : if (winy + winh > Scr->MyDisplayHeight) return -1;
-			ret = Scr->MyDisplayHeight; break;
+	case J_LEFT   : if (winx < Scr->BorderLeft) return -1;
+			ret = Scr->BorderLeft; break;
+	case J_RIGHT  : if (winx + winw > Scr->MyDisplayWidth - Scr->BorderRight) return -1;
+			ret = Scr->MyDisplayWidth - Scr->BorderRight; break;
+	case J_TOP    : if (winy < Scr->BorderTop) return -1;
+			ret = Scr->BorderTop; break;
+	case J_BOTTOM : if (winy + winh > Scr->MyDisplayHeight - Scr->BorderBottom) return -1;
+			ret = Scr->MyDisplayHeight - Scr->BorderBottom; break;
 	default       : return -1;
     }
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
@@ -4831,7 +5002,8 @@ int x, y, dir;
 	if (move) {
 	    TryToPush (t, newx, newy, ndir);
 	    TryToPack (t, &newx, &newy);
-	    TryNotToMoveOff (t, &newx, &newy);
+            ConstrainByBorders (&newx, t->frame_width  + 2 * t->frame_bw,
+                                &newy, t->frame_height + 2 * t->frame_bw);
 	    SetupWindow (t, newx, newy, t->frame_width, t->frame_height, -1);
 	}
     }
@@ -4853,58 +5025,32 @@ int *x, *y;
 	case NorthGravity :
 	case WestGravity :
 	case CenterGravity :
-	    *x = (*x / Scr->XMoveGrid) * Scr->XMoveGrid;
-	    *y = (*y / Scr->YMoveGrid) * Scr->YMoveGrid;
+	    *x = ((*x - Scr->BorderLeft) / Scr->XMoveGrid) * Scr->XMoveGrid
+                + Scr->BorderLeft;
+	    *y = ((*y - Scr->BorderTop) / Scr->YMoveGrid) * Scr->YMoveGrid
+                + Scr->BorderTop;
 	    break;
 	case NorthEastGravity :
 	case EastGravity :
-	    *x = (((*x + w) / Scr->XMoveGrid) * Scr->XMoveGrid) - w;
-	    *y = (*y / Scr->YMoveGrid) * Scr->YMoveGrid;
+	    *x = (((*x + w - Scr->BorderLeft) / Scr->XMoveGrid) *
+                  Scr->XMoveGrid) - w + Scr->BorderLeft;
+	    *y = ((*y - Scr->BorderTop) / Scr->YMoveGrid) *
+                Scr->YMoveGrid + Scr->BorderTop;
 	    break;
 	case SouthWestGravity :
 	case SouthGravity :
-	    *x = (*x / Scr->XMoveGrid) * Scr->XMoveGrid;
-	    *y = (((*y + h) / Scr->YMoveGrid) * Scr->YMoveGrid) - h;
+	    *x = ((*x - Scr->BorderLeft) / Scr->XMoveGrid) * Scr->XMoveGrid
+                + Scr->BorderLeft;
+	    *y = (((*y + h - Scr->BorderTop) / Scr->YMoveGrid) * Scr->YMoveGrid)
+                - h + Scr->BorderTop;
 	    break;
 	case SouthEastGravity :
-	    *x = (((*x + w) / Scr->XMoveGrid) * Scr->XMoveGrid) - w;
-	    *y = (((*y + h) / Scr->YMoveGrid) * Scr->YMoveGrid) - h;
+	    *x = (((*x + w - Scr->BorderLeft) / Scr->XMoveGrid) *
+                  Scr->XMoveGrid) - w + Scr->BorderLeft;
+	    *y = (((*y + h - Scr->BorderTop) / Scr->YMoveGrid) *
+                  Scr->YMoveGrid) - h + Scr->BorderTop;
 	    break;
     }
-}
-
-Boolean TryNotToMoveOff (tmp_win, x, y)
-TwmWindow *tmp_win;
-int *x, *y;
-{
-    int	w = tmp_win->frame_width  + 2 * tmp_win->frame_bw;
-    int	h = tmp_win->frame_height + 2 * tmp_win->frame_bw;
-
-    if ((*x < 0) &&
-	((Scr->MoveOffResistance < 0) ||
-	(*x > -Scr->MoveOffResistance))) {
-	    *x = 0;
-	    return False;
-    }
-    if (((*x + w) > Scr->MyDisplayWidth) &&
-	((Scr->MoveOffResistance < 0) ||
-	((*x + w) < Scr->MyDisplayWidth + Scr->MoveOffResistance))) {
-	    *x = Scr->MyDisplayWidth - w;
-	    return False;
-    }
-    if ((*y < 0) &&
-	((Scr->MoveOffResistance < 0) ||
-	(*y > -Scr->MoveOffResistance))) {
-	    *y = 0;
-	    return False;
-    }
-    if (((*y + h) > Scr->MyDisplayHeight) &&
-	((Scr->MoveOffResistance < 0) ||
-	((*y + h) < Scr->MyDisplayHeight + Scr->MoveOffResistance))) {
-	    *y = Scr->MyDisplayHeight - h;
-	    return False;
-    }
-    return (True);
 }
 
 WarpCursorToDefaultEntry (menu)

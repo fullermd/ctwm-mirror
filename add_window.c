@@ -216,6 +216,7 @@ IconMgr *iconp;
     Bool height_ever_changed_by_user;
     int saved_occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
 #endif
+    Bool        random_placed = False;
     int		found;
 #ifndef VMS
     fd_set	mask;
@@ -370,6 +371,12 @@ IconMgr *iconp;
 	LookInList(Scr->AutoRaise, tmp_win->full_name,
 			      &tmp_win->class);
     if (tmp_win->auto_raise) Scr->NumAutoRaises++;
+
+    tmp_win->auto_lower = Scr->AutoLowerDefault ||
+	LookInList(Scr->AutoLower, tmp_win->full_name,
+			      &tmp_win->class);
+    if (tmp_win->auto_lower) Scr->NumAutoLowers++;
+
     tmp_win->iconify_by_unmapping = Scr->IconifyByUnmapping;
     if (Scr->IconifyByUnmapping)
     {
@@ -409,7 +416,8 @@ IconMgr *iconp;
 	}
 	if (t) tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
     }
-    if (Scr->WindowRingAll ||
+    if ((Scr->WindowRingAll &&
+	!LookInList(Scr->WindowRingExcludeL, tmp_win->full_name, &tmp_win->class)) ||
 	LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
 	if (Scr->Ring) {
 	    tmp_win->ring.next = Scr->Ring->ring.next;
@@ -582,6 +590,8 @@ IconMgr *iconp;
 	tmp_win->attr.y = PlaceY;
 	PlaceX += 30;
 	PlaceY += 30;
+
+        random_placed = True;
       } else {				/* else prompt */
 	if (!(tmp_win->wmhints && tmp_win->wmhints->flags & StateHint &&
 	      tmp_win->wmhints->initial_state == IconicState))
@@ -736,29 +746,10 @@ IconMgr *iconp;
 
 		  /* DontMoveOff prohibits user form off-screen placement */
 		  if (Scr->DontMoveOff)	
-  		    {
-		      int AddingR, AddingB;
-		      
-		      AddingR = AddingX + AddingW;
-		      AddingB = AddingY + AddingH;
-		      
-		      if ((AddingX < 0) && ((Scr->MoveOffResistance < 0) 
-					    || (AddingX > -Scr->MoveOffResistance)))
-			AddingX = 0;
-		      if ((AddingR > Scr->MyDisplayWidth) 
-			  && ((Scr->MoveOffResistance < 0) 
-			      || (AddingR < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
-			AddingX = Scr->MyDisplayWidth - AddingW;
-		      
-		      if ((AddingY < 0) && ((Scr->MoveOffResistance < 0) 
-					    || (AddingY > -Scr->MoveOffResistance)))
-			AddingY = 0;
-		      if ((AddingB > Scr->MyDisplayHeight)
-			  && ((Scr->MoveOffResistance < 0) 
-			      || (AddingB < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
-			AddingY = Scr->MyDisplayHeight - AddingH;
-		      
- 		    }
+                  {
+                      ConstrainByBorders (&AddingX, AddingW,
+                                          &AddingY, AddingH);
+                  }
 		  break;
 		}
 
@@ -773,26 +764,8 @@ IconMgr *iconp;
 		if (Scr->PackNewWindows) TryToPack (tmp_win, &AddingX, &AddingY);
 		if (Scr->DontMoveOff)
 		{
-		    int AddingR, AddingB;
-
-		    AddingR = AddingX + AddingW;
-		    AddingB = AddingY + AddingH;
-		    
-		    if ((AddingX < 0) && ((Scr->MoveOffResistance < 0) 
-					  || (AddingX > -Scr->MoveOffResistance)))
-		        AddingX = 0;
-		    if ((AddingR > Scr->MyDisplayWidth) 
-			&& ((Scr->MoveOffResistance < 0) 
-			    || (AddingR < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
-		        AddingX = Scr->MyDisplayWidth - AddingW;
-
-		    if ((AddingY < 0) && ((Scr->MoveOffResistance < 0) 
-					  || (AddingY > -Scr->MoveOffResistance)))
-			AddingY = 0;
-		    if ((AddingB > Scr->MyDisplayHeight)
-			&& ((Scr->MoveOffResistance < 0) 
-			    || (AddingB < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
-			AddingY = Scr->MyDisplayHeight - AddingH;
+		    ConstrainByBorders (&AddingX, AddingW,
+                                        &AddingY, AddingH);
 		}
 		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
@@ -831,15 +804,17 @@ IconMgr *iconp;
 		    int dy = (tmp_win->attr.height / 4);
 		    
 #define HALF_AVE_CURSOR_SIZE 8		/* so that it is visible */
-		    if (dx < HALF_AVE_CURSOR_SIZE) dx = HALF_AVE_CURSOR_SIZE;
-		    if (dy < HALF_AVE_CURSOR_SIZE) dy = HALF_AVE_CURSOR_SIZE;
+		    if (dx < HALF_AVE_CURSOR_SIZE + Scr->BorderLeft)
+                        dx = HALF_AVE_CURSOR_SIZE + Scr->BorderLeft;
+		    if (dy < HALF_AVE_CURSOR_SIZE + Scr->BorderTop)
+                        dy = HALF_AVE_CURSOR_SIZE + Scr->BorderTop;
 #undef HALF_AVE_CURSOR_SIZE
 		    dx += (tmp_win->frame_bw + 1);
 		    dy += (bw2 + tmp_win->title_height + 1);
-		    if (AddingX + dx >= Scr->MyDisplayWidth)
-		      dx = Scr->MyDisplayWidth - AddingX - 1;
-		    if (AddingY + dy >= Scr->MyDisplayHeight)
-		      dy = Scr->MyDisplayHeight - AddingY - 1;
+		    if (AddingX + dx >= Scr->MyDisplayWidth - Scr->BorderRight)
+		      dx = Scr->MyDisplayWidth - Scr->BorderRight - AddingX - 1;
+		    if (AddingY + dy >= Scr->MyDisplayHeight - Scr->BorderBottom)
+		      dy = Scr->MyDisplayHeight - Scr->BorderBottom - AddingY - 1;
 		    if (dx > 0 && dy > 0)
 		      XWarpPointer (dpy, None, None, 0, 0, 0, 0, dx, dy);
 		} else {
@@ -897,8 +872,8 @@ IconMgr *iconp;
 	    } 
 	    else if (event.xbutton.button == Button3)
 	    {
-		int maxw = Scr->MyDisplayWidth  - AddingX - bw2;
-		int maxh = Scr->MyDisplayHeight - AddingY - bw2;
+		int maxw = Scr->MyDisplayWidth  - Scr->BorderRight  - AddingX - bw2;
+		int maxh = Scr->MyDisplayHeight - Scr->BorderBottom - AddingY - bw2;
 
 		/*
 		 * Make window go to bottom of screen, and clip to right edge.
@@ -1061,6 +1036,9 @@ IconMgr *iconp;
 				2 * tmp_win->frame_bw3D;
 
     ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
+    if (random_placed)
+        ConstrainByBorders (&tmp_win->frame_x, tmp_win->frame_width,
+                            &tmp_win->frame_y, tmp_win->frame_height);
 
     valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask | CWBackPixel;
     attributes.background_pixmap = None;
@@ -1254,6 +1232,7 @@ IconMgr *iconp;
 	ReGrab();
     WMapAddWindow (tmp_win);
     SetPropsIfCaptiveCtwm (tmp_win);
+    savegeometry (tmp_win);
     return (tmp_win);
 }
 

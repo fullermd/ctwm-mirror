@@ -86,6 +86,7 @@ extern int parse_keyword(),twmrc_error_prefix();
 # endif
 #endif
 
+int twmrc_lineno;
 %}
 
 string				\"([^"]|\\.)*\"

@@ -71,6 +71,7 @@ extern Bool StashEventTime();
 extern Time lastTimestamp;
 extern void SimulateMapRequest();
 extern void AutoRaiseWindow();
+extern void AutoLowerWindow();
 #define LastTimestamp() lastTimestamp
 extern void FixRootEvent ();
 extern Bool DispatchEvent();

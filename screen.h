@@ -126,6 +126,7 @@ typedef struct ScreenInfo
     MenuRoot *MenuList;		/* head of the menu list */
     MenuRoot *LastMenu;		/* the last menu (mostly unused?) */
     MenuRoot *Windows;		/* the TwmWindows menu */
+    MenuRoot *Icons;		/* the TwmIcons menu */
     MenuRoot *Workspaces;	/* the TwmWorkspaces menu */
     MenuRoot *AllWindows;	/* the TwmAllWindows menu */
 
@@ -251,6 +252,7 @@ typedef struct ScreenInfo
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
     name_list *AutoRaise;	/* list of window names to auto-raise */
+    name_list *AutoLower;	/* list of window names to auto-lower */
     name_list *IconNames;	/* list of window names and icon names */
     name_list *NoHighlight;	/* list of windows to not highlight */
     name_list *NoStackModeL;	/* windows to ignore stack mode requests */
@@ -265,7 +267,9 @@ typedef struct ScreenInfo
     name_list *SqueezeTitleL;		/* windows of which to squeeze title */
     name_list *DontSqueezeTitleL;	/* windows of which not to squeeze */
     name_list *WindowRingL;	/* windows in ring */
+    name_list *WindowRingExcludeL;      /* windows excluded from ring */
     name_list *WarpCursorL;	/* windows to warp cursor to on deiconify */
+    name_list *DontSave;
 
     name_list *OpaqueMoveList;
     name_list *NoOpaqueMoveList;
@@ -296,6 +300,10 @@ typedef struct ScreenInfo
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */
+    int BorderLeft;
+    int BorderRight;
+    int BorderTop;
+    int BorderBottom;
     int ThreeDBorderWidth;	/* 3D border width of twm windows */
     int IconBorderWidth;	/* border width of icon windows */
     int TitleHeight;		/* height of the title bar window */
@@ -305,8 +313,10 @@ typedef struct ScreenInfo
     int TitlePadding;		/* distance between items in titlebar */
     int ButtonIndent;		/* amount to shrink buttons on each side */
     int NumAutoRaises;		/* number of autoraise windows on screen */
+    int NumAutoLowers;		/* number of autolower windows on screen */
     int TransientOnTop;		/* Percentage of the surface of it's leader */
     short AutoRaiseDefault;	/* AutoRaise all windows if true */
+    short AutoLowerDefault;	/* AutoLower all windows if true */
     short NoDefaults;		/* do not add in default UI stuff */
     short UsePPosition;		/* what do with PPosition, see values below */
     short UseSunkTitlePixmap;
@@ -370,6 +380,7 @@ typedef struct ScreenInfo
     short RaiseOnClick;		/* Raise a window when clieked into */
     short RaiseOnClickButton;		/* Raise a window when clieked into */
     short IgnoreLockModifier;	/* Should we ignore the lock modifier */
+    short IgnoreCaseInMenuSelection;	/* Should we ignore case in menu selection */
 
     FuncKey FuncKeyRoot;
     FuncButton FuncButtonRoot;

@@ -447,6 +447,11 @@ char *windowRole;
     char **wm_command;
     int wm_command_count, i;
 
+    /* ...unless the config file says otherwise. */
+    if (LookInList (Scr == NULL ? ScreenList [0]->DontSave : Scr->DontSave,
+		    theWindow->full_name, &theWindow->class))
+	return 1;
+        
     if (!write_counted_string (configFile, clientId))
 	return 0;
 
@@ -919,6 +924,10 @@ char *prefix;
 
 /*===[ SAVE WINDOW INFORMATION ]=============================================*/
 
+#ifndef PATH_MAX
+#  define PATH_MAX 1023
+#endif
+
 void
 SaveYourselfPhase2CB (smcConn, clientData)
 SmcConn smcConn;
@@ -939,7 +948,7 @@ SmPointer clientData;
     Bool success = False;
     SmProp prop1, prop2, prop3, *props[3];
     SmPropValue prop1val, prop2val, prop3val;
-    char discardCommand[80];
+    char discardCommand[PATH_MAX + 4];
     int numVals, i;
     char yes = 1;
     static int first_time = 1;

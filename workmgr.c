@@ -2449,27 +2449,45 @@ XEvent *event;
 			int w = win->frame_width;
 			int h = win->frame_height;
 
-			if ((winX < 0) && ((Scr->MoveOffResistance < 0) ||
-			    (winX > -Scr->MoveOffResistance))) {
-			    winX = 0;
-			    newX = cwlist->mapSubwindow.x + XW;
+			if ((winX < Scr->BorderLeft) &&
+                            ((Scr->MoveOffResistance < 0) ||
+                             (winX > Scr->BorderLeft - Scr->MoveOffResistance)))
+                        {
+			    winX = Scr->BorderLeft;
+			    newX = cwlist->mapSubwindow.x + XW +
+                                Scr->BorderLeft * mw->wwidth /
+                                Scr->MyDisplayWidth;
 			}
-			if (((winX + w) > Scr->MyDisplayWidth) &&
+			if (((winX + w) >
+                             Scr->MyDisplayWidth - Scr->BorderRight) &&
 			    ((Scr->MoveOffResistance < 0) ||
-			    ((winX + w) < Scr->MyDisplayWidth + Scr->MoveOffResistance))) {
-			    winX = Scr->MyDisplayWidth - w;
-			    newX = cwlist->mapSubwindow.x + mw->wwidth - wl->width + XW - 2;
+                             ((winX + w) < Scr->MyDisplayWidth -
+                              Scr->BorderRight + Scr->MoveOffResistance)))
+                        {
+			    winX = Scr->MyDisplayWidth - Scr->BorderRight - w;
+			    newX = cwlist->mapSubwindow.x + mw->wwidth *
+                                (1 - Scr->BorderRight / (double) Scr->MyDisplayWidth) -
+                                wl->width + XW - 2;
 			}
-			if ((winY < 0) && ((Scr->MoveOffResistance < 0) ||
-			    (winY > -Scr->MoveOffResistance))) {
-			    winY = 0;
-			    newY = cwlist->mapSubwindow.y + YW;
+			if ((winY < Scr->BorderTop) &&
+                            ((Scr->MoveOffResistance < 0) ||
+                             (winY > Scr->BorderTop - Scr->MoveOffResistance)))
+                        {
+			    winY = Scr->BorderTop;
+			    newY = cwlist->mapSubwindow.y + YW +
+                                Scr->BorderTop * mw->height /
+                                Scr->MyDisplayHeight;
 			}
-			if (((winY + h) > Scr->MyDisplayHeight) &&
+			if (((winY + h) > Scr->MyDisplayHeight -
+                             Scr->BorderBottom) &&
 			    ((Scr->MoveOffResistance < 0) ||
-			    ((winY + h) < Scr->MyDisplayHeight + Scr->MoveOffResistance))) {
-			    winY = Scr->MyDisplayHeight - h;
-			    newY = cwlist->mapSubwindow.y + mw->wheight - wl->height + YW - 2;
+                             ((winY + h) < Scr->MyDisplayHeight -
+                              Scr->BorderBottom + Scr->MoveOffResistance)))
+                        {
+			    winY = Scr->MyDisplayHeight - Scr->BorderBottom - h;
+			    newY = cwlist->mapSubwindow.y + mw->wheight *
+                                (1 - Scr->BorderBottom / (double) Scr->MyDisplayHeight) -
+                                wl->height + YW - 2;
 			}
 		    }
 		    WMapSetupWindow (win, winX, winY, -1, -1);

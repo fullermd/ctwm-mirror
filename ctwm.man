@@ -12,7 +12,7 @@
 .if t .sp .5
 ..
 .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH CTWM 1 "Version 3.4"
+.TH CTWM 1 "Version 3.5.2"
 .SH NAME
 ctwm - Tab Window Manager for the X Window System
 .SH SYNTAX
@@ -365,6 +365,12 @@ are freezed. The default value is 0.
 Transient windows get focus automatically when created.  Useful with 
 programs that have keyboard shortcuts that pop up windows.
 
+.IP "\fBAutoLower\fP { \fIwin-list\fP }" 8
+This variable specicies a list of windows (all windows if the list is
+defaulted) to be automatically lowered whenever the point leaves a
+window.  This action can be interactively enabled or disabled on
+individual windows using the function \fBf.autolower\fP.
+
 .IP "\fBAutoOccupy\fP" 8
 This variable specifies that clients will automatically change their occupation
 when their name or icon name changes. The new occupation will be recalculated
@@ -406,6 +412,12 @@ but when you specify \fBBeNiceToColormap\fP ctwm uses stipling instead of
 new colors, the effect is less beautiful, but acceptable. In this case
 ClearShadowContrast and DarkShadowContrast have no effects.
 
+.IP "\fBBorderBottom\fP \fIpixels\fP" 8
+This variable specifies the width in pixels of a forbidden zone at the
+bottom of the screen. All constrained window function (f.movepack,
+f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
+Default is 0;
+
 .IP "\fBBorderColor\fP \fIstring\fP [{ \fIwincolorlist\fP }]" 8
 This variable specifies the default color of the border to be placed around 
 all 
@@ -422,10 +434,22 @@ different types of windows.  For example:
 .EE
 The default is "black".
 
+.IP "\fBBorderLeft\fP \fIpixels\fP" 8
+This variable specifies the width in pixels of a forbidden zone at the
+left of the screen. All constrained window function (f.movepack,
+f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
+Default is 0;
+
 .IP "\fBBorderResizeCursors\fP
 This variable specifies that \fIctwm\fP should use resizing cursors when
 the pointer is on the window border. To be used preferably when you have
 bound a button to f.resize in the frame context.
+
+.IP "\fBBorderRight\fP \fIpixels\fP" 8
+This variable specifies the width in pixels of a forbidden zone at the
+right of the screen. All constrained window function (f.movepack,
+f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
+Default is 0;
 
 .IP "\fBBorderShadowDepth\fP \fIpixels\fP" 8
 This variable specifies the depth of the shadow \fIctwm\fP uses for
@@ -436,12 +460,19 @@ used in unhighlighted borders (only if \fBNoHighlight\fP hasn't been set),
 and may only be given within a \fBColor\fP or \fBMonochrome\fP list.  The
 optional \fIwincolorlist\fP allows per-window colors to be specified.
 The default  is "white".
+
 .IP "\fBBorderTileForeground\fP \fIstring\fP [{ \fIwincolorlist\fP }]" 8
 This variable specifies the default foreground color in the gray pattern
 used in unhighlighted borders (only
 if \fBNoHighlight\fP hasn't been set), and may only be given within a 
 \fBColor\fP or \fBMonochrome\fP list.  The optional \fIwincolorlist\fP allows
 per-window colors to be specified.  The default is "black".
+
+.IP "\fBBorderTop\fP \fIpixels\fP" 8
+This variable specifies the width in pixels of a forbidden zone at the
+top of the screen. All constrained window function (f.movepack,
+f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
+Default is 0;
 
 .IP "\fBBorderWidth\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of the border surrounding
@@ -592,6 +623,9 @@ This variable tells \fIctwm\fP not to paint the root window, whatever you told i
 the Workspaces specification. This is useful to have pixmaps in the Workspace
 Map but not on the root window.
 
+.IP "\fBDontSave\fP { \fIwin-list\fP } " 8
+These windows won't have their characteristics saved for the session manager.
+
 .IP "\fBDontSetInactive\fP { \fIwin-list\fP } " 8
 These windows won't be set to InactiveState when they become invisible
 due to a change workspace. This has been added because some ill-behaved
@@ -634,13 +668,16 @@ The default is "black".
 .IP "\fBIconBorderWidth\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of the border surrounding
 icon windows.  The default is 2.
+
 .IP "\fBIconDirectory\fP \fIstring\fP" 8
 This variable specifies the directory that should be searched if 
 if a bitmap file cannot be found in any of the directories
 in the \fBbitmapFilePath\fP resource.
+
 .IP "\fBIconFont\fP \fIstring\fP" 8
 This variable specifies the font to be used to display icon names within
 icons.  The default is "variable".
+
 .IP "\fBIconForeground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the foreground color to be used when displaying icons,
 and may only be specified inside of a 
@@ -649,6 +686,7 @@ The optional \fIwin-list\fP is a list of window names and colors so that
 per-window colors may be specified.  See the \fBBorderColor\fP
 variable for a complete description of the \fIwin-list\fP.
 The default is "black".
+
 .IP "\fBIconifyByUnmapping\fP [{ \fIwin-list\fP }]" 8
 This variable indicates that windows should be iconified by being unmapped
 without trying to map any icons.  This assumes that the user is will 
@@ -658,9 +696,11 @@ If the optional \fIwin-list\fP is provided, only those windows will be
 iconified by simply unmapping.  Windows that have both this and the
 \fBIconManagerDontShow\fP options set may not be accessible if no binding
 to the \fITwmWindows\fP menu is set in the user's startup file.
+
 .IP "\fBIconJustification\fP \fIstring\fP" 8
 Where string is either \fB"left"\fP, \fB"center"\fP or \fB"right"\fP.
 Tells \fIctwm\fP how to justify the icon image against the icon title (if any).
+
 .IP "\fBIconManagerBackground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the background color to use for icon manager entries,
 and may only be specified inside of a 
@@ -669,15 +709,18 @@ The optional \fIwin-list\fP is a list of window names and colors so that
 per-window colors may be specified.  See the \fBBorderColor\fP
 variable for a complete description of the \fIwin-list\fP.
 The default is "white".
+
 .IP "\fBIconManagerDontShow\fP [{ \fIwin-list\fP }]" 8
 This variable indicates that the icon manager should not display any
 windows.  If the optional \fIwin-list\fP is given, only those windows will
 not be displayed.  This variable is used to prevent windows that are rarely
 iconified (such as \fIxclock\fP or \fIxload\fP) from taking up space in
 the icon manager.
+
 .IP "\fBIconManagerFont\fP \fIstring\fP" 8
 This variable specifies the font to be used when displaying icon manager
 entries.  The default is "variable".
+
 .IP "\fBIconManagerForeground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the foreground color to be used when displaying
 icon manager entries, and may only be specified inside of a 
@@ -686,6 +729,7 @@ The optional \fIwin-list\fP is a list of window names and colors so that
 per-window colors may be specified.  See the \fBBorderColor\fP
 variable for a complete description of the \fIwin-list\fP.
 The default is "black".
+
 .IP "\fBIconManagerGeometry\fP \fIstring\fP [ \fIcolumns\fP ]" 8
 This variable specifies the geometry of the icon manager window.  The 
 \fIstring\fP argument is standard geometry specification that indicates 
@@ -693,6 +737,7 @@ the initial full size of the icon manager.  The icon manager window is
 then broken into \fIcolumns\fP pieces and scaled according to the number
 of entries in the icon manager.  Extra entries are wrapped to form
 additional rows.  The default number of columns is 1.
+
 .IP "\fBIconManagerHighlight\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the border color to be used when highlighting
 the icon manager entry that currently has the focus,
@@ -702,6 +747,7 @@ The optional \fIwin-list\fP is a list of window names and colors so that
 per-window colors may be specified.  See the \fBBorderColor\fP
 variable for a complete description of the \fIwin-list\fP.
 The default is "black".
+
 .IP "\fBIconManagers\fP { \fIiconmgr-list\fP }" 8
 This variable specifies a list of icon managers to create.  Each item in the
 \fIiconmgr-list\fP has the following format:
@@ -781,6 +827,12 @@ Windows that match ``XTerm'' and would not be iconified by unmapping, and would 
 to use  the icon bitmap in the file ``xterm.icon''.If \fBForceIcons\fP is
 specified, this bitmap will be used even if the client has requested its
 own icon pixmap.
+
+.IP "\fBIgnoreCaseInMenuSelection\fP" 8
+Used when moving the pointer inside a menu with the keyboard. When you
+type a letter, the pointer goes to the next entry beginning with this
+letter. If IgnoreCaseInMenuSelection is present, this selection ignores
+the case of this first letter.
 
 .IP "\fBIgnoreLockModifier\fP" 8
 If present, all bindings (buttons and keys) will ignore the LockMask. Useful if you
@@ -1346,6 +1398,9 @@ any iconified windows it encounters.  This is typically used to make a key
 binding that will pop a particular window (such as \fIxmh\fP), no matter
 where it is.  The default is for \fBf.warpto\fP to ignore iconified windows.
 
+.IP "\fBWindowRingExclude\fP [{ \fIwin-list\fP }]" 8
+All listed windows will be excluded from the WarpRing.
+
 .IP "\fBWMgrButtonShadowDepth\fP \fIdepth\fP" 8
 Control the depth of the shadow of the workspace manager buttons.
 
@@ -1421,6 +1476,7 @@ When moving windows around, the x coordinate will always be a multiple of
 this variable. Default id 1. f.forcemove ignores this variable.
 
 .IP "\fBYMoveGrid\fP \fInumber\fP" 8
+Same with y coordinate.
 
 .IP "\fBXorValue\fP \fInumber\fP" 8
 This variable specifies the value to use when drawing window outlines for
@@ -1625,6 +1681,11 @@ field of the binding command. For example:
 When using an alternate keymaps, only the root, window, icon and iconmgr
 contexts are allowed.
 
+.IP "\fBf.autolower\fP" 8
+This function toggles whether or not the selected window is lowered
+whenever the pointer leaves it.  See the description of the variable
+\fBAutoLower\fP.
+
 .IP "\fBf.autoraise\fP" 8
 This function toggles whether or not the selected window is raised whenever
 entered by the pointer.  See the description of the variable \fBAutoRaise\fP.
@@ -1783,6 +1844,24 @@ This function displays a summary of the name and geometry of the
 selected window.  Clicking the pointer or pressing a key in the window
 will dismiss it.
 
+.IP "\fBf.initsize\fP" 8
+This function resets a window to its initial size given by the
+WM_NORMAL_HINTS hints.
+
+.IP "\fBf.jumpdown\fP \fIstep\fP" 8
+This function is designed to be bound to a key, it moves the current window
+(step * {X,Y}MoveGrid) pixels downward. stopping if the window encounters
+another window or the screen border (ala f.pack).
+
+.IP "\fBf.jumpleft\fP \fIstep\fP" 8
+Leftward equivalent of f.jumpdown.
+
+.IP "\fBf.jumpright\fP \fIstep\fP" 8
+Rightward equivalent of f.jumpdown.
+
+.IP "\fBf.jumpup\fP \fIstep\fP" 8
+Upward equivalent of f.jumpdown.
+
 .IP "\fBf.lefticonmgr\fI" 8
 This function similar to \fBf.backiconmgr\fP except that wrapping does not
 change rows.
@@ -1836,6 +1915,12 @@ other window is pushed. If you go too far over the other window (more that
 \fIMovePackResistance\fP pixels), there is no push and the moving window
 can overlap with the other window. Only available if \fIOpaqueMove\fP is
 active.
+
+.IP "\fBf.moveresize\fP \fIgeometry\fP" 8
+Takes one string argument which is a geometry with the
+standard X geometry syntax (e.g. 200x300+150-0). Sets the current window
+to the specified geometry. The width and height are to be given in pixel,
+no base size or resize increment are used.
 
 .IP "\fBf.nexticonmgr\fI" 8
 This function warps the pointer to the next icon manager containing any windows
@@ -1921,6 +2006,11 @@ manager.
 .IP "\fBf.rightzoom\fP" 8
 This variable is similar to the \fBf.bottomzoom\fP function except that
 the selected window is only resized to the right half of the display.
+
+.IP "\fBf.ring\fP" 8
+Selects a window and adds it to the WarpRing, or removes it if it
+was already in the ring. This command makes \fBf.warpring\fP \fI much \fP more
+useful, by making its configuration dynamic.
 
 .IP "\fBf.savegeometry\fP" 8
 The geometry of the current window is saved. The next call to

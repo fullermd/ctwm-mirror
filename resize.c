@@ -671,9 +671,10 @@ EndResize()
         PackIconManager(tmp_win->iconmgrp);
     }
 
-    if (!Scr->NoRaiseResize)
+    if (!Scr->NoRaiseResize) {
         RaiseWindow(tmp_win);
-
+	WMapRaise (tmp_win);
+    }
     UninstallRootColormap();
 
     ResizeWindow = None;
@@ -1116,14 +1117,18 @@ int flag;
     Window      junkRoot;
     unsigned int junkbw, junkDepth;
     int basex, basey;
+    int border_x, border_y;
     int frame_bw_times_2;
 
 	XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
 	        &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
 	        &junkDepth);
 
-	basex = 0;
-	basey = 0;
+	basex = Scr->BorderLeft;
+	basey = Scr->BorderTop;
+
+        border_x = Scr->BorderLeft + Scr->BorderRight;
+        border_y = Scr->BorderTop + Scr->BorderBottom;
 
         if (tmp_win->zoomed == flag)
         {
@@ -1154,42 +1159,42 @@ int flag;
         case ZOOM_NONE:
             break;
         case F_ZOOM:
-            dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
             dragy=basey;
             break;
         case F_HORIZOOM:
             dragx = basex;
-            dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
             break;
         case F_FULLZOOM:
             dragx = basex;
             dragy = basey;
-            dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
+            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
             break;
         case F_LEFTZOOM:
             dragx = basex;
             dragy = basey;
-            dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth/2 - frame_bw_times_2;
+            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
+            dragWidth = (Scr->MyDisplayWidth - border_x)/2 - frame_bw_times_2;
             break;
         case F_RIGHTZOOM:
-            dragx = basex + Scr->MyDisplayWidth/2;
+            dragx = basex + (Scr->MyDisplayWidth - border_x)/2;
             dragy = basey;
-            dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth/2 - frame_bw_times_2;
+            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
+            dragWidth = (Scr->MyDisplayWidth - border_x)/2 - frame_bw_times_2;
             break;
         case F_TOPZOOM:
             dragx = basex;
             dragy = basey;
-            dragHeight = Scr->MyDisplayHeight/2 - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+            dragHeight = (Scr->MyDisplayHeight - border_y)/2 - frame_bw_times_2;
+            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
             break;
         case F_BOTTOMZOOM:
             dragx = basex;
-            dragy = basey + Scr->MyDisplayHeight/2;
-            dragHeight = Scr->MyDisplayHeight/2 - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+            dragy = basey + (Scr->MyDisplayHeight - border_y)/2;
+            dragHeight = (Scr->MyDisplayHeight - border_y)/2 - frame_bw_times_2;
+            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
             break;
          }
       }

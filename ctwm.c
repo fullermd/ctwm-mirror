@@ -355,12 +355,16 @@ main(argc, argv, environ)
 	      case 'k':				/* -keep m4 tmp file */
 		KeepTmpFile = True;
 		continue;
+#endif
 	      case 'n':				/* -don't preprocess through m4 */
+#ifdef USEM4
 		if (!strcmp(argv[i],"-name")) {
+#endif
 		    if (++i >= argc) goto usage;
 		    captivename = argv[i];
 		    continue;
 		}
+#ifdef USEM4
 		GoThroughM4 = False;
 		continue;
 #endif
@@ -379,9 +383,9 @@ main(argc, argv, environ)
       usage:
 	fprintf (stderr, "usage: %s [-display dpy] [-version] [-info]", ProgramName);
 #ifdef USEM4
-	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-n]\n");
+	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-n] [-name name]\n");
 #else
-	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]]\n");
+	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-name name] \n");
 #endif
 	exit (1);
     }
@@ -563,6 +567,7 @@ main(argc, argv, environ)
 	Scr->StartSqueezed = NULL;
 	Scr->MakeTitle = NULL;
 	Scr->AutoRaise = NULL;
+	Scr->AutoLower = NULL;
 	Scr->IconNames = NULL;
 	Scr->NoHighlight = NULL;
 	Scr->NoStackModeL = NULL;
@@ -579,7 +584,9 @@ main(argc, argv, environ)
 	Scr->SqueezeTitleL = NULL;
 	Scr->DontSqueezeTitleL = NULL;
 	Scr->WindowRingL = NULL;
+	Scr->WindowRingExcludeL = NULL;
 	Scr->WarpCursorL = NULL;
+	Scr->DontSave = NULL;
 	Scr->OpaqueMoveList = NULL;
 	Scr->NoOpaqueMoveList = NULL;
 	Scr->OpaqueResizeList = NULL;
@@ -925,6 +932,7 @@ InitVariables()
     FreeList(&Scr->OccupyAll);
     FreeList(&Scr->MakeTitle);
     FreeList(&Scr->AutoRaise);
+    FreeList(&Scr->AutoLower);
     FreeList(&Scr->IconNames);
     FreeList(&Scr->NoHighlight);
     FreeList(&Scr->NoStackModeL);
@@ -939,7 +947,9 @@ InitVariables()
     FreeList(&Scr->SqueezeTitleL);
     FreeList(&Scr->DontSqueezeTitleL);
     FreeList(&Scr->WindowRingL);
+    FreeList(&Scr->WindowRingExcludeL);
     FreeList(&Scr->WarpCursorL);
+    FreeList(&Scr->DontSave);
     FreeList(&Scr->UnmapByMovingFarAway);
     FreeList(&Scr->DontSetInactive);
     FreeList(&Scr->AutoSqueeze);
@@ -991,6 +1001,7 @@ InitVariables()
     Scr->BorderWidth = BW;
     Scr->IconBorderWidth = BW;
     Scr->NumAutoRaises = 0;
+    Scr->NumAutoLowers = 0;
     Scr->TransientOnTop = 30;
     Scr->NoDefaults = FALSE;
     Scr->UsePPosition = PPOS_OFF;
@@ -1094,13 +1105,20 @@ InitVariables()
     Scr->RaiseOnClick = False;
     Scr->RaiseOnClickButton = 1;
     Scr->IgnoreLockModifier = False;
+    Scr->IgnoreCaseInMenuSelection = False;
     Scr->PackNewWindows = False;
 
+    Scr->BorderTop    = 0;
+    Scr->BorderBottom = 0;
+    Scr->BorderLeft   = 0;
+    Scr->BorderRight  = 0;
+    
     /* setup default fonts; overridden by defaults from system.twmrc */
-#define DEFAULT_NICE_FONT "variable"
-#define DEFAULT_FAST_FONT "fixed"
 
 #ifdef I18N
+#   define DEFAULT_NICE_FONT "-*-helvetica-bold-r-normal-*-*-120-*"
+#   define DEFAULT_FAST_FONT "-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-*"
+
     Scr->TitleBarFont.font_set = NULL;
     Scr->TitleBarFont.basename = DEFAULT_NICE_FONT;
     Scr->MenuFont.font_set = NULL;
@@ -1114,6 +1132,9 @@ InitVariables()
     Scr->DefaultFont.font_set = NULL;
     Scr->DefaultFont.basename = DEFAULT_FAST_FONT;
 #else    
+#   define DEFAULT_NICE_FONT "variable"
+#   define DEFAULT_FAST_FONT "fixed"
+
     Scr->TitleBarFont.font = NULL;
     Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
     Scr->MenuFont.font = NULL;

@@ -3856,7 +3856,13 @@ Atom prop;
 	    /* property is encoded as compound text - convert to locale string */
 	    status = XmbTextPropertyToTextList(dpy, &text_prop,
 					       &text_list, &text_list_count);
+	    if (text_list_count == 0) {
+		stringptr = NULL;
+	    } else
 	    if (text_list == (char **)0) {
+		stringptr = NULL;
+	    } else
+	    if (text_list [0] == (char *)0) {
 		stringptr = NULL;
 	    } else
 	    if (status < 0 || text_list_count < 0) {
@@ -3899,3 +3905,41 @@ Atom prop;
 }
 #endif /* NO_LOCALE */
 
+
+static void ConstrainLeftTop (value, border)
+int *value;
+int border;
+{
+    if (*value < border &&
+        (Scr->MoveOffResistance < 0 ||
+         *value > border - Scr->MoveOffResistance))
+    {
+        *value = border;
+    }
+}
+
+static void ConstrainRightBottom (value, size1, border, size2)
+int *value;
+int size1;
+int border;
+int size2;
+{
+    if (*value + size1 > size2 - border &&
+        (Scr->MoveOffResistance < 0 ||
+         *value + size1 < size2 - border + Scr->MoveOffResistance))
+    {
+        *value = size2 - size1 - border;
+    }
+}
+
+void ConstrainByBorders (left, width, top, height)
+int *left;
+int width;
+int *top;
+int height;
+{
+    ConstrainRightBottom (left, width, Scr->BorderRight, Scr->MyDisplayWidth);
+    ConstrainLeftTop     (left, Scr->BorderLeft);
+    ConstrainRightBottom (top, height, Scr->BorderBottom, Scr->MyDisplayHeight);
+    ConstrainLeftTop     (top, Scr->BorderTop);
+}

@@ -163,8 +163,9 @@ extern int ResizeOrigX;
 extern int ResizeOrigY;
 
 static int enter_flag;
+static int leave_flag;
 static int ColortableThrashing;
-static TwmWindow *enter_win, *raise_win;
+static TwmWindow *enter_win, *raise_win, *leave_win, *lower_win;
 
 ScreenInfo *FindScreenInfo();
 int ButtonPressed = -1;
@@ -212,7 +213,26 @@ void SetRaiseWindow (tmp)
     enter_flag = TRUE;
     enter_win = NULL;
     raise_win = tmp;
+    leave_win = NULL;
+    leave_flag = FALSE;
+    lower_win = NULL;
     XSync (dpy, 0);
+}
+
+void AutoLowerWindow (tmp)
+     TwmWindow *tmp;
+{
+    LowerWindow (tmp);
+
+    if (ActiveMenu && ActiveMenu->w) XRaiseWindow (dpy, ActiveMenu->w);
+    XSync (dpy, 0);
+    enter_win = NULL;
+    enter_flag = FALSE;
+    raise_win = NULL;
+    leave_win = NULL;
+    leave_flag = TRUE;
+    lower_win = tmp;
+    WMapLower (tmp);
 }
 
 
@@ -235,6 +255,8 @@ InitEvents()
     DragWindow = (Window) 0;
     enter_flag = FALSE;
     enter_win = raise_win = NULL;
+    leave_flag = FALSE;
+    leave_win = lower_win = NULL;
 
     for (i = 0; i < MAX_X_EVENT; i++)
 	EventHandler[i] = HandleUnknown;
@@ -493,6 +515,13 @@ HandleEvents()
 		AutoRaiseWindow (enter_win);  /* sets enter_flag T */
 	    } else {
 		enter_flag = FALSE;
+	    }
+	}
+	if ( leave_flag && !QLength(dpy) ) {
+	    if (leave_win && leave_win != lower_win) {
+		AutoLowerWindow (leave_win); /* sets leave_flag T */
+	    } else {
+		leave_flag = FALSE;
 	    }
 	}
 	if (ColortableThrashing && !QLength(dpy) && Scr) {
@@ -1049,9 +1078,17 @@ HandleKeyPress()
 	}
 	else
 	if (strlen (keynam) == 1) {
+	    MenuItem *startitem;
+	    xx = Event.xkey.x;
+	    yy = Event.xkey.y;
+
+	    startitem = ActiveItem ? ActiveItem : ActiveMenu->first;
+	    item = startitem->next;
+	    if (item == (MenuItem*) 0) item = ActiveMenu->first;
 	    modifier = (Event.xkey.state & mods_used);
 	    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
-	    for (item = ActiveMenu->first; item != (MenuItem*) 0; item = item->next) {
+
+	    while (item != startitem) {
 		match  = False;
 		offset = 0;
 		switch (item->item [0]) {
@@ -1059,23 +1096,34 @@ HandleKeyPress()
 			if ((modifier & ControlMask) &&
 			    (keynam [0] == tolower (item->item [1]))) match = True;
 			break;
-		    
 		    case '~' :
 			if ((modifier & Mod1Mask) &&
 			    (keynam [0] == tolower (item->item [1]))) match = True;
 			break;
-		    
 		    case ' ' :
 			offset = 1;
 		    default :
-			if (((modifier & ShiftMask) && isupper (item->item [offset]) &&
+			if (((Scr->IgnoreCaseInMenuSelection) &&
+			    (keynam [0] == tolower (item->item [offset]))) ||
+
+			     ((modifier & ShiftMask) && isupper (item->item [offset]) &&
 			     (keynam [0] == tolower (item->item [offset]))) ||
+
 			    (!(modifier & ShiftMask) && islower (item->item [offset]) &&
 			     (keynam [0] == item->item [offset]))) match = True;
-			 break;
+			break;
 		}
 		if (match) break;
+		item = item->next;
+		if (item == (MenuItem*) 0) item = ActiveMenu->first;
 	    }
+	    if (item == startitem) return;
+	    wx = ActiveMenu->width / 2;
+	    wy = (item->item_num * Scr->EntryHeight) + (Scr->EntryHeight / 2) + 2;
+	    XTranslateCoordinates (dpy, ActiveMenu->w, Scr->Root, wx, wy, &xx, &yy, &junkW);
+	    XWarpPointer (dpy, Scr->Root, Scr->Root, Event.xkey.x, Event.xkey.y,
+			ActiveMenu->width, ActiveMenu->height, xx, yy);
+	    return;
 	}
 	else return;
 	if (item) {
@@ -2050,6 +2098,11 @@ static void remove_window_from_ring (tmp)
 	enter_win = NULL;
     }
     if (raise_win == Tmp_win) raise_win = NULL;
+    if (leave_win == tmp) {
+	leave_flag = FALSE;
+	leave_win = NULL;
+    }
+    if (lower_win == Tmp_win) lower_win = NULL;
 
     /*
      * 1. Unlink window
@@ -2170,6 +2223,7 @@ HandleDestroyNotify()
     if (Tmp_win->next != NULL)
 	Tmp_win->next->prev = Tmp_win->prev;
     if (Tmp_win->auto_raise) Scr->NumAutoRaises--;
+    if (Tmp_win->auto_lower) Scr->NumAutoLowers--;
     if (Tmp_win->frame == lowerontop) lowerontop = -1;
 
     free_window_names (Tmp_win, True, True, True);		/* 1, 2, 3 */
@@ -2302,7 +2356,7 @@ HandleMapRequest()
     /* If no hints, or currently an icon, just "deiconify" */
     else
     {
-      if (OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC)) {
+      if (1/*OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC)*/) {
 	if (Tmp_win->StartSqueezed) Squeeze (Tmp_win);
 	DeIconify(Tmp_win);
 	SetRaiseWindow (Tmp_win);
@@ -2490,7 +2544,7 @@ HandleMotionNotify()
 void
 HandleButtonRelease()
 {
-    int xl, xr, yt, yb, w, h;
+    int xl, yt, w, h;
     unsigned mask;
 
     if (InfoLines) 		/* delete info box on 2nd button release  */
@@ -2545,24 +2599,7 @@ HandleButtonRelease()
 	    DragWindow == Tmp_win->frame) TryToPack (Tmp_win, &xl, &yt);
 	if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 	{
-	    xr = xl + w;
-	    yb = yt + h;
-
-	    if ((xl < 0) && ((Scr->MoveOffResistance < 0) 
-			     || (xl > -Scr->MoveOffResistance)))
-		xl = 0;
-	    if ((xr > Scr->MyDisplayWidth) 
-		&& ((Scr->MoveOffResistance < 0) 
-		    || (xr < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
-		xl = Scr->MyDisplayWidth - w;
-
-	    if ((yt < 0) && ((Scr->MoveOffResistance < 0) 
-			     || (yt > -Scr->MoveOffResistance)))
-		yt = 0;
-	    if ((yb > Scr->MyDisplayHeight)
-		&& ((Scr->MoveOffResistance < 0) 
-		    || (yb < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
-		yt = Scr->MyDisplayHeight - h;
+            ConstrainByBorders (&xl, w, &yt, h);
 	}
 
 	CurrentDragX = xl;
@@ -2587,6 +2624,8 @@ HandleButtonRelease()
 	    raise_win = ((DragWindow == Tmp_win->frame && !Scr->NoRaiseMove)
 			 ? Tmp_win : NULL);
 	}
+
+	/* CCC equivalent code for auto lower not needed? */
 
 	DragWindow = (Window) 0;
 	ConstMove = FALSE;
@@ -2730,8 +2769,9 @@ static void do_key_menu (menu, w)
     int y = Event.xkey.y_root;
     Bool center;
 
-    if (!Scr->NoGrabServer)
-	XGrabServer(dpy);
+/* I don't think this is necessary.
+    if (!Scr->NoGrabServer) XGrabServer(dpy);
+*/
     if (w) {
 	int h = Scr->TBInfo.width - Scr->TBInfo.border;
 	Window child;
@@ -2924,7 +2964,10 @@ HandleButtonPress()
 		    Tmp_win->wmhints->input) {
 		    SetFocus (Tmp_win, CurrentTime);
 		}
-		if (Scr->RaiseOnClick) RaiseWindow (Tmp_win);
+		if (Scr->RaiseOnClick) {
+		    RaiseWindow (Tmp_win);
+		    WMapRaise   (Tmp_win);
+		}
 		XSync (dpy, 0);
 		XAllowEvents (dpy, ReplayPointer, CurrentTime);
 		XSync (dpy, 0);
@@ -3619,6 +3662,13 @@ HandleLeaveNotify()
 		}
 	    }
 	}
+	/* Autolower modification. */
+	if (Tmp_win->auto_lower) {
+	     leave_win = Tmp_win;
+	    if (leave_flag == FALSE) AutoLowerWindow (Tmp_win);
+	} else if (leave_flag && lower_win == Tmp_win)
+	     leave_win = Tmp_win;
+
 	XSync (dpy, 0);
 	return;
     }
@@ -3971,7 +4021,7 @@ InstallWindowColormaps (type, tmp)
 	    cmap->state &= ~CM_INSTALL;
 	    if (!(state & CM_INSTALLED)) {
 		cmap->install_req = NextRequest(dpy);
-		/*printf ("XInstallColormap : %x, %x\n", cmap, cmap->c);*/
+		/* printf ("XInstallColormap : %x, %x\n", cmap, cmap->c); */
 		XInstallColormap(dpy, cmap->c);
 	    }
 	    cmap->state |= CM_INSTALLED;

@@ -699,7 +699,12 @@ int def_x, def_y;
 	else
 	{
 	    tmp_win->icon_not_ours = TRUE;
-	    event_mask = EnterWindowMask | LeaveWindowMask;
+	    image = None;
+	    icon->width  = icon->w_width;
+	    icon->height = icon->w_height;
+	    icon->image  = image;
+	    icon->has_title = False;
+	    event_mask = 0;
 	}
     }
     else

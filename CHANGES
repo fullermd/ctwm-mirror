@@ -979,7 +979,7 @@ IconRegion geomstring vgrav hgrav gridwidth gridheight [iconjust] [iconregjust] 
 
    18 - Two new client resources are now handled by Ctwm :
 
-ctwm.captive: <captive_ctwm_name>
+ctwm.redirect: <captive_ctwm_name>
 
     The new client window is open in the captive Ctwm with name :
     <captive_ctwm_name>.
@@ -1024,3 +1024,68 @@ TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
    25 - PackNewWindows
 	Use f.movepack algorithm instead of f.move when opening a new window.
 
+
+
+    Changes from version 3.5 to 3.5.1
+    ---------------------------------
+
+
+    1 - f.initsize : resets a window to its initial size given by the
+	WM_NORMAL_HINTS hints.
+
+    2 - f.ring : Selects a window and adds it to the WarpRing, or removes it if
+	it was already in the ring. This command makes f.warpring much more
+	useful, by making its configuration dynamic (thanks to Philip Kizer
+	<pckizer@tamu.edu>).
+
+    3 - f.jumpleft, f.jumpright, f.jumpup, f.jumpdown : takes one integer
+	argument (the step). These function are designed to be bound to keys,
+	they move the current window (step * {X,Y}MoveGrid) pixels in the
+	corresponding direction. stopping when the window encounters another
+	window (ala f.pack).
+
+
+    Changes from version 3.5.1 to 3.5.2
+    -----------------------------------
+
+
+    1 - f.moveresize : Takes one string argument which is a geometry with the
+	standard X geometry syntax (e.g. 200x300+150-0). Sets the current
+	window to the specified geometry. The width and height are to be given
+	in pixel, no base size or resize increment are used.
+
+    2 - AutoLower et f.autolower : from Kai Groﬂjohann
+	(Kai.Grossjohann@CS.Uni-Dortmund.DE). Same as autoraise but with lower.
+
+    3 - WindowRingExclude : Takes a window list as argument. All listed windows
+	will be excluded from the WarpRing.
+
+    4 - A new menu : 'TwmIcons' same as 'TwmWindows', but shows only iconified
+	windows. I did this when I got bored of having icons. Now I have no
+	icons and no icon managers. I use this menu to deiconify windows.
+	When I was young, I liked to have brightly colored icons, but now that
+	I am getting old(er), I prefer a bare desktop.
+
+
+    Changes from version 3.5.2 to 3.5.3
+    -----------------------------------
+
+    1 - Fix line numbers for errors when using m4 preprocessor. Send thanks
+	to Josh Wilmes <josh@hitchhiker.org>.
+
+    2 - Fix the way menu entries are selected with the keyboard. Now
+	when you type a letter, the pointer moves to the next entry
+	whose first letter is this letter, but does not activate it.
+	The new keyword IgnoreCaseInMenuSelection, can be used to
+	ignore case for this delection.
+
+    3 - New keyword : DontSave, Takes a window list as argument. All listed
+	windows won't have their characteristics saved for the session manager.
+	Patch from Matthias Baake <Matthias.Baake@gmx.de>
+
+    4 - Also from Matthias Baake <Matthias.Baake@gmx.de>. I let him speak :
+	With the new keywords BorderLeft, BorderRight, BorderBottom and BorderTop
+	(each of them is optional with a default value of 0 and takes a
+	nonnegative integer as argument) you can declare a border "off limits" for
+	f.move etc.. These borders act the same way as the real borders of the
+	screen when moving windows; you can use f.forcemove to override them. 

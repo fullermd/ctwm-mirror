@@ -117,4 +117,7 @@ typedef struct _Image {
 } Image;
 
 extern Image *GetImage ();
+
+extern void ConstrainByBorders ();
+
 #endif /* _UTIL_ */

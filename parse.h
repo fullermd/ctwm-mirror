@@ -155,6 +155,9 @@ extern void TwmOutput();
 #define F_RESTOREGEOMETRY	81
 #define F_TOGGLEWORKMGR		82
 #define F_HYPERMOVE		83
+#define F_INITSIZE		84
+#define F_RING			85
+#define F_AUTOLOWER		86
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
@@ -174,6 +177,11 @@ extern void TwmOutput();
 #define F_TOGGLEOCCUPATION	116	/* string */
 #define F_PACK			117	/* string */
 #define F_FILL			118	/* string */
+#define F_JUMPRIGHT		119	/* string */
+#define F_JUMPLEFT		120	/* string */
+#define F_JUMPUP		121	/* string */
+#define F_JUMPDOWN		122	/* string */
+#define F_MOVERESIZE		123	/* string */
 
 #define D_NORTH			1
 #define D_SOUTH			2

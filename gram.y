@@ -113,7 +113,7 @@ extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
 extern name_list **do_colorlist_keyword();
 extern int do_color_keyword(), do_string_savecolor();
 extern int do_var_savecolor(), do_squeeze_entry();
-extern int yylineno;
+extern int twmrc_lineno;
 extern yylex();
 %}
 
@@ -135,12 +135,12 @@ extern yylex();
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
 %token <num> MOVE RESIZE WAITC SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON 
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD 
-%token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
+%token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WINDOW_RING_EXCLUDE WARP_CURSOR ERRORTOKEN
 %token <num> NO_STACKMODE ALWAYS_ON_TOP WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
 %token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
 %token <num> UNMAPBYMOVINGFARAWAY OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
 %token <num> DONTSETINACTIVE CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
-%token <num> AUTOSQUEEZE STARTSQUEEZED
+%token <num> AUTOSQUEEZE STARTSQUEEZED DONT_SAVE AUTO_LOWER
 %token <ptr> STRING
 
 %type <ptr> string
@@ -319,6 +319,8 @@ stmt		: error
 						Scr->StackMode = FALSE; }
 		| NO_BORDER		{ list = &Scr->NoBorder; }
 		  win_list
+		| DONT_SAVE		{ list = &Scr->DontSave; }
+		  win_list
 		| NO_ICON_TITLE		{ list = &Scr->NoIconTitle; }
 		  win_list
 		| NO_ICON_TITLE		{ if (Scr->FirstTime)
@@ -334,6 +336,9 @@ stmt		: error
 		| AUTO_RAISE		{ list = &Scr->AutoRaise; }
 		  win_list
 		| AUTO_RAISE		{ Scr->AutoRaiseDefault = TRUE; }
+		| AUTO_LOWER		{ list = &Scr->AutoLower; }
+		  win_list
+		| AUTO_LOWER		{ Scr->AutoLowerDefault = TRUE; }
 		| MENU string LP string COLON string RP	{
 					root = GetRoot($2, $4, $6); }
 		  menu			{ root->real_menu = TRUE;}
@@ -405,6 +410,10 @@ stmt		: error
 		  win_list
 		| WINDOW_RING           { Scr->WindowRingAll = TRUE; }
 		;
+		| WINDOW_RING_EXCLUDE    { if (!Scr->WindowRingL)
+		                              Scr->WindowRingAll = TRUE;
+		                          list = &Scr->WindowRingExcludeL; }
+                  win_list
 
 noarg		: KEYWORD		{ if (!do_single_keyword ($1)) {
 					    twmrc_error_prefix();
@@ -1161,5 +1170,5 @@ static Bool CheckColormapArg (s)
 
 twmrc_error_prefix ()
 {
-    fprintf (stderr, "%s:  line %d:  ", ProgramName, yylineno);
+    fprintf (stderr, "%s:  line %d:  ", ProgramName, twmrc_lineno);
 }

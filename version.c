@@ -51,9 +51,9 @@
  */
 
 #ifdef I18N
-char *Version = "MIT X Consortium, R6, ctwm 3.5 + I18N Patch ";
-char *VersionNumber = "3.5";
+char *Version = "MIT X Consortium, R6, ctwm 3.5.2b + I18N Patch ";
+char *VersionNumber = "3.5.2b";
 #else
-char *Version = "MIT X Consortium, R6, ctwm 3.5";
-char *VersionNumber = "3.5";
+char *Version = "MIT X Consortium, R6, ctwm 3.5.2b";
+char *VersionNumber = "3.5.2b";
 #endif

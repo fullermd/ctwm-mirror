@@ -130,7 +130,7 @@ static FILE *start_m4();
 static char *m4_defs();
 #endif
 
-extern int yylineno;
+extern int twmrc_lineno;
 extern int mods;
 
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
@@ -172,7 +172,7 @@ static int doparse (ifunc, srctypename, srcname)
     mods = 0;
     ptr = 0;
     len = 0;
-    yylineno = 1;
+    twmrc_lineno = 0;
     ParseError = FALSE;
     twmInputFunc = ifunc;
     overflowlen = 0;
@@ -348,7 +348,7 @@ int ParseTwmrc (filename)
 	status = doparse (m4twmFileInput, "file", cp);
 	wait (0);
 	fclose (twmrc);
-        fclose (raw);
+        if (GoThroughM4) fclose (raw);
 #else
 	status = doparse (twmFileInput, "file", cp);
 	fclose (twmrc);
@@ -410,7 +410,7 @@ static int twmFileInput()
             if (fgets(buff, BUF_LEN, rc_includes[include_file].fp) == NULL) {
                 free(rc_includes[include_file].name);
                 fclose(rc_includes[include_file].fp);
-                yylineno = rc_includes[include_file--].lineno;
+                twmrc_lineno = rc_includes[include_file--].lineno;
             } else
                 break;
         }
@@ -418,7 +418,7 @@ static int twmFileInput()
         if (!include_file)
 	if (fgets(buff, BUF_LEN, twmrc) == NULL)
 	    return 0;
-	yylineno++;
+	twmrc_lineno++;
 
         if (strncmp(buff, "include", 7) == 0) {
              /* Whoops, an include file! */
@@ -441,8 +441,8 @@ static int twmFileInput()
                   continue;
              }
              rc_includes[include_file].fp = fp;
-             rc_includes[include_file].lineno = yylineno;
-             yylineno = 0;
+             rc_includes[include_file].lineno = twmrc_lineno;
+             twmrc_lineno = 0;
              rc_includes[include_file].name = malloc(strlen(p)+1);
              strcpy(rc_includes[include_file].name, p);
              continue;
@@ -458,16 +458,23 @@ static int twmFileInput()
 
 static int m4twmFileInput()
 {
-    int pppp;
+    int line;
+
     if (overflowlen){
 	return((int) overflowbuff[--overflowlen]);
     }
 
     while (ptr == len) {
+	nextline:
 	if (fgets(buff, BUF_LEN, twmrc) == NULL) return(0);
-	
-	yylineno++;
-	
+
+	if (sscanf(buff, "#line %d", &line)) {
+	    twmrc_lineno = line - 1;
+	    goto nextline;
+	} else {
+	    twmrc_lineno++;
+	}
+
 	ptr = 0;
 	len = strlen(buff);
     }
@@ -606,6 +613,7 @@ typedef struct _TwmKeyword {
 #define kw0_IgnoreLockModifier		59
 #define kw0_AutoFocusToTransients       60 /* kai */
 #define kw0_PackNewWindows		61
+#define kw0_IgnoreCaseInMenuSelection	62
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -661,6 +669,11 @@ typedef struct _TwmKeyword {
 #define kwn_OpenWindowTimeout		31
 #define kwn_RaiseOnClickButton		32
 
+#define kwn_BorderTop			33
+#define kwn_BorderBottom		34
+#define kwn_BorderLeft			35
+#define kwn_BorderRight			36
+
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
 #define kwcl_BorderTileForeground	3
@@ -696,17 +709,22 @@ static TwmKeyword keytable[] = {
     { "alwaysshowwindowwhenmovingfromworkspacemanager", KEYWORD, kw0_ShowWinWhenMovingInWmgr },
     { "animationspeed",		NKEYWORD, kwn_AnimationSpeed },
     { "autofocustotransients",  KEYWORD, kw0_AutoFocusToTransients }, /* kai */
+    { "autolower",		AUTO_LOWER, 0 },
     { "autooccupy",		KEYWORD, kw0_AutoOccupy },
     { "autoraise",		AUTO_RAISE, 0 },
     { "autoraiseicons",		KEYWORD, kw0_AutoRaiseIcons },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
     { "autosqueeze",		AUTOSQUEEZE, 0 },
     { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
+    { "borderbottom",		NKEYWORD, kwn_BorderBottom },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
+    { "borderleft",		NKEYWORD, kwn_BorderLeft },
     { "borderresizecursors",	KEYWORD, kw0_BorderResizeCursors },
+    { "borderright",		NKEYWORD, kwn_BorderRight },
     { "bordershadowdepth",	NKEYWORD, kwn_BorderShadowDepth },
     { "bordertilebackground",	CLKEYWORD, kwcl_BorderTileBackground },
     { "bordertileforeground",	CLKEYWORD, kwcl_BorderTileForeground },
+    { "bordertop",		NKEYWORD, kwn_BorderTop },
     { "borderwidth",		NKEYWORD, kwn_BorderWidth },
     { "button",			BUTTON, 0 },
     { "buttonindent",		NKEYWORD, kwn_ButtonIndent },
@@ -731,6 +749,7 @@ static TwmKeyword keytable[] = {
     { "donticonifybyunmapping",	DONT_ICONIFY_BY_UNMAPPING, 0 },
     { "dontmoveoff",		KEYWORD, kw0_DontMoveOff },
     { "dontpaintrootwindow",	KEYWORD, kw0_DontPaintRootWindow },
+    { "dontsave",		DONT_SAVE, 0 },
     { "dontsetinactive",	DONTSETINACTIVE, 0 },
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
     { "dontwarpcursorinwmap",	KEYWORD, kw0_DontWarpCursorInWMap },
@@ -740,6 +759,7 @@ static TwmKeyword keytable[] = {
     { "f.adoptwindow",		FKEYWORD, F_ADOPTWINDOW },
     { "f.altcontext",		FKEYWORD, F_ALTCONTEXT },
     { "f.altkeymap",		FSKEYWORD, F_ALTKEYMAP },
+    { "f.autolower",		FKEYWORD, F_AUTOLOWER },
     { "f.autoraise",		FKEYWORD, F_AUTORAISE },
     { "f.backiconmgr",		FKEYWORD, F_BACKICONMGR },
     { "f.backmapiconmgr",	FKEYWORD, F_BACKMAPICONMGR },
@@ -776,6 +796,11 @@ static TwmKeyword keytable[] = {
     { "f.hzoom",		FKEYWORD, F_HORIZOOM },
     { "f.iconify",		FKEYWORD, F_ICONIFY },
     { "f.identify",		FKEYWORD, F_IDENTIFY },
+    { "f.initsize",		FKEYWORD, F_INITSIZE },
+    { "f.jumpdown",		FSKEYWORD, F_JUMPDOWN },
+    { "f.jumpleft",		FSKEYWORD, F_JUMPLEFT },
+    { "f.jumpright",		FSKEYWORD, F_JUMPRIGHT },
+    { "f.jumpup",		FSKEYWORD, F_JUMPUP },
     { "f.lefticonmgr",		FKEYWORD, F_LEFTICONMGR },
     { "f.leftworkspace",	FKEYWORD, F_LEFTWORKSPACE },
     { "f.leftzoom",		FKEYWORD, F_LEFTZOOM },
@@ -785,6 +810,7 @@ static TwmKeyword keytable[] = {
     { "f.movemenu",		FKEYWORD, F_MOVEMENU },
     { "f.movepack",		FKEYWORD, F_MOVEPACK },
     { "f.movepush",		FKEYWORD, F_MOVEPUSH },
+    { "f.moveresize",		FSKEYWORD, F_MOVERESIZE },
     { "f.nexticonmgr",		FKEYWORD, F_NEXTICONMGR },
     { "f.nextworkspace",	FKEYWORD, F_NEXTWORKSPACE },
     { "f.nop",			FKEYWORD, F_NOP },
@@ -809,6 +835,7 @@ static TwmKeyword keytable[] = {
     { "f.righticonmgr",		FKEYWORD, F_RIGHTICONMGR },
     { "f.rightworkspace",	FKEYWORD, F_RIGHTWORKSPACE },
     { "f.rightzoom",		FKEYWORD, F_RIGHTZOOM },
+    { "f.ring",			FKEYWORD, F_RING },
     { "f.savegeometry",		FKEYWORD, F_SAVEGEOMETRY },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
     { "f.separator",		FKEYWORD, F_SEPARATOR },
@@ -876,6 +903,7 @@ static TwmKeyword keytable[] = {
     { "iconregionalignement",	SKEYWORD, kws_IconRegionAlignement },
     { "iconregionjustification",SKEYWORD, kws_IconRegionJustification },
     { "icons",			ICONS, 0 },
+    { "ignorecaseinmenuselection",	KEYWORD, kw0_IgnoreCaseInMenuSelection },
     { "ignorelockmodifier",	KEYWORD, kw0_IgnoreLockModifier },
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
     { "l",			LOCK, 0 },
@@ -1008,6 +1036,7 @@ static TwmKeyword keytable[] = {
     { "windowfunction",		WINDOW_FUNCTION, 0 },
     { "windowregion",		WINDOW_REGION, 0 },
     { "windowring",		WINDOW_RING, 0 },
+    { "windowringexclude",      WINDOW_RING_EXCLUDE, 0},
     { "wmgrbuttonshadowdepth",	NKEYWORD, kwn_WMgrButtonShadowDepth },
     { "wmgrbuttonstyle",	SKEYWORD, kws_WMgrButtonStyle },
     { "wmgrhorizbuttonindent",	NKEYWORD, kwn_WMgrHorizButtonIndent },
@@ -1290,6 +1319,10 @@ int do_single_keyword (keyword)
 
       case kw0_PackNewWindows:
 	Scr->PackNewWindows = TRUE;
+	return 1;
+
+      case kw0_IgnoreCaseInMenuSelection:
+	Scr->IgnoreCaseInMenuSelection = TRUE;
 	return 1;
 
     }
@@ -1606,6 +1639,26 @@ int do_number_keyword (keyword, num)
       case kwn_BorderShadowDepth:
 	if (Scr->FirstTime) Scr->BorderShadowDepth = num;
 	if (Scr->BorderShadowDepth < 0) Scr->BorderShadowDepth = 2;
+	return 1;
+
+      case kwn_BorderLeft:
+	if (Scr->FirstTime) Scr->BorderLeft = num;
+	if (Scr->BorderLeft < 0) Scr->BorderLeft = 0;
+	return 1;
+
+      case kwn_BorderRight:
+	if (Scr->FirstTime) Scr->BorderRight = num;
+	if (Scr->BorderRight < 0) Scr->BorderRight = 0;
+	return 1;
+
+      case kwn_BorderTop:
+	if (Scr->FirstTime) Scr->BorderTop = num;
+	if (Scr->BorderTop < 0) Scr->BorderTop = 0;
+	return 1;
+
+      case kwn_BorderBottom:
+	if (Scr->FirstTime) Scr->BorderBottom = num;
+	if (Scr->BorderBottom < 0) Scr->BorderBottom = 0;
 	return 1;
 
       case kwn_TitleButtonShadowDepth:
@@ -2017,7 +2070,7 @@ FILE *fraw;
                 dup2(fids[1], 1);       /* stdout = pipe to parent */
                 /* get_defs("m4", dpy, display_name) */
                 tmp_file = m4_defs(dpy, display_name);
-                execlp("m4", "m4", tmp_file, "-", NULL);
+                execlp("m4", "m4", "-s", tmp_file, "-", NULL);
                 /* If we get here we are screwed... */
                 perror("Can't execlp() m4");
                 exit(124);

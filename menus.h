@@ -66,6 +66,7 @@
 
 #define TWM_ROOT	"bLoB_GoOp"	/* my private root menu */
 #define TWM_WINDOWS	"TwmWindows"	/* for f.menu "TwmWindows" */
+#define TWM_ICONS	"TwmIcons"	/* for f.menu "TwmIcons" */
 #define TWM_WORKSPACES	"TwmWorkspaces"	/* for f.menu "TwmWorkspaces" */
 #define TWM_ALLWINDOWS	"TwmAllWindows"	/* for f.menu "TwmAllWindows" */
 
