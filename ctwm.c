@@ -727,7 +727,7 @@ main(argc, argv, environ)
 	InitWorkSpaceManager ();
 
 	InitVirtualScreens (Scr);
-	ConfigureWorkSpaceManager1 ();
+	ConfigureWorkSpaceManager ();
 
 	/* Parse it once for each screen. */
 	if(cfgchk) {
@@ -744,8 +744,6 @@ main(argc, argv, environ)
 	  {
 	    ParseTwmrc(InitFile);
 	  }
-
-	ConfigureWorkSpaceManager2 ();
 
 	if (ShowWelcomeWindow && ! screenmasked) MaskScreen (NULL);
 	if (Scr->ClickToFocus) {

@@ -148,10 +148,7 @@ void InitWorkSpaceManager () {
     if (MapWListContext == (XContext) 0) MapWListContext = XUniqueContext ();
 }
 
-/* dl: I split ConfigureWSM into two functions to make vscreens work properly 
- */
-
-ConfigureWorkSpaceManager1 () {
+ConfigureWorkSpaceManager () {
     virtualScreen *vs;
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
         WorkSpaceWindow *wsw = (WorkSpaceWindow*) malloc (sizeof (WorkSpaceWindow));
@@ -159,27 +156,18 @@ ConfigureWorkSpaceManager1 () {
 	wsw->icon_name       = "WorkSpaceManager Icon";
 	wsw->twm_win	     = (TwmWindow*) 0;
 	vs->wsw = wsw;
-    }
-}
-
-ConfigureWorkSpaceManager2 () {
-  virtualScreen *vs;
-  for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-    	vs->wsw->curColors.back  = Scr->Black;
+	vs->wsw->curColors.back  = Scr->Black;
 	vs->wsw->curColors.fore  = Scr->White;
-	vs->wsw->state	     = Scr->workSpaceMgr.initialstate; /*  = BUTTONSSTATE */
+	vs->wsw->defColors.back  = Scr->White;
+	vs->wsw->defColors.fore  = Scr->Black;	
 	vs->wsw->curImage        = None;
 	vs->wsw->curPaint        = False;
 	vs->wsw->defImage        = None;
-	vs->wsw->defColors.back  = Scr->White;
-	vs->wsw->defColors.fore  = Scr->Black;
+	vs->wsw->state = Scr->workSpaceMgr.initialstate; /* BUTTONSSTATE */
 	vs->wsw->vspace          = Scr->WMgrVertButtonIndent;
 	vs->wsw->hspace          = Scr->WMgrHorizButtonIndent;
-  }
-  Scr->workSpaceMgr.occupyWindow->vspace = Scr->WMgrVertButtonIndent;
-  Scr->workSpaceMgr.occupyWindow->hspace = Scr->WMgrHorizButtonIndent;
+    }
 }
-
 
 void CreateWorkSpaceManager () {
     WorkSpace       *wlist;

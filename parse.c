@@ -1586,6 +1586,8 @@ int do_number_keyword (keyword, num)
     int keyword;
     int num;
 {
+    virtualScreen *vs;
+
     switch (keyword) {
       case kwn_ConstrainedMoveTime:
 	ConstrainedMoveTime = num;
@@ -1669,11 +1671,19 @@ int do_number_keyword (keyword, num)
       case kwn_WMgrVertButtonIndent:
 	if (Scr->FirstTime) Scr->WMgrVertButtonIndent = num;
 	if (Scr->WMgrVertButtonIndent < 0) Scr->WMgrVertButtonIndent = 0;
+	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	  vs->wsw->vspace          = Scr->WMgrVertButtonIndent;
+	}
+	Scr->workSpaceMgr.occupyWindow->vspace = Scr->WMgrVertButtonIndent;
 	return 1;
 
       case kwn_WMgrHorizButtonIndent:
 	if (Scr->FirstTime) Scr->WMgrHorizButtonIndent = num;
 	if (Scr->WMgrHorizButtonIndent < 0) Scr->WMgrHorizButtonIndent = 0;
+	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	  vs->wsw->hspace          = Scr->WMgrHorizButtonIndent;
+	}
+	Scr->workSpaceMgr.occupyWindow->hspace = Scr->WMgrHorizButtonIndent;
 	return 1;
 
       case kwn_WMgrButtonShadowDepth:
