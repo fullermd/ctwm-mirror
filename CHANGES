@@ -1348,3 +1348,7 @@ VirtualScreens {
    34 - When crashing, ctwm now refers to ctwm-bugs@free.lp.se instead of
 	Claude.Lecommandeur@epfl.ch.
 
+   35 - Changed all the code to use ANSI C prototypes instead of the old
+	K&R style.
+	[Richard Levitte]
+
