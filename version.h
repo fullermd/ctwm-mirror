@@ -64,5 +64,6 @@
 #define _VERSION_
 
 extern char *Version;
+extern char *VersionNumber;
 
 #endif /* _VERSION_ */

@@ -73,6 +73,7 @@ extern void	MoveOutline();
 extern Pixmap	GetBitmap(), FindBitmap();
 extern void	GetUnknownIcon();
 extern char 	*ExpandFilename();
+extern char 	*ExpandFilePath();
 
 void MaskScreen ();
 void StartAnimation ();

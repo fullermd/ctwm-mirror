@@ -207,6 +207,7 @@ typedef struct ScreenInfo
     short 	use3Diconmanagers;
     short 	use3Dborders;
     short 	use3Dwmap;
+    short	use3Diconborders;
     short	SunkFocusWindowTitle;
     short	WMgrVertButtonIndent;
     short	WMgrHorizButtonIndent;
@@ -225,6 +226,8 @@ typedef struct ScreenInfo
     short	XMoveGrid, YMoveGrid;
     short	FastServer;
     short	CenterFeedbackWindow;
+    short	SchrinkIconTitles;
+    short	AutoRaiseIcons;
 
     name_list *BorderColorL;
     name_list *IconBorderColorL;
@@ -281,6 +284,7 @@ typedef struct ScreenInfo
     IconMgr *iconmgr;		/* default icon manager  */
     struct IconRegion *FirstRegion;	/* pointer to icon regions */
     struct IconRegion *LastRegion;	/* pointer to the last icon region */
+    struct WindowRegion *FirstWindowRegion;	/* pointer to window regions */
     char *IconDirectory;	/* icon directory to search */
     char *PixmapDirectory;	/* Pixmap directory to search */
     int SizeStringOffset;	/* x offset in size window for drawing */
@@ -299,6 +303,7 @@ typedef struct ScreenInfo
     short AutoRaiseDefault;	/* AutoRaise all windows if true */
     short NoDefaults;		/* do not add in default UI stuff */
     short UsePPosition;		/* what do with PPosition, see values below */
+    short UseSunkTitlePixmap;
     short AutoRelativeResize;	/* start resize relative to position in quad */
     short FocusRoot;		/* is the input focus on the root ? */
     short WarpCursor;		/* warp cursor on de-iconify ? */
@@ -342,6 +347,7 @@ typedef struct ScreenInfo
     short Shadow;		/* show the menu shadow */
     short InterpolateMenuColors;/* make pretty menus */
     short StayUpMenus;		/* stay up menus */
+    short WarpToDefaultMenuEntry; /* warp cursor to default menu entry, if any  */
     short ClickToFocus;		/* click to focus */
     short NoIconManagers;	/* Don't create any icon managers */
     short ClientBorderWidth;	/* respect client window border width */

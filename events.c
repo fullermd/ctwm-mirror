@@ -72,8 +72,11 @@
 #ifndef VMS
 #include <sys/time.h>
 #endif
-#if defined(AIXV3) || defined(_SYSTYPE_SVR4) || defined(ibm)
+#if defined(AIXV3) || defined(_SYSTYPE_SVR4) || defined(ibm) || defined __QNX__
 #include <sys/select.h>
+#endif
+#ifdef __QNX__
+#include <ctype.h>
 #endif
 
 #include "twm.h"
@@ -90,6 +93,7 @@
 #include "gram.h"
 #include "util.h"
 #include "screen.h"
+#include "icons.h"
 #include "iconmgr.h"
 #include "version.h"
 
@@ -183,9 +187,6 @@ static void dumpevent ();
 void AutoRaiseWindow (tmp)
     TwmWindow *tmp;
 {
-    int	sp, sc;
-    TwmWindow *t;
-
     RaiseWindow (tmp);
 
     if (ActiveMenu && ActiveMenu->w) XRaiseWindow (dpy, ActiveMenu->w);
@@ -569,7 +570,7 @@ XEvent  *event;
 	found = select (fd + 1, &mask, (fd_set*) 0, (fd_set*) 0, tout);
 #endif
 	if (found < 0) {
-	    perror ("select");
+	    if (errno != EINTR) perror ("select");
 	    continue;
 	}
 	if (FD_ISSET (fd, &mask)) {
@@ -612,7 +613,7 @@ HandleColormapNotify()
     int lost, won, n, number_cwins;
     extern TwmColormap *CreateTwmColormap();
 
-    if (! Tmp_win) return;
+/*    if (! Tmp_win) return; */
     if (XFindContext(dpy, cevent->window, ColormapContext, (caddr_t *)&cwin) == XCNOENT)
 	return;
     cmap = cwin->colormap;
@@ -966,13 +967,11 @@ HandleKeyPress()
 
     if (ActiveMenu != NULL) {
 	MenuItem *item;
-	int	 keylen, offset;
-	unsigned char car;
+	int	 offset;
 	Boolean	 match;
 	char *keynam;
 	KeySym keysym;
 	int xx, yy, wx, wy;
-	int entry, i;
 	Window junkW;
 
 	item = (MenuItem*) 0;
@@ -1407,6 +1406,38 @@ HandlePropertyNotify()
 	if (Tmp_win->title_w) XClearArea(dpy, Tmp_win->title_w, 0,0,0,0, True);
 	if (Scr->AutoOccupy) WmgrRedoOccupation (Tmp_win);
 
+	/* Experimental, not yet working.
+	{
+	    ColorPair cp;
+	    int f, b;
+
+	    f = GetColorFromList (Scr->TitleForegroundL, Tmp_win->full_name,
+							&Tmp_win->class, &cp.fore);
+	    b = GetColorFromList (Scr->TitleBackgroundL, Tmp_win->full_name,
+							&Tmp_win->class, &cp.back);
+	    if (f || b) {
+		if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&cp);
+		Tmp_win->title = cp;
+	    }
+	    f = GetColorFromList (Scr->BorderColorL, Tmp_win->full_name,
+						    &Tmp_win->class, &cp.fore);
+	    b = GetColorFromList (Scr->BorderColorL, Tmp_win->full_name,
+						    &Tmp_win->class, &cp.back);
+	    if (f || b) {
+		if (Scr->use3Dborders && !Scr->BeNiceToColormap) GetShadeColors (&cp);
+		Tmp_win->borderC = cp;
+	    }
+
+	    f = GetColorFromList (Scr->BorderTileForegroundL, Tmp_win->full_name,
+							     &Tmp_win->class, &cp.fore);
+	    b = GetColorFromList (Scr->BorderTileBackgroundL, Tmp_win->full_name,
+							     &Tmp_win->class, &cp.back);
+	    if (f || b) {
+		if (Scr->use3Dborders && !Scr->BeNiceToColormap) GetShadeColors (&cp);
+		Tmp_win->border_tile = cp;
+	    }
+	}
+	*/
 	/*
 	 * if the icon name is NoName, set the name of the icon to be
 	 * the same as the window 
@@ -1430,6 +1461,15 @@ HandlePropertyNotify()
 	  return;
 	if (!prop) prop = NoName;
 #endif /* NO_LOCALE */
+#ifdef CLAUDE
+	if ((strlen (prop) > 11) && (strncmp (prop, "Netscape: ", 10) == 0)) {
+	    char *tmp;
+
+	    tmp = strdup (prop + 10);
+	    XFree ((char*) prop);
+	    prop = tmp;
+	}
+#endif
 	icon_change = strcmp (Tmp_win->icon_name, prop);
 	free_window_names (Tmp_win, False, False, True);
 	Tmp_win->icon_name = prop;
@@ -1546,17 +1586,7 @@ HandlePropertyNotify()
 	    if (! (Tmp_win->wmhints->flags & IconMaskHint)) {
 		XRectangle rect;
 
-		switch (Scr->IconJustification) {
-		    case J_LEFT :
-			rect.x = 0;
-			break;
-		    case J_CENTER :
-			rect.x = (Tmp_win->icon->w_width - Tmp_win->icon->width) / 2;
-			break;
-		    case J_RIGHT :
-			rect.x = Tmp_win->icon->w_width - Tmp_win->icon->width;
-			break;
-		}
+		rect.x      = GetIconOffset (Tmp_win->icon);
 		rect.y      = 0;
 		rect.width  = Tmp_win->icon->width;
 		rect.height = Tmp_win->icon->height;
@@ -1618,7 +1648,6 @@ HandlePropertyNotify()
 
 static void RedoIcon()
 {
-    int x, y;
     Icon *icon;
     char *pattern;
 
@@ -1627,15 +1656,15 @@ static void RedoIcon()
 	return;
     }
     icon = (Icon*) 0;
-    if ((pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->icon_name)) != NULL) {
+    if (pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->icon_name)) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     else
-    if ((pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->full_name)) != NULL) {
+    if (pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->full_name)) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     else
-    if ((pattern = LookPatternInList (Scr->IconNames, Tmp_win->full_name, &Tmp_win->class)) != NULL) {
+    if (pattern = LookPatternInList (Scr->IconNames, Tmp_win->full_name, &Tmp_win->class)) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     if (pattern == NULL) {
@@ -1684,7 +1713,7 @@ static void RedoIcon()
 
 RedoIconName()
 {
-    int x, y;
+    int x;
 
     if (Scr->NoIconTitlebar || 
 	LookInNameList (Scr->NoIconTitle, Tmp_win->icon_name) ||
@@ -1719,61 +1748,54 @@ RedoIconName()
 	Tmp_win->icon->x = Scr->IconManagerShadowDepth + 3;
     }
 
-    switch (Scr->IconJustification) {
-	case J_LEFT :
-	    x = 0;
-	    break;
-	case J_CENTER :
-	    x = (Tmp_win->icon->w_width - Tmp_win->icon->width) / 2;
-	    break;
-	case J_RIGHT :
-	    x = Tmp_win->icon->w_width - Tmp_win->icon->width;
-	    break;
-    }
-
+    x = GetIconOffset (Tmp_win->icon);
     Tmp_win->icon->y = Tmp_win->icon->height + Scr->IconFont.height +
 				Scr->IconManagerShadowDepth;
     Tmp_win->icon->w_height = Tmp_win->icon->height + Scr->IconFont.height +
 				2 * Scr->IconManagerShadowDepth + 6;
 
-    XResizeWindow(dpy, Tmp_win->icon->w, Tmp_win->icon->w_width,
-	Tmp_win->icon->w_height);
+    XResizeWindow(dpy, Tmp_win->icon->w, Tmp_win->icon->w_width, Tmp_win->icon->w_height);
     if (Tmp_win->icon->bm_w)
     {
+	XRectangle rect;
+
 	XMoveWindow(dpy, Tmp_win->icon->bm_w, x, 0);
 	XMapWindow(dpy, Tmp_win->icon->bm_w);
 	if (Tmp_win->icon->image && Tmp_win->icon->image->mask) {
-	    XRectangle rect;
-	    Pixmap     title;
-
 	    XShapeCombineMask(dpy, Tmp_win->icon->bm_w, ShapeBounding, 0, 0,
 				Tmp_win->icon->image->mask, ShapeSet);
 	    XShapeCombineMask(dpy, Tmp_win->icon->w, ShapeBounding, x, 0,
 				Tmp_win->icon->image->mask, ShapeSet);
-	    if (Tmp_win->icon->has_title) {
-		rect.x = 0;
-		rect.y = Tmp_win->icon->height;
-		rect.width  = Tmp_win->icon->w_width;
-		rect.height = Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
-		XShapeCombineRectangles (dpy,  Tmp_win->icon->w, ShapeBounding, 0,
-					0, &rect, 1, ShapeUnion, 0);
-	    }
+	} else if (Tmp_win->icon->has_title) {
+	    rect.x      = x;
+	    rect.y      = 0;
+	    rect.width  = Tmp_win->icon->width;
+	    rect.height = Tmp_win->icon->height;
+	    XShapeCombineRectangles (dpy, Tmp_win->icon->w, ShapeBounding,
+			0, 0, &rect, 1, ShapeSet, 0);
 	}
-	else
 	if (Tmp_win->icon->has_title) {
-	    XRectangle rect [2];
-
-	    rect [0].x      = x;
-	    rect [0].y      = 0;
-	    rect [0].width  = Tmp_win->icon->width;
-	    rect [0].height = Tmp_win->icon->height;
-	    rect [1].x      = 0;
-	    rect [1].y      = Tmp_win->icon->height;
-	    rect [1].width  = Tmp_win->icon->w_width;
-	    rect [1].height = Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
-	    XShapeCombineRectangles (dpy, Tmp_win->icon->w, ShapeBounding, 0,
-					0, rect, 2, ShapeSet, 0);
+	    if (Scr->SchrinkIconTitles && Tmp_win->icon->title_schrinked) {
+		rect.x      = x;
+		rect.y      = Tmp_win->icon->height;
+		rect.width  = Tmp_win->icon->width;
+		rect.height = Tmp_win->icon->w_height - Tmp_win->icon->height;
+	    } else {
+		rect.x      = 0;
+		rect.y      = Tmp_win->icon->height;
+		rect.width  = Tmp_win->icon->w_width;
+		rect.height = Tmp_win->icon->w_height - Tmp_win->icon->height;
+	    }
+	    XShapeCombineRectangles (dpy,  Tmp_win->icon->w, ShapeBounding, 0,
+				     0, &rect, 1, ShapeUnion, 0);
 	}
+    }
+    if (Scr->SchrinkIconTitles &&
+	Tmp_win->icon->title_schrinked &&
+	Tmp_win->icon_on &&
+	(OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC))) {
+	IconDown (Tmp_win);
+	IconUp (Tmp_win);
     }
     if (Tmp_win->isicon)
     {
@@ -1995,6 +2017,7 @@ HandleDestroyNotify()
     if (Tmp_win == NULL)
 	return;
 
+    RemoveWindowFromRegion (Tmp_win);
     if (Tmp_win == Scr->Focus)
     {
 	Scr->Focus = (TwmWindow*) NULL;
@@ -2023,6 +2046,16 @@ HandleDestroyNotify()
 	{
 	    XDeleteContext(dpy, Tmp_win->hilite_wr, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->hilite_wr, ScreenContext);
+	}
+	if (Tmp_win->lolite_wr)
+	{
+	    XDeleteContext(dpy, Tmp_win->lolite_wr, TwmContext);
+	    XDeleteContext(dpy, Tmp_win->lolite_wr, ScreenContext);
+	}
+	if (Tmp_win->lolite_wl)
+	{
+	    XDeleteContext(dpy, Tmp_win->lolite_wl, TwmContext);
+	    XDeleteContext(dpy, Tmp_win->lolite_wl, ScreenContext);
 	}
 	if (Tmp_win->titlebuttons) {
 	    for (i = 0; i < nb; i++) {
@@ -2226,14 +2259,15 @@ HandleMapNotify()
      * the client would think that the window has a chance of being viewable
      * when it really isn't.
      */
+
     XGrabServer (dpy);
-    if (Tmp_win->icon && Tmp_win->icon->w)
-	XUnmapWindow(dpy, Tmp_win->icon->w);
-    if (Tmp_win->title_w)
-	XMapSubwindows(dpy, Tmp_win->title_w);
+    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow(dpy, Tmp_win->icon->w);
+    if (Tmp_win->title_w) XMapSubwindows(dpy, Tmp_win->title_w);
     XMapSubwindows(dpy, Tmp_win->frame);
     if (Scr->Focus != Tmp_win && Tmp_win->hilite_wl) XUnmapWindow(dpy, Tmp_win->hilite_wl);
     if (Scr->Focus != Tmp_win && Tmp_win->hilite_wr) XUnmapWindow(dpy, Tmp_win->hilite_wr);
+    if (Scr->Focus == Tmp_win && Tmp_win->lolite_wl) XUnmapWindow(dpy, Tmp_win->lolite_wl);
+    if (Scr->Focus == Tmp_win && Tmp_win->lolite_wr) XUnmapWindow(dpy, Tmp_win->lolite_wr);
 
     XMapWindow(dpy, Tmp_win->frame);
     XUngrabServer (dpy);
@@ -2291,7 +2325,9 @@ HandleUnmapNotify()
      * won't cause it to get mapped) and then throw away all state (pretend 
      * that we've received a DestroyNotify).
      */
-
+/* Is it the correct behaviour ???
+    XDeleteProperty (dpy, Tmp_win->w, _XA_WM_OCCUPATION);
+*/
     XGrabServer (dpy);
     if (XTranslateCoordinates (dpy, Event.xunmap.window, Tmp_win->attr.root,
 			       0, 0, &dstx, &dsty, &dumwin)) {
@@ -2331,8 +2367,6 @@ HandleUnmapNotify()
 void
 HandleMotionNotify()
 {
-    static Cursor current, cursor;
-
     if (ResizeWindow != (Window) 0)
     {
 	XQueryPointer( dpy, Event.xany.window,
@@ -2486,6 +2520,9 @@ HandleButtonRelease()
 	      case F_TITLE:
 		if (Scr->StayUpMenus) 	{
 		    ButtonPressed = -1;
+		    if (Scr->WarpToDefaultMenuEntry && ActiveMenu->defaultitem) {
+			WarpCursorToDefaultEntry (ActiveMenu);
+		    }
 		    return;
 		}
 		break;
@@ -2520,6 +2557,9 @@ HandleButtonRelease()
 	else
 	if (Scr->StayUpMenus && !ActiveMenu->entered) {
 	    ButtonPressed = -1;
+	    if (Scr->WarpToDefaultMenuEntry && ActiveMenu->defaultitem) {
+		WarpCursorToDefaultEntry (ActiveMenu);
+	    }
 	    return;
 	}
 	else
@@ -2619,6 +2659,7 @@ static void do_key_menu (menu, w)
     } else {
 	XBell (dpy, 0);
     }
+
 }
 
 
@@ -2792,6 +2833,8 @@ HandleButtonPress()
 		Tmp_win->wmhints &&
 		Tmp_win->wmhints->input) {
 		SetFocus (Tmp_win, CurrentTime);
+
+		XSendEvent (dpy, Tmp_win->w, False, ButtonPressMask, &Event);
 		return;
 	    }
 	    else {
@@ -3072,7 +3115,7 @@ HandleEnterNotify()
 #ifdef VMS
 		float timeout = 0.0125;
 #else
-		static struct timeval timeout = {0,12500};
+		static struct timeval tout, timeout = {0,12500};
 #endif
 
 		if (XFindContext(dpy, Tmp_win->w, ColormapContext,
@@ -3098,7 +3141,8 @@ HandleEnterNotify()
 #ifdef VMS
 			lib$wait(&timeout);
 #else
-			select(0, 0, 0, 0, &timeout);
+			tout = timeout;
+			select(0, 0, 0, 0, &tout);
 #endif
 			/* Did we leave this window already? */
 			scanArgs.w = ewp->window;
@@ -3151,11 +3195,16 @@ HandleEnterNotify()
 	     */
 	    if (Scr->FocusRoot && (!scanArgs.leaves || scanArgs.inferior)) {
 		Bool accinput;
-/*
-		if (Tmp_win->icon && ewp->window == Tmp_win->icon->w) {
-		    printf ("Entering icon\n");
+
+		if (Scr->SchrinkIconTitles &&
+		    Tmp_win->icon &&
+		    ewp->window == Tmp_win->icon->w &&
+		    ewp->detail != NotifyInferior) {
+		    if (Scr->AutoRaiseIcons) XRaiseWindow (dpy, Tmp_win->icon->w);
+		    ExpandIconTitle (Tmp_win);
+		    return;
 		}
-*/
+
 		if (Tmp_win->list) CurrentIconManagerEntry (Tmp_win->list);
 
 		accinput = Tmp_win->mapped && Tmp_win->wmhints && Tmp_win->wmhints->input;
@@ -3268,6 +3317,10 @@ HandleEnterNotify()
 			(!scanArgs.leaves || scanArgs.inferior))
 			    InstallWindowColormaps(EnterNotify, Tmp_win);
 	    }				/* end if FocusRoot */
+	    else
+	    if (Scr->BorderCursors && (ewp->window == Tmp_win->w)) {
+		SetBorderCursor (Tmp_win, -1000, -1000);
+	    }
 	    /*
 	     * If this window is to be autoraised, mark it so
 	     */
@@ -3406,6 +3459,14 @@ HandleLeaveNotify()
 	 */
 	if (Event.xcrossing.mode != NotifyNormal)
 	    return;
+
+	if (Scr->SchrinkIconTitles &&
+	    Tmp_win->icon &&
+	    Event.xcrossing.window == Tmp_win->icon->w &&
+	    Event.xcrossing.detail != NotifyInferior) {
+	    SchrinkIconTitle (Tmp_win);
+	    return;
+	}
 
 	inicon = (Tmp_win->list &&
 		  Tmp_win->list->w == Event.xcrossing.window);

@@ -73,6 +73,11 @@
 
 #include <stdio.h>
 #include <signal.h>
+
+#ifdef __WAIT_FOR_CHILDS
+#  include <sys/wait.h>
+#endif
+
 #ifdef VMS
 #include <string.h>
 #else
@@ -88,6 +93,7 @@
 #include "util.h"
 #include "gram.h"
 #include "screen.h"
+#include "icons.h"
 #include "iconmgr.h"
 #ifdef VMS
 #  include <decw$include/Xproto.h>
@@ -148,7 +154,7 @@ char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
 int InfoLines,InfoWidth,InfoHeight;
 char *InitFile = NULL;
 static Window CreateRootWindow ();
-static void DisplayVersion ();
+static void DisplayInfo ();
 
 Cursor	UpperLeftCursor;
 Cursor	TopRightCursor,
@@ -205,6 +211,9 @@ unsigned long black, white;
 extern void assign_var_savecolor();
 SIGNAL_T Restart();
 SIGNAL_T Crash();
+#ifdef __WAIT_FOR_CHILDS
+  SIGNAL_T ChildExit();
+#endif
 
 extern Atom _XA_WM_WORKSPACESLIST;
 
@@ -245,6 +254,7 @@ main(argc, argv, environ)
     static unsigned int rootw = 800;
     static unsigned int rooth = 500;
     Window capwin = (Window) 0;
+    IconRegion *ir;
 
 #ifndef NO_LOCALE
     (void)setlocale(LC_ALL, NULL);
@@ -289,7 +299,7 @@ main(argc, argv, environ)
 		continue;
 	      case 'v':				/* -verbose */
 		if (!strcmp(argv[i],"-version")) {
-		    DisplayVersion ();
+		    (void) printf ("%s\n", VersionNumber);
 		    exit (0);
 		}
 		PrintErrorMessages = True;
@@ -326,17 +336,20 @@ main(argc, argv, environ)
 		GoThroughM4 = False;
 		continue;
 #endif
+	      case 'i':
+		if (!strcmp(argv[i],"-info")) {
+		    DisplayInfo ();
+		    exit (0);
+		}
+		goto usage;
 	    }
 	}
       usage:
+	fprintf (stderr, "usage: %s [-display dpy] [-version] [-info]", ProgramName);
 #ifdef USEM4
-	fprintf (stderr,
-	    "usage:  %s [-display dpy] [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-n]\n",
-	    ProgramName);
+	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-n]\n");
 #else
-	fprintf (stderr,
-	    "usage:  %s [-display dpy] [-f file] [-s] [-q] [-v] [-W] [-w [wid]]\n",
-	    ProgramName);
+	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]]\n");
 #endif
 	exit (1);
     }
@@ -348,6 +361,9 @@ main(argc, argv, environ)
     newhandler (SIGHUP, Restart);
     newhandler (SIGQUIT, Done);
     newhandler (SIGTERM, Done);
+#ifdef __WAIT_FOR_CHILDS
+    newhandler (SIGCHLD, ChildExit);
+#endif
     signal (SIGALRM, SIG_IGN);
     if (TrapExceptions) {
 	signal (SIGSEGV, Crash);
@@ -677,6 +693,15 @@ main(argc, argv, environ)
 	if (Scr->use3Dborders && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
 	if (! Scr->use3Dborders) Scr->ThreeDBorderWidth = 0;
 
+        for (ir = Scr->FirstRegion; ir; ir = ir->next) {
+	    if (ir->TitleJustification == J_UNDEF)
+		ir->TitleJustification = Scr->IconJustification;
+	    if (ir->Justification == J_UNDEF)
+		ir->Justification = Scr->IconRegionJustification;
+	    if (ir->Alignement == J_UNDEF)
+		ir->Alignement = Scr->IconRegionAlignement;
+	}
+
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
 	if (Scr->SqueezeTitle == -1) Scr->SqueezeTitle = FALSE;
 	if (!Scr->HaveFonts) CreateFonts();
@@ -697,6 +722,7 @@ main(argc, argv, environ)
 	JunkX = 0;
 	JunkY = 0;
 
+	CreateWindowRegions ();
 	AllocateOthersIconManagers ();
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
@@ -908,6 +934,7 @@ InitVariables()
     Scr->TransientOnTop = 30;
     Scr->NoDefaults = FALSE;
     Scr->UsePPosition = PPOS_OFF;
+    Scr->UseSunkTitlePixmap = FALSE;
     Scr->FocusRoot = TRUE;
     Scr->Focus = NULL;
     Scr->WarpCursor = FALSE;
@@ -922,6 +949,7 @@ InitVariables()
     Scr->TitleFocus = TRUE;
     Scr->IconManagerFocus = TRUE;
     Scr->StayUpMenus = FALSE;
+    Scr->WarpToDefaultMenuEntry = FALSE;
     Scr->ClickToFocus = FALSE;
     Scr->NoIconTitlebar = FALSE;
     Scr->NoTitlebar = FALSE;
@@ -965,6 +993,7 @@ InitVariables()
     Scr->SqueezeTitle = -1;
     Scr->FirstRegion = NULL;
     Scr->LastRegion = NULL;
+    Scr->FirstWindowRegion = NULL;
     Scr->FirstTime = TRUE;
     Scr->HaveFonts = FALSE;		/* i.e. not loaded yet */
     Scr->CaseSensitive = TRUE;
@@ -995,6 +1024,9 @@ InitVariables()
     Scr->YMoveGrid = 1;
     Scr->FastServer = True;
     Scr->CenterFeedbackWindow = False;
+    Scr->SchrinkIconTitles = False;
+    Scr->AutoRaiseIcons = False;
+    Scr->use3Diconborders = False;
 
     /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"
@@ -1176,6 +1208,22 @@ SIGNAL_T Restart()
     exit (1);
 }
 
+#ifdef __WAIT_FOR_CHILDS
+/*
+ * Handler for SIGCHLD. Needed to avoid zombies when an .xinitrc
+ * execs ctwm as the last client. (All processes forked off from
+ * within .xinitrc have been inherited by ctwm during the exec.)
+ * Jens Schweikhardt <jens@kssun3.rus.uni-stuttgart.de>
+ */
+SIGNAL_T
+ChildExit (int signum)
+{
+    int Errno = errno;
+    signal (SIGCHLD, ChildExit); /* reestablish because we're a one-shot */
+    waitpid (-1, NULL, WNOHANG);  /* reap dead child, ignore status */
+    errno = Errno;               /* restore errno for interrupted sys calls */
+}
+#endif
 
 /*
  * Error Handlers.  If a client dies, we'll get a BadWindow error (except for
@@ -1221,9 +1269,12 @@ Atom _XA_WM_PROTOCOLS;
 Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
-Atom _XA_SM_CLIENT_ID;
-Atom _XA_WM_CLIENT_LEADER;
-Atom _XA_WM_WINDOW_ROLE;
+Atom _XA_WM_CLIENT_MACHINE;
+#ifdef X11R6
+  Atom _XA_SM_CLIENT_ID;
+  Atom _XA_WM_CLIENT_LEADER;
+  Atom _XA_WM_WINDOW_ROLE;
+#endif
 
 InternUsefulAtoms ()
 {
@@ -1238,6 +1289,7 @@ InternUsefulAtoms ()
     _XA_WM_TAKE_FOCUS = XInternAtom (dpy, "WM_TAKE_FOCUS", False);
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
+    _XA_WM_CLIENT_MACHINE = XInternAtom (dpy, "WM_CLIENT_MACHINE", False);
 #ifdef X11R6
     _XA_SM_CLIENT_ID = XInternAtom (dpy, "SM_CLIENT_ID", False);
     _XA_WM_CLIENT_LEADER = XInternAtom (dpy, "WM_CLIENT_LEADER", False);
@@ -1261,7 +1313,7 @@ unsigned int	width, height;
     return (ret);
 }
 
-static void DisplayVersion () {
+static void DisplayInfo () {
     (void) printf ("Twm version:  %s\n", Version);
     (void) printf ("Compile time options :");
 #ifdef XPM
@@ -1278,3 +1330,4 @@ static void DisplayVersion () {
 #endif
     (void) printf ("\n");
 }
+

@@ -84,6 +84,7 @@
 #include "events.h"
 #include "menus.h"
 #include "screen.h"
+#include "icons.h"
 #include "iconmgr.h"
 
 #define gray_width 2
@@ -103,6 +104,11 @@ static int PlaceY = 50;
 static void CreateWindowTitlebarButtons();
 void ClickToFocusGrab   ();
 void ClickToFocusUngrab ();
+
+static void		splitWindowRegionEntry ();
+static WindowEntry	*findWindowEntry ();
+static WindowEntry	*prevWindowEntry ();
+static void		mergeWindowEntries ();
 
 char NoName[] = "Untitled"; /* name if no name is specified */
 int  resizeWhenAdd;
@@ -446,10 +452,10 @@ IconMgr *iconp;
 	gravx = gravy = -1;
     }
     else
+#endif
     {
 	GetGravityOffsets (tmp_win, &gravx, &gravy);
     }
-#endif
 
     /*
      * Don't bother user if:
@@ -469,10 +475,17 @@ IconMgr *iconp;
 	  tmp_win->attr.x != 0 || tmp_win->attr.y != 0)))
       ask_user = FALSE;
 
+    SetupOccupation (tmp_win);
+    tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;
+    tmp_win->frame_height = tmp_win->attr.height + 2 * tmp_win->frame_bw3D +
+			    tmp_win->title_height;
+    ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
+    if (PlaceWindowInRegion (tmp_win, &(tmp_win->attr.x), &(tmp_win->attr.y))) {
+	ask_user = False;
+    }
     /*
      * do any prompting for position
      */
-    SetupOccupation (tmp_win);
 
 #ifdef X11R6
     if (HandlingEvents && ask_user && !restoredFromPrevSession) {
@@ -815,8 +828,19 @@ IconMgr *iconp;
 			    &bytesafter,(unsigned char **)&tmp_win->icon_name))
 	tmp_win->icon_name = tmp_win->name;
 #endif /* NO_LOCALE */
+
     if (tmp_win->icon_name == NULL)
 	tmp_win->icon_name = tmp_win->name;
+#ifdef CLAUDE
+    else if ((strlen (tmp_win->icon_name) > 11) &&
+	    (strncmp (tmp_win->icon_name, "Netscape: ", 10) == 0)) {
+	char *tmp;
+
+	tmp = strdup (tmp_win->icon_name + 10);
+	XFree ((char*) tmp_win->icon_name);
+	tmp_win->icon_name = tmp;
+    }
+#endif
 
     if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
 
@@ -1069,6 +1093,16 @@ IconMgr *iconp;
 	    XSaveContext(dpy, tmp_win->hilite_wr, TwmContext, (caddr_t)tmp_win);
 	    XSaveContext(dpy, tmp_win->hilite_wr, ScreenContext, (caddr_t)Scr);
 	}
+	if (tmp_win->lolite_wl)
+	{
+	    XSaveContext(dpy, tmp_win->lolite_wl, TwmContext, (caddr_t)tmp_win);
+	    XSaveContext(dpy, tmp_win->lolite_wl, ScreenContext, (caddr_t)Scr);
+	}
+	if (tmp_win->lolite_wr)
+	{
+	    XSaveContext(dpy, tmp_win->lolite_wr, TwmContext, (caddr_t)tmp_win);
+	    XSaveContext(dpy, tmp_win->lolite_wr, ScreenContext, (caddr_t)Scr);
+	}
     }
 
     XUngrabServer(dpy);
@@ -1261,6 +1295,22 @@ TwmWindow *tmp_win;
     }
 }
 
+void ComputeCommonTitleOffsets ()
+{
+    int buttonwidth = (Scr->TBInfo.width + Scr->TBInfo.pad);
+
+    Scr->TBInfo.leftx = Scr->TBInfo.rightoff = Scr->FramePadding;
+    if (Scr->TBInfo.nleft  > 0) Scr->TBInfo.leftx    += Scr->ButtonIndent;
+    if (Scr->TBInfo.nright > 0) Scr->TBInfo.rightoff += (Scr->ButtonIndent +
+			       (Scr->TBInfo.nright * buttonwidth) -
+				Scr->TBInfo.pad);
+
+    Scr->TBInfo.titlex = (Scr->TBInfo.leftx +
+				(Scr->TBInfo.nleft * buttonwidth) -
+				Scr->TBInfo.pad +
+				Scr->TitlePadding);
+}
+
 static void CreateHighlightWindows (tmp_win)
     TwmWindow *tmp_win;
 {
@@ -1354,22 +1404,70 @@ static void CreateHighlightWindows (tmp_win)
 		       Scr->d_visual, valuemask, &attributes);
 }
 
-
-void ComputeCommonTitleOffsets ()
+static void CreateLowlightWindows (tmp_win)
+    TwmWindow *tmp_win;
 {
-    int buttonwidth = (Scr->TBInfo.width + Scr->TBInfo.pad);
+    XSetWindowAttributes attributes;    /* attributes for create windows */
+    unsigned long valuemask;
+    int h = (Scr->TitleHeight - 2 * Scr->FramePadding);
+    int y = Scr->FramePadding;
+    ColorPair cp;
 
-    Scr->TBInfo.leftx = Scr->TBInfo.rightoff = Scr->FramePadding;
-    if (Scr->TBInfo.nleft  > 0) Scr->TBInfo.leftx    += Scr->ButtonIndent;
-    if (Scr->TBInfo.nright > 0) Scr->TBInfo.rightoff += (Scr->ButtonIndent +
-			       (Scr->TBInfo.nright * buttonwidth) -
-				Scr->TBInfo.pad);
+    if (!Scr->UseSunkTitlePixmap || ! tmp_win->titlehighlight) {
+	tmp_win->lolite_wl = (Window) 0;
+	tmp_win->lolite_wr = (Window) 0;
+	return;
+    }
+    /*
+     * If a special highlight pixmap was given, use that.  Otherwise,
+     * use a nice, even gray pattern.  The old horizontal lines look really
+     * awful on interlaced monitors (as well as resembling other looks a
+     * little bit too closely), but can be used by putting
+     *
+     *                 Pixmaps { TitleHighlight "hline2" }
+     *
+     * (or whatever the horizontal line bitmap is named) in the startup
+     * file.  If all else fails, use the foreground color to look like a
+     * solid line.
+     */
 
-    Scr->TBInfo.titlex = (Scr->TBInfo.leftx +
-				(Scr->TBInfo.nleft * buttonwidth) -
-				Scr->TBInfo.pad +
-				Scr->TitlePadding);
+    if (! tmp_win->LoliteImage) {
+        if (Scr->HighlightPixmapName) {
+            cp = tmp_win->title;
+            cp.shadc = tmp_win->title.shadd;
+            cp.shadd = tmp_win->title.shadc;
+            tmp_win->LoliteImage = GetImage (Scr->HighlightPixmapName, cp);
+        }
+    }
+    if (tmp_win->LoliteImage) {
+        valuemask = CWBackPixmap;
+        attributes.background_pixmap = tmp_win->LoliteImage->pixmap;
+    } else {
+        valuemask = CWBackPixel;
+        attributes.background_pixel = tmp_win->title.fore;
+    }
+
+    if (Scr->use3Dtitles) {
+        y += 2;
+        h -= 4;
+    }
+    if (Scr->TitleJustification == J_LEFT)
+        tmp_win->lolite_wl = (Window) 0;
+    else
+        tmp_win->lolite_wl = XCreateWindow (dpy, tmp_win->title_w, 0, y,
+                       (unsigned int) Scr->TBInfo.width, (unsigned int) h,
+                       (unsigned int) 0, Scr->d_depth, (unsigned int) CopyFromParent,
+                       Scr->d_visual, valuemask, &attributes);
+
+    if (Scr->TitleJustification == J_RIGHT)
+        tmp_win->lolite_wr = (Window) 0;
+    else
+        tmp_win->lolite_wr = XCreateWindow (dpy, tmp_win->title_w, 0, y,
+                       (unsigned int) Scr->TBInfo.width, (unsigned int) h,
+                       (unsigned int) 0,  Scr->d_depth, (unsigned int) CopyFromParent,
+                       Scr->d_visual, valuemask, &attributes);
 }
+
 
 void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
     TwmWindow *tmp_win;
@@ -1486,8 +1584,10 @@ static void CreateWindowTitlebarButtons (tmp_win)
 
     if (tmp_win->title_height == 0)
     {
-	tmp_win->hilite_wl = 0;
-	tmp_win->hilite_wr = 0;
+	tmp_win->hilite_wl = (Window) 0;
+	tmp_win->hilite_wr = (Window) 0;
+	tmp_win->lolite_wl = (Window) 0;
+	tmp_win->lolite_wr = (Window) 0;
 	return;
     }
 
@@ -1553,9 +1653,12 @@ static void CreateWindowTitlebarButtons (tmp_win)
     }
 
     CreateHighlightWindows (tmp_win);
+    CreateLowlightWindows  (tmp_win);
     XMapSubwindows(dpy, tmp_win->title_w);
     if (tmp_win->hilite_wl) XUnmapWindow(dpy, tmp_win->hilite_wl);
     if (tmp_win->hilite_wr) XUnmapWindow(dpy, tmp_win->hilite_wr);
+    if (tmp_win->lolite_wl) XMapWindow(dpy, tmp_win->lolite_wl);
+    if (tmp_win->lolite_wr) XMapWindow(dpy, tmp_win->lolite_wr);
     return;
 }
 
@@ -1858,3 +1961,231 @@ TwmWindow *t;
     }
     t->HiliteImage = image->next;
 }
+
+name_list **AddWindowRegion (geom, grav1, grav2)
+char *geom;
+int  grav1, grav2;
+{
+    WindowRegion *wr;
+    int mask;
+
+    wr = (WindowRegion*) malloc (sizeof (WindowRegion));
+    wr->next = NULL;
+
+    if (!Scr->FirstWindowRegion) Scr->FirstWindowRegion = wr;
+
+    wr->entries    = NULL;
+    wr->clientlist = NULL;
+    wr->grav1      = grav1;
+    wr->grav2      = grav2;
+    wr->x = wr->y = wr->w = wr->h = 0;
+
+    mask = XParseGeometry (geom, &wr->x, &wr->y, (unsigned int*) &wr->w,
+						 (unsigned int*) &wr->h);
+
+    if (mask & XNegative) wr->x += Scr->MyDisplayWidth  - wr->w;
+    if (mask & YNegative) wr->y += Scr->MyDisplayHeight - wr->h;
+
+    return (&(wr->clientlist));
+}
+
+void CreateWindowRegions () {
+    WindowRegion  *wr, *wr1 = NULL, *wr2 = NULL;
+    WorkSpaceList *wl;
+
+    for (wl = Scr->workSpaceMgr.workSpaceList; wl != NULL; wl = wl->next) {
+	wl->FirstWindowRegion = NULL;
+	wr2 = NULL;
+	for (wr = Scr->FirstWindowRegion; wr != NULL; wr = wr->next) {
+	    wr1  = (WindowRegion*) malloc (sizeof (WindowRegion));
+	    *wr1 = *wr;
+	    wr1->entries = (WindowEntry*) malloc (sizeof (WindowEntry));
+	    wr1->entries->next = 0;
+	    wr1->entries->x = wr1->x;
+	    wr1->entries->y = wr1->y;
+	    wr1->entries->w = wr1->w;
+	    wr1->entries->h = wr1->h;
+	    wr1->entries->twm_win = (TwmWindow*) 0;
+	    wr1->entries->used = 0;
+	    if (wr2) wr2->next = wr1; else wl->FirstWindowRegion = wr1;
+	    wr2 = wr1;
+	}
+	if (wr1) wr1->next = NULL;
+    }
+}
+
+
+Bool PlaceWindowInRegion (tmp_win, final_x, final_y)
+TwmWindow *tmp_win;
+int       *final_x, *final_y;
+{
+    WindowRegion  *wr;
+    WindowEntry	  *we;
+    int		   w, h;
+    WorkSpaceList *wl;
+
+    if (!Scr->FirstWindowRegion) return (False);
+    for (wl = Scr->workSpaceMgr.workSpaceList; wl != NULL; wl = wl->next) {
+	if (OCCUPY (tmp_win, wl)) break;
+    }
+    if (!wl) return (False);
+    w = tmp_win->frame_width;
+    h = tmp_win->frame_height;
+    we = (WindowEntry*) 0;
+    for (wr = wl->FirstWindowRegion; wr; wr = wr->next) {
+	if (LookInList (wr->clientlist, tmp_win->full_name, &tmp_win->class)) {
+	    for (we = wr->entries; we; we=we->next) {
+	        if (we->used) continue;
+	        if (we->w >= w && we->h >= h) break;
+	    }
+	    if (we) break;
+	}
+    }
+    tmp_win->wr = (WindowRegion*) 0;
+    if (!we) return (False);
+
+    splitWindowRegionEntry (we, wr->grav1, wr->grav2, w, h);
+    we->used = 1;
+    we->twm_win = tmp_win;
+    *final_x = we->x;
+    *final_y = we->y;
+    tmp_win->wr = wr;
+    return (True);
+}
+
+static void splitWindowRegionEntry (we, grav1, grav2, w, h)
+WindowEntry	*we;
+int		grav1, grav2;
+int		w, h;
+{
+    WindowEntry	*new;
+    int		save;
+
+    switch (grav1) {
+	case D_NORTH:
+	case D_SOUTH:
+	    save = we->w;
+	    if (w != we->w) splitWindowRegionEntry (we, grav2, grav1, w, we->h);
+	    if (h != we->h) {
+		new = (WindowEntry *) malloc (sizeof (WindowEntry));
+		new->twm_win = 0;
+		new->used = 0;
+		new->next = we->next;
+		we->next  = new;
+		new->x    = we->x;
+		new->h    = (we->h - h);
+		new->w    = we->w;
+		we->h     = h;
+		if (grav1 == D_SOUTH) {
+		    new->y = we->y;
+		    we->y  = new->y + new->h;
+		} else
+		    new->y = we->y + we->h;
+		}
+	    break;
+	case D_EAST:
+	case D_WEST:
+	    save = we->h;
+	    if (h != we->h) splitWindowRegionEntry (we, grav2, grav1, we->w, h);
+	    if (w != we->w) {
+		new = (WindowEntry *) malloc (sizeof (WindowEntry));
+		new->twm_win = 0;
+		new->used = 0;
+		new->next = we->next;
+		we->next  = new;
+		new->y    = we->y;
+		new->w    = (we->w - w);
+		new->h    = we->h;
+		we->w = w;
+		if (grav1 == D_EAST) {
+		    new->x = we->x;
+		    we->x  = new->x + new->w;
+		} else
+		    new->x = we->x + we->w;
+		}
+	    break;
+    }
+}
+
+static WindowEntry *findWindowEntry (wl, tmp_win, wrp)
+WorkSpaceList	*wl;
+TwmWindow	*tmp_win;
+WindowRegion	**wrp;
+{
+    WindowRegion *wr;
+    WindowEntry	 *we;
+
+    for (wr = wl->FirstWindowRegion; wr; wr = wr->next) {
+	for (we = wr->entries; we; we=we->next) {
+	    if (we->twm_win == tmp_win) {
+		if (wrp) *wrp = wr;
+		return we;
+	    }
+	}
+    }
+    return (WindowEntry*) 0;
+}
+
+static WindowEntry *prevWindowEntry (we, wr)
+WindowEntry	*we;
+WindowRegion	*wr;
+{
+    WindowEntry	*wp;
+
+    if (we == wr->entries) return 0;
+    for (wp = wr->entries; wp->next != we; wp=wp->next);
+    return wp;
+}
+
+static void mergeWindowEntries (old, we)
+WindowEntry	*old, *we;
+{
+    if (old->y == we->y) {
+	we->w = old->w + we->w;
+	if (old->x < we->x) we->x = old->x;
+    } else {
+	we->h = old->h + we->h;
+	if (old->y < we->y) we->y = old->y;
+    }
+}
+
+void RemoveWindowFromRegion (tmp_win)
+TwmWindow	*tmp_win;
+{
+    WindowEntry   *we, *wp, *wn;
+    WindowRegion  *wr;
+    WorkSpaceList *wl;
+
+    if (!Scr->FirstWindowRegion) return;
+    we = (WindowEntry*) 0;
+    for (wl = Scr->workSpaceMgr.workSpaceList; wl != NULL; wl = wl->next) {
+	we = findWindowEntry (wl, tmp_win, &wr);
+	if (we) break;
+    }
+    if (!we) return;
+
+    we->twm_win = 0;
+    we->used = 0;
+    wp = prevWindowEntry (we, wr);
+    wn = we->next;
+    for (;;) {
+	if (wp && wp->used == 0 &&
+	       ((wp->x == we->x && wp->w == we->w) ||
+	        (wp->y == we->y && wp->h == we->h))) {
+	    wp->next = we->next;
+	    mergeWindowEntries (we, wp);
+	    free ((char *) we);
+	    we = wp;
+	    wp = prevWindowEntry (wp, wr);
+	} else
+	if (wn && wn->used == 0 &&
+	       ((wn->x == we->x && wn->w == we->w) ||
+	        (wn->y == we->y && wn->h == we->h))) {
+	    we->next = wn->next;
+	    mergeWindowEntries (wn, we);
+	    free ((char *) wn);
+	    wn = we->next;
+	} else break;
+    }
+}
+

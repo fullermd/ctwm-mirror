@@ -27,7 +27,9 @@ in this Software without prior written authorization from the X Consortium.
 Author:  Ralph Mor, X Consortium
 ******************************************************************************/
 
-#include <X11/Xosdefs.h>
+#include <X11/Xos.h>
+
+#ifdef X11R6
 
 #ifndef X_NOT_POSIX
 #ifdef _POSIX_SOURCE
@@ -54,6 +56,7 @@ Author:  Ralph Mor, X Consortium
 #include <X11/Xatom.h>
 #include <stdio.h>
 #include "twm.h"
+#include "icons.h"
 #include "screen.h"
 
 SmcConn smcConn = NULL;
@@ -1053,5 +1056,5 @@ char *previous_id;
 	    (XtPointer) iceConn);
 }
 
-
+#endif /* X11R6 */
 

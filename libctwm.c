@@ -63,7 +63,6 @@ int	scrnum;
     unsigned long	len;
     Atom		actual_type;
     int			actual_format;
-    int			state;
     char		**ret;
     int			count;
     int			i, l;
@@ -209,7 +208,7 @@ int CtwmAddToCurrentWorkspace (dpy, window)
 Display	*dpy;
 Window  window;
 {
-    unsigned char	*prop, *p;
+    unsigned char	*prop;
     unsigned long	bytesafter;
     unsigned long	len;
     Atom		actual_type;

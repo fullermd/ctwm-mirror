@@ -73,7 +73,8 @@ extern Bool AnimationPending;
 extern Bool AnimationActive;
 extern Bool MaybeAnimate;
 
-#define iconWidth(w)	(w->icon->border_width * 2 + w->icon->w_width)
+#define iconWidth(w)	(w->icon->border_width * 2 + \
+			Scr->SchrinkIconTitles ? w->icon->width : w->icon->w_width)
 #define iconHeight(w)	(w->icon->border_width * 2 + w->icon->w_height)
 
 static
@@ -143,7 +144,7 @@ TwmWindow *tmp_win;
 int def_x, def_y;
 int *final_x, *final_y;
 {
-    IconRegion	*ir;
+    IconRegion	*ir, *oldir;
     IconEntry	*ie;
     int		w = 0, h = 0;
 
@@ -185,14 +186,16 @@ int *final_x, *final_y;
 	        break;
         }
     }
+    oldir = tmp_win->icon->ir;
     if (ie) {
 	splitEntry (ie, ir->grav1, ir->grav2, w, h);
 	ie->used = 1;
 	ie->twm_win = tmp_win;
-	switch (Scr->IconRegionJustification) {
+	switch (ir->Justification) {
 	    case J_LEFT :
 		*final_x = ie->x;
 		break;
+	    case J_UNDEF :
 	    case J_CENTER :
 		*final_x = ie->x + (ie->w - iconWidth (tmp_win)) / 2;
 		break;
@@ -206,10 +209,11 @@ int *final_x, *final_y;
 		    *final_x = ie->x;
 		break;
 	}
-	switch (Scr->IconRegionAlignement) {
+	switch (ir->Alignement) {
 	    case J_TOP :
 		*final_y = ie->y;
 		break;
+	    case J_UNDEF :
 	    case J_CENTER :
 		*final_y = ie->y + (ie->h - iconHeight (tmp_win)) / 2;
 		break;
@@ -223,9 +227,16 @@ int *final_x, *final_y;
 		    *final_y = ie->y;
 		break;
 	}
+	tmp_win->icon->ir = ir;
     } else {
 	*final_x = def_x;
 	*final_y = def_y;
+	tmp_win->icon->ir = (IconRegion*)0;
+	return;
+    }
+    if (Scr->SchrinkIconTitles && tmp_win->icon->has_title) {
+	*final_x -= GetIconOffset (tmp_win->icon);
+	if (tmp_win->icon->ir != oldir) ReshapeIcon (tmp_win->icon);
     }
     return;
 }
@@ -361,12 +372,14 @@ IconDown (tmp_win)
 }
 
 name_list **
-AddIconRegion(geom, grav1, grav2, stepx, stepy)
+AddIconRegion(geom, grav1, grav2, stepx, stepy, ijust, just, align)
 char *geom;
 int grav1, grav2;
+int stepx, stepy;
+char *ijust, *just, *align;
 {
     IconRegion *ir;
-    int mask;
+    int mask, tmp;
 
     ir = (IconRegion *)malloc(sizeof(IconRegion));
     ir->next = NULL;
@@ -402,6 +415,29 @@ int grav1, grav2;
     ir->entries->h = ir->h;
     ir->entries->twm_win = 0;
     ir->entries->used = 0;
+
+    tmp = ParseJustification (ijust);
+    if ((tmp < 0) || (tmp == J_BORDER)) {
+	twmrc_error_prefix();
+	fprintf (stderr, "ignoring invalid IconRegion argument \"%s\"\n", ijust);
+	tmp = J_UNDEF;
+    }
+    ir->TitleJustification = tmp;
+
+    tmp = ParseJustification (just);
+    if ((tmp = ParseJustification (just)) < 0) {
+	twmrc_error_prefix();
+	fprintf (stderr, "ignoring invalid IconRegion argument \"%s\"\n", just);
+	tmp = J_UNDEF;
+    }
+    ir->Justification = tmp;
+
+    if ((tmp = ParseAlignement (align)) < 0) {
+	twmrc_error_prefix();
+	fprintf (stderr, "ignoring invalid IconRegion argument \"%s\"\n", align);
+	tmp = J_UNDEF;
+    }
+    ir->Alignement = tmp;
 
     return(&(ir->clientlist));
 }
@@ -444,7 +480,6 @@ int def_x, def_y;
     int final_x, final_y;
     int x;
     Icon	*icon;
-    Matchtype	match;
     Image	*image = None;
 
     icon = (Icon*) malloc (sizeof (struct Icon));
@@ -466,6 +501,7 @@ int def_x, def_y;
     icon->match   = match_none;
     icon->pattern = NULL;
     icon->image   = None;
+    icon->ir      = (IconRegion*) 0;
 
     tmp_win->forced = FALSE;
     tmp_win->icon_not_ours = FALSE;
@@ -621,7 +657,7 @@ int def_x, def_y;
 	if (icon->w_width > Scr->MaxIconTitleWidth) icon->w_width = Scr->MaxIconTitleWidth;
 	if (icon->w_width < icon->width)
 	{
-	    icon->x = (icon->width - icon->w_width)/2;
+	    icon->x  = (icon->width - icon->w_width) / 2;
 	    icon->x += Scr->IconManagerShadowDepth + 3;
 	    icon->w_width = icon->width;
 	}
@@ -673,26 +709,17 @@ int def_x, def_y;
 	event_mask = ExposureMask;
     }
 
+    if (Scr->AutoRaiseIcons || Scr->SchrinkIconTitles)
+	event_mask |= EnterWindowMask | LeaveWindowMask;
     XSelectInput (dpy, icon->w,
-		  KeyPressMask | ButtonPressMask | ButtonReleaseMask |
-/*		  EnterWindowMask | LeaveWindowMask | */
-		  event_mask);
+		  KeyPressMask | ButtonPressMask | ButtonReleaseMask | event_mask);
 
+    if (icon->width == 0) icon->width = icon->w_width;
     icon->bm_w = None;
-    if (image != None && (! (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint))) {
-	XRectangle rect [2];
+    if (image && (! (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint))) {
+	XRectangle rect;
 
-	switch (Scr->IconJustification) {
-	    case J_LEFT :
-		x = 0;
-		break;
-	    case J_CENTER :
-		x = (icon->w_width - icon->width) / 2;
-		break;
-	    case J_RIGHT :
-		x = icon->w_width - icon->width;
-		break;
-	}
+	x = GetIconOffset (icon);
 	icon->bm_w = XCreateWindow (dpy, icon->w, x, 0,
 					    (unsigned int)icon->width,
 					    (unsigned int)icon->height,
@@ -700,29 +727,33 @@ int def_x, def_y;
 					    (unsigned int) CopyFromParent,
 					    Scr->d_visual, valuemask,
 					    &attributes);
-	if ((image != None) && image->mask != None) {
+	if (image->mask) {
 	    XShapeCombineMask (dpy, icon->bm_w, ShapeBounding, 0, 0, image->mask, ShapeSet);
 	    XShapeCombineMask (dpy, icon->w,    ShapeBounding, x, 0, image->mask, ShapeSet);
-	    if (icon->has_title) {
-		rect [0].x = 0;
-		rect [0].y = icon->height;
-		rect [0].width  = icon->w_width;
-		rect [0].height = Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
-		XShapeCombineRectangles (dpy, icon->w, ShapeBounding,
-					0, 0, rect, 1, ShapeUnion, 0);
-	    }
+	} else if (icon->has_title) {
+	    rect.x      = x;
+	    rect.y      = 0;
+	    rect.width  = icon->width;
+	    rect.height = icon->height;
+	    XShapeCombineRectangles (dpy, icon->w, ShapeBounding,
+			0, 0, &rect, 1, ShapeSet, 0);
 	}
-	else
 	if (icon->has_title) {
-	    rect [0].x      = x;
-	    rect [0].y      = 0;
-	    rect [0].width  = icon->width;
-	    rect [0].height = icon->height;
-	    rect [1].x      = 0;
-	    rect [1].y      = icon->height;
-	    rect [1].width  = icon->w_width;
-	    rect [1].height = Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6;
-	    XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, rect, 2, ShapeSet, 0);
+	    if (Scr->SchrinkIconTitles) {
+		rect.x      = x;
+		rect.y      = icon->height;
+		rect.width  = icon->width;
+		rect.height = icon->w_height - icon->height;
+		icon->title_schrinked = True;
+	    } else {
+		rect.x      = 0;
+		rect.y      = icon->height;
+		rect.width  = icon->w_width;
+		rect.height = icon->w_height - icon->height;
+		icon->title_schrinked = False;
+	    }
+	    XShapeCombineRectangles (dpy, icon->w, ShapeBounding,
+			0, 0, &rect, 1, ShapeUnion, 0);
 	}
     }
 
@@ -748,8 +779,11 @@ int def_x, def_y;
     if (final_x > Scr->MyDisplayWidth)
 	final_x = Scr->MyDisplayWidth - icon->w_width -
 	    (2 * Scr->IconBorderWidth);
-    if (final_x < 0) final_x = 0;
-
+    if (Scr->SchrinkIconTitles && icon->bm_w) {
+	if (final_x + (icon->w_width - icon->width) < 0) final_x = 0;
+    } else {
+	if (final_x < 0) final_x = 0;
+    }
     if (final_y > Scr->MyDisplayHeight)
 	final_y = Scr->MyDisplayHeight - icon->height -
 	    Scr->IconFont.height - 6 - (2 * Scr->IconBorderWidth);
@@ -767,6 +801,95 @@ int def_x, def_y;
     return (0);
 }
 
+void SchrinkIconTitle (tmp_win)
+TwmWindow *tmp_win;
+{
+    Icon	*icon;
+    XRectangle	rect;
+
+    if (!tmp_win || !tmp_win->icon) return;
+    icon = tmp_win->icon;
+    if (!icon->has_title) return;
+    if (icon->bm_w == icon->width) return;
+    if (icon->height  == 0) return;
+
+    rect.x      = GetIconOffset (icon);
+    rect.y      = 0;
+    rect.width  = icon->width;
+    rect.height = icon->w_height;
+    XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, &rect, 1, ShapeIntersect, 0);
+    icon->title_schrinked = True;
+    XClearArea (dpy, icon->w, 0, icon->height, icon->w_width,
+		icon->w_height - icon->height, True);
+}
+
+void ExpandIconTitle (tmp_win)
+TwmWindow *tmp_win;
+{
+    Icon	*icon;
+    XRectangle	rect;
+
+    if (!tmp_win || !tmp_win->icon) return;
+    icon = tmp_win->icon;
+    if (!icon->has_title) return;
+    if (icon->w_width == icon->width) return;
+    if (icon->bm_w  == 0) return;
+
+    rect.x      = 0;
+    rect.y      = icon->height;
+    rect.width  = icon->w_width;
+    rect.height = icon->w_height - icon->height;
+    XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, &rect, 1, ShapeUnion, 0);
+    icon->title_schrinked = False;
+    XClearArea (dpy, icon->w, 0, icon->height, icon->w_width,
+		icon->w_height - icon->height, True);
+}
+
+void ReshapeIcon (icon)
+Icon *icon;
+{
+    int x;
+    XRectangle	rects [2];
+
+    if (!icon) return;
+
+    x = GetIconOffset (icon);
+    XMoveWindow (dpy, icon->bm_w, x, 0);
+
+    rects [0].x      = x;
+    rects [0].y      = 0;
+    rects [0].width  = icon->width;
+    rects [0].height = icon->height;
+    rects [1].x      = x;
+    rects [1].y      = icon->height;
+    rects [1].width  = icon->width;
+    rects [1].height = icon->w_height - icon->height;
+    XShapeCombineRectangles (dpy, icon->w, ShapeBounding, 0, 0, rects, 2, ShapeSet, 0);
+}
+
+int GetIconOffset (icon)
+Icon *icon;
+{
+    short justif;
+
+    if (!icon) return (0);
+
+    justif = icon->ir ? icon->ir->TitleJustification : Scr->IconJustification;
+    switch (justif) {
+	case J_LEFT :
+	    return (0);
+
+	case J_CENTER :
+	    return ((icon->w_width - icon->width) / 2);
+
+	case J_RIGHT :
+	    return (icon->w_width - icon->width);
+
+	default :
+	    return (0);
+    }
+}
+
 Bool AnimateIcons (scr, icon)
 ScreenInfo *scr;
 Icon	   *icon;
@@ -775,28 +898,17 @@ Icon	   *icon;
     XRectangle	rect;
     XSetWindowAttributes attr;
     int		x;
-    static Window shapewin = (Window) 0;
 
     image = icon->image;
     attr.background_pixmap = image->pixmap;
     XChangeWindowAttributes (dpy, icon->bm_w, CWBackPixmap, &attr);
 
     if (image->mask != None) {
+	x = GetIconOffset (icon);
 	XShapeCombineMask (dpy, icon->bm_w, ShapeBounding, 0, 0, image->mask, ShapeSet);
-	switch (scr->IconJustification) {
-	    case J_LEFT :
-		x = 0;
-		break;
-	    case J_CENTER :
-		x = (icon->w_width - icon->width) / 2;
-		break;
-	    case J_RIGHT :
-		x = icon->w_width - icon->width;
-		break;
-	}
 	if (icon->has_title) {
-	    rect.x = 0;
-	    rect.y = icon->height;
+	    rect.x      = 0;
+	    rect.y      = icon->height;
 	    rect.width  = icon->w_width;
 	    rect.height = scr->IconFont.height + 6;
 

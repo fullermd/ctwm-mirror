@@ -123,6 +123,7 @@ typedef struct WorkSpaceWindow {
     ColorPair		curColors;
     Image		*curImage;
     unsigned long	curBorderColor;
+    Bool		curPaint;
 
     ColorPair		defColors;
     Image		*defImage;
@@ -159,6 +160,7 @@ struct WorkSpaceList {
     Image		*image;
     name_list		*clientlist;
     MapSubwindow	mapSubwindow;
+    struct WindowRegion *FirstWindowRegion;
     struct WorkSpaceList *next;
 };
 

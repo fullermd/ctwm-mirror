@@ -79,8 +79,10 @@
 #include <unixio.h>
 #include <file.h>
 #include <decw$include/Xos.h>
+#include <decw$include/Xatom.h>
 #else
 #include <X11/Xos.h>
+#include <X11/Xatom.h>
 #endif
 #include "twm.h"
 #include "gc.h"
@@ -91,6 +93,7 @@
 #include "parse.h"
 #include "gram.h"
 #include "screen.h"
+#include "icons.h"
 #ifdef VMS
 #include <X11Xmu/CharSet.h>
 #include <decw$bitmaps/menu12.xbm>
@@ -98,7 +101,6 @@
 #include <lib$routines.h>
 #else
 #include <X11/Xmu/CharSet.h>
-#include <X11/bitmaps/menu12>
 #endif
 #include "version.h"
 
@@ -1230,7 +1232,7 @@ MenuRoot *mr;
     mr->pmenu = NULL;
 
     if (Scr->Monochrome == MONOCHROME || !Scr->InterpolateMenuColors)
-	return;
+	return 0;
 
     start = mr->first;
     while (TRUE)
@@ -1332,9 +1334,9 @@ Bool PopUpMenu (menu, x, y, center)
     TwmWindow **WindowNames;
     TwmWindow *tmp_win2,*tmp_win3;
     int i;
-    int (*compar)() = 
-      (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
-    static char **actions = NULL;
+    int xl, yt;
+    int (*compar)() = (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
+    Bool clipped;
 
     if (!menu) return False;
 
@@ -1454,31 +1456,40 @@ Bool PopUpMenu (menu, x, y, center)
     /*
     * clip to screen
     */
+    clipped = FALSE;
     if (x + menu->width > Scr->MyDisplayWidth) {
 	x = Scr->MyDisplayWidth - menu->width;
+	clipped = TRUE;
     }
-    if (x < 0) x = 0;
+    if (x < 0) {
+	x = 0;
+	clipped = TRUE;
+    }
     if (y + menu->height > Scr->MyDisplayHeight) {
 	y = Scr->MyDisplayHeight - menu->height;
+	clipped = TRUE;
     }
-    if (y < 0) y = 0;
+    if (y < 0) {
+	y = 0;
+	clipped = TRUE;
+    }
     MenuOrigins[MenuDepth].x = x;
     MenuOrigins[MenuDepth].y = y;
     MenuDepth++;
 
     XMoveWindow(dpy, menu->w, x, y);
     if (Scr->Shadow) {
-	XMoveWindow (dpy, menu->shadow, x + SHADOWWIDTH, y + SHADOWWIDTH);
-    }
-    if (Scr->Shadow) {
+	XMoveWindow  (dpy, menu->shadow, x + SHADOWWIDTH, y + SHADOWWIDTH);
 	XRaiseWindow (dpy, menu->shadow);
     }
     XMapRaised(dpy, menu->w);
-    if (Scr->Shadow) {
-	XMapWindow (dpy, menu->shadow);
+    if (clipped && center) {
+	xl = x + (menu->width      / 2);
+	yt = y + (Scr->EntryHeight / 2);
+	XWarpPointer (dpy, Scr->Root, Scr->Root, x, y, menu->width, menu->height, xl, yt);
     }
+    if (Scr->Shadow) XMapWindow (dpy, menu->shadow);
     XSync(dpy, 0);
-
     return True;
 }
 
@@ -1607,8 +1618,6 @@ void resizeFromCenter(w, tmp_win)
 {
   int lastx, lasty, width, height, bw2;
   int namelen;
-  int stat;
-  Window junk;
 
   namelen = strlen (tmp_win->name);
   bw2 = tmp_win->frame_bw * 2;
@@ -1802,8 +1811,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 #else
 #ifdef X11R6
 	if (smcConn) SmcCloseConnection (smcConn, 0, NULL);
-	execvp(*Argv, Argv);
 #endif /* X11R6 */
+	execvp(*Argv, Argv);
 #endif /* VMS */
 	fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
 	break;
@@ -1816,6 +1825,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     case F_BACKICONMGR:
 	MoveIconManager(func);
         break;
+
+    case F_FORWMAPICONMGR:
+    case F_BACKMAPICONMGR:
+	MoveMappedIconManager(func);
+	break;
 
     case F_NEXTICONMGR:
     case F_PREVICONMGR:
@@ -1851,7 +1865,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     case F_SHOWWORKMGR:
 	if (! Scr->workSpaceManagerActive) break;
 	DeIconify (Scr->workSpaceMgr.workspaceWindow.twm_win);
-	RaiseWindow(dpy, Scr->workSpaceMgr.workspaceWindow.twm_win);
+	RaiseWindow(Scr->workSpaceMgr.workspaceWindow.twm_win);
 	break;
 
     case F_HIDEWORKMGR:
@@ -2329,10 +2343,14 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		    ((CurrentDragX != origDragX ||
 		      CurrentDragY != origDragY)))
 		  tmp_win->icon_moved = TRUE;
-		if (!Scr->OpaqueMove && menuFromFrameOrWindowOrTitlebar)
-		  XMoveWindow(dpy, DragWindow, 
-			      Event.xbutton.x_root - DragWidth / 2,
-			      Event.xbutton.y_root - DragHeight / 2);
+		if (!Scr->OpaqueMove && menuFromFrameOrWindowOrTitlebar) {
+		    int xl = Event.xbutton.x_root - (DragWidth  / 2),
+		        yt = Event.xbutton.y_root - (DragHeight / 2);
+		    if (!moving_icon &&
+		       (MoveFunction == F_MOVEPACK || MoveFunction == F_MOVEPUSH))
+			TryToPack (tmp_win, &xl, &yt);
+			XMoveWindow(dpy, DragWindow, xl, yt);
+		}
 		if (menuFromFrameOrWindowOrTitlebar) DragWindow = None;
 		break;
 	    }
@@ -3150,7 +3168,6 @@ Execute(s)
     char oldDisplay[256];
     char *doisplay;
     int restorevar = 0;
-    SigProc	sig;
 
     oldDisplay[0] = '\0';
     doisplay=getenv("DISPLAY");
@@ -3175,9 +3192,13 @@ Execute(s)
 	restorevar = 1;
     }
 #ifdef USE_SIGNALS
+  {
+    SigProc	sig;
+
     sig = signal (SIGALRM, SIG_IGN);
     (void) system (s);
     signal (SIGALRM, sig);
+  }
 #else  /* USE_SIGNALS */
     (void) system (s);
 #endif  /* USE_SIGNALS */
@@ -3385,6 +3406,7 @@ TwmWindow *tmp_win;
     if (tmp_win->icon && tmp_win->icon->w) {
 	XUnmapWindow(dpy, tmp_win->icon->w);
 	IconDown (tmp_win);
+	if (Scr->SchrinkIconTitles) tmp_win->icon->title_schrinked = True;
     }
     if (tmp_win->list)
       for (wl = tmp_win->list; wl != NULL; wl = wl->nextv)
@@ -3454,7 +3476,6 @@ int def_x, def_y;
     WList *wl;
     Window leader;
     Window blanket;
-    int i;
 
     iconify = (!tmp_win->iconify_by_unmapping);
     t = (TwmWindow*) 0;
@@ -3593,9 +3614,7 @@ static void Squeeze (tmp_win)
 TwmWindow *tmp_win;
 {
     long fy, savey;
-    int nstep = 10;
-    int i, offset;
-    XEvent ev;
+    int offset;
     int    south;
     int	grav = ((tmp_win->hints.flags & PWinGravity) 
 		      ? tmp_win->hints.win_gravity : NorthWestGravity);
@@ -3650,6 +3669,10 @@ TwmWindow *t;
     Window junk;
     int px, py, dummy;
     unsigned udummy;
+    unsigned char	*prop;
+    unsigned long	nitems, bytesafter;
+    Atom		actual_type;
+    int			actual_format;
 
     n = 0;
     (void) sprintf(Info[n++], "Twm version:  %s", Version);
@@ -3682,6 +3705,16 @@ TwmWindow *t;
 		x, y);
 	(void) sprintf(Info[n++], "Border width     = %d", bw);
 	(void) sprintf(Info[n++], "Depth            = %d", depth);
+
+	if (XGetWindowProperty (dpy, t->w, _XA_WM_CLIENT_MACHINE, 0L, 64, False,
+				XA_STRING, &actual_type, &actual_format, &nitems,
+				&bytesafter, &prop) == Success) {
+	    if (nitems && prop) {
+		(void) sprintf(Info[n++], "Client machine   = %s", (char*)prop);
+		XFree ((char *) prop);
+	    }
+	}
+	
     }
 
     Info[n++][0] = '\0';
@@ -4193,7 +4226,7 @@ Window	w;
 int	width, height;
 {
     int		srect;
-    int		i, j, x, y, usec, nrects;
+    int		i, j, usec, nrects;
     Pixmap	mask;
     GC		gc;
     XGCValues	gcv;
@@ -4428,3 +4461,23 @@ int *x, *y;
     return (ret);
 }
 
+WarpCursorToDefaultEntry (menu)
+MenuRoot *menu;
+{
+    MenuItem	*item;
+    Window	 root;
+    int		 i, x, y, xl, yt;
+    unsigned int w, h, bw, d;
+
+    for (i = 0, item = menu->first; item != menu->last; item = item->next) {
+	if (item == menu->defaultitem) break;
+	i++;
+     }
+     if (!XGetGeometry (dpy, menu->w, &root, &x, &y, &w, &h, &bw, &d)) return 0;
+     xl = x + (menu->width / 2);
+     yt = y + (i + 0.5) * Scr->EntryHeight;
+	
+     XWarpPointer (dpy, Scr->Root, Scr->Root,
+		   Event.xbutton.x_root, Event.xbutton.y_root,
+		   menu->width, menu->height, xl, yt);
+}

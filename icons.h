@@ -57,12 +57,37 @@
 #ifndef ICONS_H
 #define ICONS_H
 
+typedef enum {match_none, match_class, match_name, match_icon} Matchtype;
+
+typedef struct Icon
+{
+    Matchtype	match;
+    Window	w;		/* the icon window */
+    Window	bm_w;		/* the icon bitmap window */
+    Image	*image;		/* image icon structure */
+    int		x;		/* icon text x coordinate */
+    int		y;		/* icon text y coordiante */
+    int		w_width;	/* width of the icon window */
+    int		w_height;	/* height of the icon window */
+    int		width;          /* width of the icon bitmap */
+    int		height;         /* height of the icon bitmap */
+    char	*pattern;	/* Why this icon was choosed */
+    Pixel	border;		/* border color */
+    ColorPair	iconc;
+    Bool	has_title, title_schrinked;
+    int		border_width;
+    struct IconRegion	*ir;
+} Icon;
+
 typedef struct IconRegion
 {
     struct IconRegion	*next;
     int			x, y, w, h;
     int			grav1, grav2;
-    int			stepx, stepy;	/* allocation granularity */
+    int			stepx, stepy;		/* allocation granularity */
+    short		TitleJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
+    short		Justification;		/* J_LEFT, J_CENTER J_RIGHT or J_BORDER */
+    short		Alignement;		/* J_TOP, J_CENTER, J_BOTTOM or J_BORDER */
     name_list           *clientlist;
     struct IconEntry	*entries;
 } IconRegion;
@@ -76,5 +101,8 @@ typedef struct IconEntry
 }IconEntry;
 
 extern name_list **AddIconRegion();
+extern void SchrinkIconTitle ();
+extern void ExpandIconTitle ();
+extern void ReshapeIcon ();
 
 #endif /* ICONS_H */

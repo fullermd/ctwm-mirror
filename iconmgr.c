@@ -390,6 +390,86 @@ void MoveIconManager(dir)
 /***********************************************************************
  *
  *  Procedure:
+ *	MoveMappedIconManager - move the pointer around in an icon manager
+ *
+ *  Inputs:
+ *	dir	- one of the following:
+ *			F_FORWMAPICONMGR	- forward in the window list
+ *			F_BACKMAPICONMGR	- backward in the window list
+ *
+ *  Special Considerations:
+ *	none
+ *
+ ***********************************************************************
+ */
+
+void MoveMappedIconManager(dir)
+    int dir;
+{
+    IconMgr *ip;
+    WList *tmp = NULL;
+    WList *orig = NULL;
+    int got_it;
+
+    if (!Current) return;
+
+    ip = Current->iconmgr;
+
+    got_it = 0;
+    tmp = Current;
+    orig = Current;
+
+    while(!got_it) {
+	switch(dir)
+	{
+	    case F_FORWMAPICONMGR:
+		if ((tmp = tmp->next) == NULL)
+		    tmp = ip->first;
+		break;
+
+	    case F_BACKMAPICONMGR:
+		if ((tmp = tmp->prev) == NULL)
+		    tmp = ip->last;
+		break;
+	}
+	if (tmp->twm->mapped) {
+	    got_it = 1;
+	    break;
+	}
+	if (tmp == orig)
+	    break;
+    }
+
+    if (!got_it)
+    {
+	fprintf (stderr, "%s:  unable to find open window in icon manager\n", 
+		 ProgramName);
+	return;
+    }
+
+    if (tmp == NULL)
+      return;
+
+    /* raise the frame so the icon manager is visible */
+    if (ip->twm_win->mapped) {
+	RaiseWindow(ip->twm_win);
+	XWarpPointer(dpy, None, tmp->icon, 0,0,0,0, 5, 5);
+    } else {
+	if (tmp->twm->title_height) {
+	    int tbx = Scr->TBInfo.titlex;
+	    int x = tmp->twm->highlightxr;
+	    XWarpPointer (dpy, None, tmp->twm->title_w, 0, 0, 0, 0,
+			  tbx + (x - tbx) / 2,
+			  Scr->TitleHeight / 4);
+	} else {
+	    XWarpPointer (dpy, None, tmp->twm->w, 0, 0, 0, 0, 5, 5);
+	}
+    }
+}
+
+/***********************************************************************
+ *
+ *  Procedure:
  *	JumpIconManager - jump from one icon manager to another,
  *		possibly even on another screen
  *
@@ -849,7 +929,7 @@ void PackIconManager(ip)
     int new_x, new_y;
     int savewidth;
     WList *tmp;
-    int mask, bw;
+    int mask;
     unsigned int JunkW, JunkH;
 
     if (Scr->use3Diconmanagers) {

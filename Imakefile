@@ -11,7 +11,7 @@ XCOMM
 #undef  USE_SOUND
 #define XPM
 #define USEM4
-#define X11R6
+#undef X11R6
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
@@ -119,7 +119,9 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) 
 		xpm/supman1.xbm   xpm/supman4.xbm   xpm/supman7.xbm \
 		xpm/supman2.xbm   xpm/supman5.xbm   xpm/supman8.xbm \
 		xpm/supman3.xbm   xpm/supman6.xbm   xpm/supman9.xbm \
-		xpm/nt1.xpm   xpm/nt2.xpm xpm/xftp.xpm xpm/welcome.xwd
+		xpm/nt1.xpm   xpm/nt2.xpm xpm/xftp.xpm xpm/welcome.xwd \
+		3dcircle.xpm 3ddimple.xpm 3ddot.xpm 3dfeet.xpm 3dleopard.xpm \
+		3dpie.xpm 3dpyramid.xpm 3dslant.xpm
 
 AllTarget(ctwm)
 

@@ -68,7 +68,7 @@
  ***********************************************************************/
 
 #include <stdio.h>
-#if defined(sony_news)
+#if defined(sony_news) || defined __QNX__
 #  include <ctype.h>
 #endif
 #ifdef VMS
@@ -85,6 +85,7 @@
 #include "util.h"
 #include "gram.h"
 #include "parse.h"
+#include "version.h"
 #ifdef VMS
 #include <decw$include/Xatom.h> 
 #else
@@ -108,8 +109,8 @@
 #endif
 #define BUF_LEN 300
 
-static int ParseJustification ();
-static int ParseAlignement ();
+int ParseJustification ();
+int ParseAlignement ();
 static int ParseRandomPlacement ();
 static int ParseButtonStyle ();
 
@@ -585,6 +586,11 @@ typedef struct _TwmKeyword {
 #define kw0_ReverseCurrentWorkspace	48
 #define kw0_DontWarpCursorInWMap	49
 #define kw0_CenterFeedbackWindow	50
+#define kw0_WarpToDefaultMenuEntry	51
+#define kw0_SchrinkIconTitles		52
+#define kw0_AutoRaiseIcons		53
+#define kw0_use3DIconBorders		54
+#define kw0_UseSunkTitlePixmap          55
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -605,6 +611,7 @@ typedef struct _TwmKeyword {
 #define kws_SoundHost			16
 #endif
 #define kws_WMgrButtonStyle		17
+#define kws_WorkSpaceFont               18
 
 #define kwn_ConstrainedMoveTime		1
 #define kwn_MoveDelta			2
@@ -673,6 +680,7 @@ static TwmKeyword keytable[] = {
     { "animationspeed",		NKEYWORD, kwn_AnimationSpeed },
     { "autooccupy",		KEYWORD, kw0_AutoOccupy },
     { "autoraise",		AUTO_RAISE, 0 },
+    { "autoraiseicons",		KEYWORD, kw0_AutoRaiseIcons },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
     { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
@@ -714,6 +722,7 @@ static TwmKeyword keytable[] = {
     { "f.altkeymap",		FSKEYWORD, F_ALTKEYMAP },
     { "f.autoraise",		FKEYWORD, F_AUTORAISE },
     { "f.backiconmgr",		FKEYWORD, F_BACKICONMGR },
+    { "f.backmapiconmgr",	FKEYWORD, F_BACKMAPICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
     { "f.bottomzoom",		FKEYWORD, F_BOTTOMZOOM },
     { "f.circledown",		FKEYWORD, F_CIRCLEDOWN },
@@ -733,6 +742,7 @@ static TwmKeyword keytable[] = {
     { "f.focus",		FKEYWORD, F_FOCUS },
     { "f.forcemove",		FKEYWORD, F_FORCEMOVE },
     { "f.forwiconmgr",		FKEYWORD, F_FORWICONMGR },
+    { "f.forwmapiconmgr",	FKEYWORD, F_FORWMAPICONMGR },
     { "f.fullzoom",		FKEYWORD, F_FULLZOOM },
     { "f.function",		FSKEYWORD, F_FUNCTION },
     { "f.gotoworkspace",	FSKEYWORD, F_GOTOWORKSPACE },
@@ -913,6 +923,7 @@ static TwmKeyword keytable[] = {
     { "root",			ROOT, 0 },
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
+    { "schrinkicontitles",	KEYWORD, kw0_SchrinkIconTitles },
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
@@ -944,7 +955,9 @@ static TwmKeyword keytable[] = {
     { "transientontop",		NKEYWORD, kwn_TransientOnTop },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
     { "usepposition",		SKEYWORD, kws_UsePPosition },
+    { "usesunktitlepixmap",     KEYWORD, kw0_UseSunkTitlePixmap },
     { "usethreedborders",	KEYWORD, kw0_Use3DBorders },
+    { "usethreediconborders",	KEYWORD, kw0_use3DIconBorders },
     { "usethreediconmanagers",	KEYWORD, kw0_Use3DIconManagers },
     { "usethreedmenus",		KEYWORD, kw0_Use3DMenus },
     { "usethreedtitles",	KEYWORD, kw0_Use3DTitles },
@@ -953,16 +966,19 @@ static TwmKeyword keytable[] = {
     { "wait",			WAITC, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
     { "warpringonscreen",	KEYWORD, kw0_WarpRingOnScreen },
+    { "warptodefaultmenuentry",	KEYWORD, kw0_WarpToDefaultMenuEntry },
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
     { "west",			DKEYWORD, D_WEST },
     { "window",			WINDOW, 0 },
     { "windowfunction",		WINDOW_FUNCTION, 0 },
+    { "windowregion",		WINDOW_REGION, 0 },
     { "windowring",		WINDOW_RING, 0 },
     { "wmgrbuttonshadowdepth",	NKEYWORD, kwn_WMgrButtonShadowDepth },
     { "wmgrbuttonstyle",	SKEYWORD, kws_WMgrButtonStyle },
     { "wmgrhorizbuttonindent",	NKEYWORD, kwn_WMgrHorizButtonIndent },
     { "wmgrvertbuttonindent",	NKEYWORD, kwn_WMgrVertButtonIndent },
     { "workspace", 		WORKSPACE, 0 },
+    { "workspacefont",          SKEYWORD, kws_WorkSpaceFont },
     { "workspacemanagergeometry", WORKSPCMGR_GEOMETRY, 0 },
     { "workspaces",             WORKSPACES, 0},
     { "xmovegrid",		NKEYWORD, kwn_XMoveGrid },
@@ -1112,6 +1128,10 @@ int do_single_keyword (keyword)
 	Scr->DontPaintRootWindow = TRUE;
 	return 1;
 
+      case kw0_UseSunkTitlePixmap:
+	Scr->UseSunkTitlePixmap = TRUE;
+	return 1;
+
       case kw0_Use3DBorders:
 	Scr->use3Dborders = TRUE;
 	return 1;
@@ -1195,6 +1215,24 @@ int do_single_keyword (keyword)
       case kw0_CenterFeedbackWindow:
 	Scr->CenterFeedbackWindow = TRUE;
 	return 1;
+
+      case kw0_WarpToDefaultMenuEntry:
+	Scr->WarpToDefaultMenuEntry = TRUE;
+	return 1;
+
+      case kw0_SchrinkIconTitles:
+	Scr->SchrinkIconTitles = TRUE;
+	return 1;
+
+      case kw0_AutoRaiseIcons:
+	Scr->AutoRaiseIcons = TRUE;
+	return 1;
+
+      case kw0_use3DIconBorders:
+	Scr->use3Diconborders = TRUE;
+	return 1;
+
+
     }
     return 0;
 }
@@ -1242,6 +1280,10 @@ int do_string_keyword (keyword, s)
 	if (!Scr->HaveFonts) Scr->MenuFont.name = s;
 	return 1;
 
+      case kws_WorkSpaceFont:
+	if (!Scr->HaveFonts) Scr->workSpaceMgr.workspaceWindow.windowFont.name = s;
+	return 1;
+
       case kws_TitleFont:
 	if (!Scr->HaveFonts) Scr->TitleBarFont.name = s;
 	return 1;
@@ -1255,11 +1297,11 @@ int do_string_keyword (keyword, s)
 	return 1;
 
       case kws_IconDirectory:
-	if (Scr->FirstTime) Scr->IconDirectory = ExpandFilename (s);
+	if (Scr->FirstTime) Scr->IconDirectory = ExpandFilePath (s);
 	return 1;
 
       case kws_PixmapDirectory:
-	if (Scr->FirstTime) Scr->PixmapDirectory = ExpandFilename (s);
+	if (Scr->FirstTime) Scr->PixmapDirectory = ExpandFilePath (s);
 	return 1;
 
       case kws_MaxWindowSize:
@@ -1739,13 +1781,15 @@ static int ParseRandomPlacement (s)
     return (-1);
 }
 
-static int ParseJustification (s)
+int ParseJustification (s)
     register char *s;
 {
     if (strlen (s) == 0) return (-1);
     if (strcmp (s, "default") == 0) return J_CENTER;
+    if (strcmp (s,   "undef") == 0) return J_UNDEF;
     XmuCopyISOLatin1Lowered (s, s);
 
+    if (strcmp (s,   "undef") == 0) return J_UNDEF;
     if (strcmp (s, "default") == 0) return J_CENTER;
     if (strcmp (s,    "left") == 0) return J_LEFT;
     if (strcmp (s,  "center") == 0) return J_CENTER;
@@ -1754,13 +1798,15 @@ static int ParseJustification (s)
     return (-1);
 }
 
-static int ParseAlignement (s)
+int ParseAlignement (s)
     register char *s;
 {
     if (strlen (s) == 0) return (-1);
     if (strcmp (s, "default") == 0) return J_CENTER;
+    if (strcmp (s,   "undef") == 0) return J_UNDEF;
     XmuCopyISOLatin1Lowered (s, s);
 
+    if (strcmp (s,   "undef") == 0) return J_UNDEF;
     if (strcmp (s, "default") == 0) return J_CENTER;
     if (strcmp (s,     "top") == 0) return J_TOP;
     if (strcmp (s,  "center") == 0) return J_CENTER;
@@ -1995,6 +2041,7 @@ char *host;
         fputs(MkNum("PLANES",DisplayPlanes(display, Scr->screen)), tmpf);
         fputs(MkNum("BITS_PER_RGB", visual->bits_per_rgb), tmpf);
         fputs(MkDef("TWM_TYPE", "ctwm"), tmpf);
+        fputs(MkDef("TWM_VERSION", VersionNumber), tmpf);
         switch(visual->class) {
                 case(StaticGray):       vc = "StaticGray";      break;
                 case(GrayScale):        vc = "GrayScale";       break;

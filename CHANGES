@@ -770,7 +770,7 @@ LeftTitleButton ":xpm:menu" {
 
     1 - 2 new keywords : XMoveGrid and YMoveGrid with an integer parameter.
         Constrains window moves so that its x and y coordinates are multiple
-        of the specified values.
+        of the specified values. Useful to align windows easily.
 
     2 - New function : f.deleteordestroy. First tries to delete the window
         (send it WM_DELETE_WINDOW message), or kills it, if the client doesn't
@@ -783,7 +783,107 @@ LeftTitleButton ":xpm:menu" {
 
     4 - New built-in title button : :xpm:vbar (a vertical bar).
 
-    5 - CenterFeedbackWindow
+    5 - CenterFeedbackWindow : The moving and resizing information window
+        is centered in the middle of the screen instead of the top left
+        corner.
 
-    6 - New option -version. Ctwm just print its version and compile time
-        options.
+    6 - 2 New options :
+
+            -version : Ctwm just prints its version number and exits.
+            -info    : Ctwm prints its detailed version and compile time
+                       options.
+
+    7 - WarpToDefaultMenuEntry (Useful only with StayUpMenus) : When using
+        StayUpMenus, and a menu does stays up, the pointer is warped to
+        the default entry of the menu. Try it. Can emulate double click.
+        For example :
+
+Button2 =	: icon		: f.menu "iconmenu"
+menu "iconmenu" {
+    "Actions"		f.title
+    ""			f.separator
+    "*Restore"		f.iconify
+    "Move"		f.move
+    "Squeeze"		f.squeeze
+    "Occupy ..."	f.occupy
+    "Occupy All"	f.occupyall
+    ""			f.separator
+    "Delete"		f.deleteordestroy
+}
+        will result in DoubleButton2 on an icon uniconifies it.
+
+
+    8 - When you popup a menu that is constrained by the border of the screen
+        the pointer is warped to the first entry. (Avoid exiting ctwm when you
+        just want to refresh the screen).
+
+    9 - When compiled with X11R6 defined, ctwm supports ICE session management.
+        (the code has been stolen directly from the X11R6 twm, it has not been
+        thoroughly tested, humm... actually, not tested at all).
+
+   10 - SchrinkIconTitles : A la Motif schrinking of icon titles, and expansion
+        when mouse is inside icon.
+
+   11 - AutoRaiseIcons : Icons are raised when the cursor enters it. Useful
+        with SchrinkIconTitles.
+
+
+Patches from Matt Wormley <mwormley@airship.ardfa.calpoly.edu>
+
+------------------
+
+   12 - XPM files for title bars or buttons may include the following symbolic
+        colors. These symbolic colors allow the possiblity of using the same
+        3d XPM file with different colors for different titlebars.
+
+        Background: The main color to be used by the title bar
+        HiShadow:   The color to be used as the highlight
+        LoShadow:   The color to be used as the dark shadow.
+
+        Using these colors, I have built some 3d XPM files for various
+        titlebars while still keeping the ability to change titlebar colors.
+
+   13 - Added a keyword to the .ctwmrc file: "UseSunkTitlePixmap".  This
+        makes it so the shadows are inversed for title pixmaps when focus is
+        lost.  This is similar to having the SunkFocusWindowTitle, but it
+        makes your 3d XPM sink instead of just the whole bar.
+
+   14 - Added 3 new builtin 3d buttons for "Iconify", "Resize" and "Box". They
+        are available with the :xpm: identifier in the .ctwmrc file.
+
+   15 - Added another keyword to the .ctwmrc file: "WorkSpaceFont". This
+        allows you to specify the font to use in the workspace manager.
+
+   16 - 8 new xpm pixmaps for buttons, title highlite, etc... :
+        3dcircle.xpm 3ddimple.xpm 3ddot.xpm 3dfeet.xpm 3dleopard.xpm 3dpie.xpm
+        3dpyramid.xpm 3dslant.xpm
+
+
+------------------
+
+
+Patches from Scott Bolte <scottb@cirque.moneng.mei.com>
+
+------------------
+
+    17 - 2 new functions : f.forwmapiconmgr and f.backmapiconmgr, similar to
+         f.forwiconmgr and f.backiconmgr but only stops on mapped windows.
+
+------------------
+
+
+   18 - Last minute : PixmapDirectory now accept a colon separated list of
+        directories.
+
+   19 - If you use m4, ctwm now defines TWM_VERSION which is the version in
+        the form of floating point (here 3.4).
+
+   20 - I forgot to tell that IconRegion has now 3 more optionnal parameters
+        iconjust, iconregjust and iconregalign. That can be used to give
+        special values to IconJustification, IconRegionJustification and
+        IconRegionAlignement for this IconRegion. The new syntax is :
+
+IconRegion geomstring vgrav hgrav gridwidth gridheight [iconjust] [iconregjust] \
+           [iconregalign] [{ win-list }]
+
+

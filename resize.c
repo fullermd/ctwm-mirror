@@ -218,9 +218,6 @@ MenuStartResize(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int x, y, w, h;
 {
-  Window junkRoot;
-  unsigned int junkbw, junkDepth;
-
     if (! Scr->OpaqueResize) XGrabServer(dpy);
     resizeGrabMask = ButtonPressMask | ButtonMotionMask | PointerMotionMask;
     XGrabPointer(dpy, Scr->Root, True, resizeGrabMask,
@@ -1012,7 +1009,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (tmp_win->title_height && tmp_win->hilite_wr)
     {
 	xwc.width = (tmp_win->rightx - tmp_win->highlightxr);
-	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
+	if (Scr->TBInfo.nright > 0) xwc.width -= 2 * Scr->TitlePadding;
 	if (Scr->use3Dtitles) xwc.width -= Scr->TitleButtonShadowDepth;
         if (xwc.width <= 0) {
             xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
@@ -1024,7 +1021,35 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
         xwcm = CWX | CWWidth;
         XConfigureWindow(dpy, tmp_win->hilite_wr, xwcm, &xwc);
     }
+    if (tmp_win->title_height && tmp_win->lolite_wl)
+    {
+	xwc.width = (tmp_win->name_x - tmp_win->highlightxl);
+	if (Scr->use3Dtitles) xwc.width -= 4;
+	if (xwc.width <= 0) {
+	     xwc.x = Scr->MyDisplayWidth;        /* move offscreen */
+	     xwc.width = 1;
+	} else {
+	     xwc.x = tmp_win->highlightxl;
+	}
 
+	xwcm = CWX | CWWidth;
+	XConfigureWindow(dpy, tmp_win->lolite_wl, xwcm, &xwc);
+    }
+    if (tmp_win->title_height && tmp_win->lolite_wr)
+    {
+	xwc.width = (tmp_win->rightx - tmp_win->highlightxr);
+	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
+	if (Scr->use3Dtitles) xwc.width -= 4;
+	if (xwc.width <= 0) {
+	     xwc.x = Scr->MyDisplayWidth;        /* move offscreen */
+	     xwc.width = 1;
+	} else {
+	     xwc.x = tmp_win->highlightxr;
+	}
+
+	xwcm = CWX | CWWidth; 
+	XConfigureWindow(dpy, tmp_win->lolite_wr, xwcm, &xwc);
+    }
     if (HasShape && reShape) {
 	SetFrameShape (tmp_win);
     }

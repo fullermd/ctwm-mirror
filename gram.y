@@ -70,6 +70,7 @@
 #include "twm.h"
 #include "menus.h"
 #include "icons.h"
+#include "add_window.h"
 #include "list.h"
 #include "util.h"
 #include "screen.h"
@@ -115,7 +116,7 @@ extern int yylineno;
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_BORDER NO_ICON_TITLE NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION 
-%token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME 
+%token <num> WINDOW_REGION META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME 
 %token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
 %token <num> MOVE RESIZE WAITC SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON 
@@ -146,12 +147,39 @@ stmt		: error
 		| narg
 		| squeeze
 		| ICON_REGION string DKEYWORD DKEYWORD number number {
-		      (void) AddIconRegion($2, $3, $4, $5, $6);
+		      (void) AddIconRegion($2, $3, $4, $5, $6, "undef", "undef", "undef");
+		  }
+		| ICON_REGION string DKEYWORD DKEYWORD number number string {
+		      (void) AddIconRegion($2, $3, $4, $5, $6, $7, "undef", "undef");
+		  }
+		| ICON_REGION string DKEYWORD DKEYWORD number number string string {
+		      (void) AddIconRegion($2, $3, $4, $5, $6, $7, $8, "undef");
+		  }
+		| ICON_REGION string DKEYWORD DKEYWORD number number string string string {
+		      (void) AddIconRegion($2, $3, $4, $5, $6, $7, $8, $9);
 		  }
 		| ICON_REGION string DKEYWORD DKEYWORD number number {
-		      list = AddIconRegion($2, $3, $4, $5, $6);
+		      list = AddIconRegion($2, $3, $4, $5, $6, "undef", "undef", "undef");
 		  }
 		  win_list
+		| ICON_REGION string DKEYWORD DKEYWORD number number string {
+		      list = AddIconRegion($2, $3, $4, $5, $6, $7, "undef", "undef");
+		  }
+		  win_list
+		| ICON_REGION string DKEYWORD DKEYWORD number number string string {
+		      list = AddIconRegion($2, $3, $4, $5, $6, $7, $8, "undef");
+		  }
+		  win_list
+		| ICON_REGION string DKEYWORD DKEYWORD number number string string string {
+		      list = AddIconRegion($2, $3, $4, $5, $6, $7, $8, $9);
+		  }
+		  win_list
+
+		| WINDOW_REGION string DKEYWORD DKEYWORD {
+		      list = AddWindowRegion ($2, $3, $4);
+		  }
+		  win_list
+
 		| ICONMGR_GEOMETRY string number	{ if (Scr->FirstTime)
 						  {
 						    Scr->iconmgr->geometry= $2;
@@ -1000,7 +1028,6 @@ static void GotButton (butt, func)
 int butt, func;
 {
     int i;
-    MenuRoot *menu;
     MenuItem *item;
 
     for (i = 0; i < NUM_CONTEXTS; i++) {

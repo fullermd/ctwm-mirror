@@ -221,6 +221,7 @@ typedef struct _SqueezeInfo {
     int denom;				/* 0 for pix count or denominator */
 } SqueezeInfo;
 
+#define J_UNDEF			0
 #define J_LEFT			1
 #define J_CENTER		2
 #define J_RIGHT			3
@@ -262,26 +263,20 @@ typedef struct Colormaps
 #define ColormapsScoreboardLength(cm) ((cm)->number_cwins * \
 				       ((cm)->number_cwins - 1) / 2)
 
-typedef enum {match_none, match_class, match_name, match_icon} Matchtype;
+typedef struct WindowRegion {
+    struct WindowRegion	*next;
+    int			x, y, w, h;
+    int			grav1, grav2;
+    name_list           *clientlist;
+    struct WindowEntry	*entries;
+} WindowRegion;
 
-typedef struct Icon
-{
-    Matchtype	match;
-    Window	w;		/* the icon window */
-    Window	bm_w;		/* the icon bitmap window */
-    Image	*image;		/* image icon structure */
-    int		x;		/* icon text x coordinate */
-    int		y;		/* icon text y coordiante */
-    int		w_width;	/* width of the icon window */
-    int		w_height;	/* height of the icon window */
-    int		width;          /* width of the icon bitmap */
-    int		height;         /* height of the icon bitmap */
-    char	*pattern;	/* Why this icon was choosed */
-    Pixel	border;		/* border color */
-    ColorPair	iconc;
-    Bool	has_title;
-    int		border_width;
-} Icon;
+typedef struct WindowEntry {
+    struct WindowEntry	*next;
+    int			x, y, w, h;
+    struct TwmWindow	*twm_win;
+    short 		used;
+} WindowEntry;
 
 /* for each window that is on the display, one of these structures
  * is allocated and linked into a list 
@@ -296,9 +291,11 @@ typedef struct TwmWindow
     Window title_w;		/* the title bar window */
     Window hilite_wl;		/* the left hilite window */
     Window hilite_wr;		/* the right hilite window */
+    Window lolite_wl;		/* the right lolite window */
+    Window lolite_wr;		/* the right lolite window */
     Cursor curcurs;		/* current resize cursor */
     Pixmap gray;
-    Icon *icon;			/* the curent icon */
+    struct Icon *icon;		/* the curent icon */
     name_list *iconslist;	/* the current list of icons */
     int frame_x;		/* x position of frame */
     int frame_y;		/* y position of frame */
@@ -371,6 +368,8 @@ typedef struct TwmWindow
     Bool hasfocusvisible;	/* The window has visivle focus*/
     int  occupation;
     Image *HiliteImage;                /* focus highlight window background */
+    Image *LoliteImage;                /* focus lowlight window background */
+    WindowRegion *wr;
 
 #ifdef X11R6
     Bool nameChanged;	/* did WM_NAME ever change? */
@@ -413,6 +412,10 @@ typedef struct TWMWinConfigEntry
 #define TBPM_DELETE ":delete"	/* same image as xlogo */
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
+
+#define TBPM_3DICONIFY ":xpm:iconify"
+#define TBPM_3DSUNKEN_RESIZE ":xpm:sunkresize"
+#define TBPM_3DBOX ":xpm:box"
 
 #define TBPM_3DDOT ":xpm:dot"		/* name of titlebar pixmap for dot */
 #define TBPM_3DRESIZE ":xpm:resize"	/* name of titlebar pixmap for resize button */
@@ -500,6 +503,7 @@ extern Atom _XA_WM_PROTOCOLS;
 extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
+extern Atom _XA_WM_CLIENT_MACHINE;
 #ifdef X11R6
   extern Atom _XA_SM_CLIENT_ID;
   extern Atom _XA_WM_CLIENT_LEADER;

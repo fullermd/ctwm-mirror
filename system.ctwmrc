@@ -28,7 +28,7 @@ SunkFocusWindowTitle
 
 workspacemanagergeometry        "360x60+60-0" 4
 WorkSpaces {
-    "One"   {"#686B9F" "white" "DeepSkyBlue3"}
+    "One"   {"#686B9F" "white" "DeepSkyBlue3" "white" "xpm:background8.xpm"}
     "Two"   {"#619AAE" "white" "firebrick" "white" "plaid"}
     "Three" {"#727786" "white" "brown"}
     "Four"  {"#8C5b7A" "white" "MidnightBlue"}
