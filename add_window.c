@@ -637,8 +637,24 @@ IconMgr *iconp;
 	    (! visible (tmp_win))))) { /* just stick it somewhere */
 
 	/* TODO : We should try to fit in the smallest vscreen. */
-	if ((PlaceX + tmp_win->attr.width)  > Scr->rootw) PlaceX = 50;
-	if ((PlaceY + tmp_win->attr.height) > Scr->rooth) PlaceY = 50;
+	if (Scr->DontMoveOff) {
+	    int available;
+
+	    available = Scr->rootw - tmp_win->attr.width;
+	    if (available <= 0) PlaceX = 0; /* Window is large, place is as
+					       much to the left as possible */
+	    else if (available < 100) PlaceX = available / 2;
+	    else PlaceX = 50;
+
+	    available = Scr->rooth - tmp_win->attr.height;
+	    if (available <= 0) PlaceY = 0; /* Window is large, place is as
+					       much to the top as possible */
+	    else if (available < 100) PlaceY = available / 2;
+	    else PlaceY = 50;
+	} else {
+	    if ((PlaceX + tmp_win->attr.width)  > Scr->rootw) PlaceX = 50;
+	    if ((PlaceY + tmp_win->attr.height) > Scr->rooth) PlaceY = 50;
+	}
 
 	tmp_win->attr.x = PlaceX;
 	tmp_win->attr.y = PlaceY;
