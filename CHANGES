@@ -1336,3 +1336,12 @@ VirtualScreens {
 
 	Example:
 	"Down"     = c|s: all           : f.changesize "bottom +10"
+
+   33 - f.changesize bugfix and improvement (by Dan 'dl' Lilliehorn)
+
+	Fixes focusproblems with f.changesize and adds the ability to set
+	a new fixed size of a window.
+
+	Example:
+	"F1"       = c|s: all           : f.changesize "640x480"
+

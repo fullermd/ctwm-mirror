@@ -1355,92 +1355,150 @@ ChangeSize (in_string, tmp_win)
      TwmWindow *tmp_win;
 {
   int i=0, j=0, change=0, size=0;
-  char tmp_string[10];
+  char tmp_string[10], tmp_string2[10];
   char operator ='\0';
   char size_string[10];
+  int rx, ry, wx, wy, mr;
+  Window  rr, cr;
 
-  while(in_string[i] != ' ')
+  if (isdigit(in_string[0]))
     {
-      tmp_string[i] = in_string[i];
+      while(in_string[i] != 'x')
+	{
+	  tmp_string[i] = in_string[i];
+	  i++;
+	}
+      tmp_string[i]='\0';
       i++;
-    }
-  tmp_string[i]='\0';
+      while(in_string[i] != '\0')
+	{
+	  tmp_string2[j] = in_string[i];
+	  i++;
+	  j++;
+	}
 
-  i++;
-  operator = in_string[i];
-  i++;
+      wx = atoi(tmp_string);
+      wy = atoi(tmp_string2);
 
-  while(in_string[i] != '\0')
-    {
-      size_string[j] = in_string[i];
-      i++;
-      j++;
-    }
-  size_string[j] = '\0';
-
-  change = atoi(size_string);
-
-  if (operator == '-')
-    {
-      change = 0 - change;
-    }
-  else if (operator != '+')
-    {
-      /* error */
-      fprintf (stderr, "%s: Bad argument to f.changesize\n", ProgramName);
-      return;
-    }
-
-  if (strcmp("bottom", tmp_string) == 0)
-    {
-      size = tmp_win->frame_height + change;
-
-      if (size < 1)
-	size = 1;
+      if (wy < tmp_win->title_height+1)
+	wy = tmp_win->title_height+1;
 
       SetupWindow (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
-		   tmp_win->frame_width, size , 
-		   -1);
-    }
-  else if (strcmp("top", tmp_string) == 0)
-    {
-      size = tmp_win->frame_height + change;
-
-      if (size < 1)
-	size = 1;
-
-      SetupWindow (tmp_win, tmp_win->frame_x, (tmp_win->frame_y - change),
-		   tmp_win->frame_width, size, 
-		   -1);
-    }
-  else if (strcmp("left", tmp_string) == 0)
-    {
-      size = tmp_win->frame_width + change;
-
-      if (size < 1)
-	size = 1;
-
-      SetupWindow (tmp_win, (tmp_win->frame_x - change), tmp_win->frame_y,
-		   size, tmp_win->frame_height, 
-		   -1);
-    }
-  else if (strcmp("right", tmp_string) == 0)
-    {
-      size = tmp_win->frame_width + change;
-
-      if (size < 1)
-	size = 1;
-
-      SetupWindow (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
-		   size, tmp_win->frame_height, 
-		   -1);
-
+		       wx, wy+tmp_win->title_height, -1);
     }
   else
     {
-      /* error */
-      fprintf (stderr, "%s: Bad argument to f.changesize\n", ProgramName);
-      return;
+      while(in_string[i] != ' ')
+	{
+	  tmp_string[i] = in_string[i];
+	  i++;
+	}
+      tmp_string[i]='\0';
+
+      i++;
+      operator = in_string[i];
+      i++;
+
+      while(in_string[i] != '\0')
+	{
+	  size_string[j] = in_string[i];
+	  i++;
+	  j++;
+	}
+      size_string[j] = '\0';
+
+      change = atoi(size_string);
+
+      if (operator == '-')
+	{
+	  change = 0 - change;
+	}
+      else if (operator != '+')
+	{
+	  /* error */
+	  fprintf (stderr, "%s: Bad argument to f.changesize\n", ProgramName);
+	  return;
+	}
+
+      if (strcmp("bottom", tmp_string) == 0)
+	{
+	  size = tmp_win->frame_height + change;
+
+	  if (size < (tmp_win->title_height+1))
+	    size = tmp_win->title_height+1;
+
+	  SetupWindow (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
+		       tmp_win->frame_width, size , 
+		       -1);
+
+	  XQueryPointer(dpy, tmp_win->w, &rr, &cr, &rx, &ry, &wx, &wy, 
+			(unsigned int*)&mr);
+
+	  if ((wy+tmp_win->title_height) > size)
+	    XWarpPointer(dpy, None, tmp_win->w, 0, 0, 0, 0, 0, 0);
+	}
+      else if (strcmp("top", tmp_string) == 0)
+	{
+	  size = tmp_win->frame_height + change;
+
+	  if (size < (tmp_win->title_height+1))
+	    size = tmp_win->title_height+1;
+
+	  SetupWindow (tmp_win, tmp_win->frame_x, (tmp_win->frame_y - change),
+		       tmp_win->frame_width, size, 
+		       -1);
+      
+	  XQueryPointer(dpy, tmp_win->w, &rr, &cr, &rx, &ry, &wx, &wy, 
+			(unsigned int*)&mr);
+
+	  if ((wy + tmp_win->title_height) > size)
+	    XWarpPointer(dpy, None, tmp_win->w, 0, 0, 0, 0, 0, 0);
+
+
+	}
+      else if (strcmp("left", tmp_string) == 0)
+	{
+	  size = tmp_win->frame_width + change;
+
+	  if (size < 1)
+	    size = 1;
+
+	  SetupWindow (tmp_win, (tmp_win->frame_x - change), tmp_win->frame_y,
+		       size, tmp_win->frame_height, 
+		       -1);
+      
+	  XQueryPointer(dpy, tmp_win->w, &rr, &cr, &rx, &ry, &wx, &wy, 
+			(unsigned int*)&mr);
+
+	  if (wx > size)
+	    XWarpPointer(dpy, None, tmp_win->w, 0, 0, 0, 0, 0, 0);
+
+      
+	}
+      else if (strcmp("right", tmp_string) == 0)
+	{
+	  size = tmp_win->frame_width + change;
+
+	  if (size < 1)
+	    size = 1;
+
+	  SetupWindow (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
+		       size, tmp_win->frame_height, 
+		       -1);
+
+	  XQueryPointer(dpy, tmp_win->w, &rr, &cr, &rx, &ry, &wx, &wy, 
+			(unsigned int*)&mr);
+
+	  if (wx > size)
+	    XWarpPointer(dpy, None, tmp_win->w, 0, 0, 0, 0, 0, 0);
+	  
+	}
+      else
+	{
+	  /* error */
+	  fprintf (stderr, "%s: Bad argument to f.changesize\n", ProgramName);
+	  return;
+	}
     }
 }
 

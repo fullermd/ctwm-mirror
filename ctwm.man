@@ -1809,13 +1809,22 @@ resizes the window to fill only the bottom half of the screen.
 
 .IP "\fBf.changesize\fP \fIstring\fP" 8
 This function allows you to change the size of the focused window. The
-format of the string must be \fB"<border> <+|-><sizechange>"\fP, where \fBborder\fP must be one of \fBTop\fP, \fBBottom\fP, \fBLeft\fP or \fBRight\fP.
+format of the string must be either \fB"<border> <+|-><sizechange>"\fP 
+(where \fBborder\fP must be one of \fBTop\fP, \fBBottom\fP, \fBLeft\fP or 
+\fBRight\fP) or \fB"<x size>x<y size>"\fP (where the size is the requested
+new window size). The height of the window can never be set/changed to less
+than the title height + 1 (or 1 if the window has no title) and the width
+can never be set/changed to less than 1.
 
 .EX 0
 "Right"  = c|s: all      : f.changesize "right +10"
 "Left"   = c|s: all      : f.changesize "right -10"
 "Down"   = c|s: all      : f.changesize "bottom +10"
 "Up"     = c|s: all      : f.changesize "bottom -10"
+
+"F1"     = c|s: all      : f.changesize "640x480"
+"F2"     = c|s: all      : f.changesize "800x600"
+"F3"     = c|s: all      : f.changesize "1024x768"
 .EE
 
 .IP "\fBf.circledown\fP" 8
