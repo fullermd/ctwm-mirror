@@ -1509,7 +1509,15 @@ Bool PopUpMenu (menu, x, y, center)
 	func = (all || CurrentSelectedWorkspace) ? F_WINWARP : F_POPUP;
         for (i=0; i<WindowNameCount; i++)
         {
-            AddToMenu(menu, WindowNames[i]->name, (char *)WindowNames[i],
+	    char *name;
+	    name = WindowNames[i]->name;
+#ifdef CLAUDE
+	    if ((strlen (name) > 11) &&
+		(strncmp (name, "Netscape: ", 10) == 0)) {
+		name += 10;
+	    }    
+#endif
+            AddToMenu(menu, name, (char *)WindowNames[i],
                       NULL, func,NULL,NULL);
         }
         free(WindowNames);

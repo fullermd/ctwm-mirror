@@ -1334,13 +1334,26 @@ static void free_window_names (tmp, nukefull, nukename, nukeicon)
  * XXX - are we sure that nobody ever sets these to another constant (check
  * twm windows)?
  */
-    if (tmp->name == tmp->full_name) nukefull = False;
-    if (tmp->icon_name == tmp->name) nukename = False;
-
 #define isokay(v) ((v) && (v) != NoName)
-    if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
-    if (nukename && isokay(tmp->name)) XFree (tmp->name);
-    if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+    if ((tmp->name == tmp->full_name) && (tmp->name == tmp->icon_name)) {
+	if (nukefull && nukename && nukeicon && isokay(tmp->name)) XFree (tmp->name);
+    } else
+    if (tmp->name == tmp->full_name) {
+	if (nukename && nukefull && isokay(tmp->name)) XFree (tmp->name);
+	if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+    } else
+    if (tmp->name == tmp->icon_name) {
+	if (nukename && nukeicon && isokay(tmp->name)) XFree (tmp->name);
+	if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
+    } else
+    if (tmp->icon_name == tmp->full_name) {
+	if (nukeicon && nukefull && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+	if (nukename && isokay(tmp->name)) XFree (tmp->name);
+    } else {
+	if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
+	if (nukename && isokay(tmp->name)) XFree (tmp->name);
+	if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+    }
 #undef isokay
     return;
 }
