@@ -1495,7 +1495,7 @@ Bool PopUpMenu (menu, x, y, center)
 	    AddToMenu(menu, "TWM Visible", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
 	else
 	  if (menu == Scr->AllIcons) /* Added by dl 2004 */
-	    AddToMenu(menu, "TWM AllIcons", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
+	    AddToMenu(menu, "TWM All Icons", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
 	else
   	    AddToMenu(menu, "TWM All Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
   
