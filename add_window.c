@@ -1467,11 +1467,11 @@ TwmWindow *tmp_win;
 	switch (tmp->cont)
 	{
 	case C_WINDOW:
-	  //case C_WORKSPACE:
+	/* case C_WORKSPACE: */
 	    if (tmp->mods & AltMask) break;
 	    grabkey (tmp, 0, tmp_win->w);
 	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-	        grabkey (tmp, LockMask, tmp_win->w);
+		grabkey (tmp, LockMask, tmp_win->w);
 	    for (i = 0 ; i < 8 ; i++) {
 		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 		    !(tmp->mods & ModifierMask [i]))
