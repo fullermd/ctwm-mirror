@@ -1141,8 +1141,9 @@ WindowGeometries {
 
     2 - New keyword : AlwaysSqueezeToGravity
 
-	If it is enabled, window squeezing always follows window gravity (instead
-	of northward when the window has a title).
+	If it is enabled, window squeezing always follows window gravity
+	(instead of northward when the window has a title).
+	(by Rudolph T. Maceyko).
 
     3 - TwmKeys and TwmVisible menus (dlctwmmenu.patch) :
 
