@@ -1,0 +1,6 @@
+Makefile
+ctwm
+deftwmrc.c
+gram.c
+gram.h
+lex.c
