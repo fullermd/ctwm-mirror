@@ -327,6 +327,7 @@ typedef struct _TwmKeyword {
 #define kws_UnknownIcon			7
 #define kws_IconDirectory		8
 #define kws_MaxWindowSize		9
+#define kws_XPMIconDirectory		10
 
 #define kwn_ConstrainedMoveTime		1
 #define kwn_MoveDelta			2
@@ -560,6 +561,7 @@ static TwmKeyword keytable[] = {
     { "workspacemanagergeometry", WORKSPCMGR_GEOMETRY, 0 },
     { "workspaces",             WORKSPACES, 0},
     { "xorvalue",		NKEYWORD, kwn_XorValue },
+    { "xpmicondirectory",	SKEYWORD, kws_XPMIconDirectory },
     { "zoom",			ZOOM, 0 },
 };
 
@@ -752,6 +754,10 @@ int do_string_keyword (keyword, s)
 
       case kws_IconDirectory:
 	if (Scr->FirstTime) Scr->IconDirectory = ExpandFilename (s);
+	return 1;
+
+      case kws_XPMIconDirectory:
+	if (Scr->FirstTime) Scr->XPMIconDirectory = ExpandFilename (s);
 	return 1;
 
       case kws_MaxWindowSize:

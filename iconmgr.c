@@ -433,7 +433,10 @@ WList *AddIconManager(tmp_win)
 	return NULL;
     if ((ip = (IconMgr *)LookInList(Scr->IconMgrs, tmp_win->full_name,
 	    &tmp_win->class)) == NULL)
-	ip = Scr->iconmgr;
+	if (workSpaceManagerActive)
+	    ip = Scr->workSpaceMgr.buttonList->iconmgr;
+	else
+	    ip = Scr->iconmgr;
 
   tmp = NULL;
   old = tmp_win->list;
@@ -506,9 +509,14 @@ WList *AddIconManager(tmp_win)
     XSaveContext(dpy, tmp->icon, TwmContext, (caddr_t) tmp_win);
     XSaveContext(dpy, tmp->icon, ScreenContext, (caddr_t) Scr);
 
+    if (! Scr->ShowIconManager) {
+	ip->twm_win->mapped = FALSE;
+	ip->twm_win->icon   = TRUE;
+    }
     if (!ip->twm_win->icon)
     {
       if (OCCUPY (ip->twm_win, Scr->workSpaceMgr.activeWSPC)) {
+	SetMapStateProp (ip->twm_win, NormalState);
 	XMapWindow(dpy, ip->w);
 	XMapWindow(dpy, ip->twm_win->frame);
       }

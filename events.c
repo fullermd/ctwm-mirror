@@ -663,6 +663,10 @@ HandleKeyPress()
      */
     if (Tmp_win)
     {
+	if (Tmp_win == Scr->workSpaceMgr.twm_win) {
+	    ChangeLabel (&Event);
+	    return;
+	}
         if (Event.xany.window == Tmp_win->icon_w ||
 	    Event.xany.window == Tmp_win->frame ||
 	    Event.xany.window == Tmp_win->title_w ||
@@ -992,6 +996,24 @@ RedoIconName()
     {
 	XMoveWindow(dpy, Tmp_win->icon_bm_w, x, y);
 	XMapWindow(dpy, Tmp_win->icon_bm_w);
+#if defined (XPM)
+	if ((Tmp_win->xpmicon != None) && Tmp_win->xpmicon->mask) {
+	    XRectangle rect;
+	    Pixmap     title;
+
+	    XShapeCombineMask(dpy, Tmp_win->icon_w, ShapeBounding, x, y,
+				Tmp_win->xpmicon->mask, ShapeSet);
+	    rect.x = 0;
+	    rect.y = Tmp_win->icon_height;
+	    rect.width  = Tmp_win->icon_w_width;
+	    rect.height = Scr->IconFont.height + 4;
+	    XShapeCombineRectangles (dpy,  Tmp_win->icon_w, ShapeBounding, 0,
+					0, &rect, 1, ShapeUnion, 0);
+
+	    XShapeCombineMask(dpy, Tmp_win->icon_bm_w, ShapeBounding, 0, 0,
+				Tmp_win->xpmicon->mask, ShapeSet);
+	}
+#endif
     }
     if (Tmp_win->icon)
     {

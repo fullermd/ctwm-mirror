@@ -277,11 +277,10 @@ int grav1, grav2;
 
     ir = (IconRegion *)malloc(sizeof(IconRegion));
     ir->next = NULL;
-    if (Scr->LastRegion)
-	Scr->LastRegion->next = ir;
+
+    if (Scr->LastRegion) Scr->LastRegion->next = ir;
     Scr->LastRegion = ir;
-    if (!Scr->FirstRegion)
-	Scr->FirstRegion = ir;
+    if (!Scr->FirstRegion) Scr->FirstRegion = ir;
 
     ir->entries = NULL;
     ir->grav1 = grav1;
@@ -349,7 +348,9 @@ int def_x, def_y;
     Pixmap pm = None;			/* tmp pixmap variable */
     int final_x, final_y;
     int x;
-
+#if defined (XPM)
+    XpmIcon *xpmicon = None;
+#endif
 
     FB(tmp_win->iconc.fore, tmp_win->iconc.back);
 
@@ -373,6 +374,22 @@ int def_x, def_y;
 	bm = None;
 	if (icon_name != NULL)
 	{
+#if defined (XPM)
+	    if (icon_name [0] == '@') {
+		if ((xpmicon = (XpmIcon*) LookInNameList (Scr->Icons, icon_name)) == None) {
+		    if ((xpmicon = GetXpmPixmap (&(icon_name [1]))) != None) {
+			AddToList(&Scr->Icons, icon_name, (char *)xpmicon);
+		    }
+		}
+		if (xpmicon != None) {
+		    pm = xpmicon->pixmap;
+		    tmp_win->icon_width  = xpmicon->attributes.width;
+		    tmp_win->icon_height = xpmicon->attributes.height;
+		    tmp_win->xpmicon = xpmicon;
+		}
+	    }
+	    else
+#endif
 	    if ((bm = (Pixmap)LookInNameList(Scr->Icons, icon_name)) == None)
 	    {
 		if ((bm = GetBitmap (icon_name)) != None)
@@ -433,13 +450,28 @@ int def_x, def_y;
 	bm = None;
 	if (icon_name != NULL)
 	{
+#if defined (XPM)
+	    if (icon_name [0] == '@') {
+		if ((xpmicon = (XpmIcon*) LookInNameList (Scr->Icons, icon_name)) == None) {
+		    if ((xpmicon = GetXpmPixmap (&(icon_name [1]))) != None) {
+			AddToList(&Scr->Icons, icon_name, (char *)xpmicon);
+		    }
+		}
+		if (xpmicon != None) {
+		    pm = xpmicon->pixmap;
+		    tmp_win->icon_width  = xpmicon->attributes.width;
+		    tmp_win->icon_height = xpmicon->attributes.height;
+		    tmp_win->xpmicon = xpmicon;
+		}
+	    }
+	    else
+#endif
 	    if ((bm = (Pixmap)LookInNameList(Scr->Icons, icon_name)) == None)
 	    {
 		if ((bm = GetBitmap (icon_name)) != None)
 		    AddToList(&Scr->Icons, icon_name, (char *)bm);
 	    }
 	}
-
 	if (bm != None)
 	{
 	    XGetGeometry(dpy, bm, &JunkRoot, &JunkX, &JunkY,
@@ -554,6 +586,22 @@ int def_x, def_y;
 					    (unsigned int) CopyFromParent,
 					    Scr->d_visual, valuemask,
 					    &attributes);
+#if defined (XPM)
+	if ((xpmicon != None) && xpmicon->mask) {
+	    XRectangle rect;
+	    Pixmap     title;
+
+	    XShapeCombineMask(dpy, tmp_win->icon_w, ShapeBounding, x, y, xpmicon->mask, ShapeSet);
+	    rect.x = 0;
+	    rect.y = tmp_win->icon_height;
+	    rect.width  = tmp_win->icon_w_width;
+	    rect.height = Scr->IconFont.height + 4;
+	    XShapeCombineRectangles (dpy,  tmp_win->icon_w, ShapeBounding,  0,
+					0, &rect, 1, ShapeUnion, 0);
+
+	    XShapeCombineMask(dpy, tmp_win->icon_bm_w, ShapeBounding, 0, 0, xpmicon->mask, ShapeSet);
+	}
+#endif
     }
 
     /* I need to figure out where to put the icon window now, because 
@@ -567,9 +615,11 @@ int def_x, def_y;
     }
     else
     {
+      if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC))
 	PlaceIcon(tmp_win, def_x, def_y, &final_x, &final_y);
     }
 
+  if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) {
     if (final_x > Scr->MyDisplayWidth)
 	final_x = Scr->MyDisplayWidth - tmp_win->icon_w_width -
 	    (2 * Scr->IconBorderWidth);
@@ -579,12 +629,20 @@ int def_x, def_y;
 	    Scr->IconFont.height - 4 - (2 * Scr->IconBorderWidth);
 
     XMoveWindow(dpy, tmp_win->icon_w, final_x, final_y);
+  }
     tmp_win->iconified = TRUE;
 
     XMapSubwindows(dpy, tmp_win->icon_w);
     XSaveContext(dpy, tmp_win->icon_w, TwmContext, (caddr_t)tmp_win);
     XSaveContext(dpy, tmp_win->icon_w, ScreenContext, (caddr_t)Scr);
     XDefineCursor(dpy, tmp_win->icon_w, Scr->IconCursor);
+#if defined (XPM)
+    if ((xpmicon == None) && (pm != None)) {
+	XFreePixmap (dpy, pm);
+    }
+#else
     if (pm) XFreePixmap (dpy, pm);
+#endif
     return;
 }
+

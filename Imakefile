@@ -6,12 +6,19 @@ XCOMM other people do also, so perhaps you could do us all a favor and
 XCOMM distribute this one.
 XCOMM
 
+#define XPM
+
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
-LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
-        DEFINES = $(SIGNAL_DEFINES)
 
+#ifdef XPM
+LOCAL_LIBRARIES =  -lXpm $(XMULIB) $(EXTENSIONLIB) $(XLIB)
+        DEFINES = $(SIGNAL_DEFINES) -DXPM
+#else
+LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
+        DEFINES = $(SIGNAL_DEFINES)
+#endif
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
 		cursor.c icons.c workmgr.c
@@ -30,7 +37,7 @@ SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
 depend:: lex.c gram.c deftwmrc.c 
 
 ComplexProgramTarget(ctwm)
-InstallNonExecFile(system.twmrc,$(TWMDIR))
+InstallNonExecFile(system.ctwmrc,$(TWMDIR))
 
 gram.h gram.c: gram.y
 	yacc $(YFLAGS) gram.y
@@ -40,15 +47,15 @@ gram.h gram.c: gram.y
 clean::
 	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c 
 
-deftwmrc.c:  system.twmrc
+deftwmrc.c:  system.ctwmrc
 	$(RM) $@
 	echo '/* ' >>$@
 	echo ' * This file is generated automatically from the default' >>$@
-	echo ' * twm bindings file system.twmrc by the twm Imakefile.' >>$@
+	echo ' * twm bindings file system.ctwmrc by the twm Imakefile.' >>$@
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *defTwmrc[] = {' >>$@
 	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' \
-		system.twmrc >>$@
+		system.ctwmrc >>$@
 	echo '    (char *) 0 };' >>$@
 

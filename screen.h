@@ -195,6 +195,7 @@ typedef struct ScreenInfo
     struct IconRegion *FirstRegion;	/* pointer to icon regions */
     struct IconRegion *LastRegion;	/* pointer to the last icon region */
     char *IconDirectory;	/* icon directory to search */
+    char *XPMIconDirectory;	/* XPM icon directory to search */
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */

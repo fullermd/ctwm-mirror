@@ -2537,6 +2537,7 @@ int def_x, def_y;
 	    CreateIconWindow(tmp_win, def_x, def_y);
 	else
 	    IconUp(tmp_win);
+	if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC))
 	XMapRaised(dpy, tmp_win->icon_w);
     }
     if (tmp_win->list)
@@ -2928,6 +2929,16 @@ void WarpToWindow (t)
     } else {
 	x = t->frame_width / 2;
 	y = t->frame_height / 2;
+    }
+    if (!OCCUPY (t, Scr->workSpaceMgr.activeWSPC)) {
+	ButtonList *blist;
+
+	blist = Scr->workSpaceMgr.buttonList;
+	while (blist != NULL) {
+	    if (OCCUPY (t, blist)) break;
+	    blist = blist->next;
+	}
+	if (blist != NULL) GotoWorkSpace (blist);
     }
     XWarpPointer (dpy, None, t->frame, 0, 0, 0, 0, x, y);
 }

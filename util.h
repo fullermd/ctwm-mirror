@@ -48,4 +48,15 @@ extern int	GetColor();
 
 extern int HotX, HotY;
 
+#if defined (XPM)
+#   include <X11/xpm.h>
+
+typedef struct _XpmIcon {
+    Pixmap pixmap;
+    Pixmap mask;
+    XpmAttributes attributes;
+} XpmIcon;
+extern XpmIcon *GetXpmPixmap ();
+#endif
+
 #endif /* _UTIL_ */

@@ -401,6 +401,70 @@ Pixmap GetBitmap (name)
 }
 
 
+#if defined (XPM)
+XpmIcon *GetXpmPixmap (name)
+char *name;
+{
+    char fullPath [1024];
+    int  status;
+    XpmIcon *ret;
+
+    if (Scr->XPMIconDirectory) {
+	sprintf (fullPath, "%s/%s", Scr->XPMIconDirectory, name);
+	ret = (XpmIcon*) malloc (sizeof (XpmIcon));
+	if (ret == NULL) {
+	    ret = None;
+	    goto finish;
+	}
+	ret->attributes.valuemask  = 0;
+	ret->attributes.valuemask |= XpmSize;
+	ret->attributes.valuemask |= XpmReturnPixels;
+	status = XpmReadFileToPixmap(dpy, Scr->Root, fullPath,
+					  &(ret->pixmap), &(ret->mask), &(ret->attributes));
+	switch (status) {
+	    case XpmSuccess:
+		break;
+	    case XpmColorError:
+		fprintf (stderr, "Could not parse or alloc requested color : %s\n", fullPath);
+		free (ret);
+		ret = None;
+		break;
+	    case XpmOpenFailed:
+		fprintf (stderr, "Cannot open XPM file : %s\n", fullPath);
+		ret = None;
+		free (ret);
+		break;
+	    case XpmFileInvalid:
+		fprintf (stderr, "invalid XPM file : %s\n", fullPath);
+		free (ret);
+		ret = None;
+		break;
+	    case XpmNoMemory:
+		fprintf (stderr, "Not enough memory for XPM file : %s\n", fullPath);
+		free (ret);
+		ret = None;
+		break;
+	    case XpmColorFailed:
+		fprintf (stderr, "Color not found in : %s\n", fullPath);
+		free (ret);
+		ret = None;
+		break;
+	    default :
+		fprintf (stderr, "Unknown error in : %s\n", fullPath);
+		free (ret);
+		ret = None;
+		break;
+	}
+
+    }
+    else {
+	ret = None;
+    }
+finish:
+    return (ret);
+}
+#endif
+
 InsertRGBColormap (a, maps, nmaps, replace)
     Atom a;
     XStandardColormap *maps;

@@ -381,7 +381,7 @@ main(argc, argv, environ)
 	AllocateIconManager ("TWM", "Icons", "", 1);
 
 	Scr->IconDirectory = NULL;
-
+	Scr->XPMIconDirectory = NULL;
 	Scr->siconifyPm = None;
 	Scr->pullPm = None;
 	Scr->hilitePm = None;

@@ -1,6 +1,7 @@
 
 
     Changes from version 1.0 to 1.1
+    -------------------------------
 
 
     1 - Correction of a few bugs
@@ -45,6 +46,44 @@ OccupyAll {
 "F1"      =    : root           : f.gotoworkspace "cognac"
 
 
+    Changes from version 1.1 to 1.2
+    -------------------------------
 
+
+    1 - you can now directly edit workspace names in their buttons.
+only printable characters, delete and backspace keys are honored.
+
+    2 - Ctwm now handle shaped colored icons in XPM format. This added
+	the variable XPMIconDirectory, and slightly modified the syntax
+	of the Icons command. The XPM icon file names should be prefixed
+	by the character '@' to distinguished them from the ordinary
+	bitmap files.
+
+Example :
+
+XPMIconDirectory  "/usr/lib/X11/X11/XPM"
+
+Icons {
+    "Axe"    "@xedit.xpm"
+    "xterm"  "@xterm.xpm"
+    "xrn"    "@xrn.xpm"
+    "HPterm" "@hpterm.xpm"
+    "XAlarm" "@datebook.xpm"
+    "Xman"   "@xman.xpm"
+}
+
+  These above xpm pixmap are given.
+
+
+    3 - Many bugs fixed :
+
+	- Icon regions now works.
+	- the absence of ShowIconManager is taken into account.
+	- The -iconic flag is honored.
+	- The -xrm 'ctwm.workspace' works as expected.
+	- I think that f.warpto[to|ring] works correctly i.e warps.
+	  also to the correct workspace if the destination window
+	  doesn't occupy the current workspace.
+	- A few minor bugs fixed.
 
 

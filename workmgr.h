@@ -1,8 +1,13 @@
 #ifndef _WORKMGR_
 #define _WORKMGR_
 
+#ifdef ultrix
+#   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
+#endif
+
 void CreateWorkSpaceManager ();
 void PaintWorkSpaceManager  ();
+void SetButtonLabel         ();
 
 extern int workSpaceManagerActive;
 

@@ -800,6 +800,9 @@ IconMgr *iconp;
      * before creating the icon window 
      */
     tmp_win->icon_w = NULL;
+#if defined (XPM)
+    tmp_win->xpmicon = None;
+#endif
 
     if (!tmp_win->iconmgr)
     {

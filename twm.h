@@ -40,10 +40,15 @@
 #define _TWM_
 
 #include <X11/Xlib.h>
+#include <X11/Intrinsic.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
 #include <X11/Xfuncs.h>
+
+#if defined(XPM)
+#   include "util.h"
+#endif
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
@@ -51,7 +56,6 @@
 
 #define MAXVIRTUALSCREENS (sizeof (int))
 
-typedef unsigned long Pixel;
 #define PIXEL_ALREADY_TYPEDEFED		/* for Xmu/Drawing.h */
 
 #ifdef SIGNALRETURNSINT
@@ -215,6 +219,9 @@ typedef struct TwmWindow
     Pixmap gray;
     Window icon_w;		/* the icon window */
     Window icon_bm_w;		/* the icon bitmap window */
+#if defined (XPM)
+    XpmIcon *xpmicon;		/* xpm icon structure */
+#endif
     int frame_x;		/* x position of frame */
     int frame_y;		/* y position of frame */
     int frame_width;		/* width of frame */
