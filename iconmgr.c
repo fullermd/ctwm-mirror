@@ -640,14 +640,10 @@ WList *AddIconManager(tmp_win)
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
     attributes.background_pixel = tmp->cp.back;
     attributes.border_pixel = tmp->cp.back;
-    if (Scr->IconManagerFocus) {
-	attributes.event_mask = (KeyPressMask | ButtonPressMask |
-				 ButtonReleaseMask | ExposureMask |
-				 EnterWindowMask | LeaveWindowMask);
-    } else {
-	attributes.event_mask = (KeyPressMask | ButtonPressMask |
-				 ButtonReleaseMask | ExposureMask);
-    }
+    attributes.event_mask = (KeyPressMask | ButtonPressMask |
+			     ButtonReleaseMask | ExposureMask);
+    if (Scr->IconManagerFocus)
+	attributes.event_mask |= (EnterWindowMask | LeaveWindowMask);
     attributes.cursor = Scr->IconMgrCursor;
     tmp->w = XCreateWindow (dpy, ip->w, 0, 0, (unsigned int) 1, 
 			    (unsigned int) h, (unsigned int) 0, 
