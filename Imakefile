@@ -181,7 +181,8 @@ gram.h gram.c: gram.y
 	$(MV) y.tab.h gram.h
 
 clean::
-	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c 
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c
+	$(RM) *.[chy].flc
 
 deftwmrc.c:  system.ctwmrc
 	$(RM) $@
@@ -195,3 +196,15 @@ deftwmrc.c:  system.ctwmrc
 		system.ctwmrc >>$@
 	echo '    (char *) 0 };' >>$@
 
+dist:	clean gram.h gram.c lex.c deftwmrc.c
+	version="`grep '^char \*VersionNumber' version.c | head -1 | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"; \
+	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \
+	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
+	       \! -name Makefile | sort > ../ctwm-$$version.list; \
+	tar --no-recursion --files-from ../ctwm-$$version.list -cvf - | \
+	tardy --user_number=0  --user_name=ctwm \
+	      --group_number=0 --group_name=ctwm \
+	      --prefix=ctwm-$$version - |\
+	gzip --best >../ctwm-$$version.gz; \
+	rm -f ../ctwm-$$version.list; \
+	ls -l ../ctwm-$$version.gz
