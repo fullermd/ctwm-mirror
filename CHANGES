@@ -876,7 +876,7 @@ Patches from Scott Bolte <scottb@cirque.moneng.mei.com>
         directories.
 
    19 - If you use m4, ctwm now defines TWM_VERSION which is the version in
-        the form of floating point (here 3.4).
+        the form of floating point (e.g. 3.4).
 
    20 - I forgot to tell that IconRegion has now 3 more optionnal parameters
         iconjust, iconregjust and iconregalign. That can be used to give

@@ -369,6 +369,7 @@ char *path;
 	if (*p == '~') len += HomeLen - 1;
 	p = colon + 1;
     }
+    if (*p == '~') len += HomeLen - 1;
     len += strlen (p);
     ret = (char*) malloc (len + 1);
     *ret = 0;

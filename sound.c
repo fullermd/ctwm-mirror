@@ -156,6 +156,7 @@ sound_init ()
 play_sound (snd)
 int snd;
 {
+    if (snd > NEVENTS) return;
     if (sound_state == 0)
 	return;
 

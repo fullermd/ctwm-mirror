@@ -50,6 +50,6 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
-char *Version = "MIT X Consortium, R6, ctwm 3.4";
+char *Version = "MIT X Consortium, R6, ctwm 3.4pl1";
 char *VersionNumber = "3.4";
 

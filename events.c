@@ -132,7 +132,7 @@ static void RedoIcon();
 static void do_key_menu ();
 
 #ifdef SOUNDS
-extern play_sounds();
+extern play_sound();
 #endif
 FILE *tracefile = NULL;
 
