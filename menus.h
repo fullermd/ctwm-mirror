@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -41,6 +66,8 @@
 
 #define TWM_ROOT	"bLoB_GoOp"	/* my private root menu */
 #define TWM_WINDOWS	"TwmWindows"	/* for f.menu "TwmWindows" */
+#define TWM_WORKSPACES	"TwmWorkspaces"	/* for f.menu "TwmWorkspaces" */
+#define TWM_ALLWINDOWS	"TwmAllWindows"	/* for f.menu "TwmAllWindows" */
 
 #define MAX_FILE_SIZE 4096	/* max chars to read from file for cut */
 
@@ -67,6 +94,7 @@ typedef struct MenuRoot
 {
     struct MenuItem *first;	/* first item in menu */
     struct MenuItem *last;	/* last item in menu */
+    struct MenuItem *lastactive; /* last active item in menu */
     struct MenuRoot *prev;	/* previous root menu if pull right */
     struct MenuRoot *next;	/* next in list of root menus */
     char *name;			/* name of root */
@@ -120,6 +148,7 @@ typedef struct FuncKey
     int func;			/* function to perform */
     char *win_name;		/* window name (if any) */
     char *action;		/* action string (if any) */
+    MenuRoot *menu;		/* menu if func is F_MENU */
 } FuncKey;
 
 extern int RootFunction;

@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -44,13 +69,19 @@
 
 #include <stdio.h>
 #include <errno.h>
+#ifndef VMS
 #include <sys/time.h>
+#endif
 #if defined(AIXV3) || defined(_SYSTYPE_SVR4) || defined(ibm)
 #include <sys/select.h>
 #endif
 
 #include "twm.h"
+#ifdef VMS
+#include <decw$include/Xatom.h>
+#else
 #include <X11/Xatom.h>
+#endif
 #include "add_window.h"
 #include "menus.h"
 #include "events.h"
@@ -62,26 +93,40 @@
 #include "iconmgr.h"
 #include "version.h"
 
+#ifdef VMS
+#include <starlet.h>
+#include <ssdef.h>
+#include <lib$routines.h>
+#define USE_SIGNALS
+#else
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
 #define ABS(x) ((x)<0?-(x):(x))
 
 extern int iconifybox_width, iconifybox_height;
 extern unsigned int mods_used;
 extern int menuFromFrameOrWindowOrTitlebar;
+extern char *CurrentSelectedWorkspace;
 
 extern int captive;
 
-extern Bool AnimationActive;
+#ifdef USE_SIGNALS
 extern Bool AnimationPending;
+#else /* USE_SIGNALS */
+extern struct timeval AnimateTimeout;
+#endif /* USE_SIGNALS */
+extern Bool AnimationActive;
 extern Bool MaybeAnimate;
 
 static void CtwmNextEvent ();
 static void RedoIcon();
+static void do_key_menu ();
+
 #ifdef SOUNDS
 extern play_sounds();
 #endif
-FILE *errorlog = NULL;
+FILE *tracefile = NULL;
 
 #define MAX_X_EVENT 256
 event_proc EventHandler[MAX_X_EVENT]; /* event handler jump table */
@@ -143,6 +188,7 @@ void AutoRaiseWindow (tmp)
 	    }
 	}
     }
+    if (ActiveMenu && ActiveMenu->w) XRaiseWindow (dpy, ActiveMenu->w);
     XSync (dpy, 0);
     enter_win = NULL;
     enter_flag = TRUE;
@@ -445,30 +491,57 @@ HandleEvents()
 	    CtwmNextEvent (dpy, &Event);
 	else
 	    XNextEvent(dpy, &Event);
-	if (errorlog) dumpevent (&Event);
+	if (tracefile) dumpevent (&Event);
 	(void) DispatchEvent ();
     }
 }
+
+#ifdef VMS
+extern unsigned long timefe;
+#endif
 
 static void CtwmNextEvent (dpy, event)
 Display *dpy;
 XEvent  *event;
 {
-    int		found;
-    fd_set	mask;
-    int		fd;
-
+#ifdef VMS
     if (QLength (dpy) != 0) {
 	XNextEvent (dpy, event);
 	return;
     }
     if (AnimationPending) Animate ();
+    while (1) {
+       sys$waitfr(timefe);
+       sys$clref(timefe);
+       
+       if (AnimationPending) Animate ();
+       if (QLength (dpy) != 0) {
+	  XNextEvent (dpy, event);
+	  return;
+       }
+    }
+#else /* VMS */
+    int		found;
+    fd_set	mask;
+    int		fd;
+    struct timeval timeout;
 
+    if (XEventsQueued (dpy, QueuedAfterFlush) != 0) {
+	XNextEvent (dpy, event);
+	return;
+    }
     fd = ConnectionNumber (dpy);
+
+#ifdef USE_SIGNALS
+    if (AnimationPending) Animate ();
     while (1) {
 	FD_ZERO (&mask);
 	FD_SET  (fd, &mask);
+#ifdef __hpux
+	found = select (fd + 1, (int*)&mask, (int*) 0, (int*) 0, 0);
+#else
 	found = select (fd + 1, &mask, (fd_set*) 0, (fd_set*) 0, 0);
+#endif
 	if (found < 0) {
 	    if (errno == EINTR) {
 		Animate ();
@@ -481,6 +554,48 @@ XEvent  *event;
 	    return;
 	}
     }
+#else /* USE_SIGNALS */
+    TryToAnimate ();
+    if (! MaybeAnimate) {
+	XNextEvent (dpy, event);
+	return;
+    }
+    while (1) {
+	FD_ZERO (&mask);
+	FD_SET  (fd, &mask);
+	timeout = AnimateTimeout;
+	if (tracefile) {
+	    fprintf (tracefile, "Waiting for event\n");
+	    fflush (tracefile);
+	}
+#ifdef __hpux
+	found = select (fd + 1, (int*)&mask, (int*) 0, (int*) 0, &timeout);
+#else
+	found = select (fd + 1, &mask, (fd_set*) 0, (fd_set*) 0, &timeout);
+#endif
+	if (tracefile) {
+	    fprintf (tracefile, "Select ending\n");
+	    fflush (tracefile);
+	}
+	if (found < 0) {
+	    perror ("select");
+	    continue;
+	}
+	if (FD_ISSET (fd, &mask)) {
+	    XNextEvent (dpy, event);
+	    return;
+	}
+	if (found == 0) {
+	    TryToAnimate ();
+	    if (! MaybeAnimate) {
+		XNextEvent (dpy, event);
+		return;
+	    }
+	    continue;
+	}
+    }
+#endif /* USE_SIGNALS */
+#endif /* VMS */
 }
 
 
@@ -705,7 +820,7 @@ XFocusInEvent *event;
 #endif
 
     if (Tmp_win->iconmgr) return;
-    if (Tmp_win->wmhints && ! Tmp_win->wmhints->input) return;
+    /*if (Tmp_win->wmhints && ! Tmp_win->wmhints->input) return;*/
     if (Scr->Focus == Tmp_win) return;
     SetFocusVisualAttributes (Tmp_win, True);
     if (Scr->ClickToFocus) ChangeFocusGrab (Tmp_win);
@@ -856,8 +971,154 @@ HandleKeyPress()
     unsigned int modifier;
 
     if (InfoLines) XUnmapWindow(dpy, Scr->InfoWindow);
-    Context = C_NO_CONTEXT;
 
+    if (ActiveMenu != NULL) {
+	MenuItem *item;
+	int	 keylen, offset;
+	unsigned char car;
+	Boolean	 match;
+	char *keynam;
+	KeySym keysym;
+	int xx, yy, wx, wy;
+	int entry, i;
+	Window junkW;
+
+	item = (MenuItem*) 0;
+
+	keysym = XLookupKeysym  ((XKeyEvent*) &Event, 0);
+	keynam = XKeysymToString (keysym);
+
+	if (!strcmp (keynam, "Down") || !strcmp (keynam, "space")) {
+	    xx = Event.xkey.x;
+	    yy = Event.xkey.y + Scr->EntryHeight;
+	    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy, &wx, &wy, &junkW);
+	    if ((wy < 0) || (wy > ActiveMenu->height))
+		yy -= (wy - (Scr->EntryHeight / 2) - 2);
+	    if ((wx < 0) || (wx > ActiveMenu->width))
+		xx -= (wx - (ActiveMenu->width / 2));
+	    XWarpPointer (dpy, Scr->Root, Scr->Root, Event.xkey.x, Event.xkey.y,
+			ActiveMenu->width, ActiveMenu->height, xx, yy);
+	    return;
+	}
+	else
+	if (!strcmp (keynam, "Up")) {
+	    xx = Event.xkey.x;
+	    yy = Event.xkey.y - Scr->EntryHeight;
+	    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy, &wx, &wy, &junkW);
+	    if ((wy < 0) || (wy > ActiveMenu->height))
+		yy -= (wy - ActiveMenu->height + (Scr->EntryHeight / 2) + 2);
+	    if ((wx < 0) || (wx > ActiveMenu->width))
+		xx -= (wx - (ActiveMenu->width / 2));
+	    XWarpPointer (dpy, Scr->Root, Scr->Root, Event.xkey.x, Event.xkey.y,
+			ActiveMenu->width, ActiveMenu->height, xx, yy);
+	    return;
+	}
+	else
+	if (!strcmp (keynam, "Right") || !strcmp (keynam, "Return")) {
+	    item = ActiveItem;
+	}
+	else
+	if (!strcmp (keynam, "Left")) {
+	    MenuRoot *menu;
+
+	    if (!ActiveMenu->prev || MenuDepth == 1) {
+		PopDownMenu ();
+		XUngrabPointer  (dpy, CurrentTime);
+		return;
+	    }
+	    xx = Event.xkey.x;
+	    yy = Event.xkey.y;
+	    menu = ActiveMenu->prev;
+	    XTranslateCoordinates (dpy, Scr->Root, menu->w, xx, yy, &wx, &wy, &junkW);
+	    xx -= (wx - (menu->width / 2));
+	    if (menu->lastactive)
+		yy -= (wy - menu->lastactive->item_num * Scr->EntryHeight -
+			(Scr->EntryHeight / 2) - 2);
+	    else
+		yy -= (wy - (Scr->EntryHeight / 2) - 2);
+	    XUnmapWindow (dpy, ActiveMenu->w);
+	    XWarpPointer (dpy, Scr->Root, Scr->Root, Event.xkey.x, Event.xkey.y,
+			menu->width, menu->height, xx, yy);
+	    return;
+	}
+	else
+	if (strlen (keynam) == 1) {
+	    modifier = (Event.xkey.state & mods_used);
+	    for (item = ActiveMenu->first; item != (MenuItem*) 0; item = item->next) {
+		match  = False;
+		offset = 0;
+		switch (item->item [0]) {
+		    case '^' :
+			if ((modifier & ControlMask) &&
+			    (keynam [0] == tolower (item->item [1]))) match = True;
+			break;
+		    
+		    case '~' :
+			if ((modifier & Mod1Mask) &&
+			    (keynam [0] == tolower (item->item [1]))) match = True;
+			break;
+		    
+		    case ' ' :
+			offset = 1;
+		    default :
+			if (((modifier & ShiftMask) && isupper (item->item [offset]) &&
+			     (keynam [0] == tolower (item->item [offset]))) ||
+			    (!(modifier & ShiftMask) && islower (item->item [offset]) &&
+			     (keynam [0] == item->item [offset]))) match = True;
+			 break;
+		}
+		if (match) break;
+	    }
+	}
+	else return;
+	if (item) {
+	    switch (item->func) {
+		case 0 :
+		    break;
+
+		case F_MENU :
+		    if (!strcmp (keynam, "Return") && (ActiveMenu == Scr->Workspaces)) {
+			PopDownMenu();
+			XUngrabPointer  (dpy, CurrentTime);
+			GotoWorkSpaceByName (item->action + 8);
+			return;
+		    }
+		    xx = Event.xkey.x;
+		    yy = Event.xkey.y;
+		    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy,
+				&wx, &wy, &junkW);
+		    if (ActiveItem) {
+			ActiveItem->state = 0;
+			PaintEntry (ActiveMenu, ActiveItem,  False);
+			ActiveItem = NULL;
+		    }
+		    xx -= (wx - ActiveMenu->width);
+		    yy -= (wy - item->item_num * Scr->EntryHeight - (Scr->EntryHeight / 2) - 2);
+		    Event.xkey.x_root = xx;
+		    Event.xkey.y_root = yy;
+		    XWarpPointer (dpy, Scr->Root, Scr->Root, Event.xkey.x, Event.xkey.y,
+				ActiveMenu->width, ActiveMenu->height, xx, yy);
+		    if (ActiveMenu == Scr->Workspaces)
+			CurrentSelectedWorkspace = item->item;
+		    do_key_menu (item->sub, None);
+		    CurrentSelectedWorkspace = NULL;
+		    break;
+
+		default :
+		    PopDownMenu();
+		    ExecuteFunction (item->func, item->action,
+			ButtonWindow ? ButtonWindow->frame : None,
+			ButtonWindow, &Event, Context, FALSE);
+	    }
+	}
+	else {
+	    PopDownMenu();
+	    XUngrabPointer  (dpy, CurrentTime);
+	}
+	return;
+    }
+
+    Context = C_NO_CONTEXT;
     if (Event.xany.window == Scr->Root)
 	Context = C_ROOT;
     if (Tmp_win)
@@ -891,9 +1152,16 @@ HandleKeyPress()
 
 	    if (key->cont != C_NAME)
 	    {
-		ExecuteFunction(key->func, key->action, Event.xany.window,
-		    Tmp_win, &Event, Context, FALSE);
-		XUngrabPointer(dpy, CurrentTime);
+		if (key->func == F_MENU) {
+		    ButtonEvent = Event;
+		    ButtonWindow = Tmp_win;
+		    do_key_menu (key->menu, (Window) None);
+		}
+		else {
+		    ExecuteFunction(key->func, key->action, Event.xany.window,
+			Tmp_win, &Event, Context, FALSE);
+		    XUngrabPointer(dpy, CurrentTime);
+		}
 		return;
 	    }
 	    else
@@ -1253,17 +1521,7 @@ HandlePropertyNotify()
 
       case XA_WM_NORMAL_HINTS:
       {
-	int fw, fh;
-
 	GetWindowSizeHints (Tmp_win);
-/*
-	fw = Tmp_win->frame_width;
-	fh = Tmp_win->frame_height;
-	ConstrainSize (Tmp_win, &fw, &fh);
-	if ((fw != Tmp_win->frame_width) || (fh != Tmp_win->frame_height)) {
-	    SetupFrame (Tmp_win, Tmp_win->frame_x, Tmp_win->frame_y, fw, fh, -1, True);
-	}
-*/
 	break;
       }
       default:
@@ -1357,6 +1615,7 @@ RedoIconName()
     int x, y;
 
     if (Scr->NoIconTitlebar || 
+	LookInNameList (Scr->NoIconTitle, Tmp_win->icon_name) ||
 	LookInList (Scr->NoIconTitle, Tmp_win->full_name, &Tmp_win->class)) goto wmapupd;
     if (Tmp_win->list)
     {
@@ -2061,14 +2320,20 @@ HandleButtonRelease()
 	    xr = xl + w;
 	    yb = yt + h;
 
-	    if (xl < 0)
+	    if ((xl < 0) && ((Scr->MoveOffResistance < 0) 
+			     || (xl > -Scr->MoveOffResistance)))
 		xl = 0;
-	    if (xr > Scr->MyDisplayWidth)
+	    if ((xr > Scr->MyDisplayWidth) 
+		&& ((Scr->MoveOffResistance < 0) 
+		    || (xr < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
 		xl = Scr->MyDisplayWidth - w;
 
-	    if (yt < 0)
+	    if ((yt < 0) && ((Scr->MoveOffResistance < 0) 
+			     || (yt > -Scr->MoveOffResistance)))
 		yt = 0;
-	    if (yb > Scr->MyDisplayHeight)
+	    if ((yb > Scr->MyDisplayHeight)
+		&& ((Scr->MoveOffResistance < 0) 
+		    || (yb < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
 		yt = Scr->MyDisplayHeight - h;
 	}
 
@@ -2216,6 +2481,32 @@ static do_menu (menu, w)
     }
 }
 
+static void do_key_menu (menu, w)
+    MenuRoot *menu;			/* menu to pop up */
+    Window w;				/* invoking window or None */
+{
+    int x = Event.xkey.x_root;
+    int y = Event.xkey.y_root;
+    Bool center;
+
+    if (!Scr->NoGrabServer)
+	XGrabServer(dpy);
+    if (w) {
+	int h = Scr->TBInfo.width - Scr->TBInfo.border;
+	Window child;
+
+	(void) XTranslateCoordinates (dpy, w, Scr->Root, 0, h, &x, &y, &child);
+	center = False;
+    } else {
+	center = True;
+    }
+    if (PopUpMenu (menu, x, y, center)) {
+	UpdateMenu();
+    } else {
+	XBell (dpy, 0);
+    }
+}
+
 
 
 /***********************************************************************
@@ -2239,7 +2530,7 @@ HandleButtonPress()
     if (XFindContext (dpy, Event.xbutton.window, MenuContext, (caddr_t*) &mr) != XCSUCCESS) {
 	mr = (MenuRoot*) 0;
     }
-    if (Scr->StayUpMenus && (ActiveMenu != NULL) && (! ActiveMenu->pinned) &&
+    if (ActiveMenu && (! ActiveMenu->pinned) &&
 		(Event.xbutton.subwindow != ActiveMenu->w)) {
 	PopDownMenu();
 	return;
@@ -2310,16 +2601,16 @@ HandleButtonPress()
 
 	for (i = 0, tbw = Tmp_win->titlebuttons; i < nb; i++, tbw++) {
 	    if (Event.xany.window == tbw->window) {
-		switch (tbw->info->func) {
+		switch (tbw->info->funs[ButtonPressed - 1].func) {
 		    case F_MENU :
 			Context = C_TITLE;
 			ButtonEvent = Event;
 			ButtonWindow = Tmp_win;
-			do_menu (tbw->info->menuroot, tbw->window);
+			do_menu (tbw->info->funs[ButtonPressed - 1].menuroot, tbw->window);
 			break;
 
 		    default :
-			ExecuteFunction (tbw->info->func, tbw->info->action,
+			ExecuteFunction (tbw->info->funs[ButtonPressed - 1].func, tbw->info->funs[ButtonPressed - 1].action,
 				     Event.xany.window, Tmp_win, &Event,
 				     C_TITLE, FALSE);
 		}
@@ -2615,7 +2906,8 @@ HandleEnterNotify()
 	 * titlebars are legible
 	 */
 	if (ewp->window == Scr->Root) {
-	    Window forus_ret, focus_rev;
+	    Window forus_ret;
+	    int focus_rev;
 
 	    if (!scanArgs.leaves && !scanArgs.enters)
 		InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
@@ -2633,7 +2925,11 @@ HandleEnterNotify()
 	    if (Tmp_win && Tmp_win->auto_raise
 		&& (!Tmp_win->list || Tmp_win->list->w != ewp->window)) {
 		ColormapWindow *cwin;
+#ifdef VMS
+		float timeout = 0.0125;
+#else
 		static struct timeval timeout = {0,12500};
+#endif
 
 		if (XFindContext(dpy, Tmp_win->w, ColormapContext,
 				 (caddr_t *)&cwin) == XCNOENT) {
@@ -2655,7 +2951,11 @@ HandleEnterNotify()
 		     * entered.
 		     */
 		    for (i = 25; i < RaiseDelay; i += 25) {
+#ifdef VMS
+			lib$wait(&timeout);
+#else
 			select(0, 0, 0, 0, &timeout);
+#endif
 			/* Did we leave this window already? */
 			scanArgs.w = ewp->window;
 			scanArgs.leaves = scanArgs.enters = False;
@@ -2869,7 +3169,7 @@ HandleEnterNotify()
 	}
 	ActiveItem = NULL;
 	ActiveMenu = mr;
-	if (Scr->StayUpMenus) {
+	if (1/*Scr->StayUpMenus*/) {
 	    int i, x, y, x_root, y_root, entry;
 	    MenuItem *mi;
 
@@ -3481,7 +3781,7 @@ dumpevent (e)
 {
     char *name = NULL;
 
-    if (! errorlog) return;
+    if (! tracefile) return;
     switch (e->type) {
       case KeyPress:  name = "KeyPress"; break;
       case KeyRelease:  name = "KeyRelease"; break;
@@ -3519,9 +3819,9 @@ dumpevent (e)
     }
 
     if (name) {
-	fprintf (errorlog, "event:  %s, %d remaining\n", name, QLength(dpy));
+	fprintf (tracefile, "event:  %s, %d remaining\n", name, QLength(dpy));
     } else {
-	fprintf (errorlog, "unknown event %d, %d remaining\n", e->type, QLength(dpy));
+	fprintf (tracefile, "unknown event %d, %d remaining\n", e->type, QLength(dpy));
     }
 }
 #endif /* TRACE */

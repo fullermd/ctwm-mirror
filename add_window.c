@@ -25,6 +25,31 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 /**********************************************************************
  *
@@ -45,7 +70,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "twm.h"
+#ifdef VMS
+#include <decw$include/Xatom.h>
+#else
 #include <X11/Xatom.h>
+#endif
 #include "add_window.h"
 #include "util.h"
 #include "resize.h"
@@ -485,14 +514,20 @@ IconMgr *iconp;
 		      AddingR = AddingX + AddingW;
 		      AddingB = AddingY + AddingH;
 		      
-		      if (AddingX < 0)
+		      if ((AddingX < 0) && ((Scr->MoveOffResistance < 0) 
+					    || (AddingX > -Scr->MoveOffResistance)))
 			AddingX = 0;
-		      if (AddingR > Scr->MyDisplayWidth)
+		      if ((AddingR > Scr->MyDisplayWidth) 
+			  && ((Scr->MoveOffResistance < 0) 
+			      || (AddingR < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
 			AddingX = Scr->MyDisplayWidth - AddingW;
 		      
-		      if (AddingY < 0)
+		      if ((AddingY < 0) && ((Scr->MoveOffResistance < 0) 
+					    || (AddingY > -Scr->MoveOffResistance)))
 			AddingY = 0;
-		      if (AddingB > Scr->MyDisplayHeight)
+		      if ((AddingB > Scr->MyDisplayHeight)
+			  && ((Scr->MoveOffResistance < 0) 
+			      || (AddingB < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
 			AddingY = Scr->MyDisplayHeight - AddingH;
 		      
  		    }
@@ -513,14 +548,20 @@ IconMgr *iconp;
 		    AddingR = AddingX + AddingW;
 		    AddingB = AddingY + AddingH;
 		    
-		    if (AddingX < 0)
+		    if ((AddingX < 0) && ((Scr->MoveOffResistance < 0) 
+					  || (AddingX > -Scr->MoveOffResistance)))
 		        AddingX = 0;
-		    if (AddingR > Scr->MyDisplayWidth)
+		    if ((AddingR > Scr->MyDisplayWidth) 
+			&& ((Scr->MoveOffResistance < 0) 
+			    || (AddingR < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
 		        AddingX = Scr->MyDisplayWidth - AddingW;
 
-		    if (AddingY < 0)
+		    if ((AddingY < 0) && ((Scr->MoveOffResistance < 0) 
+					  || (AddingY > -Scr->MoveOffResistance)))
 			AddingY = 0;
-		    if (AddingB > Scr->MyDisplayHeight)
+		    if ((AddingB > Scr->MyDisplayHeight)
+			&& ((Scr->MoveOffResistance < 0) 
+			    || (AddingB < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
 			AddingY = Scr->MyDisplayHeight - AddingH;
 		}
 		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
@@ -773,9 +814,10 @@ IconMgr *iconp;
     
     if (tmp_win->title_height)
     {
-	valuemask = (CWEventMask | CWBorderPixel | CWBackPixel);
+	valuemask = (CWEventMask | CWDontPropagate | CWBorderPixel | CWBackPixel);
 	attributes.event_mask = (KeyPressMask | ButtonPressMask |
 				 ButtonReleaseMask | ExposureMask);
+	attributes.do_not_propagate_mask = PointerMotionMask;
 	attributes.border_pixel = tmp_win->borderC.back;
 	attributes.background_pixel = tmp_win->title.back;
 	tmp_win->title_w = XCreateWindow (dpy, tmp_win->frame, 
@@ -831,7 +873,7 @@ IconMgr *iconp;
 			     ColormapChangeMask | VisibilityChangeMask |
 			     FocusChangeMask | 
 			     EnterWindowMask | LeaveWindowMask);
-    attributes.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask;
+    attributes.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
     XChangeWindowAttributes (dpy, tmp_win->w, valuemask, &attributes);
 
     if (HasShape)
@@ -1005,7 +1047,7 @@ TwmWindow *tmp_win;
     FuncButton *tmp;
 
     for (tmp = Scr->FuncButtonRoot.next; tmp != NULL; tmp = tmp->next) {
-	if ((tmp->cont != C_WINDOW) || (tmp->func == NULL)) continue;
+	if ((tmp->cont != C_WINDOW) || (tmp->func == 0)) continue;
 	XGrabButton (dpy, tmp->num, tmp->mods, tmp_win->frame, 
 		    True, ButtonPressMask | ButtonReleaseMask,
 		    GrabModeAsync, GrabModeAsync, None, 
@@ -1118,6 +1160,7 @@ static void CreateHighlightWindows (tmp_win)
     if (! tmp_win->titlehighlight) {
 	tmp_win->hilite_wl = (Window) 0;
 	tmp_win->hilite_wr = (Window) 0;
+	return;
     }
     /*
      * If a special highlight pixmap was given, use that.  Otherwise,
@@ -1407,7 +1450,13 @@ static void CreateWindowTitlebarButtons (tmp_win)
 SetHighlightPixmap (filename)
     char *filename;
 {
+#ifdef VMS
+    char *ftemp;
+    ftemp = (char *) malloc((strlen(filename)+1)*sizeof(char));
+    Scr->HighlightPixmapName = strcpy (ftemp,filename);
+#else
     Scr->HighlightPixmapName = (char*) strdup (filename);
+#endif
 }
 
 

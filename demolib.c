@@ -24,8 +24,13 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ July 1993 ]
  */
 #include <stdio.h>
+#ifdef VMS
+#include <decw$include/Xlib.h>
+#include <decw$include/Xatom.h>
+#else
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#endif
 
 #include "ctwm.h"
 

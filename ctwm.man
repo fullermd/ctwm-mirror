@@ -260,6 +260,9 @@ or, if it cannot determine what you have, \fBNonStandard\fP.
 This will be either 'Yes' or 'No'.  This is just a wrapper around the above
 definition.  Returns 'Yes' on \fB*Color\fP, and 'No' on \fBStaticGray\fP
 and \fBGrayScale\fP.
+.TP 24
+.B "XPM"
+Is defined only if \fIctwm\fP was compiled with XPM.
 .PP
 You may well find that if you research the \fIm4(1)\fP manual well,
 and understand the power of \fIm4\fP, this will be a \fBvery\fP
@@ -318,7 +321,7 @@ Optional arguments are shown in square brackets:
 .IP "\fBAnimationSpeed\fP \fIspeed\fP" 8
 The \fIspeed\fP argument is a non-negative integer. It determines the number of
 times a second animations (if any) are updated. If \fIspeed\fP is 0, animations
-are freezed.
+are freezed. The default value is 0.
 .IP "\fBAutoOccupy\fP" 8
 This variable specifies that clients will automatically change their occupation
 when their name or icon name changes. The new occupation will be recalculated
@@ -366,6 +369,10 @@ different types of windows.  For example:
 }
 .EE
 The default is "black".
+.IP "\fBBorderResizeCursors\fP
+This variable specifies that \fIctwm\fP should use resizing cursors when
+the pointer is on the window border. To be used preferably when you have
+bound a button to f.resize in the frame context.
 .IP "\fBBorderTileBackground\fP \fIstring\fP [{ \fIwincolorlist\fP }]" 8
 This variable specifies the default background color in the gray pattern 
 used in unhighlighted borders (only if \fBNoHighlight\fP hasn't been set),
@@ -748,6 +755,13 @@ the screen has a depth of 1.  See the description of \fBColors\fP.
 This variable specifies the number of pixels the pointer
 must move before the \fBf.move\fP function starts working.  Also
 see the \fBf.deltastop\fP function.  The default is zero pixels.
+.IP "\fBMoveOffResistance\fP \fIpixels\fP" 8
+This variable specifies the number of pixels of the moveoff resistance.
+If \fIpixels\fP is positive, \fBDontMoveOff\fP will only prevent
+you from going off the edge if you're within n pixels off the edge. If you
+go further, \fBDontMoveOff\fP gives up and lets you go as far as you wish. 
+\fBf.forcemove\fP still allows you to totally ignore \fBDontMoveOff\fP.
+A negative value puts you back into "never moveoff" mode (it's the default).
 .IP "\fBNoBackingStore\fP" 8
 This variable indicates that \fIctwm\fP's menus should not request backing
 store to minimize repainting of menus.  This is typically
@@ -1093,8 +1107,11 @@ Tells \fIctwm\fP to use 3D-looking windows titles. In which case the default
 values of \fBTitleButtonBorderWidth\fP, \fBFramePadding\fP, \fBTitlePadding\fP
 and \fBButtonIndent\fP are set to 0.
 There are 5 built-in scalable pixmaps for buttons, :xpm:menu, :xpm:dot,
-:xpm:resize, :xpm:zoomand :xpm:bar. There is one built-in scalable
-animation for buttons : %xpm:resize.
+:xpm:resize, :xpm:zoomand :xpm:bar. There is several built-in scalable
+animation for buttons : %xpm:resize, %xpm:menu-up, %xpm:menu-down, 
+%xpm:resize-out-top, %xpm:resize-in-top, %xpm:resize-out-bot, 
+%xpm:resize-in-bot, %xpm:maze-out, %xpm:maze-in, %xpm:zoom-out,
+%xpm:zoom-in and %xpm:zoom-inout. Try them to see what they look like.
 .IP "\fBWarpCursor\fP [{ \fIwin-list\fP }]" 8
 This variable indicates that the pointer should be warped into windows when
 they are deiconified.  If the optional \fIwin-list\fP is given, the pointer
@@ -1228,7 +1245,23 @@ pressed within them:
 .EE
 or
 .EX 0
+\fBLeftTitleButton\fP "\fIbitmapname\fP" {
+    Button\fIi\fP : \fIfunction\fP
+    ...
+    Button\fIj\fP : \fIfunction\fP
+}
+.EE
+or
+.EX 0
 \fBRightTitleButton\fP "\fIbitmapname\fP"	= \fIfunction\fP
+.EE
+or
+.EX 0
+\fBRightTitleButton\fP "\fIbitmapname\fP" {
+    Button\fIi\fP : \fIfunction\fP
+    ...
+    Button\fIj\fP : \fIfunction\fP
+}
 .EE
 The \fIbitmapname\fP may refer to one of the  built-in bitmaps
 (which are scaled to match \fBTitleFont\fP) by using the appropriate
@@ -1433,7 +1466,14 @@ the selected window is only resized to the left half of the display.
 This function lowers the selected window.
 .IP "\fBf.menu\fP \fIstring\fP" 8
 This function invokes the menu specified by the argument \fIstring\fP.
-Cascaded menus may be built by nesting calls to \fBf.menu\fP.
+Cascaded menus may be built by nesting calls to \fBf.menu\fP. When a menu
+is popped up, you can use the arrow keys to move the cursor around it. "Down"
+or space goes down, "Up" goes up, "Left" pops down the menu, and "Right"
+activates the current entry. The first letter of an entry name activates this
+entry (the first one if several entries match). If the first letter is ~ then
+Meta-the-second-letter activates it, if this first letter is ^ then
+Control-the-second-letter activates it, and if this first letter is space,
+then the second letter activates it.
 .IP "\fBf.move\fP" 8
 This function drags an outline of the selected window (or the window itself
 if the \fBOpaqueMove\fP variable is set) until the invoking pointer button
@@ -1622,11 +1662,16 @@ default is to use the colors specified by the
 The \fIfunction\fP portion of the menu entry is one of the functions,
 including any user-defined functions, or additional menus.
 .PP
-There is a special menu named \fBTwmWindows\fP which contains the names of
-all of the client and \fIctwm\fP-supplied windows.  Selecting an entry will
-cause the
-\fBWindowFunction\fP to be executed on that window.  If \fBWindowFunction\fP
-hasn't been set, the window will be deiconified and raised.
+There is 3 special menus. \fBTwmWindows\fP contains the names of
+all of the client and \fIctwm\fP-supplied windows in the current workspace.
+Selecting an entry will cause the \fBWindowFunction\fP to be executed on that
+window.  If \fBWindowFunction\fP hasn't been set, the window will be deiconified
+and raised. \fBTwmWorkspaces\fP contains the names of your workspaces, selecting
+an entry goto this workspace. In addition, these entries have submenus containing
+the names of all windows occupying this workspace, selecting such an entry
+executes f.warpto on this window. And finally, \fBTwmAllWindows\fP contains the names
+of all the windows \fIctwm\fP manages. Selectting an entry executes f.warpto on
+this window.
 .SH ICONS
 \fICtwm\fP supports several different ways of manipulating iconified windows.
 The common pixmap-and-text style may be laid out by hand or automatically

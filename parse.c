@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -46,15 +71,25 @@
 #if defined(sony_news)
 #  include <ctype.h>
 #endif
+#ifdef VMS
+#include <ctype.h>
+#include <decw$include/Xos.h>
+#include <X11Xmu/CharSet.h>
+#else
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
+#endif
 #include "twm.h"
 #include "screen.h"
 #include "menus.h"
 #include "util.h"
 #include "gram.h"
 #include "parse.h"
+#ifdef VMS
+#include <decw$include/Xatom.h> 
+#else
 #include <X11/Xatom.h> 
+#endif
 
 /* For m4... */
 #ifdef USEM4
@@ -65,7 +100,11 @@
 #endif
 
 #ifndef SYSTEM_INIT_FILE
+#ifdef VMS
+#define SYSTEM_INIT_FILE "DECW$SYSTEM_DEFAULTS:SYSTEM.CTWMRC"
+#else
 #define SYSTEM_INIT_FILE "/usr/lib/X11/twm/system.twmrc"
+#endif
 #endif
 #define BUF_LEN 300
 
@@ -156,19 +195,74 @@ int ParseTwmrc (filename)
 
     /*
      * Check for the twmrc file in the following order:
-     *   0.  -f filename.#
-     *   1.  -f filename
-     *   2.  .ctwmrc.#
-     *   3.  .ctwmrc
-     *   4.  .twmrc.#
-     *   5.  .twmrc
-     *   6.  system.ctwmrc
+     *       Unix                  |   VMS
+     *   0.  -f filename.#         | -f filename_#
+     *   1.  -f filename           | -f filename
+     *   2.  .ctwmrc.#             | ctwm.rc_#
+     *   3.  .ctwmrc               | ctwm.rc
+     *   4.  .twmrc.#              | twm.rc_#
+     *   5.  .twmrc                | twm.rc
+     *   6.  system.ctwmrc         | system.ctwmrc
      */
-    for (twmrc = NULL, i = 0; !twmrc && i < 6; i++) {
+    for (twmrc = NULL, i = 0; !twmrc && i < 7; i++) {
 	switch (i) {
+#ifdef VMS
+	  case 0:
+	    if (filename != NULL)  {
+	       cp = tmpfilename;
+	       (void) sprintf (tmpfilename, "%s_%d", filename, Scr->screen);
+	    } else
+	       cp = filename;
+	    break;
+
+	  case 1:
+	    cp = filename;
+	    break;
+
+	  case 2:
+	    if (!filename) {
+		home = getenv ("DECW$USER_DEFAULTS");
+		if (home) {
+		    homelen = strlen (home);
+		    cp = tmpfilename;
+		    (void) sprintf (tmpfilename, "%sctwm.rc_%d",
+				    home, Scr->screen);
+		    break;
+		}
+	    }
+	    continue;
+
+	  case 3:
+	    if (home) {
+		tmpfilename[homelen + 7] = '\0';
+	    }
+	    break;
+
+	  case 4:
+	    if (!filename) {
+		home = getenv ("DECW$USER_DEFAULTS");
+		if (home) {
+		    homelen = strlen (home);
+		    cp = tmpfilename;
+		    (void) sprintf (tmpfilename, "%stwm.rc_%d",
+				    home, Scr->screen);
+		    break;
+		}
+	    }
+	    continue;
+
+	  case 5:
+	    if (home) {
+		tmpfilename[homelen + 6] = '\0';
+	    }
+	    break;
+#else
 	  case 0:			/* -f filename.# */
-	    cp = tmpfilename;
-	    (void) sprintf (tmpfilename, "%s.%d", filename, Scr->screen);
+	    if (filename) {
+		cp = tmpfilename;
+		(void) sprintf (tmpfilename, "%s.%d", filename, Scr->screen);
+	    }
+	    else cp = filename;
 	    break;
 
 	  case 1:			/* -f filename */
@@ -212,6 +306,7 @@ int ParseTwmrc (filename)
 		tmpfilename[homelen + 7] = '\0'; /* C.L. */
 	    }
 	    break;
+#endif
 
 	  case 6:			/* system.twmrc */
 	    cp = SYSTEM_INIT_FILE;
@@ -481,6 +576,7 @@ typedef struct _TwmKeyword {
 #define kw0_NoIconManagerFocus		41
 #define kw0_StayUpMenus			42
 #define kw0_ClickToFocus		43
+#define kw0_BorderResizeCursors		44
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -521,6 +617,7 @@ typedef struct _TwmKeyword {
 #define kwn_MaxIconTitleWidth		19
 #define kwn_AnimationSpeed		20
 #define kwn_ThreeDBorderWidth		21
+#define kwn_MoveOffResistance		22
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -557,6 +654,7 @@ static TwmKeyword keytable[] = {
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
     { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
+    { "borderresizecursors",	KEYWORD, kw0_BorderResizeCursors },
     { "bordertilebackground",	CLKEYWORD, kwcl_BorderTileBackground },
     { "bordertileforeground",	CLKEYWORD, kwcl_BorderTileForeground },
     { "borderwidth",		NKEYWORD, kwn_BorderWidth },
@@ -659,6 +757,7 @@ static TwmKeyword keytable[] = {
 #endif
     { "f.togglestate",		FKEYWORD, F_TOGGLESTATE },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
+    { "f.trace",		FSKEYWORD, F_TRACE },
     { "f.twmrc",		FKEYWORD, F_RESTART },
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
     { "f.upiconmgr",		FKEYWORD, F_UPICONMGR },
@@ -666,7 +765,6 @@ static TwmKeyword keytable[] = {
     { "f.version",		FKEYWORD, F_VERSION },
     { "f.vlzoom",		FKEYWORD, F_LEFTZOOM },
     { "f.vrzoom",		FKEYWORD, F_RIGHTZOOM },
-    { "f.test",			FKEYWORD, F_TESTFUNC },
     { "f.warphere",		FSKEYWORD, F_WARPHERE },
     { "f.warpring",		FSKEYWORD, F_WARPRING },
     { "f.warpto",		FSKEYWORD, F_WARPTO },
@@ -726,6 +824,7 @@ static TwmKeyword keytable[] = {
     { "monochrome",		MONOCHROME, 0 },
     { "move",			MOVE, 0 },
     { "movedelta",		NKEYWORD, kwn_MoveDelta },
+    { "moveoffresistance",	NKEYWORD, kwn_MoveOffResistance },
     { "nobackingstore",		KEYWORD, kw0_NoBackingStore },
     { "noborder",		NO_BORDER, 0 },
     { "nocasesensitive",	KEYWORD, kw0_NoCaseSensitive },
@@ -927,7 +1026,7 @@ int do_single_keyword (keyword)
 	return 1;
 
       case kw0_NoTitleFocus:
-	Scr->TitleFocus = FALSE;
+	Scr->TitleFocus = TRUE /*FALSE*/;
 	return 1;
 
       case kw0_DecorateTransients:
@@ -988,6 +1087,10 @@ int do_single_keyword (keyword)
 
       case kw0_SmartIconify:
 	Scr->SmartIconify = TRUE;
+	return 1;
+
+      case kw0_BorderResizeCursors:
+	Scr->BorderCursors = TRUE;
 	return 1;
 
       case kw0_NoCaseSensitive:
@@ -1163,6 +1266,10 @@ int do_number_keyword (keyword, num)
 
       case kwn_MoveDelta:
 	Scr->MoveDelta = num;
+	return 1;
+
+      case kwn_MoveOffResistance:
+	Scr->MoveOffResistance = num;
 	return 1;
 
       case kwn_XorValue:
@@ -1751,6 +1858,9 @@ char *host;
         } else {
                 fputs(MkDef("COLOR", "No"), tmpf);
         }
+#ifdef XPM
+	fputs(MkDef("XPM", "Yes"), tmpf);
+#endif
         if (KeepTmpFile) {
                 fprintf(stderr, "Left file: %s\n", tmp_name);
         } else {

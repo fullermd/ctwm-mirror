@@ -45,12 +45,9 @@ funny prompt> xmkmf
 funny prompt> make
 
    If you don't have xpm, fetch it from ftp.x.org or comment out the
-#define XPM  in Imakefile.  Also, if you don't have/want  to use the
-IMCONV package (from the San Diego Supercomputer Center) comment out
-the  #define IMCONV  line in  Imakefile.  If you  don't have the  m4
-preprocessor (or don't want to use it) comment out #define USEM4, if
-you have  the rplay package  replace  #undef USE_SOUND,  by  #define
-USE_SOUND.
+#define XPM in Imakefile. If you don't have the  m4 preprocessor (or
+don't want to use it)  comment out  #define USEM4,  if you  have the
+rplay package replace #undef USE_SOUND, by #define USE_SOUND.
 
     There is a man,  but not quite complete  (any volunteer ?).  Many
 useful informations are only in the CHANGES file, so, read it.

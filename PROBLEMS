@@ -15,29 +15,21 @@ What to do : Upgrade you libs to at least patch level 9, or use :
 	     -u __XtInherit at link time.
 
 
-    2 - Sometime you loose icons, you iconify a client with DontIconifyByUnmapping
-	and the icon doesn't show up.
-
-Why : You probably have the Sun X11R5 server. I think there is a bug in this
-      server, it sends extra UnmapNotify events.
-
-What to do : Try define BUGGY_SUN_SERVER in your Imakefile. There is a workaround
-             in ctwm, but it introduces others problems. Or use the mit server.
-
-
-    3 - The stacking order is not correct at all in the Workspace window, and
-	you have a HP700 with the HP X11R4 server.
-
-Why : This server is buggy.
-
-What to do : define BUGGY_HP700_SERVER in your Imakefile.
-
-
-    4 - On SGI boxes, many GL applications don't behave very well with ctwm.
+    2 - On SGI boxes, many GL applications don't behave very well with ctwm.
 	If an Xpert having a SGI Xserver can have a look at this, I will be
 	very pleased.
 
 What to do : Avoid carefully GL tools.
 
+
+    3 - Xwd files created on DEC/Alpha may not be loaded correctly by ctwm.
+	Actually the xwd format is not completely portable. But you can load
+	on an Alpha a xwd file created on another system.
+
+    4 - On some systems (SVR4 I think), sometimes ctwm exits with no warning
+	(sometimes, it write 'Alarm Clock'). It is due to a problem with
+	signal handling on these systems. If it happens to you, set
+	AnimationSpeed to zero, or much better, you can try to find what
+	it the problem and send me a patch.
 
 

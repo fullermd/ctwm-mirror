@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -46,22 +71,43 @@
 #include "util.h"
 #include "gram.h"
 #include "screen.h"
+#include <stdio.h>
+#ifdef VMS
+#include <decw$include/Xos.h>
+#include <decw$include/Xatom.h>
+#include <X11Xmu/Drawing.h>
+#include <X11Xmu/CharSet.h>
+#include <X11Xmu/WinUtil.h>
+#include <unixlib.h>
+#include <starlet.h>
+#include <ssdef.h>
+#include <psldef.h>
+#include <lib$routines.h>
+#define USE_SIGNALS
+#else
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
-#include <stdio.h>
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/CharSet.h>
-#include "X11/XWDFile.h"
+#include <X11/Xmu/WinUtil.h>
+#include <X11/XWDFile.h>
+#endif
 
-#ifdef __sgi
+#if defined(USE_SIGNALS) && defined(__sgi)
 #  define _BSD_SIGNALS
 #endif
 
 #include <signal.h>
+#ifndef VMS
 #include <sys/time.h>
+#endif
 
 #if defined (XPM)
+#ifdef VMS
+#include "xpm.h"
+#else
 #   include <X11/xpm.h>
+#endif
 #endif
 
 #ifdef IMCONV
@@ -76,8 +122,10 @@ extern Atom _XA_WM_WORKSPACESLIST;
 
 static Image *LoadBitmapImage ();
 static Image *GetBitmapImage  ();
+#ifndef VMS
 static Image *LoadXwdImage    ();
 static Image *GetXwdImage     ();
+#endif
 #ifdef XPM
 static Image *LoadXpmImage    ();
 static Image *GetXpmImage     ();
@@ -95,21 +143,23 @@ static Image  *Create3DZoomImage ();
 static Image  *Create3DBarImage ();
 static Image  *Create3DResizeAnimation ();
 
-extern FILE *errorlog;
+extern FILE *tracefile;
 
 void FreeImage ();
 
 static int    reportfilenotfound = 1;
 static Colormap AlternateCmap = None;
-static Visual *AlternateVisual = NULL;
-static int AlternateDepth = 8;
 
 int  HotX, HotY;
 
-int  AnimationSpeed   = 3;
-Bool AnimationPending = False;
+int  AnimationSpeed   = 0;
 Bool AnimationActive  = False;
 Bool MaybeAnimate     = True;
+#ifdef USE_SIGNALS
+   Bool AnimationPending = False;
+#else
+   struct timeval AnimateTimeout;
+#endif /* USE_SIGNALS */
 
 /***********************************************************************
  *
@@ -272,10 +322,10 @@ Zoom(wf, wt)
     XGetGeometry (dpy, wf, &JunkRoot, &fx, &fy, &fw, &fh, &JunkBW, &JunkDepth);
     XGetGeometry (dpy, wt, &JunkRoot, &tx, &ty, &tw, &th, &JunkBW, &JunkDepth);
 
-    dx = ((long) (tx - fx));	/* going from -> to */
-    dy = ((long) (ty - fy));	/* going from -> to */
-    dw = ((long) (tw - fw));	/* going from -> to */
-    dh = ((long) (th - fh));	/* going from -> to */
+    dx = (long) tx - (long) fx;	/* going from -> to */
+    dy = (long) ty - (long) fy;	/* going from -> to */
+    dw = (long) tw - (long) fw;	/* going from -> to */
+    dh = (long) th - (long) fh;	/* going from -> to */
     z = (long) (Scr->ZoomCount + 1);
 
     for (j = 0; j < 2; j++) {
@@ -319,6 +369,16 @@ char *name;
 
     if (name[0] != '~') return name;
 
+#ifdef VMS
+    newname = (char *) malloc (HomeLen + strlen(name) + 1);
+    if (!newname) {
+        fprintf (stderr, 
+ 		 "%s:  unable to allocate %d bytes to expand filename %s%s\n",
+ 		 ProgramName, HomeLen + strlen(name) + 1, Home, &name[1]);
+    } else {
+        (void) sprintf (newname, "%s%s", Home, &name[1]);
+    }
+#else
     newname = (char *) malloc (HomeLen + strlen(name) + 2);
     if (!newname) {
 	fprintf (stderr, 
@@ -327,6 +387,7 @@ char *name;
     } else {
 	(void) sprintf (newname, "%s/%s", Home, &name[1]);
     }
+#endif
 
     return newname;
 }
@@ -337,6 +398,21 @@ char *name;
     char    *ret;
 
     ret = NULL;
+#ifdef VMS
+    if (name[0] == '~') {
+	ret = (char *) malloc (HomeLen + strlen (name) + 1);
+	sprintf (ret, "%s%s", Home, &name[1]);
+    }
+    if (name[0] == '/') {
+	ret = (char *) malloc (strlen (name));
+	sprintf (ret, "%s", &name[1]);
+    }
+    else
+    if (Scr->PixmapDirectory) {
+        ret = (char *) malloc (strlen (Scr->PixmapDirectory) + strlen (name) + 1);
+	sprintf (ret, "%s%s", Scr->PixmapDirectory, name);
+    }
+#else
     if (name[0] == '~') {
 	ret = (char *) malloc (HomeLen + strlen (name) + 2);
 	sprintf (ret, "%s/%s", Home, &name[1]);
@@ -351,6 +427,7 @@ char *name;
 	ret = (char *) malloc (strlen (Scr->PixmapDirectory) + strlen (name) + 2);
 	sprintf (ret, "%s/%s", Scr->PixmapDirectory, name);
     }
+#endif
     return (ret);
 }
 
@@ -444,8 +521,17 @@ Pixmap FindBitmap (name, widthp, heightp)
 	/*
 	 * Attempt to find icon in old IconDirectory (now obsolete)
 	 */
-	bigname = (char *) malloc (strlen(name) + strlen(Scr->IconDirectory) +
-				   2);
+#ifdef VMS
+	bigname = (char *) malloc (strlen(name) + strlen(Scr->IconDirectory) + 1);
+	if (!bigname) {
+	    fprintf (stderr,
+		"%s:  unable to allocate memory for \"%s%s\"\n",
+		ProgramName, Scr->IconDirectory, name);
+	    return None;
+	}
+	(void) sprintf (bigname, "%s%s", Scr->IconDirectory, name);
+#else
+	bigname = (char *) malloc (strlen(name) + strlen(Scr->IconDirectory) + 2);
 	if (!bigname) {
 	    fprintf (stderr,
 		     "%s:  unable to allocate memory for \"%s/%s\"\n",
@@ -453,6 +539,7 @@ Pixmap FindBitmap (name, widthp, heightp)
 	    return None;
 	}
 	(void) sprintf (bigname, "%s/%s", Scr->IconDirectory, name);
+#endif
 	if (XReadBitmapFile (dpy, Scr->Root, bigname, widthp, heightp, &pm,
 			     &HotX, &HotY) != BitmapSuccess) {
 	    pm = None;
@@ -560,12 +647,9 @@ char *name;
     attributes.valuemask |= XpmDepth;
     attributes.valuemask |= XpmVisual;
 
-    attributes.colormap = AlternateCmap ? AlternateCmap :
-					  DefaultColormap (dpy, Scr->screen);
-    attributes.depth    = AlternateCmap ? AlternateDepth :
-					  DefaultDepth (dpy, Scr->screen);
-    attributes.visual   = AlternateCmap ? AlternateVisual :
-					  DefaultVisual (dpy, Scr->screen);
+    attributes.colormap = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, Scr->screen);
+    attributes.depth    = DefaultDepth  (dpy, Scr->screen);
+    attributes.visual   = DefaultVisual (dpy, Scr->screen);
     status = XpmReadFileToPixmap(dpy, Scr->Root, fullname,
 				 &(image->pixmap), &(image->mask), &attributes);
     free (fullname);
@@ -658,15 +742,9 @@ char *file;
     int x, y;
     ColorPair WelcomeCp;
     XColor black;
-    XVisualInfo vinfo;
 
     NewFontCursor (&waitcursor, "watch");
 
-    Scr->WelcomeVisual = DefaultVisual (dpy, Scr->screen);
-/*
-    if (XMatchVisualInfo (dpy, Scr->screen, 8, PseudoColor, &vinfo))
-	Scr->WelcomeVisual = vinfo.visual;
-*/
     valuemask = (CWBackingStore | CWSaveUnder | CWBackPixel |
 		 CWOverrideRedirect | CWEventMask | CWCursor);
     attributes.backing_store	 = NotUseful;
@@ -680,7 +758,7 @@ char *file;
 			(unsigned int) Scr->MyDisplayHeight,
 			(unsigned int) 0,
 			CopyFromParent, (unsigned int) CopyFromParent,
-			Scr->WelcomeVisual, valuemask,
+			(Visual *) CopyFromParent, valuemask,
 			&attributes);
     XMapWindow (dpy, Scr->WindowMask);
     XMaskEvent (dpy, ExposureMask, &event);
@@ -689,7 +767,8 @@ char *file;
 
     WelcomeCp.fore = Scr->Black;
     WelcomeCp.back = Scr->White;
-    Scr->WelcomeCmap  = XCreateColormap (dpy, Scr->WindowMask, Scr->WelcomeVisual, AllocNone);
+    Scr->WelcomeCmap  = XCreateColormap (dpy, Scr->WindowMask,
+				DefaultVisual (dpy, Scr->screen), AllocNone);
     if (! Scr->WelcomeCmap) return;
     black.red   = 0;
     black.green = 0;
@@ -697,9 +776,7 @@ char *file;
     XAllocColor (dpy, Scr->WelcomeCmap, &black);
 
     reportfilenotfound = 0;
-    AlternateCmap   = Scr->WelcomeCmap;
-    AlternateVisual = Scr->WelcomeVisual;
-    AlternateDepth  = 8;
+    AlternateCmap = Scr->WelcomeCmap;
     if (! file) {
 	Scr->WelcomeImage  = GetImage ("xwd:welcome.xwd", WelcomeCp);
 #ifdef XPM
@@ -728,7 +805,11 @@ char *file;
 }
 
 UnmaskScreen () {
+#ifdef VMS
+    float  timeout;
+#else
     struct timeval	timeout;
+#endif
     Pixel		stdpixels [256];
     Colormap		stdcmap = DefaultColormap (dpy, Scr->screen);
     Colormap		cmap;
@@ -737,9 +818,13 @@ UnmaskScreen () {
     Status		status;
     unsigned long	planemask;
 
+#ifdef VMS
+    timeout = 0.017;
+#else
     usec = 17000;
     timeout.tv_usec = usec % (unsigned long) 1000000;
     timeout.tv_sec  = usec / (unsigned long) 1000000;
+#endif
     for (i = 0; i < 256; i++) stdpixels [i] = i;
 
     if (Scr->WelcomeImage) {
@@ -769,7 +854,11 @@ UnmaskScreen () {
 		colors [j].blue  = stdcolors [j].blue  * ((127.0 - i) / 128.0);
 	    }
 	    XStoreColors (dpy, cmap, colors, 256);
+#ifdef VMS
+	    lib$wait(&timeout);
+#else
 	    select (0, (void *) 0, (void *) 0, (void *) 0, &timeout);
+#endif
 	}
 	XFreeColors   (dpy, cmap, pixels, 256, 0L);
 	XFreeGC       (dpy, Scr->WelcomeGC);
@@ -777,8 +866,7 @@ UnmaskScreen () {
     }
     if (Scr->Monochrome != COLOR) goto fin;
 
-    if (! Scr->WelcomeVisual) Scr->WelcomeVisual = DefaultVisual (dpy, Scr->screen);
-    cmap = XCreateColormap (dpy, Scr->Root, Scr->WelcomeVisual, AllocNone);
+    cmap = XCreateColormap (dpy, Scr->Root, DefaultVisual (dpy, Scr->screen), AllocNone);
     if (! cmap) goto fin;
     XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
     for (i = 0; i < 256; i++) {
@@ -806,7 +894,11 @@ UnmaskScreen () {
 	    colors [j].blue  = stdcolors [j].blue  * (i / 127.0);
 	}
 	XStoreColors (dpy, cmap, colors, 256);
+#ifdef VMS
+        lib$wait(&timeout);
+#else
 	select (0, (void *) 0, (void *) 0, (void *) 0, &timeout);
+#endif
     }
     if (captive) XSetWindowColormap (dpy, Scr->Root, DefaultColormap (dpy, Scr->screen));
     else XInstallColormap (dpy, DefaultColormap (dpy, Scr->screen));
@@ -818,42 +910,42 @@ fin:
     Scr->WindowMask = (Window) 0;
 }
 
-SIGNAL_T AnimateHandler ();
+#ifdef VMS
+
+/* use the VMS system services to request the timer to issue an AST */
+void AnimateHandler ();
+
+unsigned int tv[2];
+int status;
+static unsigned long timefi;
+/* unsigned long timefe = 17; */
+unsigned long timefe;
+
+#define TIMID 12L
 
 void StartAnimation () {
-    struct itimerval tv;
-
     if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
     if (AnimationSpeed <= 0) return;
     if (AnimationActive) return;
-    signal (SIGALRM, AnimateHandler);
-    if (AnimationSpeed == 1) {
-	tv.it_interval.tv_sec  = 1;
-	tv.it_interval.tv_usec = 0;
-	tv.it_value.tv_sec     = 1;
-	tv.it_value.tv_usec    = 0;
-    }
-    else {
-	tv.it_interval.tv_sec  = 0;
-	tv.it_interval.tv_usec = 1000000 / AnimationSpeed;
-	tv.it_value.tv_sec     = 0;
-	tv.it_value.tv_usec    = 1000000 / AnimationSpeed;
-    }
-    setitimer (ITIMER_REAL, &tv, (struct itimerval*) NULL);
+
+    if (!timefi) lib$get_ef(&timefi);
+    if (!timefe) lib$get_ef(&timefe);
+
+    tv[1] = 0xFFFFFFFF;                   /* quadword negative for relative */
+    tv[0] = -(10000000 / AnimationSpeed); /* time. In units of 100ns. */
+    sys$clref(timefe);
+    status = sys$setimr (timefi, &tv, AnimateHandler, TIMID );
+    if (status != SS$_NORMAL) lib$signal(status);
     AnimationActive = True;
 }
 
 void StopAnimation () {
-    struct itimerval tv;
-
     if (AnimationSpeed <= 0) return;
     if (! AnimationActive) return;
-    signal (SIGALRM, SIG_IGN);
     AnimationActive = False;
 
-    tv.it_value.tv_sec     = 0;
-    tv.it_value.tv_usec    = 0;
-    setitimer (ITIMER_REAL, &tv, (struct itimerval*) NULL);
+    status = sys$cantim(TIMID, PSL$C_USER);
+    if (status != SS$_NORMAL) lib$signal(status);
 }
 
 void SetAnimationSpeed (speed)
@@ -866,8 +958,6 @@ int speed;
 void ModifyAnimationSpeed (incr)
 int incr;
 {
-    struct itimerval tv;
-
     if ((AnimationSpeed + incr) < 0) return;
     if ((AnimationSpeed + incr) == 0) {
 	if (AnimationActive) StopAnimation ();
@@ -875,8 +965,71 @@ int incr;
 	return;
     }
     AnimationSpeed += incr;
-    if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
 
+    status = sys$cantim(TIMID, PSL$C_USER);
+    if (status != SS$_NORMAL) lib$signal(status);
+
+    tv[1] = 0xFFFFFFFF;
+    tv[0] = -(10000000 / AnimationSpeed);
+
+    sys$clref(timefe);
+    status = sys$setimr (timefi, &tv, AnimateHandler, TIMID);
+    if (status != SS$_NORMAL) lib$signal(status);
+
+    AnimationActive = True;
+}
+
+void AnimateHandler () {
+    AnimationPending = True;
+
+    sys$setef(timefe);
+    status = sys$setimr (timefi, &tv, AnimateHandler, TIMID);
+    if (status != SS$_NORMAL) lib$signal(status);
+}
+#else /* VMS */
+
+#ifdef USE_SIGNALS
+SIGNAL_T AnimateHandler ();
+#endif
+
+#ifndef USE_SIGNALS
+void TryToAnimate () {
+    struct timeval  tp;
+    struct timezone tzp;
+    unsigned long theTime;
+    static unsigned long lastsec;
+    static long lastusec;
+    unsigned long gap;
+
+    gettimeofday (&tp, &tzp);
+    gap = ((tp.tv_sec - lastsec) * 1000000) + (tp.tv_usec - lastusec);
+    if (tracefile) {
+	fprintf (tracefile, "Time = %u, %d, %u, %d, %u\n", lastsec, lastusec,
+		tp.tv_sec, tp.tv_usec, gap);
+	fflush (tracefile);
+    }
+    gap *= AnimationSpeed;
+    if (gap < 1000000) return;
+    if (tracefile) {
+	fprintf (tracefile, "Animate\n");
+	fflush (tracefile);
+    }
+    Animate ();
+    lastsec  = tp.tv_sec;
+    lastusec = tp.tv_usec;
+}
+#endif /* USE_SIGNALS */
+
+void StartAnimation () {
+#ifdef USE_SIGNALS
+    struct itimerval tv;
+#endif
+
+    if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
+    if (AnimationSpeed <= 0) AnimationSpeed = 0;
+    if (AnimationActive) return;
+#ifdef USE_SIGNALS
+    if (AnimationSpeed == 0) return;
     signal (SIGALRM, AnimateHandler);
     if (AnimationSpeed == 1) {
 	tv.it_interval.tv_sec  = 1;
@@ -891,14 +1044,97 @@ int incr;
 	tv.it_value.tv_usec    = 1000000 / AnimationSpeed;
     }
     setitimer (ITIMER_REAL, &tv, (struct itimerval*) NULL);
+#else /* USE_SIGNALS */
+    switch (AnimationSpeed) {
+	case 0 :
+	    return;
+	case 1 :
+	    AnimateTimeout.tv_sec  = 1;
+	    AnimateTimeout.tv_usec = 0;
+	    break;
+	default :
+	    AnimateTimeout.tv_sec  = 0;
+	    AnimateTimeout.tv_usec = 1000000 / AnimationSpeed;
+    }
+#endif /* USE_SIGNALS */
     AnimationActive = True;
-    return;
 }
 
-SIGNAL_T AnimateHandler () {
+void StopAnimation () {
+#ifdef USE_SIGNALS
+    struct itimerval tv;
+
+    if (AnimationSpeed <= 0) return;
+    if (! AnimationActive) return;
+    signal (SIGALRM, SIG_IGN);
+
+    tv.it_value.tv_sec     = 0;
+    tv.it_value.tv_usec    = 0;
+    setitimer (ITIMER_REAL, &tv, (struct itimerval*) NULL);
+#endif
+    AnimationActive = False;
+}
+
+void SetAnimationSpeed (speed)
+int speed;
+{
+    AnimationSpeed = speed;
+    if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
+}
+
+void ModifyAnimationSpeed (incr)
+int incr;
+{
+#ifdef USE_SIGNALS
+    struct itimerval tv;
+#endif
+
+    if ((AnimationSpeed + incr) < 0) return;
+    if ((AnimationSpeed + incr) == 0) {
+	if (AnimationActive) StopAnimation ();
+	AnimationSpeed = 0;
+	return;
+    }
+    AnimationSpeed += incr;
+    if (AnimationSpeed > MAXANIMATIONSPEED) AnimationSpeed = MAXANIMATIONSPEED;
+
+#ifdef USE_SIGNALS
+    signal (SIGALRM, AnimateHandler);
+    if (AnimationSpeed == 1) {
+	tv.it_interval.tv_sec  = 1;
+	tv.it_interval.tv_usec = 0;
+	tv.it_value.tv_sec     = 1;
+	tv.it_value.tv_usec    = 0;
+    }
+    else {
+	tv.it_interval.tv_sec  = 0;
+	tv.it_interval.tv_usec = 1000000 / AnimationSpeed;
+	tv.it_value.tv_sec     = 0;
+	tv.it_value.tv_usec    = 1000000 / AnimationSpeed;
+    }
+    setitimer (ITIMER_REAL, &tv, (struct itimerval*) NULL);
+#else /* USE_SIGNALS */
+    if (AnimationSpeed == 1) {
+	AnimateTimeout.tv_sec  = 1;
+	AnimateTimeout.tv_usec = 0;
+    }
+    else {
+	AnimateTimeout.tv_sec  = 0;
+	AnimateTimeout.tv_usec = 1000000 / AnimationSpeed;
+    }
+#endif /* USE_SIGNALS */
+    AnimationActive = True;
+}
+
+#ifdef USE_SIGNALS
+SIGNAL_T AnimateHandler (dummy)
+int dummy;
+{
     signal (SIGALRM, AnimateHandler);
     AnimationPending = True;
 }
+#endif
+#endif /* VMS */
 
 void Animate () {
     TwmWindow	*t;
@@ -911,7 +1147,9 @@ void Animate () {
     int		nb;
 
     if (AnimationSpeed == 0) return;
+#ifdef USE_SIGNALS
     AnimationPending = False;
+#endif
 
     MaybeAnimate = False;
     for (scrnum = 0; scrnum < NumScreens; scrnum++) {
@@ -1172,6 +1410,8 @@ void SetFocusVisualAttributes (tmp_win, focus)
 TwmWindow *tmp_win;
 Bool focus;
 {
+    Bool hil;
+
     if (! tmp_win) return;
 
     if (focus && tmp_win->hasfocusvisible) return;
@@ -1194,8 +1434,18 @@ Bool focus;
 	}
     }
     if (focus) {
-	if (tmp_win->hilite_wl) XMapWindow (dpy, tmp_win->hilite_wl);
-	if (tmp_win->hilite_wr) XMapWindow (dpy, tmp_win->hilite_wr);
+	hil = False;
+	if (tmp_win->hilite_wl) {
+	    XMapWindow (dpy, tmp_win->hilite_wl);
+	    hil = True;
+	}
+	if (tmp_win->hilite_wr) {
+	    XMapWindow (dpy, tmp_win->hilite_wr);
+	    hil = True;
+	}
+	if (hil && tmp_win->HiliteImage && tmp_win->HiliteImage->next) {
+	    MaybeAnimate = True;
+	}
 	if (tmp_win->list) ActiveIconManager (tmp_win->list);
     }
     else {
@@ -1225,7 +1475,6 @@ void SetFocus (tmp_win, time)
     Time	time;
 {
     Window w = (tmp_win ? tmp_win->w : PointerRoot);
-/* printf ("SetFocus : %x\n", w); */
 
     XSetInputFocus (dpy, w, RevertToPointerRoot, time);
     if (Scr->Focus == tmp_win) return;
@@ -1622,22 +1871,30 @@ ColorPair cp;
     return (colori->pix);
 }
 
-static Image *Create3DResizeAnimation (cp)
+static Image *Create3DResizeAnimation (in, left, top, cp)
+Bool in, left, top;
 ColorPair cp;
 {
-    int		h, i;
+    int		h, i, j;
     Image	*image, *im, *im1;
 
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
     image = None;
-    for (i = (h / 2) - 1; i >= 2; i--) {
+    for (i = (in ? 0 : (h/4)-1); (i < h/4) && (i >= 0); i += (in ? 1 : -1)) {
 	im = (Image*) malloc (sizeof (struct _Image));
+	if (! im) return (None);
 	im->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-	Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True);
-	Draw3DBorder (im->pixmap, i, i, h - (2 * i), h - (2 * i), 2, cp, off, True, False);
-
+	if (im->pixmap == None) {
+	    free (im);
+	    return (None);
+	}
+	Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+	for (j = i; j <= h; j += (h/4)){
+	    Draw3DBorder (im->pixmap, (left ? 0 : j), (top ? 0 : j),
+			  h - j, h - j, 2, cp, off, True, False);
+	}
 	im->mask   = None;
 	im->width  = h;
 	im->height = h;
@@ -1652,6 +1909,151 @@ ColorPair cp;
     }
     if (im1 != None) im1->next = image;
     return (image);
+}
+
+static Image *Create3DResizeInTopAnimation (cp)
+ColorPair cp;
+{
+    return Create3DResizeAnimation (TRUE, FALSE, TRUE, cp);
+}
+
+static Image *Create3DResizeOutTopAnimation (cp)
+ColorPair cp;
+{
+    return Create3DResizeAnimation (False, FALSE, TRUE, cp);
+}
+
+static Image *Create3DResizeInBotAnimation (cp)
+ColorPair cp;
+{
+    return Create3DResizeAnimation (TRUE, TRUE, FALSE, cp);
+}
+
+static Image *Create3DResizeOutBotAnimation (cp)
+ColorPair cp;
+{
+    return Create3DResizeAnimation (False, TRUE, FALSE, cp);
+}
+
+static Image *Create3DMenuAnimation (up, cp)
+Bool up;
+ColorPair cp;
+{
+    int               h, i, j;
+    Image     *image, *im, *im1;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    image = None;
+    for (j = (up ? 4 : 0); j != (up ? -1 : 5); j+= (up ? -1 : 1)) {
+	im = (Image*) malloc (sizeof (struct _Image));
+	if (! im) return (None);
+	im->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+	if (im->pixmap == None) {
+	    free (im);
+	    return (None);
+	}
+	Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+	for (i = j; i < h - 3; i += 5) {
+	    Draw3DBorder (im->pixmap, 4, i, h - 8, 4, 2, cp, off, True, False);
+	}
+	im->mask   = None;
+	im->width  = h;
+	im->height = h;
+	im->next   = None;
+	if (image == None) {
+	    image = im1 = im;
+	}
+	else {
+	    im1->next = im;
+	    im1 = im;
+	}
+    }
+    if (im1 != None) im1->next = image;
+    return (image);
+}
+
+static Image *Create3DMenuUpAnimation (cp)
+ColorPair cp;
+{
+    return Create3DMenuAnimation (TRUE, cp);
+}
+
+static Image *Create3DMenuDownAnimation (cp)
+ColorPair cp;
+{
+    return Create3DMenuAnimation (False, cp);
+}
+
+static Image *Create3DZoomAnimation (in, out, n, cp)
+int n;
+Bool in;
+Bool out;
+ColorPair cp;
+{
+    int		h, i, j, k;
+    Image	*image, *im, *im1;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    if (n == 0) n = (h/2) - 2;
+
+    image = None;
+    for (j = (out ? -1 : 1) ; j < (in ? 2 : 0); j += 2){
+	for(k = (j > 0 ? 0 : n-1) ; (k >= 0) && (k < n); k += j){
+	    im = (Image*) malloc (sizeof (struct _Image));
+	    im->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+	    Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+	    for (i = 2 + k; i < (h / 2); i += n) {
+		Draw3DBorder (im->pixmap, i, i, h - (2 * i), h - (2 * i), 2, cp, off, True, False);
+	    }
+	    im->mask   = None;
+	    im->width  = h;
+	    im->height = h;
+	    im->next   = None;
+	    if (image == None) {
+		image = im1 = im;
+	    }
+	    else {
+		im1->next = im;
+		im1 = im;
+	    }
+	}
+    }
+    if (im1 != None) im1->next = image;
+    return (image);
+}
+
+static Image *Create3DMazeInAnimation (cp)
+ColorPair cp;
+{
+    return Create3DZoomAnimation(TRUE, FALSE, 6, cp);
+}
+
+static Image *Create3DMazeOutAnimation (cp)
+ColorPair cp;
+{
+    return Create3DZoomAnimation(FALSE, TRUE, 6, cp);
+}
+
+static Image *Create3DZoomInAnimation (cp)
+ColorPair cp;
+{
+    return Create3DZoomAnimation(TRUE, FALSE, 0, cp);
+}
+
+static Image *Create3DZoomOutAnimation (cp)
+ColorPair cp;
+{
+    return Create3DZoomAnimation(FALSE, TRUE, 0, cp);
+}
+
+static Image *Create3DZoomInOutAnimation (cp)
+ColorPair cp;
+{
+    return Create3DZoomAnimation(TRUE, TRUE, 0, cp);
 }
 
 #define questionmark_width 8
@@ -2141,18 +2543,21 @@ void adoptWindow () {
     return;
 }
 
-void testfunc () {
-    char logname [64];
-
-    if (errorlog) {
-	fclose (errorlog);
-	printf ("stop logging events\n");
-	errorlog = NULL;
+void DebugTrace (file)
+char *file;
+{
+    if (!file) return;
+    if (tracefile) {
+	fprintf (stderr, "stop logging events\n");
+	if (tracefile != stderr) fclose (tracefile);
+	tracefile = NULL;
     }
     else {
-	sprintf (logname, "CtwmLog.%d", getpid());
-	printf ("logging events to : %s\n", logname);
-	errorlog = fopen (logname, "w");
+	if (strcmp (file, "stderr"))
+	    tracefile = fopen (file, "w");
+	else
+	    tracefile = stderr;
+	fprintf (stderr, "logging events to : %s\n", file);
     }
 }
 
@@ -2222,7 +2627,6 @@ ColorPair cp;
 #ifdef XPM
     if ((name [0] == '@') || (strncmp (name, "xpm:", 4) == 0)) {
 	startn = (name [0] == '@') ? 1 : 4;
-	if (name [0] == '@') startn = 1; else startn = 4;
 	if ((image = (Image*) LookInNameList (*list, name)) == None) {
 	    if ((image = GetXpmImage (&(name [startn]))) != None) {
 		AddToList (list, name, (char*) image);
@@ -2241,6 +2645,7 @@ ColorPair cp;
     }
     else
 #endif
+#ifndef VMS
     if ((strncmp (name, "xwd:", 4) == 0) || (name [0] == '|')) {
 	startn = (name [0] == '|') ? 0 : 4;
 	if ((image = (Image*) LookInNameList (*list, name)) == None) {
@@ -2250,6 +2655,7 @@ ColorPair cp;
 	}
     }
     else
+#endif
     if (strncmp (name, ":xpm:", 5) == 0) {
 	int    i;
 	static struct {
@@ -2285,14 +2691,33 @@ ColorPair cp;
 	    char *name;
 	    Image* (*proc)();
 	} pmtab[] = {
-	    { "%xpm:resize", Create3DResizeAnimation }
+	    { "%xpm:menu-up", Create3DMenuUpAnimation },
+	    { "%xpm:menu-down", Create3DMenuDownAnimation },
+	    { "%xpm:resize", Create3DZoomOutAnimation }, /* compatibility */
+	    { "%xpm:resize-out-top", Create3DResizeInTopAnimation },
+	    { "%xpm:resize-in-top", Create3DResizeOutTopAnimation },
+	    { "%xpm:resize-out-bot", Create3DResizeInBotAnimation },
+	    { "%xpm:resize-in-bot", Create3DResizeOutBotAnimation },
+	    { "%xpm:maze-out", Create3DMazeOutAnimation },
+	    { "%xpm:maze-in", Create3DMazeInAnimation },
+	    { "%xpm:zoom-out", Create3DZoomOutAnimation },
+	    { "%xpm:zoom-in", Create3DZoomInAnimation },
+	    { "%xpm:zoom-inout", Create3DZoomInOutAnimation }
 	};
 	
 	sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
 	if ((image = (Image*) LookInNameList (*list, fullname)) == None) {
-	    if ((image = Create3DResizeAnimation (cp)) != None) {
-		AddToList (list, fullname, (char*) image);
+	    for (i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
+		if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0) {
+		    image = (*pmtab[i].proc) (cp);
+		    break;
+		}
 	    }
+	    if (image == None) {
+		fprintf (stderr, "%s:  no such built-in pixmap \"%s\"\n", ProgramName, name);
+		return (None);
+	    }
+	    AddToList (list, fullname, (char*) image);
 	}
     }
     else
@@ -2366,6 +2791,7 @@ Image *image;
     }
 }
 
+#ifndef VMS
 static void compress ();
 
 static Image *LoadXwdImage (filename)
@@ -2374,7 +2800,11 @@ char	*filename;
     FILE	*file;
     char	*fullname;
     XColor	colors [256];
+#ifdef X11R4
+    struct XWDColor xwdcolors [256];
+#else /* X11R4 */
     XWDColor	xwdcolors [256];
+#endif /* X11R4 */
     unsigned	buffer_size;
     XImage	*image;
     unsigned char *imagedata;
@@ -2415,8 +2845,14 @@ char	*filename;
 file_opened:
     len = fread ((char *) &header, sizeof (header), 1, file);
     if (len != 1) {
-	fprintf (stderr, "cannot read %s\n", filename);
+	fprintf (stderr, "ctwm: cannot read %s\n", filename);
+#ifdef USE_SIGNALS
 	if (ispipe && anim) StartAnimation ();
+#endif
+	return (None);
+    }
+    if (header.file_version != XWD_FILE_VERSION) {
+	fprintf(stderr,"ctwm: XWD file format version mismatch : %s\n", filename);
 	return (None);
     }
     if (*(char *) &swaptest) _swaplong ((char *) &header, sizeof (header));
@@ -2424,7 +2860,9 @@ file_opened:
     len = fread (win_name, win_name_size, 1, file);
     if (len != 1) {
 	fprintf (stderr, "file %s has not the correct format\n", filename);
+#ifdef USE_SIGNALS
 	if (ispipe && anim) StartAnimation ();
+#endif
 	return (None);
     }
 
@@ -2432,10 +2870,16 @@ file_opened:
     h       = header.pixmap_height;
     depth   = header.pixmap_depth;
     ncolors = header.ncolors;
+#ifdef X11R4
+    len = fread ((char *) xwdcolors, sizeof (struct XWDColor), ncolors, file);
+#else /* X11R4 */
     len = fread ((char *) xwdcolors, sizeof (XWDColor), ncolors, file);
+#endif /* X11R4 */
     if (len != ncolors) {
 	fprintf (stderr, "file %s has not the correct format\n", filename);
+#ifdef USE_SIGNALS
 	if (ispipe && anim) StartAnimation ();
+#endif
 	return (None);
     }
     if (*(char *) &swaptest) {
@@ -2454,22 +2898,26 @@ file_opened:
     }
 
     scrn    = Scr->screen;
-    cmap    = AlternateCmap ? AlternateCmap   : DefaultColormap (dpy, scrn);
-    visual  = AlternateCmap ? AlternateVisual : DefaultVisual   (dpy, scrn);
-    gc      = DefaultGC       (dpy, scrn);
+    cmap    = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, scrn);
+    visual  = DefaultVisual (dpy, scrn);
+    gc      = DefaultGC     (dpy, scrn);
 
     buffer_size = header.bytes_per_line * h;
     imagedata = (unsigned char*) malloc (buffer_size);
     if (! imagedata) {
 	fprintf (stderr, "cannot allocate memory for image %s\n", filename);
+#ifdef USE_SIGNALS
 	if (ispipe && anim) StartAnimation ();
+#endif
 	return (None);
     }
     len = fread (imagedata, (int) buffer_size, 1, file);
     if (len != 1) {
 	free (imagedata);
 	fprintf (stderr, "file %s has not the correct format\n", filename);
+#ifdef USE_SIGNALS
 	if (ispipe && anim) StartAnimation ();
+#endif
 	return (None);
     }
     if (ispipe) pclose (file); else fclose (file);
@@ -2480,7 +2928,9 @@ file_opened:
     if (image == None) {
 	free (imagedata);
 	fprintf (stderr, "cannot create image for %s\n", filename);
+#ifdef USE_SIGNALS
 	if (ispipe && anim) StartAnimation ();
+#endif
 	return (None);
     }
     compress (image, colors, &ncolors);
@@ -2503,7 +2953,9 @@ file_opened:
 	for (i = 0; i < ncolors; i++) {
             XFreeColors (dpy, cmap, &(colors [i].pixel), 1, 0L);
 	}
+#ifdef USE_SIGNALS
 	if (ispipe && anim) StartAnimation ();
+#endif
 	return (None);
     }
     if ((w > (Scr->MyDisplayWidth / 2)) || (h > (Scr->MyDisplayHeight / 2))) {
@@ -2529,7 +2981,9 @@ file_opened:
     ret->pixmap = pixret;
     ret->mask   = None;
     ret->next   = None;
+#ifdef USE_SIGNALS
     if (ispipe && anim) StartAnimation ();
+#endif
     return (ret);
 }
 
@@ -2612,6 +3066,7 @@ int    *ncolors;
     }
     *ncolors = nused;
 }
+#endif
 
 #ifdef IMCONV
 
@@ -2724,8 +3179,8 @@ int	*width, *height;
     *height = h;
 
     scrn   = Scr->screen;
-    cmap   = AlternateCmap ? AlternateCmap   : DefaultColormap (dpy, scrn);
-    visual = AlternateCmap ? AlternateVisual : DefaultVisual (dpy, scrn);
+    cmap   = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, scrn);
+    visual = DefaultVisual (dpy, scrn);
     gc     = DefaultGC     (dpy, scrn);
 
     buffer_size = w * h;

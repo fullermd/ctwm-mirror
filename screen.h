@@ -18,6 +18,31 @@
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 /***********************************************************************
  *
@@ -32,9 +57,15 @@
 #ifndef _SCREEN_
 #define _SCREEN_
 
+#ifdef VMS
+#include <decw$include/Xlib.h>
+#include <decw$include/Xutil.h>
+#include <decw$include/cursorfont.h>
+#else
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
+#endif
 #include "list.h"
 #include "menus.h"
 #include "iconmgr.h"
@@ -95,6 +126,8 @@ typedef struct ScreenInfo
     MenuRoot *MenuList;		/* head of the menu list */
     MenuRoot *LastMenu;		/* the last menu (mostly unused?) */
     MenuRoot *Windows;		/* the TwmWindows menu */
+    MenuRoot *Workspaces;	/* the TwmWorkspaces menu */
+    MenuRoot *AllWindows;	/* the TwmAllWindows menu */
 
     TwmWindow *Ring;		/* one of the windows in window ring */
     TwmWindow *RingLeader;	/* current window in ring */
@@ -261,6 +294,7 @@ typedef struct ScreenInfo
     short NoRaiseDeicon;	/* don't raise window on deiconify */
     short NoRaiseWarp;		/* don't raise window on warp */
     short DontMoveOff;		/* don't allow windows to be moved off */
+    int MoveOffResistance;	/* nb of pixel before moveOff gives up */
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
     short IconManagerFocus;	/* focus on window in title bar ? */

@@ -23,11 +23,18 @@
  *
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
+/*
+ *	LNM.H
+ *
+ *	Provides for the mode to define VMS logicals in
+ */
+#ifndef __LNM__
+#define __LNM__
 
-Bool	CtwmIsRunning			();
-char	**CtwmListWorkspaces		();
-char	*CtwmCurrentWorkspace		();
-int	CtwmChangeWorkspace		();
-char	**CtwmCurrentOccupation		();
-int	CtwmSetOccupation		();
-int	CtwmAddToCurrentWorkspace	();
+#define	LNM_KERNEL	0
+#define LNM_EXEC	1
+#define LNM_SUPER	2
+#define LNM_USER	3
+
+extern int GetLogical();
+#endif

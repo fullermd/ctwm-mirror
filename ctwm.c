@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -42,13 +67,17 @@
  *
  ***********************************************************************/
 
-#ifdef __sgi
+#if defined(USE_SIGNALS) && defined(__sgi)
 #  define _BSD_SIGNALS
 #endif
 
 #include <stdio.h>
 #include <signal.h>
+#ifdef VMS
+#include <string.h>
+#else
 #include <fcntl.h>
+#endif
 #include "twm.h"
 #include "add_window.h"
 #include "gc.h"
@@ -60,11 +89,23 @@
 #include "gram.h"
 #include "screen.h"
 #include "iconmgr.h"
+#ifdef VMS
+#include <decw$include/Xproto.h>
+#include <decw$include/Xatom.h>
+#include <X11Xmu/Error.h>
+#include "vms_cmd_services.h"
+
+#ifndef PIXMAP_DIRECTORY
+#define PIXMAP_DIRECTORY "DECW$BITMAPS:"
+#endif
+#else
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
+#include <X11/Xmu/Error.h>
 
 #ifndef PIXMAP_DIRECTORY
 #define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
+#endif
 #endif
 
 Display *dpy;			/* which display are we talking to */
@@ -134,10 +175,16 @@ unsigned int JunkWidth, JunkHeight, JunkBW, JunkDepth, JunkMask;
 char *ProgramName;
 int Argc;
 char **Argv;
+#ifndef VMS
 char **Environ;
+#endif
 
 Bool RestartPreviousState = False;	/* try to restart in previous state */
+#ifdef NOTRAP
+Bool TrapExceptions = False;
+#else
 Bool TrapExceptions = True;
+#endif
 
 unsigned long black, white;
 
@@ -155,10 +202,14 @@ extern Atom _XA_WM_WORKSPACESLIST;
  ***********************************************************************
  */
 
+#ifdef VMS
+main(int argc, char **argv)
+#else
 main(argc, argv, environ)
     int argc;
     char **argv;
     char **environ;
+#endif
 {
     Window root, parent, *children;
     unsigned int nchildren;
@@ -177,10 +228,24 @@ main(argc, argv, environ)
     static unsigned int rooth = 500;
     Window capwin = (Window) 0;
 
+#ifdef VMS
+    vms_do_init();
+	{
+        char *ep;
+        ProgramName = strrchr(argv[0], ']');
+        ProgramName++;
+        ep = strchr(ProgramName, '.');
+        if (ep != NULL) *ep = '\0';
+	}
+    Argc = argc;
+    Argv = argv;
+    initRun(ProgramName);
+#else
     ProgramName = argv[0];
     Argc = argc;
     Argv = argv;
     Environ = environ;
+#endif
 
     for (i = 1; i < argc; i++) {
 	if (argv[i][0] == '-') {
@@ -224,9 +289,15 @@ main(argc, argv, environ)
 	    }
 	}
       usage:
+#ifdef USEM4
 	fprintf (stderr,
-		 "usage:  %s [-display dpy] [-f file] [-s] [-q] [-v]\n",
-		 ProgramName);
+	    "usage:  %s [-display dpy] [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-n]\n",
+	    ProgramName);
+#else
+	fprintf (stderr,
+	    "usage:  %s [-display dpy] [-f file] [-s] [-q] [-v] [-W] [-w [wid]]\n",
+	    ProgramName);
+#endif
 	exit (1);
     }
 
@@ -247,7 +318,11 @@ main(argc, argv, environ)
 
     Home = getenv("HOME");
     if (Home == NULL)
+#ifdef VMS
+        Home = "[]";
+#else
 	Home = "./";
+#endif
 
     HomeLen = strlen(Home);
 
@@ -260,12 +335,14 @@ main(argc, argv, environ)
 	exit (1);
     }
 
+#ifndef VMS
     if (fcntl(ConnectionNumber(dpy), F_SETFD, 1) == -1) {
 	fprintf (stderr, 
 		 "%s:  unable to mark display connection as close-on-exec\n",
 		 ProgramName);
 	exit (1);
     }
+#endif
 
     HasShape = XShapeQueryExtension (dpy, &ShapeEventBase, &ShapeErrorBase);
     TwmContext = XUniqueContext();
@@ -405,6 +482,7 @@ main(argc, argv, environ)
 	Scr->NoOpaqueResizeList = NULL;
 	Scr->ImageCache = NULL;
 	Scr->HighlightPixmapName = NULL;
+	Scr->Workspaces = (MenuRoot*) 0;
 
 
 	/* remember to put an initialization in InitVariables also
@@ -567,6 +645,7 @@ main(argc, argv, environ)
 	AllocateOthersIconManagers ();
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
+	MakeWorkspacesMenu ();
 
 	XQueryTree(dpy, Scr->Root, &root, &parent, &children, &nchildren);
 	/*
@@ -797,6 +876,7 @@ InitVariables()
     Scr->StackMode = TRUE;
     Scr->TitleHighlight = TRUE;
     Scr->MoveDelta = 1;		/* so that f.deltastop will work */
+    Scr->MoveOffResistance = -1;
     Scr->ZoomCount = 8;
     Scr->SortIconMgr = FALSE;
     Scr->Shadow = TRUE;
@@ -820,7 +900,7 @@ InitVariables()
     Scr->ClearShadowContrast = 50;
     Scr->DarkShadowContrast  = 40;
     Scr->BeNiceToColormap = FALSE;
-    Scr->BorderCursors = TRUE;
+    Scr->BorderCursors = FALSE;
     Scr->IconJustification = J_CENTER;
     Scr->IconRegionJustification = J_CENTER;
     Scr->TitleJustification = J_LEFT;
@@ -964,9 +1044,14 @@ SIGNAL_T Done()
     play_exit_sound();
 #endif
     Reborder (CurrentTime);
+#ifdef VMS
+    createProcess("run sys$system:decw$endsession.exe");
+    sleep(10);  /* sleep until stopped */
+#else
     XDeleteProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
     XCloseDisplay(dpy);
     exit(0);
+#endif
 }
 
 SIGNAL_T Crash ()
@@ -992,7 +1077,12 @@ SIGNAL_T Restart()
     XSync (dpy, 0);
     Reborder (CurrentTime);
     XSync (dpy, 0);
+#ifdef VMS
+    fprintf (stderr, "%s:  restart capabilities not yet supported\n",
+	     ProgramName);
+#else
     execvp(*Argv, Argv);
+#endif
     fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
     exit (1);
 }

@@ -616,3 +616,63 @@ setenv CTWM_WELCOME_FILE "|(giftoppm | pnmtoxwd) < ~/images/2010.gif"
         filename.scrnum, where scrnum is the screen number. If it fails, it will
         try to load filename as usual.
 
+    8 - TitleButtons can now have different bindings for buttons with the
+        following syntax :
+
+LeftTitleButton ":xpm:menu" {
+    Button1 : f.menu "WindowMenu"
+    Button2 : f.zoom
+    Button3 : f.hzoom
+}
+        The old syntax is of course accepted.
+        Patch from Stefan Monnier (Stefan_Monnier@NIAGARA.NECTAR.CS.CMU.EDU).
+
+    9 - A lot of new animated title buttons : "%xpm:menu-up", "%xpm:menu-down", 
+        "%xpm:resize-out-top", "%xpm:resize-in-top", "%xpm:resize-out-bot", 
+        "%xpm:resize-in-bot", "%xpm:maze-out", "%xpm:maze-in", "%xpm:zoom-out", 
+        "%xpm:zoom-in" and "%xpm:zoom-inout". From Stefan Monnier
+        (Stefan_Monnier@NIAGARA.NECTAR.CS.CMU.EDU).
+
+   10 - 2 new builtin menus : TwmAllWindows and TwmWorkspaces. Guess what they
+        do.
+
+   11 - You can now bind menus to keys. When a menu is visible, you can
+        navigate in it with the arrow keys. "Down" or space goes down, "Up"
+        goes up, "Left" pops down the menu, and "Right" activates the current
+        entry. The first letter of an entry name activates this entry (the first
+        one if several entries match). If the first letter is ~ then
+        Meta-the-second-letter activates it, if this first letter is ^ then
+        Control-the-second-letter activates it, and if this first letter is space,
+        then the second letter activates it.
+
+   12 - Support for VMS. Patch from Peter Chang (peterc@v2.ph.man.ac.uk).
+        Completely untested. If you have problems to build on VMS ask to
+        Peter Chang.
+
+   13 - New keyword : MoveOffResistance. (idea borrowed to fvwm) : If you set
+        MoveOffResistance to a positive (n) value, dontmoveoff will only prevent
+        you from going off the edge if you're within n pixels off the edge. If you
+        go further, dontmoveoff gives up and lets you go as far as you wish. 
+        f.forcemove still allows you to totally ignore dontmoveoff. A negative value
+        puts you back into "never moveoff" mode (it's the default).
+
+   14 - The files background[1-7].xpm and background9.xpm have been removed from
+        the distribution. Someone tells me that they are copyrighted. I tried to
+        contact him in order to join his copyright, but his mail address is invalid.
+        (desktop-textures@avernus.com). Most of these backgrounds and much more
+        can be obtained in the AIcons package on ftp.x.org. Particularly in
+        cl-bgnd/Textures : bg_blu.gif, concrete.gif, marble1.gif, sharks.gif
+        bg_grn.gif, granite_dark.gif, marble2.gif, snails.gif, coarse.gif,
+        granite_light.gif and pool.gif.
+
+   15 - New keyword : BorderResizeCursors with no parameter. If used ctwm
+	will put nice cursors when the cursor in on the window borders.
+	To be used when you have bound a button to f.resize in the frame context.
+
+   16 - The xpm files are now installed in $(TWMDIR)/images instead of $(TWMDIR).
+
+   17 - Due to the many problems I had with signals beeing slightly different
+	on different systems, I rewrote the animation handling to not use signals
+	anymore. I hope it is more portable. The old code is still available if
+	you define USE_SIGNALS.
+

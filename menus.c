@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -42,13 +67,20 @@
  *
  ***********************************************************************/
 
-#ifdef __sgi
+#if defined(USE_SIGNALS) && defined(__sgi)
 #  define _BSD_SIGNALS
 #endif
 
 #include <stdio.h>
 #include <signal.h>
+#ifdef VMS
+#include <string.h>
+#include <unixio.h>
+#include <file.h>
+#include <decw$include/Xos.h>
+#else
 #include <X11/Xos.h>
+#endif
 #include "twm.h"
 #include "gc.h"
 #include "menus.h"
@@ -58,16 +90,28 @@
 #include "parse.h"
 #include "gram.h"
 #include "screen.h"
+#ifdef VMS
+#include <X11Xmu/CharSet.h>
+#include <decw$bitmaps/menu12.xbm>
+#include "vms_cmd_services.h"
+#include <lib$routines.h>
+#else
 #include <X11/Xmu/CharSet.h>
 #include <X11/bitmaps/menu12>
+#endif
 #include "version.h"
 
 #if defined(MACH) || defined(sony_news)
 #define lrand48 random
 #endif
+#ifdef VMS
+#define lrand48 rand
+#endif
 
+#ifndef VMS
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
 #define ABS(x) ((x)<0?-(x):(x))
 
 #ifdef SOUNDS
@@ -83,6 +127,7 @@ MenuItem *ActiveItem = NULL;		/* the active menu item */
 int MoveFunction;			/* either F_MOVE or F_FORCEMOVE */
 int WindowMoved = FALSE;
 int menuFromFrameOrWindowOrTitlebar = FALSE;
+char *CurrentSelectedWorkspace;
 
 extern int captive;
 
@@ -160,9 +205,10 @@ InitMenus()
  ***********************************************************************
  */
 
-Bool AddFuncKey (name, cont, mods, func, win_name, action)
+Bool AddFuncKey (name, cont, mods, func, menu, win_name, action)
     char *name;
     int cont, mods, func;
+    MenuRoot *menu;
     char *win_name;
     char *action;
 {
@@ -202,6 +248,7 @@ Bool AddFuncKey (name, cont, mods, func, win_name, action)
     tmp->cont = cont;
     tmp->mods = mods;
     tmp->func = func;
+    tmp->menu = menu;
     tmp->win_name = win_name;
     tmp->action = action;
 
@@ -255,6 +302,23 @@ Bool AddFuncButton (num, cont, mods, func, menu, item)
 
 
 
+static TitleButton *cur_tb = NULL;
+
+void ModifyCurrentTB(button, func, action, menuroot)
+    int button;
+    int func;
+    char *action;
+    MenuRoot *menuroot;
+{
+    if (!cur_tb) {
+        fprintf (stderr, "%s: can't find titlebutton\n", ProgramName);
+      return;
+    }
+    cur_tb->funs[button - 1].func = func;
+    cur_tb->funs[button - 1].action = action;
+    cur_tb->funs[button - 1].menuroot = menuroot;
+}
+
 int CreateTitleButton (name, func, action, menuroot, rightside, append)
     char *name;
     int func;
@@ -263,28 +327,32 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
     Bool rightside;
     Bool append;
 {
-    TitleButton *tb = (TitleButton *) malloc (sizeof(TitleButton));
+    int button;
+    cur_tb = (TitleButton *) malloc (sizeof(TitleButton));
 
-    if (!tb) {
+    if (!cur_tb) {
 	fprintf (stderr,
 		 "%s:  unable to allocate %d bytes for title button\n",
 		 ProgramName, sizeof(TitleButton));
 	return 0;
     }
 
-    tb->next = NULL;
-    tb->name = name;			/* note that we are not copying */
-    tb->image = None;			/* WARNING, values not set yet */
-    tb->width = 0;			/* see InitTitlebarButtons */
-    tb->height = 0;			/* ditto */
-    tb->func = func;
-    tb->action = action;
-    tb->menuroot = menuroot;
-    tb->rightside = rightside;
+    cur_tb->next = NULL;
+    cur_tb->name = name;                      /* note that we are not copying */
+    cur_tb->image = None;                     /* WARNING, values not set yet */
+    cur_tb->width = 0;                        /* see InitTitlebarButtons */
+    cur_tb->height = 0;                       /* ditto */
+    cur_tb->rightside = rightside;
     if (rightside) {
 	Scr->TBInfo.nright++;
     } else {
 	Scr->TBInfo.nleft++;
+    }
+
+    for(button = 0; button < MAX_BUTTONS; button++){
+	cur_tb->funs[button].func = func;
+	cur_tb->funs[button].action = action;
+	cur_tb->funs[button].menuroot = menuroot;
     }
 
     /*
@@ -298,25 +366,25 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
      * (since fonts not loaded and heights not known).
      */
     if ((!Scr->TBInfo.head) || ((!append) && (!rightside))) {	/* 1 */
-	tb->next = Scr->TBInfo.head;
-	Scr->TBInfo.head = tb;
+	cur_tb->next = Scr->TBInfo.head;
+	Scr->TBInfo.head = cur_tb;
     } else if (append && rightside) {	/* 3 */
 	register TitleButton *t;
 	for /* SUPPRESS 530 */
 	  (t = Scr->TBInfo.head; t->next; t = t->next);
-	t->next = tb;
-	tb->next = NULL;
+	t->next = cur_tb;
+	cur_tb->next = NULL;
     } else {				/* 2 */
 	register TitleButton *t, *prev = NULL;
 	for (t = Scr->TBInfo.head; t && !t->rightside; t = t->next) {
 	    prev = t;
 	}
 	if (prev) {
-	    tb->next = prev->next;
-	    prev->next = tb;
+	    cur_tb->next = prev->next;
+	    prev->next = cur_tb;
 	} else {
-	    tb->next = Scr->TBInfo.head;
-	    Scr->TBInfo.head = tb;
+	    cur_tb->next = Scr->TBInfo.head;
+	    Scr->TBInfo.head = cur_tb;
 	}
     }
 
@@ -419,11 +487,11 @@ MenuRoot *mr;
 MenuItem *mi;
 int exposure;
 {
-    if (Scr->use3Dmenus) {
+    if (Scr->use3Dmenus)
 	Paint3DEntry (mr, mi, exposure);
-	return (0);
-    }
-    PaintNormalEntry (mr, mi, exposure);
+    else 
+	PaintNormalEntry (mr, mi, exposure);
+    if (mi->state) mr->lastactive = mi;
 }
 
 Paint3DEntry(mr, mi, exposure)
@@ -613,6 +681,38 @@ XEvent *e;
 
 
 
+MakeWorkspacesMenu () {
+    static char **actions = NULL;
+    WorkSpaceList *wlist;
+    char **act;
+
+    if (! Scr->Workspaces) return;
+    AddToMenu (Scr->Workspaces, "TWM Workspaces", NULLSTR, NULL, F_TITLE, NULLSTR, NULLSTR);
+    if (! actions) {
+	int count = 0;
+
+        for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+            count++;
+        }
+	count++;
+	actions = (char**) malloc (count * sizeof (char*));
+	act = actions;
+        for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    *act = (char*) malloc (strlen ("WGOTO : ") + strlen (wlist->name) + 1);
+	    sprintf (*act, "WGOTO : %s", wlist->name);
+	    act++;
+	}
+	*act = NULL;
+    }
+    act = actions;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+        AddToMenu (Scr->Workspaces, wlist->name, *act, Scr->Windows, F_MENU, NULL, NULL);
+	act++;
+    }
+    Scr->Workspaces->pinned = False;
+    MakeMenu (Scr->Workspaces);
+}
+
 static Bool fromMenu;
 
 UpdateMenu()
@@ -630,6 +730,7 @@ UpdateMenu()
         if (!menuFromFrameOrWindowOrTitlebar) {
 	  XMaskEvent(dpy,
 		     ButtonPressMask | ButtonReleaseMask |
+		     KeyPressMask | KeyReleaseMask |
 		     EnterWindowMask | ExposureMask |
 		     VisibilityChangeMask | LeaveWindowMask |
 		     ButtonMotionMask, &Event);
@@ -723,11 +824,14 @@ UpdateMenu()
 	    int savey = MenuOrigins[MenuDepth - 1].y;
 
 	    if (MenuDepth < MAXMENUDEPTH) {
+		if (ActiveMenu == Scr->Workspaces)
+		    CurrentSelectedWorkspace = ActiveItem->item;
 		PopUpMenu (ActiveItem->sub, 
 			   (savex + (((2 * ActiveMenu->width) / 3) - 1)), 
 			   (savey + ActiveItem->item_num * Scr->EntryHeight)
 			   /*(savey + ActiveItem->item_num * Scr->EntryHeight +
 			    (Scr->EntryHeight >> 1))*/, False);
+		CurrentSelectedWorkspace = NULL;
 	    } else if (!badItem) {
 		XBell (dpy, 0);
 		badItem = ActiveItem;
@@ -805,6 +909,12 @@ NewMenuRoot(name)
 
     if (strcmp(name, TWM_WINDOWS) == 0)
 	Scr->Windows = tmp;
+
+    if (strcmp(name, TWM_WORKSPACES) == 0)
+	Scr->Workspaces = tmp;
+
+    if (strcmp(name, TWM_ALLWINDOWS) == 0)
+	Scr->AllWindows = tmp;
 
     return (tmp);
 }
@@ -1183,17 +1293,22 @@ Bool PopUpMenu (menu, x, y, center)
     int i;
     int (*compar)() = 
       (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
+    static char **actions = NULL;
 
     if (!menu) return False;
 
     InstallRootColormap();
 
-    if (menu == Scr->Windows)
+    if ((menu == Scr->Windows) || (menu == Scr->AllWindows))
     {
 	TwmWindow *tmp_win;
+	WorkSpaceList *wlist;
+	Boolean all;
+	int func;
 
 	/* this is the twm windows menu,  let's go ahead and build it */
 
+	all = (menu == Scr->AllWindows);
 	DestroyMenu (menu);
 
 	menu->first = NULL;
@@ -1205,12 +1320,20 @@ Bool PopUpMenu (menu, x, y, center)
 	menu->highlight.back = UNUSED_PIXEL;
   	AddToMenu(menu, "TWM Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
   
+	wlist = NULL;
+	if (! all && CurrentSelectedWorkspace) {
+	    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+        	if (strcmp (wlist->name, CurrentSelectedWorkspace) == 0) break;
+	    }
+	}
+	if (! wlist) wlist = Scr->workSpaceMgr.activeWSPC;
+
         WindowNameOffset=(char *)Scr->TwmRoot.next->name -
                                (char *)Scr->TwmRoot.next;
         for(tmp_win = Scr->TwmRoot.next , WindowNameCount=0;
             tmp_win != NULL;
             tmp_win = tmp_win->next) {
-	  if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) WindowNameCount++;
+	  if (all || OCCUPY (tmp_win, wlist)) WindowNameCount++;
 	}
         WindowNames =
           (TwmWindow **)malloc(sizeof(TwmWindow *)*WindowNameCount);
@@ -1219,7 +1342,7 @@ Bool PopUpMenu (menu, x, y, center)
             tmp_win != NULL;
             tmp_win = tmp_win->next)
         {
-	    if (! OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) continue;
+	    if (!all && ! OCCUPY (tmp_win, wlist)) continue;
             tmp_win2 = tmp_win;
             for (i=0;i<WindowNameCount;i++)
             {
@@ -1233,10 +1356,11 @@ Bool PopUpMenu (menu, x, y, center)
             WindowNames[WindowNameCount] = tmp_win2;
 	    WindowNameCount++;
         }
+	func = (all || CurrentSelectedWorkspace) ? F_WINWARP : F_POPUP;
         for (i=0; i<WindowNameCount; i++)
         {
             AddToMenu(menu, WindowNames[i]->name, (char *)WindowNames[i],
-                      NULL, F_POPUP,NULL,NULL);
+                      NULL, func,NULL,NULL);
         }
         free(WindowNames);
 
@@ -1273,6 +1397,8 @@ Bool PopUpMenu (menu, x, y, center)
 	GrabModeAsync, GrabModeAsync,
 	Scr->Root,
 	Scr->MenuCursor, CurrentTime);
+
+    XGrabKeyboard (dpy, Scr->Root, True, GrabModeAsync, GrabModeAsync, CurrentTime);
 
     ActiveMenu = menu;
     menu->mapped = MAPPED;
@@ -1348,6 +1474,7 @@ PopDownMenu()
     ActiveMenu = NULL;
     ActiveItem = NULL;
     MenuDepth = 0;
+    XUngrabKeyboard (dpy, CurrentTime);
     if (Context == C_WINDOW || Context == C_FRAME || Context == C_TITLE || Context == C_ICON)
       menuFromFrameOrWindowOrTitlebar = TRUE;
 }
@@ -1622,7 +1749,12 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	XSync (dpy, 0);
 	Reborder (eventp->xbutton.time);
 	XSync (dpy, 0);
+#ifdef VMS
+	fprintf (stderr, "%s:  restart capabilities not yet supported\n",
+		 ProgramName);
+#else
 	execvp(*Argv, Argv);
+#endif
 	fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
 	break;
 
@@ -1791,6 +1923,17 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	{
 	    DeIconify(tmp_win);
 	    XRaiseWindow (dpy, tmp_win->frame);
+	}
+	break;
+
+    case F_WINWARP:
+	tmp_win = (TwmWindow *)action;
+
+	if (! tmp_win) break;
+	if (Scr->WarpUnmapped || tmp_win->mapped) {
+	    if (!tmp_win->mapped) DeIconify (tmp_win);
+	    if (!Scr->NoRaiseWarp) XRaiseWindow (dpy, tmp_win->frame);
+	    WarpToWindow (tmp_win);
 	}
 	break;
 
@@ -2157,14 +2300,20 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			xr = xl + w;
 			yb = yt + h;
 
-			if (xl < 0)
+			if ((xl < 0) && ((Scr->MoveOffResistance < 0) 
+					 || (xl > -Scr->MoveOffResistance)))
 			    xl = 0;
-			if (xr > Scr->MyDisplayWidth)
+			if ((xr > Scr->MyDisplayWidth) 
+			    && ((Scr->MoveOffResistance < 0) 
+				|| (xr < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
 			    xl = Scr->MyDisplayWidth - w;
 
-			if (yt < 0)
+			if ((yt < 0) && ((Scr->MoveOffResistance < 0) 
+					 || (yt > -Scr->MoveOffResistance)))
 			    yt = 0;
-			if (yb > Scr->MyDisplayHeight)
+			if ((yb > Scr->MyDisplayHeight)
+			    && ((Scr->MoveOffResistance < 0) 
+				|| (yb < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
 			    yt = Scr->MyDisplayHeight - h;
 		    }
 		    CurrentDragX = xl;
@@ -2198,14 +2347,20 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		    xr = xl + w;
 		    yb = yt + h;
 
-		    if (xl < 0)
+		    if ((xl < 0) && ((Scr->MoveOffResistance < 0) 
+				     || (xl > -Scr->MoveOffResistance)))
 			xl = 0;
-		    if (xr > Scr->MyDisplayWidth)
+		    if ((xr > Scr->MyDisplayWidth) 
+			&& ((Scr->MoveOffResistance < 0)
+			    || (xr < Scr->MyDisplayWidth + Scr->MoveOffResistance)))
 			xl = Scr->MyDisplayWidth - w;
 
-		    if (yt < 0)
+		    if ((yt < 0) && ((Scr->MoveOffResistance < 0)
+				     || (yt > -Scr->MoveOffResistance)))
 			yt = 0;
-		    if (yb > Scr->MyDisplayHeight)
+		    if ((yb > Scr->MyDisplayHeight)
+			&& ((Scr->MoveOffResistance < 0)
+			    || (yb < Scr->MyDisplayHeight + Scr->MoveOffResistance)))
 			yt = Scr->MyDisplayHeight - h;
 		}
 
@@ -2417,6 +2572,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	  HideIconManager ();
 	else if (tmp_win->protocols & DoesWmDeleteWindow)
 	  SendDeleteWindowMessage (tmp_win, LastTimestamp());
+	  if (ButtonPressed != -1) {
+	    XEvent kev;
+
+	    XMaskEvent (dpy, ButtonReleaseMask, &kev);
+	    if (kev.xbutton.window == tmp_win->w) kev.xbutton.window = Scr->Root;
+	    XPutBackEvent (dpy, &kev);
+	  }
 	else
 	  XBell (dpy, 0);
 	break;
@@ -2465,7 +2627,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		XFree (ptr);
 		ptr = ExpandFilename(tmp);
 		if (ptr) {
+#ifdef VMS
+		    fd = open (ptr, O_RDONLY, 0);
+#else
 		    fd = open (ptr, 0);
+#endif
 		    if (fd >= 0) {
 			count = read (fd, buff, MAX_FILE_SIZE - 1);
 			if (count > 0) XStoreBytes (dpy, buff, count);
@@ -2599,7 +2765,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
     case F_FILE:
 	action = ExpandFilename(action);
+#ifdef VMS
+	fd = open (action, O_RDONLY, 0);
+#else
 	fd = open(action, 0);
+#endif
 	if (fd >= 0)
 	{
 	    count = read(fd, buff, MAX_FILE_SIZE - 1);
@@ -2661,6 +2831,12 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	GotoNextWorkSpace ();
 	break;
 
+    case F_MENU:
+	if (action && ! strncmp (action, "WGOTO : ", 8)) {
+	    GotoWorkSpaceByName (action + 8);
+	}
+	break;
+
     case F_WINREFRESH:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
@@ -2681,8 +2857,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	adoptWindow ();
 	break;
 
-    case F_TESTFUNC:
-	testfunc ();
+    case F_TRACE:
+	DebugTrace (action);
 	break;
 	
     case F_QUIT:
@@ -2820,6 +2996,9 @@ void
 Execute(s)
     char *s;
 {
+#ifdef VMS
+    createProcess(s);
+#else
     static char buf[256];
     char *ds = DisplayString (dpy);
     char *colon, *dot1;
@@ -2850,15 +3029,19 @@ Execute(s)
 	putenv (buf);
 	restorevar = 1;
     }
-
+#ifdef USE_SIGNALS
     sig = signal (SIGALRM, SIG_IGN);
     (void) system (s);
     signal (SIGALRM, sig);
+#else  /* USE_SIGNALS */
+    (void) system (s);
+#endif  /* USE_SIGNALS */
 
     if (restorevar) {		/* why bother? */
 	(void) sprintf (buf, "DISPLAY=%s", oldDisplay);
 	putenv (buf);
     }
+#endif
 }
 
 
@@ -2889,13 +3072,13 @@ TwmWindow *tmp_win;
     if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
     if (tmp_win->isicon)
     {
-	if (tmp_win->icon_on)
+	if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w)
 	    Zoom(tmp_win->icon->w, tmp_win->frame);
 	else if (tmp_win->group != (Window) 0)
 	{
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
 	    {
-		if (tmp_win->group == t->w && t->icon_on)
+		if (tmp_win->group == t->w && t->icon_on && t->icon && t->icon->w)
 		{
 		    Zoom(t->icon->w, tmp_win->frame);
 		    break;
@@ -3277,6 +3460,7 @@ WarpToScreen (n, inc)
 		   &dumint, &dumint, &dummask);
 
     XWarpPointer (dpy, None, newscr->Root, 0, 0, 0, 0, x, y);
+    Scr = newscr;
     return (0);
 }
 
@@ -3636,7 +3820,11 @@ int	width, height;
     Pixmap	mask;
     GC		gc;
     XGCValues	gcv;
+#ifdef VMS
+    float  timeout;
+#else
     struct timeval timeout;
+#endif
     XRectangle *rectangles;
 
     srect = (width < height) ? (width / 20) : (height / 20);
@@ -3648,9 +3836,13 @@ int	width, height;
     gcv.function = GXclear;
     XChangeGC (dpy, gc, GCFunction, &gcv);
 
+#ifdef VMS
+    timeout = 0.010;
+#else
     usec = 10000;
     timeout.tv_usec = usec % (unsigned long) 1000000;
     timeout.tv_sec  = usec / (unsigned long) 1000000;
+#endif
 
     nrects = ((width * height) / (srect * srect)) / 10;
     rectangles = (XRectangle*) malloc (nrects * sizeof (XRectangle));
@@ -3667,7 +3859,11 @@ int	width, height;
 	XFillRectangles (dpy, mask, gc, rectangles, nrects);
 	XShapeCombineMask (dpy, w, ShapeBounding, 0, 0, mask, ShapeSet);
 	XFlush (dpy);
+#ifdef VMS
+        lib$wait(&timeout);
+#else
 	select (0, (void *) 0, (void *) 0, (void *) 0, &timeout);
+#endif
     }
     XFreePixmap (dpy, mask);
     XFreeGC (dpy, gc);

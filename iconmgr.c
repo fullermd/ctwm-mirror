@@ -18,6 +18,31 @@
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 /***********************************************************************
  *
@@ -43,8 +68,13 @@
 #include "resize.h"
 #include "add_window.h"
 #include "siconify.bm"
+#ifdef VMS
+#include <decw$include/Xos.h>
+#include <X11Xmu/CharSet.h>
+#else
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
+#endif
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
@@ -81,6 +111,7 @@ void CreateIconManagers()
     char *icon_name;
     WorkSpaceList *wlist;
     XWMHints	  wmhints;
+    int bw;
 
     if (Scr->NoIconManagers)
 	return;
@@ -95,17 +126,25 @@ void CreateIconManagers()
     for (q = Scr->iconmgr; q != NULL; q = q->nextv) {
       for (p = q; p != NULL; p = p->next)
       {
+	sprintf(str, "%s Icon Manager", p->name);
+	sprintf(str1, "%s Icons", p->name);
+	if (p->icon_name)
+	    icon_name = p->icon_name;
+	else
+	    icon_name = str1;
+
 	if (!p->geometry || !strlen(p->geometry)) p->geometry = "+0+0";
 	mask = XParseGeometry(p->geometry, &JunkX, &JunkY,
 			      (unsigned int *) &p->width, (unsigned int *)&p->height);
 
+	bw = LookInList (Scr->NoBorder, str, NULL) ? 0 :
+		(Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth);
+
 	if (mask & XNegative)
-	    JunkX += Scr->MyDisplayWidth - p->width - 
-	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
+	    JunkX += Scr->MyDisplayWidth - p->width - 2 * bw;
 
 	if (mask & YNegative)
-	    JunkY += Scr->MyDisplayHeight - p->height - 
-	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
+	    JunkY += Scr->MyDisplayHeight - p->height - 2 * bw;
 
 	background = Scr->IconManagerC.back;
 	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
@@ -116,13 +155,6 @@ void CreateIconManagers()
 	p->w = XCreateSimpleWindow(dpy, Scr->Root,
 	    JunkX, JunkY, p->width, p->height, 1,
 	    Scr->Black, background);
-
-	sprintf(str, "%s Icon Manager", p->name);
-	sprintf(str1, "%s Icons", p->name);
-	if (p->icon_name)
-	    icon_name = p->icon_name;
-	else
-	    icon_name = str1;
 
 	XSetStandardProperties(dpy, p->w, str, icon_name, None, NULL, 0, NULL);
 
@@ -883,7 +915,7 @@ void PackIconManager(ip)
 
     mask = XParseGeometry (ip->geometry, &JunkX, &JunkY, &JunkW, &JunkH);
     if (mask & XNegative) {
-	ip->twm_win->frame_x += ip->twm_win->frame_width - ip->width -
+	ip->twm_win->frame_x += ip->twm_win->frame_width - newwidth -
 				2 * ip->twm_win->frame_bw3D;
     }
     if (mask & YNegative) {

@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -185,6 +210,10 @@ stmt		: error
 		| RIGHT_TITLEBUTTON string EQUALS action { 
 					  GotTitleButton ($2, $4, True);
 					}
+                | LEFT_TITLEBUTTON string { CreateTitleButton($2, 0, NULL, NULL, FALSE, TRUE); }
+                  binding_list
+                | RIGHT_TITLEBUTTON string { CreateTitleButton($2, 0, NULL, NULL, TRUE, TRUE); }
+                  binding_list
 		| button string		{
 		    root = GetRoot($2, NULLSTR, NULLSTR);
 		    AddFuncButton ($1, C_ROOT, 0, F_MENU, root, (MenuItem*) 0);
@@ -421,6 +450,17 @@ contextkey	: WINDOW		{ cont |= C_WINDOW_BIT; }
 		| OR			{ }
 		| string		{ Name = $1; cont |= C_NAME_BIT; }
 		;
+
+
+binding_list    : LB binding_entries RB
+                ;
+
+binding_entries : /* Empty */
+                | binding_entries binding_entry
+                ;
+
+binding_entry   : button COLON action { ModifyCurrentTB($1, $3, Action, pull);}
+                ;
 
 
 pixmap_list	: LB pixmap_entries RB {}
@@ -980,7 +1020,13 @@ int func;
     {
 	if ((cont & (1 << i)) == 0) 
 	  continue;
-	if (!AddFuncKey(key, i, mods, func, Name, Action)) 
+
+	if (func == F_MENU) {
+	    pull->prev = NULL;
+	    if (!AddFuncKey (key, i, mods, func, pull, Name, Action)) break;
+	}
+	else
+	if (!AddFuncKey(key, i, mods, func, (MenuRoot*) 0, Name, Action)) 
 	  break;
     }
 

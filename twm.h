@@ -24,6 +24,31 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
 
 /***********************************************************************
@@ -39,6 +64,16 @@
 #ifndef _TWM_
 #define _TWM_
 
+#ifdef VMS
+#include <decw$include/Xlib.h>
+#include <decw$include/Xutil.h>
+#include <decw$include/Intrinsic.h>
+#include <decw$include/cursorfont.h>
+#include <decw$include/shape.h>
+#ifndef X11R4
+#    include <decw$include/Xfuncs.h>
+#endif
+#else
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Intrinsic.h>
@@ -46,6 +81,7 @@
 #include <X11/extensions/shape.h>
 #ifndef X11R4
 #    include <X11/Xfuncs.h>
+#endif
 #endif
 #include "list.h"
 #include "util.h"
@@ -68,7 +104,7 @@
 
 typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 
-#ifdef SVR4
+#if defined(USE_SIGNALS) && defined(SVR4) && !defined(__sgi)
 #define signal sigset
 #endif /* SVR4 */
 
@@ -148,6 +184,12 @@ typedef struct ColorPair
 
 typedef enum {on, off} ButtonState;
 
+typedef struct _TitleButtonFunc {
+    int func;                         /* function to execute */
+    char *action;                     /* optional action arg */
+    struct MenuRoot *menuroot;                /* menu to pop on F_MENU */
+} TitleButtonFunc;
+
 typedef struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
@@ -155,10 +197,8 @@ typedef struct _TitleButton {
     int srcx, srcy;			/* from where to start copying */
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
-    int func;				/* function to execute */
-    char *action;			/* optional action arg */
-    struct MenuRoot *menuroot;		/* menu to pop on F_MENU */
     Bool rightside;			/* t: on right, f: on left */
+    TitleButtonFunc funs[MAX_BUTTONS];  /* funcs assoc'd to each button */
 } TitleButton;
 
 typedef struct _TBWindow {
@@ -337,7 +377,11 @@ typedef struct TwmWindow
 #define TBPM_3DBAR ":xpm:bar"
 
 #ifndef X11R4
+#ifdef VMS
+#    include <decw$include/Xosdefs.h>
+#else
 #    include <X11/Xosdefs.h>
+#endif
 #endif
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
@@ -385,7 +429,9 @@ extern int InfoLines;
 extern char Info[][INFO_SIZE];
 extern int Argc;
 extern char **Argv;
+#ifndef VMS
 extern char **Environ;
+#endif
 extern void NewFontCursor();
 extern Pixmap CreateMenuIcon();
 extern Pixmap Create3DMenuIcon();

@@ -36,10 +36,19 @@
 #include "events.h"
 #include "gram.h"
 #include "siconify.bm"
+#ifdef VMS
+#include <ctype.h>
+#include <string.h>
+#include <decw$include/Xos.h>
+#include <decw$include/Xatom.h>
+#include <X11Xmu/CharSet.h>
+#include <decw$include/Xresource.h>
+#else
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/CharSet.h>
 #include <X11/Xresource.h>
+#endif
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
@@ -171,6 +180,7 @@ char *wname;
 {
     WorkSpaceList *wlist;
 
+    if (! Scr->workSpaceManagerActive) return;
     for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
 	if (strcmp (wlist->label, wname) == 0) break;
     }
@@ -186,6 +196,7 @@ char *wname;
 void GotoPrevWorkSpace () {
     WorkSpaceList *wlist1, *wlist2;
 
+    if (! Scr->workSpaceManagerActive) return;
     wlist1 = Scr->workSpaceMgr.workSpaceList;
     if (wlist1 == NULL) return;
 
@@ -200,6 +211,7 @@ void GotoPrevWorkSpace () {
 void GotoNextWorkSpace () {
     WorkSpaceList *wlist;
 
+    if (! Scr->workSpaceManagerActive) return;
     wlist = Scr->workSpaceMgr.activeWSPC;
     wlist = (wlist->next != NULL) ? wlist->next : Scr->workSpaceMgr.workSpaceList;
     GotoWorkSpace (wlist);
@@ -217,6 +229,7 @@ WorkSpaceList *wlist;
     Window	  w;
     unsigned long valuemask;
 
+    if (! Scr->workSpaceManagerActive) return;
     oldscr = Scr->workSpaceMgr.activeWSPC;
     newscr = wlist;
     if (oldscr == newscr) return;
@@ -364,9 +377,19 @@ char *name, *background, *foreground, *backback, *backfore, *backpix;
 
     fullOccupation     |= (1 << scrnum);
     wlist		= (WorkSpaceList*) malloc (sizeof (WorkSpaceList));
+#ifdef VMS
+    {
+       char *ftemp;
+       ftemp = (char *) malloc((strlen(name)+1)*sizeof(char));
+       wlist->name = strcpy (ftemp,name);
+       ftemp = (char *) malloc((strlen(name)+1)*sizeof(char));
+       wlist->label = strcpy (ftemp,name);
+    }
+#else
     wlist->name		= (char*) strdup (name);
     wlist->label	= (char*) strdup (name);
     wlist->clientlist	= NULL;
+#endif
 
     if (background == NULL)
 	wlist->cp.back = Scr->IconManagerC.back;
@@ -834,10 +857,15 @@ TwmWindow *win;
     WorkSpaceList	*wlist;
     int			newoccupation;
 
-    newoccupation = 0;
-    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
-	if (LookInList (wlist->clientlist, win->full_name, &win->class)) {
-            newoccupation |= 1 << wlist->number;
+    if (LookInList (Scr->OccupyAll, win->full_name, &win->class)) {
+	newoccupation = fullOccupation;
+    }
+    else {
+	newoccupation = 0;
+	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    if (LookInList (wlist->clientlist, win->full_name, &win->class)) {
+		newoccupation |= 1 << wlist->number;
+	    }
 	}
     }
     if (newoccupation != 0) ChangeOccupation (win, newoccupation);
@@ -1068,10 +1096,6 @@ static void CreateWorkSpaceManagerWindow ()
     tmp_win->occupation = fullOccupation;
 
     attrmask = 0;
-    if (Scr->BackingStore) {
-	attr.backing_store = WhenMapped;
-	attrmask |= CWBackingStore;
-    }
     attr.cursor = Scr->ButtonCursor;
     attrmask |= CWCursor;
     attr.win_gravity = gravity;
@@ -1083,10 +1107,6 @@ static void CreateWorkSpaceManagerWindow ()
     XSelectInput (dpy, Scr->workSpaceMgr.workspaceWindow.w, attrmask);
 
     for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
-	if (Scr->BackingStore) {
-	    attr.backing_store = WhenMapped;
-	    XChangeWindowAttributes (dpy, wlist->buttonw, CWBackingStore, &attr);
-	}
 	XSelectInput (dpy, wlist->buttonw, ButtonPressMask | ButtonReleaseMask | ExposureMask);
 	XSaveContext (dpy, wlist->buttonw, TwmContext,    (caddr_t) tmp_win);
 	XSaveContext (dpy, wlist->buttonw, ScreenContext, (caddr_t) Scr);
@@ -1274,16 +1294,22 @@ static void CreateOccupyWindow () {
 
     wmhints.initial_state = NormalState;
     wmhints.input         = True;
-    XSetWMHints (dpy, Scr->workSpaceMgr.workspaceWindow.w, &wmhints);
+    XSetWMHints (dpy, w, &wmhints);
     tmp_win = AddWindow (w, FALSE, Scr->iconmgr);
     if (! tmp_win) {
 	fprintf (stderr, "cannot create occupy window, exiting...\n");
 	exit (1);
     }
+    tmp_win->occupation = 0;
 
-    XGetWindowAttributes (dpy, Scr->workSpaceMgr.workspaceWindow.w, &wattr);
+    attrmask = 0;
+    attr.cursor = Scr->ButtonCursor;
+    attrmask |= CWCursor;
+    XChangeWindowAttributes (dpy, w, attrmask, &attr);
+
+    XGetWindowAttributes (dpy, w, &wattr);
     attrmask = wattr.your_event_mask | KeyPressMask | KeyReleaseMask | ExposureMask;
-    XSelectInput (dpy, Scr->workSpaceMgr.workspaceWindow.w, attrmask);
+    XSelectInput (dpy, w, attrmask);
 
     for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
 	XSelectInput (dpy, wlist->obuttonw, ButtonPressMask | ButtonReleaseMask);
@@ -1300,20 +1326,7 @@ static void CreateOccupyWindow () {
     XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.allworkspc, TwmContext,    (caddr_t) tmp_win);
     XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.allworkspc, ScreenContext, (caddr_t) Scr);
 
-    XSelectInput (dpy, w, ExposureMask);
     SetMapStateProp (tmp_win, WithdrawnState);
-
-    attrmask = 0;
-/* for some reason, it doesn't work
-    if (Scr->BackingStore) {
-	attr.backing_store = WhenMapped;
-	attrmask |= CWBackingStore;
-    }
-*/
-    attr.cursor = Scr->ButtonCursor;
-    attrmask |= CWCursor;
-    XChangeWindowAttributes (dpy, w, attrmask, &attr);
-    tmp_win->occupation = 0;
     Scr->workSpaceMgr.occupyWindow.twm_win = tmp_win;
 }
 
@@ -1801,7 +1814,9 @@ XEvent *event;
     KeySym		keysym;
 
     keysym  = XLookupKeysym   ((XKeyEvent*) event, 0);
+    if (! keysym) return;
     keyname = XKeysymToString (keysym);
+    if (! keyname) return;
     if ((strcmp (keyname, "Control_R") == 0) || (strcmp (keyname, "Control_L") == 0)) {
 	WMapToggleState ();
 	return;
@@ -1819,7 +1834,9 @@ XEvent *event;
     KeySym		keysym;
 
     keysym  = XLookupKeysym   ((XKeyEvent*) event, 0);
+    if (! keysym) return;
     keyname = XKeysymToString (keysym);
+    if (! keyname) return;
     if ((strcmp (keyname, "Control_R") == 0) || (strcmp (keyname, "Control_L") == 0)) {
 	WMapToggleState ();
 	return;

@@ -96,12 +96,12 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) 
 		xpm/mail0.xpm          xpm/xedit.xpm          xpm/welcome.xpm \
 		xpm/audio_editor.xpm   xpm/clipboard.xpm      xpm/ghostview.xpm \
 		xpm/xirc.xpm           xpm/xmosaic.xpm        xpm/unknown1.xpm \
-		xpm/xrn-compose.xpm \
+		xpm/xrn-compose.xpm    xpm/gnu-emacs1.xpm     xpm/gnu-emacs2.xpm \
+		xpm/gnu-emacs3.xpm     xpm/gnu-emacs4.xpm     xpm/gnu-emacs5.xpm \
+		xpm/gnu-emacs6.xpm     xpm/gnu-emacs7.xpm     xpm/skull.xpm \
 		xpm/3D_Expand15.xpm    xpm/3D_Iconify15.xpm   xpm/3D_Lightning15.xpm \
 		xpm/3D_Menu15.xpm      xpm/3D_Resize15.xpm    xpm/3D_Zoom15.xpm \
-		xpm/background1.xpm    xpm/background2.xpm    xpm/background3.xpm \
-		xpm/background4.xpm    xpm/background5.xpm    xpm/background6.xpm \
-		xpm/background7.xpm    xpm/background8.xpm    xpm/background9.xpm \
+		xpm/background8.xpm    xpm/spider.xpm \
 		xpm/ball1.xpm    xpm/ball12.xpm   xpm/ball4.xpm    xpm/ball7.xpm \
 		xpm/ball10.xpm   xpm/ball2.xpm    xpm/ball5.xpm    xpm/ball8.xpm \
 		xpm/ball11.xpm   xpm/ball3.xpm    xpm/ball6.xpm    xpm/ball9.xpm \
@@ -113,7 +113,7 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) 
 AllTarget(ctwm)
 
 SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(DESTDIR)$(TWMDIR)'/system.ctwmrc"')
-SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="'$(DESTDIR)$(TWMDIR)'"')
+SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="'$(DESTDIR)$(TWMDIR)'/images"')
 #if !HasPutenv
 SpecialObjectRule(util.o,util.c,-DNOPUTENV)
 #endif
@@ -124,7 +124,12 @@ NormalLibraryTarget(ctwm, libctwm.o)
 ComplexProgramTarget(ctwm)
 InstallNonExecFile(system.ctwmrc,$(TWMDIR))
 #ifdef XPM
-InstallMultipleFlags($(PIXMAPFILES),$(TWMDIR),$(INSTLIBFLAGS))
+install:: xpm
+	MakeDir($(DESTDIR)$(TWMDIR)/images)
+	@case '${MFLAGS}' in *[i]*) set +e;; esac; \
+	for i in xpm/?* ; do \
+		(set -x; $(INSTALL) -c $(INSTLIBFLAGS) $$i $(DESTDIR)$(TWMDIR)/images); \
+	done
 #endif
 
 gram.h gram.c: gram.y
