@@ -2756,6 +2756,15 @@ HandleButtonRelease()
 
 	/* CCC equivalent code for auto lower not needed? */
 
+#if 0
+	if (Scr->NumAutoLowers) {
+	    leave_flag = TRUE;
+	    leave_win = NULL;
+	    lower_win = ((DragWindow == Tmp_win->frame)
+			 ? Tmp_win : NULL);
+	}
+#endif
+
 	DragWindow = (Window) 0;
 	ConstMove = FALSE;
     }
@@ -3842,10 +3851,10 @@ HandleLeaveNotify()
 	}
 	/* Autolower modification. */
 	if (Tmp_win->auto_lower) {
-	     leave_win = Tmp_win;
+	    leave_win = Tmp_win;
 	    if (leave_flag == FALSE) AutoLowerWindow (Tmp_win);
 	} else if (leave_flag && lower_win == Tmp_win)
-	     leave_win = Tmp_win;
+	    leave_win = Tmp_win;
 
 	XSync (dpy, 0);
 	return;
