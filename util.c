@@ -4029,6 +4029,7 @@ Atom prop;
 		     ProgramName, XGetAtomName(dpy, prop), w);
 	    stringptr = NULL;
 	}
+	XFree (text_prop.value);
     } else {
 	stringptr = NULL;
     }
