@@ -5050,27 +5050,26 @@ void fillwindow (TwmWindow *tmp_win, char *direction)
 	{
 		if (tmp_win->zoomed == ZOOM_NONE)
 		{
-			int	tmp_bw;
 			tmp_win->save_frame_height = tmp_win->frame_height;
 			tmp_win->save_frame_width = tmp_win->frame_width;
 			tmp_win->save_frame_y = tmp_win->frame_y;
 			tmp_win->save_frame_x = tmp_win->frame_x;
+
+			tmp_win->frame_y++;
+			newy = FindConstraint (tmp_win, J_TOP);
+			newh = FindConstraint (tmp_win, J_BOTTOM) - newy;
+
 			/* FindConstraint 'grows' over borders 
 			 * the window is next to,
 			 * so make the window a bit smaller. */
-			if (Scr->use3Dborders)
-				tmp_bw = tmp_win->frame_bw3D;
-			else
-				tmp_bw = tmp_win->frame_bw;
-			tmp_win->frame_y += tmp_bw;
-			tmp_win->frame_height -= tmp_bw * 2;
-			newy = FindConstraint (tmp_win, J_TOP);
-			newh = FindConstraint (tmp_win, J_BOTTOM) - newy;
+			if (!Scr->use3Dborders)
+			  newh -= tmp_win->frame_bw * 2;
+
 			newx = tmp_win->frame_x;
 			neww = tmp_win->frame_width;
-			if (newy == tmp_win->frame_y)
-				newy++;
+
 			ConstrainSize (tmp_win, &neww, &newh);
+
 			/* if the bottom of the window has moved up 
 			 * it will be pushed down */
 			if (newy + newh < 
