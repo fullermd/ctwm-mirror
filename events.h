@@ -77,6 +77,7 @@ extern int DragX;
 extern int DragY;
 extern int DragWidth;
 extern int DragHeight;
+extern unsigned int DragBW;
 extern int CurrentDragX;
 extern int CurrentDragY;
 

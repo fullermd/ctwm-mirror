@@ -417,7 +417,7 @@ main(argc, argv, environ)
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
 	if (!Scr->NoIconManagers)
-	    Scr->iconmgr->twm_win->icon = TRUE;
+	    Scr->iconmgr->twm_win->isicon = TRUE;
 
 	XQueryTree(dpy, Scr->Root, &root, &parent, &children, &nchildren);
 	/*
@@ -455,7 +455,7 @@ main(argc, argv, environ)
 
 	if (Scr->ShowIconManager && !Scr->NoIconManagers)
 	{
-	    Scr->iconmgr->twm_win->icon = FALSE;
+	    Scr->iconmgr->twm_win->isicon = FALSE;
 	    if (Scr->iconmgr->count)
 	    {
 		SetMapStateProp (Scr->iconmgr->twm_win, NormalState);
@@ -621,6 +621,9 @@ InitVariables()
     Scr->IconifyByUnmapping = FALSE;
     Scr->ShowIconManager = FALSE;
     Scr->ShowWorkspaceManager = FALSE;
+    Scr->AutoOccupy = FALSE;
+    Scr->TransientHasOccupation = FALSE;
+    Scr->DontPaintRootWindow = FALSE;
     Scr->IconManagerDontShow =FALSE;
     Scr->BackingStore = TRUE;
     Scr->SaveUnder = TRUE;

@@ -628,7 +628,7 @@ IconMgr *iconp;
 	tmp_win->icon_name = tmp_win->name;
 
     tmp_win->iconified = FALSE;
-    tmp_win->icon = FALSE;
+    tmp_win->isicon = FALSE;
     tmp_win->icon_on = FALSE;
 
     XGrabServer(dpy);
@@ -658,18 +658,13 @@ IconMgr *iconp;
     /* get all the colors for the window */
 
     tmp_win->border = Scr->BorderColor;
-    tmp_win->icon_border = Scr->IconBorderColor;
     tmp_win->border_tile.fore = Scr->BorderTileC.fore;
     tmp_win->border_tile.back = Scr->BorderTileC.back;
     tmp_win->title.fore = Scr->TitleC.fore;
     tmp_win->title.back = Scr->TitleC.back;
-    tmp_win->iconc.fore = Scr->IconC.fore;
-    tmp_win->iconc.back = Scr->IconC.back;
 
     GetColorFromList(Scr->BorderColorL, tmp_win->full_name, &tmp_win->class,
 	&tmp_win->border);
-    GetColorFromList(Scr->IconBorderColorL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->icon_border);
     GetColorFromList(Scr->BorderTileForegroundL, tmp_win->full_name,
 	&tmp_win->class, &tmp_win->border_tile.fore);
     GetColorFromList(Scr->BorderTileBackgroundL, tmp_win->full_name,
@@ -678,10 +673,6 @@ IconMgr *iconp;
 	&tmp_win->title.fore);
     GetColorFromList(Scr->TitleBackgroundL, tmp_win->full_name, &tmp_win->class,
 	&tmp_win->title.back);
-    GetColorFromList(Scr->IconForegroundL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->iconc.fore);
-    GetColorFromList(Scr->IconBackgroundL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->iconc.back);
 
 
     /* create windows */
@@ -801,10 +792,7 @@ IconMgr *iconp;
     /* wait until the window is iconified and the icon window is mapped
      * before creating the icon window 
      */
-    tmp_win->icon_w = (Window) 0;
-#if defined (XPM)
-    tmp_win->xpmicon = None;
-#endif
+    tmp_win->icon = (Icon*) 0;
 
     if (!tmp_win->iconmgr)
     {
@@ -984,8 +972,8 @@ TwmWindow *tmp_win;
 	    break;
 
 	case C_ICON:
-	    if (tmp_win->icon_w)
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
+	    if (tmp_win->icon && tmp_win->icon->w)
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
 		    GrabModeAsync, GrabModeAsync);
 	    break;
 
@@ -998,8 +986,8 @@ TwmWindow *tmp_win;
 	case C_NAME:
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
 		GrabModeAsync, GrabModeAsync);
-	    if (tmp_win->icon_w)
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
+	    if (tmp_win->icon && tmp_win->icon->w)
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
 		    GrabModeAsync, GrabModeAsync);
 	    if (tmp_win->title_w)
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,

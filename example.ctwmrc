@@ -1,0 +1,158 @@
+#######################################################################
+#                                                                     #
+#                           .ctwmrc addition                          #
+#                                                                     #
+#######################################################################
+
+PixmapDirectory		"/logiciels/public/X11R5/lib/X11/twm"
+UnknownIcon		"@unknown.xpm"
+ShowWorkSpaceManager
+NoShowOccupyAll
+AutoOccupy
+
+WorkSpaceManagerGeometry 	"500x100-500-0" 7
+
+WorkSpaces
+{
+    "lecom"	{"#686B9F" "white" "DeepSkyBlue3" "white" "Champagne"}
+    "Cognac"	{"#619AAE" "white" "firebrick" "white" "xpm:unknown.xpm"}
+    "Siihp1"	{"#619AAE" "white" "DeepSkyBlue3" "white" "HpLogo"}
+    "Sicsun"	{"#727786" "white" "black" "black" "im:siudmak.gif"}
+    "Siisg1"	{"#8C5b7A" "white" "MidnightBlue"}
+    "Siialpha1"	{"#8C5b7A" "white" "MidnightBlue" "white" "grainy.xbm"}
+    "X11"	{"#8C5b7A" "white" "DeepSkyBlue3" "white" "grainy.xbm"}
+
+    "root"	{"#727786" "white" "DeepSkyBlue3" "white" "Champagne"}
+    "Cagnoc"	{"#619AAE" "white" "firebrick"}
+    "Hpline"	{"#619AAE" "white" "DeepSkyBlue3" "white" "HpLogo"}
+    "Nestor"	{"#8C5b7A" "white" "chartreuse4"}
+    "Siisun"	{"#8C5b7A" "white" "chartreuse4"}
+    "devel"  	{"#686B9F" "white" "MidnightBlue"}
+    "cognac"  	{"#686B9F" "white" "MidnightBlue" "white" "grainy.xbm"}
+}
+
+MapWindowCurrentWorkSpace {"Red"  "Blue"   "Black"}
+
+OccupyAll {
+    "xload"
+    "xconsole"
+    "xbiff"
+    "mailtool"
+    "mixmh"
+}
+
+Occupy {
+    "xmailtool"	{"all"}
+    "xrn"	{"all"}
+    "xgopher"   {"all"}
+    "toto"	{"devel" "lecom" "cognac"}
+}
+
+#######################################################################
+#                                                                     #
+#                        Declare some nice colors                     #
+#                                                                     #
+#######################################################################
+
+Color {
+    DefaultBackground     "blue"
+    DefaultForeground     "gray85"
+    BorderColor           "#FF0000"
+    TitleBackground       "#0f0f0f" {"xterm" "DeepSkyBlue1"}
+    TitleForeground       "gray85" {"xterm" "Black"}
+    MenuBackground        "Black"
+    MenuForeground        "white"
+    MenuTitleBackground   "gray70"
+    MenuTitleForeground   "maroon"
+    IconBackground        "maroon"
+    IconForeground        "gray85"
+    IconBorderColor       "gray85"
+    IconManagerBackground "gray70"
+    IconManagerForeground "Black"
+    MapWindowBackground   "White" {
+	"root*" "DarkSlateBlue"
+	"Axe"   "White"
+    }
+    MapWindowForeground   "Black" {
+	"xterm" "Black"
+	"Axe"   "Black"
+    }
+}
+
+Pixmaps {
+    TitleHighlight "wide_weave"
+}
+
+}
+
+Icons {
+    "Axe"	"xpm:xedit.xpm"
+    "Xedit"	"xpm:xedit.xpm"
+    "xterm"	"xpm:xterm.xpm"
+    "unread"	"xpm:xrn.xpm"
+    "nothing"	"xpm:xrn.xpm"
+    "Xman"	"xpm:xman.xpm"
+    "HPterm"    "im:hpterm.xpm"
+    "xarchie"   "xpm:xarchie.xpm"
+    "xgopher"   "xpm:xgopher.xpm"
+    "essai"	"xpm:unknown.xpm"
+}
+
+"F9"       =    : all            : f.warphere "lecom@slhp1"
+"F9"       = s  : window         : f.vanish
+"F11"      =    : root           : f.nextworkspace
+"F12"      =    : root           : f.prevworkspace
+
+menu "windowops" {
+    "Windows"      f.title
+    "Pin menu"     f.pin
+    "Kill"         f.menu "Kill"
+    "Save"         f.saveyourself
+    "Refresh"      f.refresh
+    "Occupy"       f.occupy
+    "Occupy All"   f.occupyall
+    "Vanish"       f.vanish
+    ""             f.nop
+    "Iconify"      f.iconify
+    "Resize"       f.resize
+    "Move"         f.move
+    "Raise"        f.raise
+    "Lower"        f.lower
+    "Info"         f.identify
+    "Focus"        f.focus
+    "Unfocus"      f.unfocus
+    "Toggle workspace"  f.togglestate
+    "ShowWorkspaceManager"  f.showWorkspaceMgr
+    "HideWorkspaceManager"  f.hideWorkspaceMgr
+}
+
+menu "windowmenu" {
+    "Zoom"         f.menu "Zoom"
+    "Iconify"      f.iconify
+    "RaiseLower"   f.raiselower
+    "Refresh"      f.winrefresh
+    "Focus"        f.focus
+    "Occupy ..."   f.occupy
+    "Occupy All"   f.occupyall
+    "Vanish"       f.vanish
+    ""             f.nop
+    "Kill"         f.menu "Kill"
+}
+
+menu "Kill" {
+    "Pin menu"     f.pin
+    "Kill Window"  f.destroy
+    "Send Delete"  f.delete
+    "Toggle workspace"  f.togglestate
+}
+
+menu "Zoom" {
+    "Full"       f.fullzoom
+    "Horizontal" f.horizoom
+    "Vertical"   f.zoom
+    "Left"       f.leftzoom
+    "Top"        f.topzoom
+    "Right"      f.rightzoom
+    "Bottom"     f.bottomzoom
+}
+

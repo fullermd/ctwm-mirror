@@ -31,7 +31,9 @@ funny prompt> xmkmf
 funny prompt> make
 
    If you don't have xpm, fetch it from export.lcs.mit.edu or comment
-out the #define XPM in Imakefile.
+out the #define XPM in Imakefile. Also, if you don't have/want to use
+the IMCONV package  (from the San Diego Supercomputer Center) comment
+out the #define IMCONV line in Imakefile.
 
     There is a man,  but not quite complete  (any volunteer ?).  Many
 useful informations are only in the CHANGES file, so, read it.

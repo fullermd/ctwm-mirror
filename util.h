@@ -59,4 +59,8 @@ typedef struct _XpmIcon {
 extern XpmIcon *GetXpmPixmap ();
 #endif
 
+#if defined (IMCONV)
+Pixmap      im_read_file ();
+#endif
+
 #endif /* _UTIL_ */

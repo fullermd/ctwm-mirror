@@ -74,7 +74,7 @@ number				[0-9]+
 "^"				{ yylval.num = F_CUT; return FSKEYWORD; }
 
 {string}			{ yylval.ptr = (char *)yytext; return STRING; }
-{number}			{ (void)sscanf(yytext, "%d", &yylval.num);
+{number}			{ (void)sscanf((char *)yytext, "%d", &yylval.num);
 				  return (NUMBER);
 				}
 \#[^\n]*\n			{;}

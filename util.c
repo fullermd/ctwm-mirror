@@ -52,6 +52,11 @@
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/CharSet.h>
 
+#if defined (IMCONV)
+#   include "im.h"
+#   include "sdsc.h"
+#endif
+
 static Pixmap CreateXLogoPixmap(), CreateResizePixmap();
 static Pixmap CreateQuestionPixmap(), CreateMenuPixmap();
 static Pixmap CreateDotPixmap();
@@ -293,9 +298,12 @@ GetUnknownIcon(name)
 char *name;
 {
 #ifdef XPM
+    int startn;
+
     Scr->UnknownXpmIcon = None;
-    if (name [0] == '@') {
-	Scr->UnknownXpmIcon = GetXpmPixmap (&(name [1]));
+    if ((name [0] == '@') || (strncmp (name, "xpm:", 4) == 0)) {
+	if (name [0] == '@') startn = 1; else startn = 4;
+	Scr->UnknownXpmIcon = GetXpmPixmap (&(name [startn]));
     }
     else
 #endif
@@ -968,3 +976,183 @@ Pixmap CreateMenuIcon (height, widthp, heightp)
     }
     return Scr->tbpm.menu;
 }
+
+#if defined (IMCONV)
+
+static void free_images  ();
+
+Pixmap im_read_file (filename, width, height)
+unsigned char	*filename;
+int		*width, *height;
+{
+    TagTable		*toolInTable;
+    ImVfb		*sourceVfb;
+    ImVfbPtr		vptr;
+    ImClt		*clt;
+    int			i, j, ij, k;
+
+    char		fullPath [1024];
+    XColor		colors [256];
+    unsigned		buffer_size;
+    XImage		*image;
+    unsigned char	*imagedata;
+    Pixmap		pixret;
+    Visual		*visual;
+    int			w, h, depth, ncolors;
+    int			scrn;
+    Colormap		cmap;
+    GC			gc;
+    unsigned char	red, green, blue;
+    int			icol;
+
+    TagEntry		*dataEntry;
+    FILE		*fp;
+    char		the_format[1024];
+    char		*tmp_format;
+
+    if (*filename == NULL) return (None);
+    if (! Scr->XPMIconDirectory) return (None);
+
+    sprintf (fullPath, "%s/%s", Scr->XPMIconDirectory, filename);
+
+    fp = fopen (fullPath, "r");
+    if (!fp) {
+	fprintf (stderr, "Cannot open the image %s\n", filename);
+	return (None);
+    }
+    if ((toolInTable = TagTableAlloc ()) == TAGTABLENULL ) {
+	fprintf (stderr, "TagTableAlloc failed\n");
+	free_images (toolInTable);
+	return (None);
+    }
+    if ((tmp_format = ImFileQFFormat (fp, fullPath)) == NULL)  {
+	fprintf (stderr, "Cannot determine image type of %s\n", filename);
+	free_images  (toolInTable);
+	return (None);
+    }
+    strcpy (the_format, tmp_format);
+    ImFileFRead (fp, the_format, NULL, toolInTable);
+
+    if (TagTableQNEntry (toolInTable, "image vfb") == 0)  {
+	fprintf (stderr, "Image file %s contains no images\n", fullPath);
+	free_images (toolInTable);
+	return (None);
+    }
+    dataEntry = TagTableQDirect (toolInTable, "image vfb", 0);
+    TagEntryQValue (dataEntry, &sourceVfb);
+    fclose (fp);
+
+    w = ImVfbQWidth  (sourceVfb);
+    h = ImVfbQHeight (sourceVfb);
+    depth = 8 * ImVfbQNBytes (sourceVfb);
+    if (depth != 8) {
+	fprintf (stderr, "I don't know yet how to deal with images not of 8 planes depth\n");
+	free_images (toolInTable);
+	return (None);
+    }
+
+    *width  = w;
+    *height = h;
+
+    scrn   = DefaultScreen   (dpy);
+    cmap   = DefaultColormap (dpy, scrn);
+    visual = DefaultVisual   (dpy, scrn);
+    gc     = DefaultGC       (dpy, scrn);
+
+    buffer_size = w * h;
+    imagedata = (unsigned char*) malloc (buffer_size);
+    if (imagedata == (unsigned char*) 0) {
+	fprintf (stderr, "Can't alloc enough space for background images\n");
+	free_images (toolInTable);
+	return (None);
+    }
+
+    clt  = ImVfbQClt   (sourceVfb);
+    vptr = ImVfbQFirst (sourceVfb);
+    ncolors = 0;
+    for (i = 0; i < h - 1; i++) {
+	for (j = 0; j < w; j++) {
+	    ij = (i * w) + j;
+	    red   = ImCltQRed   (ImCltQPtr (clt, ImVfbQIndex (sourceVfb, vptr)));
+	    green = ImCltQGreen (ImCltQPtr (clt, ImVfbQIndex (sourceVfb, vptr)));
+	    blue  = ImCltQBlue  (ImCltQPtr (clt, ImVfbQIndex (sourceVfb, vptr)));
+	    for (k = 0; k < ncolors; k++) {
+		if ((colors [k].red   == red) &&
+		    (colors [k].green == green) &&
+		    (colors [k].blue  == blue)) {
+		    icol = k;
+		    break;
+		}
+	    }
+	    if (k == ncolors) {
+		icol = ncolors;
+		ncolors++;
+	    }
+	    imagedata [ij] = icol;
+	    colors [icol].red   = red;
+	    colors [icol].green = green;
+	    colors [icol].blue  = blue;
+	    ImVfbSInc (sourceVfb, vptr);
+	}
+    }
+    for (i = 0; i < ncolors; i++) {
+	colors [i].red   *= 256;
+	colors [i].green *= 256;
+	colors [i].blue  *= 256;
+    }
+    for (i = 0; i < ncolors; i++) {
+        if (! XAllocColor (dpy, cmap, &(colors [i]))) {
+	    fprintf (stderr, "can't alloc color for image %s\n", filename);
+	}
+    }
+    for (i = 0; i < buffer_size; i++) {
+        imagedata [i] = (unsigned char) colors [imagedata [i]].pixel;
+    }
+
+    image  = XCreateImage  (dpy, visual, depth, ZPixmap, 0, imagedata, w, h, 8, 0);
+    if (w > Scr->MyDisplayWidth)  w = Scr->MyDisplayWidth;
+    if (h > Scr->MyDisplayHeight) h = Scr->MyDisplayHeight;
+
+    if ((w > (Scr->MyDisplayWidth / 2)) || (h > (Scr->MyDisplayHeight / 2))) {
+	int x, y;
+
+	pixret = XCreatePixmap (dpy, Scr->Root, Scr->MyDisplayWidth, Scr->MyDisplayHeight, depth);
+	x = (Scr->MyDisplayWidth  - w) / 2;
+	y = (Scr->MyDisplayHeight - h) / 2;
+	XFillRectangle (dpy, pixret, gc, 0, 0, Scr->MyDisplayWidth, Scr->MyDisplayHeight);
+	XPutImage (dpy, pixret, gc, image, 0, 0, x, y, w, h);
+    }
+    else {
+	pixret = XCreatePixmap (dpy, Scr->Root, w, h, depth);
+	XPutImage (dpy, pixret, gc, image, 0, 0, 0, 0, w, h);
+    }
+    XFree (image);
+    return (pixret);
+
+}
+
+static void free_images (table)
+TagTable *table;
+{
+    int		i, n;
+    ImVfb	*v;
+    ImClt	*c;
+    TagEntry	*dataEntry;
+
+    n = TagTableQNEntry (table, "image vfb");
+    for (i = 0 ; i < n ; i++) {
+	dataEntry = TagTableQDirect (table, "image vfb", i);
+	TagEntryQValue (dataEntry, &v);
+	ImVfbFree (v);
+    }
+    n = TagTableQNEntry (table, "image clt");
+    for (i = 0 ; i < n ; i++) {
+	dataEntry = TagTableQDirect (table, "image clt", i );
+	TagEntryQValue (dataEntry, &c);
+	ImCltFree (c);
+    }
+    TagTableFree (table);
+}
+
+#endif
+

@@ -234,6 +234,9 @@ typedef struct ScreenInfo
     short ShowIconManager;	/* display the window list */
     short ShowWorkspaceManager;	/* display the workspace manager */
     short IconManagerDontShow;	/* show nothing in the icon manager */
+    short AutoOccupy;		/* Do we automatically change occupation when name changes */
+    short TransientHasOccupation;	/* Do transient-for windows have their own occupation */
+    short DontPaintRootWindow;	/* don't paint anything on the root window */
     short BackingStore;		/* use backing store for menus */
     short SaveUnder;		/* use save under's for menus */
     short RandomPlacement;	/* randomly place windows that no give hints */

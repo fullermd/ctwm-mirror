@@ -261,3 +261,117 @@ Occupy {
 
     6 - All window names can now be specified as (shell-like) regular expressions.
 
+
+
+
+    Changes from version 2.1 to 2.2
+    -------------------------------
+
+
+    1 - Bugs :
+
+	- Redraw small windows when icon name changes.
+	- Kill window from the title bar menu
+	- Partial geometry on Workspace manager can core dump.
+	- AutoRaise and tiny windows in the Workspace Map.
+
+    2 - Transient windows and non group leader windows are now always on the top
+	of their leader.
+
+    3 - When an icon name changes, the icon itself changes automatically according
+	the Icons list in your .ctwmrc. This is very useful for clients that have
+	several states. For example xrn or some X mail readers can have two
+	differents icons for new mail (news) / no new mail (news).
+
+    4 - A new keyword : TransientHasOccupation has been added for people annoyed
+	by the fact that since ctwm-2.1, transient-for non group-leader windows
+	have the same occupation that their leader. If you specify this, these
+	windows have their own occupation.
+
+    5 - A new keyword : AutoOccupy. If specified, the occupation of a client is
+	changed automatically when it's name or icon name changes, according to
+	the Occupy list in your .ctwmrc. For example a mail reader can popup
+	instantly in the current workspace when mail arrives.
+
+    6 - A new keyword : DontPaintRootWindow. If specified, the root window is
+	not painted, whatever you told in the Workspaces specification. This is
+	useful to have pixmaps in the Workspace Map but not on the root window.
+
+    7 - You can use XPM pixmaps for your background root window. Use xpm:filename
+	instead of @filename. The latter is still accepted. Of course if your
+	XPM file has transparent parts, there are not transparent on the root
+	window, i.e. you dont see the electron gun through it.
+
+    8 - XPMIconDirectory is replaced by PixmapDirectory. (XPMIconDirectory is
+	still accepted).
+
+    9 - You can now use colored root background pixmap and icons in many formats.
+	Ctwm use the imconv library from the San Diego Supercomputer Center.
+	To use these formats, specify : 'im:filename' for the pixmap name.
+
+	- The following format are supported :
+
+	     bmp    Microsoft Windows bitmap image file
+	     cur    Microsoft Windows cursor image file
+	     eps    Adobe Encapsulated PostScript file
+	     gif    Compuserve Graphics image file
+	     hdf    Hierarchical Data File
+	     ico    Microsoft Windows icon image file
+	     icon   Sun Icon and Cursor file
+	     iff    Sun TAAC Image File Format
+	     mpnt   Apple Macintosh MacPaint file
+	     pbm    PBM Portable Bit Map file
+	     pcx    ZSoft IBM PC Paintbrush file
+	     pgm    PBM Portable Gray Map file
+	     pic    PIXAR picture file
+	     pict   Apple Macintosh QuickDraw/PICT file
+	     pix    Alias image file
+	     ppm    PBM Portable Pixel Map file
+	     pnm    PBM Portable aNy Map file
+	     ps     Adobe PostScript file
+	     ras    Sun Rasterfile
+	     rgb    SGI RGB image file
+	     rla    Wavefront raster image file
+	     rle    Utah Run length encoded image file
+	     synu   SDSC Synu image file
+	     tga    Truevision Targa image file
+	     tiff   Tagged image file
+	     viff   Khoros Visualization image file
+	     x      AVS X image file
+	     xbm    X11 bitmap file
+	     xwd    X Window System window dump image file
+
+	- You can find the imconv package at ftp.sdsc.edu.
+	- If (width > screenwidth / 2) || (height > screenheight / 2) the image is
+	  centered else it is tiled.
+	- If you don't have the libim library or don't want to use it, undefine
+	  IMCONV in Imakefile.
+
+
+	But take care :
+
+	- It is very memory consuming (on the server side).
+	- It is very color cells consuming.
+	- The ctwm executable is much larger executable.
+	- Startup is much much slower (but not the workspace swap).
+	- It works only for 8 planes pixmaps and 8 planes screens. If there is
+	  an imconv specialist somewhere that can generelize this, he is 
+	  welcome.
+
+	
+
+    10 - Two new functions : f.nextworkspace, f.prevworkspace.
+
+    11 - Xpm examples files are now automatically installed in $(TWMDIR)
+
+    12 - An example of .ctwmrc is given, showing some aspect of ctwm
+	 (example.ctwmrc). It is not a complete .ctwmrc, only the ctwm
+	 aspects are shown.
+
+    13 - A new file PROBLEMS has been added that lists some problems you
+	can have while using ctwm and some solutions.
+
+ 
+Is there any good pixmap designer out there, that i can add beautiful
+icons and background to the distribution. Don't use too many colors,
+try to use the same few already used in the example icons.

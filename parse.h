@@ -100,6 +100,8 @@ extern void TwmOutput();
 #define F_PIN			53
 #define F_MOVEMENU		54
 #define F_VANISH		55
+#define F_NEXTWORKSPACE		56
+#define F_PREVWORKSPACE		57
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */

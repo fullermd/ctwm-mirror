@@ -51,6 +51,8 @@ struct name_list_struct
 extern void	AddToList();
 extern char*	LookInList();
 extern char*	LookInNameList();
+extern char*	LookPatternInList();
+extern char*	LookPatternInNameList();
 extern int 	GetColorFromList();
 extern void	FreeList();
 

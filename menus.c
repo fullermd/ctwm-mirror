@@ -1213,7 +1213,7 @@ static Bool belongs_to_twm_window (t, w)
     if (!t) return False;
 
     if (w == t->frame || w == t->title_w || w == t->hilite_w ||
-	w == t->icon_w || w == t->icon_bm_w) return True;
+	w == t->icon->w || w == t->icon->bm_w) return True;
     
     if (t && t->titlebuttons) {
 	register TBWindow *tbw;
@@ -1374,6 +1374,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     int moving_icon = FALSE;
     Bool fromtitlebar = False;
     extern int ConstrainedMoveTime;
+    TwmWindow *t;
 
     RootFunction = 0;
     if (Cancel)
@@ -1594,7 +1595,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    XWarpPointer(dpy, None, Scr->Root, 
 		0, 0, 0, 0, eventp->xbutton.x_root, eventp->xbutton.y_root);
 
-	if (w != tmp_win->icon_w) {	/* can't resize icons */
+	if (!tmp_win->icon || (w != tmp_win->icon->w)) {	/* can't resize icons */
 
 	  if ((Context == C_FRAME || Context == C_WINDOW || Context == C_TITLE)
 	      && fromMenu) 
@@ -1679,15 +1680,15 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    GrabModeAsync, GrabModeAsync,
 	    Scr->Root, Scr->MoveCursor, CurrentTime);
 
-	if (context == C_ICON && tmp_win->icon_w)
+	if (context == C_ICON && tmp_win->icon && tmp_win->icon->w)
 	{
-	    w = tmp_win->icon_w;
+	    w = tmp_win->icon->w;
 	    DragX = eventp->xbutton.x;
 	    DragY = eventp->xbutton.y;
 	    moving_icon = TRUE;
 	}
 
-	else if (w != tmp_win->icon_w)
+	else if (! tmp_win->icon || w != tmp_win->icon->w)
 	{
 	    XTranslateCoordinates(dpy, w, tmp_win->frame,
 		eventp->xbutton.x, 
@@ -1700,9 +1701,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	DragWindow = None;
 
 	XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
-	    (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &JunkBW,
+	    (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &DragBW,
 	    &JunkDepth);
 
+	JunkBW = DragBW;
 	origX = eventp->xbutton.x_root;
 	origY = eventp->xbutton.y_root;
 	CurrentDragX = origDragX;
@@ -1960,7 +1962,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		CurrentDragY = yt;
 		if (Scr->OpaqueMove) {
 		    XMoveWindow(dpy, DragWindow, xl, yt);
-		    WMapSetupWindow (tmp_win, xl, yt, -1, -1);
+		    if (! moving_icon) WMapSetupWindow (tmp_win, xl, yt, -1, -1);
 		}
 		else
 		    MoveOutline(eventp->xmotion.root, xl, yt, w, h,
@@ -2006,7 +2008,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
-	if (tmp_win->icon)
+	if (tmp_win->isicon)
 	{
 	    DeIconify(tmp_win);
 	}
@@ -2024,12 +2026,30 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (!WindowMoved) {
 	    XWindowChanges xwc;
 
-	    xwc.stack_mode = Opposite;
-	    if (w != tmp_win->icon_w) {
+	    if (!tmp_win->icon || w != tmp_win->icon->w) {
 	      w = tmp_win->frame;
 	      WMapRaiseLower (tmp_win);
 	    }
+	    xwc.stack_mode = Below;
+	    xwc.sibling    = w;
+	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+		if ((t->transient && t->transientfor == tmp_win->w) ||
+		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
+		    (tmp_win->group != t->w))) {
+		    if (t->frame) XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		}
+	    }
+	    xwc.stack_mode = Opposite;
 	    XConfigureWindow (dpy, w, CWStackMode, &xwc);
+	    xwc.stack_mode = Above;
+	    xwc.sibling    = w;
+	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+		if ((t->transient && t->transientfor == tmp_win->w) ||
+		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
+		    (tmp_win->group != t->w))) {
+		    if (t->frame) XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		}
+	    }
 	}
 	break;
 	
@@ -2038,10 +2058,17 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    return TRUE;
 
 	/* check to make sure raise is not from the WindowFunction */
-	if (w == tmp_win->icon_w && Context != C_ROOT) 
-	    XRaiseWindow(dpy, tmp_win->icon_w);
+	if (tmp_win->icon && (w == tmp_win->icon->w) && Context != C_ROOT) 
+	    XRaiseWindow(dpy, tmp_win->icon->w);
 	else {
 	    XRaiseWindow(dpy, tmp_win->frame);
+	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+		if ((t->transient && t->transientfor == tmp_win->w) ||
+		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
+		    (tmp_win->group != t->w))) {
+		    if (t->frame) XRaiseWindow(dpy, t->frame);
+		}
+	    }
 	    WMapRaise (tmp_win);
 	}
 	break;
@@ -2050,10 +2077,21 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
-	if (w == tmp_win->icon_w)
-	    XLowerWindow(dpy, tmp_win->icon_w);
+	if (tmp_win->icon && (w == tmp_win->icon->w))
+	    XLowerWindow(dpy, tmp_win->icon->w);
 	else {
+	    XWindowChanges xwc;
+
 	    XLowerWindow(dpy, tmp_win->frame);
+	    xwc.stack_mode = Above;
+	    xwc.sibling    = tmp_win->frame;
+	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+		if ((t->transient && t->transientfor == tmp_win->w) ||
+		    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
+		    (tmp_win->group != t->w))) {
+		    if (t->frame) XConfigureWindow (dpy, t->frame, CWStackMode | CWSibling, &xwc);
+		}
+	    }
 	    WMapLower (tmp_win);
 	}
 	break;
@@ -2062,7 +2100,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
-	if (tmp_win->icon == FALSE)
+	if (tmp_win->isicon == FALSE)
 	{
 	    if (!Scr->FocusRoot && Scr->Focus == tmp_win)
 	    {
@@ -2349,12 +2387,20 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	GotoWorkSpaceByName (action);
 	break;
 
+    case F_PREVWORKSPACE:
+	GotoPrevWorkSpace ();
+	break;
+
+    case F_NEXTWORKSPACE:
+	GotoNextWorkSpace ();
+	break;
+
     case F_WINREFRESH:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
-	if (context == C_ICON && tmp_win->icon_w)
-	    w = XCreateSimpleWindow(dpy, tmp_win->icon_w,
+	if (context == C_ICON && tmp_win->icon && tmp_win->icon->w)
+	    w = XCreateSimpleWindow(dpy, tmp_win->icon->w,
 		0, 0, 9999, 9999, 0, Scr->Black, Scr->Black);
 	else
 	    w = XCreateSimpleWindow(dpy, tmp_win->frame,
@@ -2564,17 +2610,17 @@ TwmWindow *tmp_win;
     WList *wl;
 
     /* de-iconify the main window */
-    if (tmp_win->icon)
+    if (tmp_win->isicon)
     {
 	if (tmp_win->icon_on)
-	    Zoom(tmp_win->icon_w, tmp_win->frame);
+	    Zoom(tmp_win->icon->w, tmp_win->frame);
 	else if (tmp_win->group != (Window) 0)
 	{
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
 	    {
 		if (tmp_win->group == t->w && t->icon_on)
 		{
-		    Zoom(t->icon_w, tmp_win->frame);
+		    Zoom(t->icon->w, tmp_win->frame);
 		    break;
 		}
 	    }
@@ -2589,8 +2635,8 @@ TwmWindow *tmp_win;
 	XMapRaised(dpy, tmp_win->frame);
     SetMapStateProp(tmp_win, NormalState);
 
-    if (tmp_win->icon_w) {
-	XUnmapWindow(dpy, tmp_win->icon_w);
+    if (tmp_win->icon && tmp_win->icon->w) {
+	XUnmapWindow(dpy, tmp_win->icon->w);
 	IconDown (tmp_win);
     }
     if (tmp_win->list)
@@ -2598,9 +2644,9 @@ TwmWindow *tmp_win;
 	XUnmapWindow(dpy, wl->icon);
     if ((Scr->WarpCursor ||
 	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)) &&
-	tmp_win->icon)
+	tmp_win->isicon)
       WarpToWindow (tmp_win);
-    tmp_win->icon = FALSE;
+    tmp_win->isicon = FALSE;
     tmp_win->icon_on = FALSE;
 
 
@@ -2609,12 +2655,12 @@ TwmWindow *tmp_win;
 	{
 	  if ((t->transient && t->transientfor == tmp_win->w) ||
 	      ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
-	       (tmp_win->group != t->w) && t->icon))
+	       (tmp_win->group != t->w) && t->isicon))
 	    {
 	      if (t->icon_on)
-		Zoom(t->icon_w, t->frame);
+		Zoom(t->icon->w, t->frame);
 	      else
-		Zoom(tmp_win->icon_w, t->frame);
+		Zoom(tmp_win->icon->w, t->frame);
 	      
 	      XMapWindow(dpy, t->w);
 	      t->mapped = TRUE;
@@ -2624,12 +2670,12 @@ TwmWindow *tmp_win;
 		XMapRaised(dpy, t->frame);
 	      SetMapStateProp(t, NormalState);
 	      
-	      if (t->icon_w) {
-		XUnmapWindow(dpy, t->icon_w);
+	      if (t->icon->w) {
+		XUnmapWindow(dpy, t->icon->w);
 		IconDown (t);
 	      }
 	      if (t->list) XUnmapWindow(dpy, t->list->icon);
-	      t->icon = FALSE;
+	      t->isicon = FALSE;
 	      t->icon_on = FALSE;
 	      WMapDeIconify (t);
 	    }
@@ -2653,12 +2699,12 @@ int def_x, def_y;
     iconify = ((!tmp_win->iconify_by_unmapping) || tmp_win->transient);
     if (iconify)
     {
-	if (tmp_win->icon_w == (Window) 0)
+	if (!tmp_win->icon || !tmp_win->icon->w)
 	    CreateIconWindow(tmp_win, def_x, def_y);
 	else
 	    IconUp(tmp_win);
 	if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC))
-	XMapRaised(dpy, tmp_win->icon_w);
+	XMapRaised(dpy, tmp_win->icon->w);
     }
     if (tmp_win->list)
       for (wl = tmp_win->list; wl != NULL; wl = wl->nextv)
@@ -2677,9 +2723,9 @@ int def_x, def_y;
 	    if (iconify)
 	      {
 		if (t->icon_on)
-			Zoom(t->icon_w, tmp_win->icon_w);
+			Zoom(t->icon->w, tmp_win->icon->w);
 		else
-		  Zoom(t->frame, tmp_win->icon_w);
+		  Zoom(t->frame, tmp_win->icon->w);
 	      }
 	    
 	    /*
@@ -2691,8 +2737,8 @@ int def_x, def_y;
 	    XUnmapWindow(dpy, t->w);
 	    XSelectInput(dpy, t->w, eventMask);
 	    XUnmapWindow(dpy, t->frame);
-	    if (t->icon_w)
-	      XUnmapWindow(dpy, t->icon_w);
+	    if (t->icon->w)
+	      XUnmapWindow(dpy, t->icon->w);
 	    SetMapStateProp(t, IconicState);
 	    SetBorder (t, False);
 	    if (t == Scr->Focus)
@@ -2702,14 +2748,14 @@ int def_x, def_y;
 		Scr->FocusRoot = TRUE;
 	      }
 	    if (t->list) XMapWindow(dpy, t->list->icon);
-	    t->icon = TRUE;
+	    t->isicon = TRUE;
 	    t->icon_on = FALSE;
 	    WMapIconify (t);
 	  }
       } 
     
     if (iconify)
-	Zoom(tmp_win->frame, tmp_win->icon_w);
+	Zoom(tmp_win->frame, tmp_win->icon->w);
 
     /*
      * Prevent the receipt of an UnmapNotify, since that would
@@ -2730,7 +2776,7 @@ int def_x, def_y;
 	Scr->Focus = NULL;
 	Scr->FocusRoot = TRUE;
     }
-    tmp_win->icon = TRUE;
+    tmp_win->isicon = TRUE;
     if (iconify)
 	tmp_win->icon_on = TRUE;
     else
@@ -2812,7 +2858,7 @@ int state;
   
     data[0] = (unsigned long) state;
     data[1] = (unsigned long) (tmp_win->iconify_by_unmapping ? None : 
-			   tmp_win->icon_w);
+			   (tmp_win->icon ? tmp_win->icon->w : None));
 
     XChangeProperty (dpy, tmp_win->w, _XA_WM_STATE, _XA_WM_STATE, 32, 
 		 PropModeReplace, (unsigned char *) data, 2);
@@ -2943,10 +2989,10 @@ HideIconManager ()
 {
     SetMapStateProp (Scr->iconmgr->twm_win, WithdrawnState);
     XUnmapWindow(dpy, Scr->iconmgr->twm_win->frame);
-    if (Scr->iconmgr->twm_win->icon_w)
-      XUnmapWindow (dpy, Scr->iconmgr->twm_win->icon_w);
+    if (Scr->iconmgr->twm_win->icon && Scr->iconmgr->twm_win->icon->w)
+      XUnmapWindow (dpy, Scr->iconmgr->twm_win->icon->w);
     Scr->iconmgr->twm_win->mapped = FALSE;
-    Scr->iconmgr->twm_win->icon = TRUE;
+    Scr->iconmgr->twm_win->isicon = TRUE;
 }
 
 

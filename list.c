@@ -148,6 +148,39 @@ char *name;
     return (LookInList(list_head, name, NULL));
 }
 
+char *
+LookPatternInList(list_head, name, class)
+name_list *list_head;
+char *name;
+XClassHint *class;
+{
+    name_list *nptr;
+
+    for (nptr = list_head; nptr != NULL; nptr = nptr->next)
+	if (match (nptr->name, name))
+	    return (nptr->name);
+
+    if (class)
+    {
+	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
+	    if (match (nptr->name, class->res_name))
+		return (nptr->name);
+
+	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
+	    if (match (nptr->name, class->res_class))
+		return (nptr->name);
+    }
+    return (NULL);
+}
+
+char *
+LookPatternInNameList (list_head, name)
+name_list *list_head;
+char *name;
+{
+    return (LookPatternInList(list_head, name, NULL));
+}
+
 /***********************************************************************
  *
  *  Procedure:

@@ -128,10 +128,11 @@ void CreateWorkSpaceManager () {
 
     NewFontCursor (&handCursor, "hand2");
     MapWListContext = XUniqueContext();
+
+    Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
     CreateWorkSpaceManagerWindow ();
     CreateOccupyWindow ();
 
-    Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
     wlist = Scr->workSpaceMgr.activeWSPC;
     if (Scr->workSpaceMgr.workspaceWindow.curPixmap == None)
 	XSetWindowBackground (dpy, wlist->mapSubwindow.w,
@@ -156,6 +157,28 @@ char *wname;
 	}
     }
     if (wlist == NULL) return;
+    GotoWorkSpace (wlist);
+}
+
+GotoPrevWorkSpace () {
+    WorkSpaceList *wlist1, *wlist2;
+
+    wlist1 = Scr->workSpaceMgr.workSpaceList;
+    if (wlist1 == NULL) return;
+
+    wlist2 = wlist1->next;
+    while ((wlist2 != Scr->workSpaceMgr.activeWSPC) && (wlist2 != NULL)) {
+	wlist1 = wlist2;
+	wlist2 = wlist2->next;
+    }
+    GotoWorkSpace (wlist1);
+}
+
+GotoNextWorkSpace () {
+    WorkSpaceList *wlist;
+
+    wlist = Scr->workSpaceMgr.activeWSPC;
+    wlist = (wlist->next != NULL) ? wlist->next : Scr->workSpaceMgr.workSpaceList;
     GotoWorkSpace (wlist);
 }
 
@@ -187,7 +210,7 @@ WorkSpaceList *wlist;
 			&attr);
     XMapWindow (dpy, w);
 
-    if (useBackgroundInfo) {
+    if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
 	if (newscr->backpix == None)
 	    XSetWindowBackground (dpy, Scr->Root, newscr->backcp.back);
 	else
@@ -198,8 +221,8 @@ WorkSpaceList *wlist;
     for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
 	if (OCCUPY (twmWin, oldscr)) {
 	    if (twmWin->mapped == FALSE) {
-		if ((twmWin->icon_on == TRUE) && (twmWin->icon_w)) {
-		    XUnmapWindow(dpy, twmWin->icon_w);
+		if ((twmWin->icon_on == TRUE) && (twmWin->icon) && (twmWin->icon->w)) {
+		    XUnmapWindow(dpy, twmWin->icon->w);
 		    IconDown (twmWin);
 		}
 	    }
@@ -212,9 +235,9 @@ WorkSpaceList *wlist;
     for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
 	if (OCCUPY (twmWin, newscr)) {
 	    if (twmWin->mapped == FALSE) {
-		if ((twmWin->icon_on == TRUE) && (twmWin->icon_w)) {
+		if ((twmWin->icon_on == TRUE) && (twmWin->icon) && (twmWin->icon->w)) {
 		    IconUp (twmWin);
-		    XMapWindow (dpy, twmWin->icon_w);
+		    XMapWindow (dpy, twmWin->icon->w);
 		}
 	    }
 	    else
@@ -300,6 +323,7 @@ char *name, *background, *foreground, *backback, *backfore, *backpix;
     Pixmap	  pix;
     unsigned int  width, height, depth;
     XGCValues	  gcvalues;
+    int		  startn;
 
     scrnum = Scr->workSpaceMgr.count;
     if (scrnum == MAXWORKSPACE) return;
@@ -338,6 +362,29 @@ char *name, *background, *foreground, *backback, *backfore, *backpix;
     if (backpix == NULL)
 	wlist->backpix = None;
     else
+#ifdef XPM
+    if ((backpix [0] == '@') || (strncmp (backpix, "xpm:", 4) == 0)) {
+	XpmIcon *xpmicon;
+
+	if (backpix [0] == '@') startn = 1; else startn = 4;
+	if ((xpmicon = GetXpmPixmap (&backpix [startn])) == None) {
+	    wlist->backpix = None;
+	}
+	else {
+	    wlist->backpix = xpmicon->pixmap;
+	    useBackgroundInfo = True;
+	}
+    }
+    else
+#endif
+
+#if defined (IMCONV)
+    if (strncmp (backpix, "im:", 3) == 0) {
+	wlist->backpix = im_read_file (&backpix [3], &width, &height);
+	if (wlist->backpix != None) useBackgroundInfo = True;
+    }
+    else
+#endif
     if ((pix = FindBitmap (backpix, &width, &height)) == None) {
 	wlist->backpix = None;
     }
@@ -408,14 +455,6 @@ TwmWindow *twm_win;
         twm_win->occupation = fullOccupation;
     }
 
-    if (RestartPreviousState) {
-	if (XGetWindowProperty (dpy, twm_win->w, _XA_WM_OCCUPATION, 0L, 2500, False,
-				XA_STRING, &actual_type, &actual_format, &nitems,
-				&bytesafter, &prop) == Success) {
-	    if (nitems != 0) twm_win->occupation = GetMaskFromNameList (twm_win, prop);
-	}
-    }
-
     if (XGetCommand (dpy, twm_win->w, &cliargv, &cliargc)) {
 	XrmParseCommand (&db, table, 2, "ctwm", &cliargc, cliargv);
 	status = XrmGetResource (db, "ctwm.workspace", "Ctwm.Workspace", &str_type, &value);
@@ -427,25 +466,35 @@ TwmWindow *twm_win;
 	db = NULL;
     }
 
+    if (RestartPreviousState) {
+	if (XGetWindowProperty (dpy, twm_win->w, _XA_WM_OCCUPATION, 0L, 2500, False,
+				XA_STRING, &actual_type, &actual_format, &nitems,
+				&bytesafter, &prop) == Success) {
+	    if (nitems != 0) twm_win->occupation = GetMaskFromNameList (twm_win, prop);
+	}
+    }
+
     if (twm_win->iconmgr) /* someone try to modify occupation of icon managers */
 	twm_win->occupation = 1 << Scr->workSpaceMgr.activeWSPC->number;
 
-    if (twm_win->transient) {
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	    if (twm_win->transientfor == t->w) break;
+    if (! Scr->TransientHasOccupation) {
+	if (twm_win->transient) {
+	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+		if (twm_win->transientfor == t->w) break;
+	    }
+	    if (t != NULL) {
+		twm_win->occupation = t->occupation;
+		return;
+	    }
 	}
-	if (t != NULL) {
-	    twm_win->occupation = t->occupation;
-	    return;
-	}
-    }
-    if (twm_win->group != twm_win->w) {
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	    if (t->w == twm_win->group) break;
-	}
-	if (t != NULL) {
-	    twm_win->occupation = t->occupation;
-	    return;
+	if (twm_win->group != twm_win->w) {
+	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+		if (t->w == twm_win->group) break;
+	    }
+	    if (t != NULL) {
+		twm_win->occupation = t->occupation;
+		return;
+	    }
 	}
     }
     if ((twm_win->occupation & fullOccupation) == 0)
@@ -494,7 +543,7 @@ TwmWindow *twm_win;
     if (! Scr->workSpaceManagerActive) return;
     if (occupyWin != (TwmWindow*) 0) return;
     if (twm_win->iconmgr)   return;
-    if (twm_win->transient) return;
+    if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
 
     for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
 	if (OCCUPY (twm_win, wlist)) {
@@ -597,7 +646,7 @@ TwmWindow *twm_win;
 
     if (! Scr->workSpaceManagerActive) return;
     if (twm_win->iconmgr)   return;
-    if (twm_win->transient) return;
+    if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
     save = Scr->iconmgr;
     Scr->iconmgr = Scr->workSpaceMgr.workSpaceList->iconmgr;
     ChangeOccupation (twm_win, fullOccupation);
@@ -729,13 +778,30 @@ int newoccupation;
 	    WMapAddToList (tmp_win, wlist);
 	}
     }
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	if ((t->transient && t->transientfor == tmp_win->w) ||
-	      ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
-	       (tmp_win->group != t->w))) {
-	    ChangeOccupation (t, newoccupation);
+    if (! Scr->TransientHasOccupation) {
+	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+	    if ((t->transient && t->transientfor == tmp_win->w) ||
+		((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
+		(tmp_win->group != t->w))) {
+		ChangeOccupation (t, newoccupation);
+	    }
 	}
     }
+}
+
+WmgrRedoOccupation (win)
+TwmWindow *win;
+{
+    WorkSpaceList	*wlist;
+    int			newoccupation;
+
+    newoccupation = 0;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (LookInList (wlist->clientlist, win->full_name, &win->class)) {
+            newoccupation |= 1 << wlist->number;
+	}
+    }
+    ChangeOccupation (win, newoccupation);
 }
 
 WMgrRemoveFromCurrentWosksace (win)
@@ -836,8 +902,23 @@ CreateWorkSpaceManagerWindow ()
     Scr->workSpaceMgr.workspaceWindow.lines     = lines;
     Scr->workSpaceMgr.workspaceWindow.columns   = columns;
 
+    strWid = 0;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	wid = XTextWidth (font.font, wlist->label, strlen (wlist->label));
+	if (wid > strWid) strWid = wid;
+    }
     if (geometry != NULL) {
 	mask = XParseGeometry (geometry, &x, &y, (unsigned int *) &width, (unsigned int *) &height);
+	if (! (mask & XValue)) x  = (Scr->MyDisplayWidth - width) / 2;
+	if (! (mask & YValue)) y  = Scr->MyDisplayHeight - height;
+	if (! (mask & WidthValue)) {
+	    bwidth  = strWid + 10;
+	    width   = (columns * bwidth) + ((columns + 1) * hspace);
+	}
+	if (! (mask & HeightValue)) {
+	    bheight = 22;
+	    height  = (lines * bheight) + ((lines + 1) * vspace);
+	}
 	if (mask & XNegative) x += Scr->MyDisplayWidth  - width;
 	if (mask & YNegative) y += Scr->MyDisplayHeight - height;
 	if (mask & XNegative) {
@@ -846,17 +927,10 @@ CreateWorkSpaceManagerWindow ()
 	else {
 	    gravity = (mask & YNegative) ? SouthWestGravity : NorthWestGravity;
 	}
-	if (!(mask & XValue)) x  = (Scr->MyDisplayWidth - width) / 2;
-	if (!(mask & YValue)) y  = Scr->MyDisplayHeight - height;
 	bwidth  = (width  - ((columns + 1) * hspace)) / columns;
 	bheight = (height - ((lines   + 1) * vspace)) / lines;
     }
     else {
-	strWid = 0;
-	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
-	    wid = XTextWidth (font.font, wlist->label, strlen (wlist->label));
-	    if (wid > strWid) strWid = wid;
-	}
 	bwidth  = strWid + 10;
 	width   = (columns * bwidth) + ((columns + 1) * hspace);
 	bheight = 22;
@@ -952,7 +1026,7 @@ CreateWorkSpaceManagerWindow ()
     Scr->workSpaceMgr.workspaceWindow.twm_win = tmp_win;
 
     wlist = Scr->workSpaceMgr.workSpaceList;
-    if (useBackgroundInfo) {
+    if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
 	if (wlist->backpix == None)
 	    XSetWindowBackground (dpy, Scr->Root, wlist->backcp.back);
 	else
@@ -1520,6 +1594,40 @@ TwmWindow *win;
     }
 }
 
+WMapRestack (wlist)
+WorkSpaceList *wlist;
+{
+    TwmWindow	*win;
+    WinList	wl;
+    Window	root;
+    Window	parent;
+    Window	*children, *smallws;
+    unsigned int number;
+    int		i, j;
+
+    number = 0;
+    XQueryTree (dpy, Scr->Root, &root, &parent, &children, &number);
+    smallws = (Window*) malloc (number * sizeof (Window));
+
+    j = 0;
+    for (i = number - 1; i >= 0; i--) {
+	if (XFindContext (dpy, children [i], TwmContext, (caddr_t *) &win) == XCNOENT) {
+	    continue;
+	}
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (win == wl->twm_win) {
+		smallws [j++] = wl->w;
+		break;
+	    }
+	}
+    }
+    XRestackWindows (dpy, smallws, j);
+
+    XFree (children);
+    free  (smallws);
+    return;
+}
+
 WMapLower (win)
 TwmWindow *win;
 {
@@ -1632,7 +1740,7 @@ XEvent *event;
     int			X0, Y0, X1, Y1, XW, YW;
     Position		newX, newY;
     Window		junkW;
-    int			junk;
+    unsigned int	junk;
     unsigned int	button;
 
     parent = event->xbutton.window;
@@ -1661,7 +1769,7 @@ XEvent *event;
 
     if (XFindContext (dpy, sw, MapWListContext, (caddr_t *) &wl) == XCNOENT) return;
     win = wl->twm_win;
-    if (win->transient) return;
+    if ((! Scr->TransientHasOccupation) && win->transient) return;
 
     switch (button) {
 	case 1 :
@@ -1759,6 +1867,7 @@ XEvent *event;
 	    else {
 		occupation = (win->occupation | (1 << newwlist->number)) & ~(1 << oldwlist->number);
 		ChangeOccupation (win, occupation);
+		WMapRestack (newwlist);
 	    }
 	    break;
 
@@ -1769,6 +1878,7 @@ XEvent *event;
 	    else {
 		occupation = win->occupation | (1 << newwlist->number);
 		ChangeOccupation (win, occupation);
+		WMapRestack (newwlist);
 	    }
 	    break;
 
@@ -1784,6 +1894,8 @@ WinList   wl;
     MyFont    font;
     int       strhei, strwid, x, y;
     char      *label;
+
+    XClearWindow (dpy, wl->w);
 
     label  = wl->twm_win->icon_name;
     font   = Scr->workSpaceMgr.workspaceWindow.windowFont;
@@ -2060,7 +2172,7 @@ Window   window;
     Window          parent;
     Window          grandparent;
     Window         *children;
-    int             number;
+    unsigned int    number;
     XWindowChanges  changes;
 
     number = 0;

@@ -1,20 +1,39 @@
 #define XPM
-
-#define NullParameter
-#define InstallNonExecFile InstallNonExec
+#define IMCONV
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
-         XPMLIB = -lXpm
 
 #ifdef XPM
-LOCAL_LIBRARIES = $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEFINES = $(SIGNAL_DEFINES) -DX11R4 -DXPM
+      XPMLIBDIR = 
+      XPMINCDIR = 
+
+     XPMDEFINES = -DXPM
+         XPMLIB = $(XPMLIBDIR) -lXpm
 #else
-LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEFINES = $(SIGNAL_DEFINES) -DX11R4
+         XPMLIB = 
+      XPMLIBDIR = 
+      XPMINCDIR = 
+     XPMDEFINES = 
 #endif
+
+#ifdef IMCONV
+   IMCONVLIBDIR = -L/logiciels/public/graphix/lib
+   IMCONVINCDIR = -I/logiciels/public/graphix/include
+  IMCONVDEFINES = -DIMCONV
+      IMCONVLIB = $(IMCONVLIBDIR) -lim -lsdsc
+#else
+      IMCONVLIB = 
+   IMCONVLIBDIR = 
+   IMCONVINCDIR = 
+  IMCONVDEFINES = 
+#endif
+
+LOCAL_LIBRARIES = $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB)
+        DEFINES = $(SIGNAL_DEFINES) $(IMCONVDEFINES) $(XPMDEFINES)
+ EXTRA_INCLUDES = $(IMCONVINCDIR) $(XPMINCDIR)
+
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
 		cursor.c icons.c workmgr.c
@@ -22,6 +41,18 @@ LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) $(XLIB)
            OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
 		cursor.o icons.o workmgr.o
+
+  PIXMAPFILES =	xpm/IslandD.xpm        xpm/mail1.xpm          xpm/xgopher.xpm \
+		xpm/IslandW.xpm        xpm/nothing.xpm        xpm/xgrab.xpm \
+		xpm/LRom.xpm           xpm/pixmap.xpm         xpm/xhpcalc.xpm \
+		xpm/LRom1.xpm          xpm/postit.xpm         xpm/xmail.xpm \
+		xpm/arthur.xpm         xpm/term.xpm           xpm/xman.xpm \
+		xpm/cdrom1.xpm         xpm/unknown.xpm        xpm/xnomail.xpm \
+		xpm/claude.xpm         xpm/unread.xpm         xpm/xrn.goodnews.xpm \
+		xpm/datebook.xpm       xpm/xarchie.xpm        xpm/xrn.nonews.xpm \
+		xpm/emacs.xpm          xpm/xcalc.xpm          xpm/xrn.xpm \
+		xpm/hpterm.xpm         xpm/xcalc2.xpm         xpm/xterm.xpm \
+		xpm/mail0.xpm          xpm/xedit.xpm
 
 AllTarget(ctwm)
 
@@ -34,6 +65,7 @@ depend:: lex.c gram.c deftwmrc.c
 
 ComplexProgramTarget(ctwm)
 InstallNonExecFile(system.ctwmrc,$(TWMDIR))
+InstallMultiple($(PIXMAPFILES),$(TWMDIR))
 
 gram.h gram.c: gram.y
 	yacc $(YFLAGS) gram.y

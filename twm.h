@@ -46,6 +46,7 @@
 #ifndef X11R4
 #    include <X11/Xfuncs.h>
 #endif
+#include "list.h"
 
 #if defined(XPM)
 #   include "util.h"
@@ -207,6 +208,27 @@ typedef struct Colormaps
 #define ColormapsScoreboardLength(cm) ((cm)->number_cwins * \
 				       ((cm)->number_cwins - 1) / 2)
 
+typedef enum {match_none, match_class, match_name, match_icon} Matchtype;
+
+typedef struct Icon
+{
+    Matchtype	match;
+    Window	w;		/* the icon window */
+    Window	bm_w;		/* the icon bitmap window */
+#if defined (XPM)
+    XpmIcon	*xpmicon;	/* xpm icon structure */
+#endif
+    int		x;		/* icon text x coordinate */
+    int		y;		/* icon text y coordiante */
+    int		w_width;	/* width of the icon window */
+    int		w_height;	/* height of the icon window */
+    int		width;		/* width of the icon bitmap */
+    int		height;		/* height of the icon bitmap */
+    char	*pattern;	/* Why this icon was choosed */
+    Pixel	border;		/* border color */
+    ColorPair	iconc;
+} Icon;
+
 /* for each window that is on the display, one of these structures
  * is allocated and linked into a list 
  */
@@ -220,11 +242,8 @@ typedef struct TwmWindow
     Window title_w;		/* the title bar window */
     Window hilite_w;		/* the hilite window */
     Pixmap gray;
-    Window icon_w;		/* the icon window */
-    Window icon_bm_w;		/* the icon bitmap window */
-#if defined (XPM)
-    XpmIcon *xpmicon;		/* xpm icon structure */
-#endif
+    Icon *icon;			/* the curent icon */
+    name_list iconslist;	/* the current list of icons */
     int frame_x;		/* x position of frame */
     int frame_y;		/* y position of frame */
     int frame_width;		/* width of frame */
@@ -232,17 +251,11 @@ typedef struct TwmWindow
     int frame_bw;		/* borderwidth of frame */
     int title_x;
     int title_y;
-    int icon_x;			/* icon text x coordinate */
-    int icon_y;			/* icon text y coordiante */
-    int icon_w_width;		/* width of the icon window */
-    int icon_w_height;		/* height of the icon window */
-    int icon_width;		/* width of the icon bitmap */
-    int icon_height;		/* height of the icon bitmap */
     int title_height;		/* height of the title bar */
     int title_width;		/* width of the title bar */
     char *full_name;		/* full name of the window */
     char *name;			/* name of the window */
-    char *icon_name;		/* name of the icon */
+    char *icon_name;            /* name of the icon */
     int name_width;		/* width of name text */
     int highlightx;		/* start of highlight window */
     int rightx;			/* start of right buttons */
@@ -256,12 +269,10 @@ typedef struct TwmWindow
      * color definitions per window
      **********************************************************************/
     Pixel border;		/* border color */
-    Pixel icon_border;		/* border color */
     ColorPair border_tile;
     ColorPair title;
-    ColorPair iconc;
     short iconified;		/* has the window ever been iconified? */
-    short icon;			/* is the window an icon now ? */
+    short isicon;		/* is the window an icon now ? */
     short icon_on;		/* is the icon visible */
     short mapped;		/* is the window mapped ? */
     short auto_raise;		/* should we auto-raise this window ? */

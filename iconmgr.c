@@ -514,9 +514,9 @@ WList *AddIconManager(tmp_win)
 
     if (! Scr->ShowIconManager) {
 	ip->twm_win->mapped = FALSE;
-	ip->twm_win->icon   = TRUE;
+	ip->twm_win->isicon = TRUE;
     }
-    if (!ip->twm_win->icon)
+    if (!ip->twm_win->isicon)
     {
       if (OCCUPY (ip->twm_win, Scr->workSpaceMgr.activeWSPC)) {
 	SetMapStateProp (ip->twm_win, NormalState);

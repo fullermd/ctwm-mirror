@@ -322,6 +322,9 @@ typedef struct _TwmKeyword {
 #define kw0_ShowWorkspaceManager	27
 #define kw0_StartInMapState		28
 #define kw0_NoShowOccupyAll		29
+#define kw0_AutoOccupy			30
+#define kw0_TransientHasOccupation	31
+#define kw0_DontPaintRootWindow		32
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -375,6 +378,7 @@ typedef struct _TwmKeyword {
  */
 static TwmKeyword keytable[] = { 
     { "all",			ALL, 0 },
+    { "autooccupy",		KEYWORD, kw0_AutoOccupy },
     { "autoraise",		AUTO_RAISE, 0 },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
@@ -397,6 +401,7 @@ static TwmKeyword keytable[] = {
     { "destroy",		KILL, 0 },
     { "donticonifybyunmapping",	DONT_ICONIFY_BY_UNMAPPING, 0 },
     { "dontmoveoff",		KEYWORD, kw0_DontMoveOff },
+    { "dontpaintrootwindow",	KEYWORD, kw0_DontPaintRootWindow },
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
     { "east",			DKEYWORD, D_EAST },
     { "f",			FRAME, 0 },
@@ -437,11 +442,13 @@ static TwmKeyword keytable[] = {
     { "f.move",			FKEYWORD, F_MOVE },
     { "f.movemenu",		FKEYWORD, F_MOVEMENU },
     { "f.nexticonmgr",		FKEYWORD, F_NEXTICONMGR },
+    { "f.nextworkspace",	FKEYWORD, F_NEXTWORKSPACE },
     { "f.nop",			FKEYWORD, F_NOP },
     { "f.occupy",		FKEYWORD, F_OCCUPY },
     { "f.occupyall",		FKEYWORD, F_OCCUPYALL },
     { "f.pin",			FKEYWORD, F_PIN },
     { "f.previconmgr",		FKEYWORD, F_PREVICONMGR },
+    { "f.prevworkspace",	FKEYWORD, F_PREVWORKSPACE },
     { "f.quit",			FKEYWORD, F_QUIT },
     { "f.raise",		FKEYWORD, F_RAISE },
     { "f.raiselower",		FKEYWORD, F_RAISELOWER },
@@ -545,6 +552,7 @@ static TwmKeyword keytable[] = {
     { "occupyall",		OCCUPYALL, 0 },
     { "opaquemove",		KEYWORD, kw0_OpaqueMove },
     { "opaqueresize",		KEYWORD, kw0_OpaqueResize },
+    { "pixmapdirectory",	SKEYWORD, kws_XPMIconDirectory },
     { "pixmaps",		PIXMAPS, 0 },
     { "r",			ROOT, 0 },
     { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
@@ -574,6 +582,7 @@ static TwmKeyword keytable[] = {
     { "titleforeground",	CLKEYWORD, kwcl_TitleForeground },
     { "titlehighlight",		TITLE_HILITE, 0 },
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
+    { "transienthasoccupation",	KEYWORD, kw0_TransientHasOccupation },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
     { "usepposition",		SKEYWORD, kws_UsePPosition },
     { "w",			WINDOW, 0 },
@@ -730,6 +739,18 @@ int do_single_keyword (keyword)
 
       case kw0_NoShowOccupyAll:
 	Scr->workSpaceMgr.workspaceWindow.noshowoccupyall = TRUE;
+	return 1;
+
+      case kw0_AutoOccupy:
+	Scr->AutoOccupy = TRUE;
+	return 1;
+
+      case kw0_TransientHasOccupation:
+	Scr->TransientHasOccupation = TRUE;
+	return 1;
+
+      case kw0_DontPaintRootWindow:
+	Scr->DontPaintRootWindow = TRUE;
 	return 1;
 
       case kw0_NoCaseSensitive:

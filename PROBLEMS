@@ -1,0 +1,44 @@
+    This a list of some problems you can encounter while compiling or
+using ctwm.
+
+
+    1 - You have the message when compiling (static libraries) or
+	running (dynamic libraries) ctwm :
+
+ld.so: Undefined symbol: __XtInherit
+
+Why : You have a Sun and the mit X11R5 Xlib prior to the patch level 9,
+      there is an incompatibility between the Sun loader and the mit X11R5
+      libs before patch 9.
+
+What to do : Upgrade you libs to at least patch level 9, or use :
+	     -u __XtInherit at link time.
+
+
+    2 - Sometime you loose icons, you iconify a client with DontIconifyByUnmapping
+	and the icon doesn't show up.
+
+Why : You probably have the Sun X11R5 server. I think there is a bug in this
+      server, it sends extra UnmapNotify events.
+
+What to do : Try define BUGGY_SUN_SERVER in your Imakefile. There is a workaround
+             in ctwm, but it introduces others problems. Or use the mit server.
+
+
+    3 - The stacking order is not correct at all in the Workspace window, and
+	you have a HP700 with the HP X11R4 server.
+
+Why : This server is buggy.
+
+What to do : define BUGGY_HP700_SERVER in your Imakefile.
+
+
+    4 - The workspace manager is not redrawn when it is uncovered by a save-under
+	window. You probably have the mit X11R5 server.
+
+Why : Don't know, i think it is a bug in this server. It doesn't redraw the
+      workspace manager window, nor send Expose events.
+
+What to do : Don't look too often at the workspace manager window.
+
+

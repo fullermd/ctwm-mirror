@@ -53,6 +53,11 @@ Same as \fItwm\fP, except for the user customization is read from :
 All the variables of \fItwm\fP, plus some :
 .PP
 
+.IP "\fBAutoOccupy\fP" 4
+This variable specifies that clients will change automatically their occupation
+when their name or icon name changes. The new occupation will be recalculated
+from the Occupy and OccupyAll fields in the .ctwmrc file.
+
 .IP "\fBAutoRaise\fP [{ \fIwin-list\fP }]" 4
 This variable specifies a list of windows
 (all windows if the list is defaulted)
@@ -61,6 +66,11 @@ raised whenever the pointer has come to rest in a window for the amount of
 time specified by the \fBRaiseDelay\fP variable.
 This action can be interactively
 enabled or disabled on individual windows using the function \fBf.autoraise\fP.
+
+.IP "\fBDontPaintRootWindow\fP" 4
+This variable tells ctwm not to paint the root window, whatever you told in
+the Workspaces specification. This is useful to have pixmaps in the Workspace Map
+but not on the root window.
 
 .IP "\fBMapWindowBackground\fP \fBcolor\fP [{ \fBwin-list\fP }]" 4
 This variable specifies the background colors to use for small windows in the 
@@ -124,6 +134,24 @@ OccupyAll
 Just for fun. The opaque version of resize. Extremely resource intensive,
 but beautiful with fast server/client/network.
 
+.IP "\fBPixmapDirectory\fP \fIpath\fP " 4
+Ctwm handles colored, shaped icons and background root pixmaps in XPM format
+[from Arnaud LE HORS] and any format understood by the imconv package [from
+the San Diego Supercomputer Center]. This variable specifies the path where
+ctwm looks for to find the files containing these pixmaps. Whenever you want
+to use one of these formats, specify : xpm:filename or im:filename.
+Example :
+.EX
+PixmapDirectory  "/usr/lib/X11/twm"
+Icons
+{
+    "Axe"    "xpm:edit.xpm"
+    "xterm"  "xpm:term.xpm"
+}
+.EE
+N.B This is only valid if your version of ctwm has been compiled with the
+XPM and IMCONV options.
+
 .IP "\fBRaiseDelay\fP \fImilliseconds\fP" 4
 For windows that are to be automatically raised when the pointer enters
 (see the \fBAutoRaise\fP variable and the \fIf.autoraise\fP function)
@@ -136,6 +164,12 @@ This variable specifies that the WorkSpaceManager should be visible.
 .IP "\fBStartInMapState\fP" 4
 This variable specifies that the WorkSpaceManager should be started
 in its map form when created.
+
+.IP "\fBTransientHasOccupation\fP" 4
+This variable specifies that transient-for and non group leader windows
+can have their own occupation potentially different from their leader
+window. The default case is that these windows follows their leader, use
+this keyword if it doesn't please you.
 
 .IP "\fBWorkSpaceManagerGeometry\fP \fIstring\fP [ \fIcolumns\fP ]" 4
 This variable specifies the geometry of the workspace manager window. The 
@@ -189,22 +223,6 @@ WorkSpaces
 .IP
 The maximum number of workspaces is 32.
 
-.IP "\fBXPMIconDirectory\fP \fIpath\fP " 4
-Ctwm handles colored, shaped icons in XPM format [from Arnaud LE HORS]. This
-variable specifies the path where ctwm looks for to find the files containing
-these icons. The Icons command has been a little modified, the two formats of
-icon files : XPM icon files must be prefixed by the character '@'.
-Example :
-.EX
-XPMIconDirectory  "/usr/lib/X11/X11/XPM"
-Icons
-{
-    "Axe"    "@edit.xpm"
-    "xterm"  "@term.xpm"
-}
-.EE
-
-
 .SH FUNCTIONS
 .PP
 All the functions of \fItwm\fP, plus some :
@@ -217,12 +235,18 @@ This function warps you to the workspace whose name is \fBworkspace_name\fP
 .IP "\fBf.hideworkspacemgr\fP" 4
 Unmap the WorkSpace manager.
 
+.IP "\fBf.nextworkspace\fP" 4
+Goto the next workspace in the list, using the order given in the .ctwmrc file.
+
 .IP "\fBf.occupy\fP" 4
 This function pops up a window for the user to choose which workspaces a window
 belongs to.
 
 .IP "\fBf.occupyall\fP" 4
 This function makes the specified window occupy all the workspaces.
+
+.IP "\fBf.prevworkspace\fP" 4
+Goto the previous workspace in the list, using the order given in the .ctwmrc file.
 
 .IP "\fBf.setbuttonsstate\fP" 4
 Set the WorkSpace manager in button state.
