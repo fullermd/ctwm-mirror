@@ -1345,3 +1345,6 @@ VirtualScreens {
 	Example:
 	"F1"       = c|s: all           : f.changesize "640x480"
 
+   34 - When crashing, ctwm now refers to ctwm-bugs@free.lp.se instead of
+	Claude.Lecommandeur@epfl.ch.
+
