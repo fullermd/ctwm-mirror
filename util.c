@@ -4060,7 +4060,6 @@ Atom prop;
 	    stringptr = NULL;
 	}
 	XFree (text_prop.value); 
-	XFree (text_prop.value);
     } else {
 	stringptr = NULL;
     }
