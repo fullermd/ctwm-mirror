@@ -1,31 +1,103 @@
-/* $XConsortium: session.c,v 1.18 95/01/04 22:28:37 mor Exp $ */
-/******************************************************************************
+/*****************************************************************************/
+/**       Copyright 1988 by Evans & Sutherland Computer Corporation,        **/
+/**                          Salt Lake City, Utah                           **/
+/**  Portions Copyright 1989 by the Massachusetts Institute of Technology   **/
+/**                        Cambridge, Massachusetts                         **/
+/**                                                                         **/
+/**                           All Rights Reserved                           **/
+/**                                                                         **/
+/**    Permission to use, copy, modify, and distribute this software and    **/
+/**    its documentation  for  any  purpose  and  without  fee is hereby    **/
+/**    granted, provided that the above copyright notice appear  in  all    **/
+/**    copies and that both  that  copyright  notice  and  this  permis-    **/
+/**    sion  notice appear in supporting  documentation,  and  that  the    **/
+/**    names of Evans & Sutherland and M.I.T. not be used in advertising    **/
+/**    in publicity pertaining to distribution of the  software  without    **/
+/**    specific, written prior permission.                                  **/
+/**                                                                         **/
+/**    EVANS & SUTHERLAND AND M.I.T. DISCLAIM ALL WARRANTIES WITH REGARD    **/
+/**    TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES  OF  MERCHANT-    **/
+/**    ABILITY  AND  FITNESS,  IN  NO  EVENT SHALL EVANS & SUTHERLAND OR    **/
+/**    M.I.T. BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL  DAM-    **/
+/**    AGES OR  ANY DAMAGES WHATSOEVER  RESULTING FROM LOSS OF USE, DATA    **/
+/**    OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER    **/
+/**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
+/**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
+/*****************************************************************************/
+/* 
+ *  [ ctwm ]
+ *
+ *  Copyright 1992 Claude Lecommandeur.
+ *            
+ * Permission to use, copy, modify  and distribute this software  [ctwm] and
+ * its documentation for any purpose is hereby granted without fee, provided
+ * that the above  copyright notice appear  in all copies and that both that
+ * copyright notice and this permission notice appear in supporting documen-
+ * tation, and that the name of  Claude Lecommandeur not be used in adverti-
+ * sing or  publicity  pertaining to  distribution of  the software  without
+ * specific, written prior permission. Claude Lecommandeur make no represen-
+ * tations  about the suitability  of this software  for any purpose.  It is
+ * provided "as is" without express or implied warranty.
+ *
+ * Claude Lecommandeur DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL  IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS.  IN NO
+ * EVENT SHALL  Claude Lecommandeur  BE LIABLE FOR ANY SPECIAL,  INDIRECT OR
+ * CONSEQUENTIAL  DAMAGES OR ANY  DAMAGES WHATSOEVER  RESULTING FROM LOSS OF
+ * USE, DATA  OR PROFITS,  WHETHER IN AN ACTION  OF CONTRACT,  NEGLIGENCE OR
+ * OTHER  TORTIOUS ACTION,  ARISING OUT OF OR IN  CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
+ */
 
-Copyright (c) 1994  X Consortium
+/*********************************************************************
+ *
+ * This module has been modified by 
+ * Matthew McNeill (21 Mar 1997) - University of Durham (UK)
+ * for the support of the X Session Management Protocol
+ *
+ ********************************************************************* 
+ *
+ * Copyright (c) 1996-1997 The University of Durham, UK -
+ * Department of Computer Science.
+ * All rights reserved.
+ *
+ * Permission is hereby granted, without written agreement and without
+ * licence or royalty fees, to use, copy, modify, and distribute this
+ * software and its documentation, provided that usage, copying, modification
+ * or distribution is not for direct commercial advantage and that the
+ * above copyright notice and the following two paragraphs appear in
+ * all copies of this software. To use, copy, modify or distribute this
+ * software and its documentation otherwise requires a fee and/or specific
+ * permission.
+ * 
+ * IN NO EVENT SHALL THE UNIVERSITY OF DURHAM BE LIABLE TO ANY PARTY FOR
+ * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+ * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+ * DURHAM HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * THE UNIVERSITY OF DURHAM SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ * ON AN "AS IS" BASIS, AND THE UNIVERSITY OF DURHAM HAS NO OBLIGATION TO
+ * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+ *
+ ********************************************************************/
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
-AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-Except as contained in this notice, the name of the X Consortium shall not be
-used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
-
-Author:  Ralph Mor, X Consortium
-******************************************************************************/
+/**********************************************************************
+ *
+ * $XConsortium: session.c,v 1.18 95/01/04 22:28:37 mor Exp $ 
+ *
+ * Session support for the X11R6 XSMP (X Session Management Protocol) 
+ *
+ * 95/01/04 Ralph Mor, X Consortium        Initial Version.
+ *
+ * Do the necessary modification to be integrated in ctwm.
+ * Can no longer be used for the standard twm.
+ *
+ * 21 Mar 1997  Matthew McNeill, Durham University  Modified Version.
+ *
+ **********************************************************************/
 
 #include <X11/Xos.h>
 
@@ -67,14 +139,17 @@ Bool gotFirstSave = 0;
 Bool sent_save_done = 0;
 
 #define SAVEFILE_VERSION 2
+ 
 
+/*===[ Get Client SM_CLIENT_ID ]=============================================*/
 
-
 char *
 GetClientID (window)
-
 Window window;
-
+/* This function returns the value of the session manager client ID property
+ * given a valid window handle. If no such property exists on a window then
+ * null is returned 
+ */
 {
     char *client_id = NULL;
     Window client_leader;
@@ -110,13 +185,13 @@ Window window;
     return client_id;
 }
 
+/*===[ Get Window Role ]=====================================================*/
 
-
 char *
 GetWindowRole (window)
-
 Window window;
-
+/* this function returns the WM_WINDOW_ROLE property of a window
+ */
 {
     XTextProperty tp;
 
@@ -129,27 +204,24 @@ Window window;
     return NULL;
 }
 
+/*===[ Various file write procedures ]=======================================*/
 
-
 int
 write_byte (file, b)
-
 FILE		*file;
 unsigned char   b;
-
 {
     if (fwrite ((char *) &b, 1, 1, file) != 1)
 	return 0;
     return 1;
 }
 
+/*---------------------------------------------------------------------------*/
 
 int
 write_ushort (file, s)
-
 FILE		*file;
 unsigned short	s;
-
 {
     unsigned char   file_short[2];
 
@@ -160,13 +232,12 @@ unsigned short	s;
     return 1;
 }
 
+/*---------------------------------------------------------------------------*/
 
 int
 write_short (file, s)
-
 FILE	*file;
 short	s;
-
 {
     unsigned char   file_short[2];
 
@@ -177,13 +248,33 @@ short	s;
     return 1;
 }
 
+/*---------------------------------------------------------------------------*
+ * Matthew McNeill Feb 1997 - required to save the occupation state as an
+ *                            integer.
+ */
+
+int
+write_int (file, i)
+FILE	*file;
+int	i;
+{
+    unsigned char   file_int[4];
+
+    file_int[0] = (i & (unsigned)0xff000000) >> 24;
+    file_int[1] = (i & (unsigned)0x00ff0000) >> 16;
+    file_int[2] = (i & (unsigned)0x0000ff00) >> 8;
+    file_int[3] = (i & (unsigned)0x000000ff);
+    if (fwrite ((char *) file_int, (int) sizeof (file_int), 1, file) != 1)
+	return 0;
+    return 1;
+}
+
+/*---------------------------------------------------------------------------*/
 
 int
 write_counted_string (file, string)
-
 FILE	*file;
 char	*string;
-
 {
     if (string)
     {
@@ -203,27 +294,24 @@ char	*string;
     return 1;
 }
 
+/*===[ various file read procedures ]========================================*/
 
-
 int
 read_byte (file, bp)
-
 FILE		*file;
 unsigned char	*bp;
-
 {
     if (fread ((char *) bp, 1, 1, file) != 1)
 	return 0;
     return 1;
 }
 
+/*---------------------------------------------------------------------------*/
 
 int
 read_ushort (file, shortp)
-
 FILE		*file;
 unsigned short	*shortp;
-
 {
     unsigned char   file_short[2];
 
@@ -233,13 +321,12 @@ unsigned short	*shortp;
     return 1;
 }
 
+/*---------------------------------------------------------------------------*/
 
 int
 read_short (file, shortp)
-
 FILE	*file;
 short	*shortp;
-
 {
     unsigned char   file_short[2];
 
@@ -249,13 +336,33 @@ short	*shortp;
     return 1;
 }
 
+/*---------------------------------------------------------------------------*
+ * Matthew McNeill Feb 1997 - required to save the occupation state as an
+ *                            integer.
+ */
+
+int
+read_int (file, intp)
+FILE	*file;
+int	*intp;
+{
+    unsigned char   file_int[4];
+
+    if (fread ((char *) file_int, (int) sizeof (file_int), 1, file) != 1)
+	return 0;
+    *intp =  (((int) file_int[0]) << 24) & 0xff000000; 
+    *intp += (((int) file_int[1]) << 16) & 0x00ff0000;
+    *intp += (((int) file_int[2]) << 8)  & 0x0000ff00;
+    *intp += ((int) file_int[3]);
+    return 1;
+}
+
+/*---------------------------------------------------------------------------*/
 
 int
 read_counted_string (file, stringp)
-
 FILE	*file;
 char	**stringp;
-
 {
     unsigned char  len;
     char	   *data;
@@ -278,9 +385,8 @@ char	**stringp;
     return 1;
 }
 
-
-
-/*
+/*===[ Definition of a window config entry ]===================================
+ *
  * An entry in the saved window config file looks like this:
  *
  * FIELD				BYTES
@@ -318,16 +424,25 @@ char	**stringp;
  *
  * Width ever changed by user		1
  * Height ever changed by user		1
+ *
+ * ------------------[ Matthew McNeill Feb 1997 ]----------------------------
+ *
+ * Workspace Occupation                 4
+ *
  */
+
+
+/*===[ Write Window Config Entry to file ]===================================*/
 
 int
 WriteWinConfigEntry (configFile, theWindow, clientId, windowRole)
-
 FILE *configFile;
 TwmWindow *theWindow;
 char *clientId;
 char *windowRole;
-
+/* this function writes a window configuration entry of a given window to
+ * the given configuration file
+ */
 {
     char **wm_command;
     int wm_command_count, i;
@@ -373,32 +488,45 @@ char *windowRole;
 	else
 	{
 	    if (!write_byte (configFile, (char) wm_command_count))
-		return 0;
+	        return 0;
 	    for (i = 0; i < wm_command_count; i++)
-		if (!write_counted_string (configFile, wm_command[i]))
-		    return 0;
-	    XFreeStringList (wm_command);
+	        if (!write_counted_string (configFile, wm_command[i]))
+	            return 0;
+	    XFreeStringList (wm_command);	    
 	}
     }
 
-    if (!write_byte (configFile, theWindow->icon ? 1 : 0))    /* iconified */
-	return 0;
+    /* ===================[ Matthew McNeill Feb 1997 ]========================= *
+     * there has been a structural change to TwmWindow in ctwm. The Icon information
+     * is in a sub-structure now. The presence of icon information is not indicative
+     * of its current state. There is a new boolean condition for this (isicon)
+     */
 
-    if (!write_byte (configFile, theWindow->icon->w ? 1 : 0))  /* icon exists */
-	return 0;
+    if (!write_byte (configFile, theWindow->isicon ? 1 : 0)) return 0;    /* iconified */
 
-    if (theWindow->icon->w)
-    {
-	int icon_x, icon_y;
-
-	XGetGeometry (dpy, theWindow->icon->w, &JunkRoot, &icon_x,
-	    &icon_y, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
-
-	if (!write_short (configFile, (short) icon_x))
-	    return 0;
-	if (!write_short (configFile, (short) icon_y))
-	    return 0;
-    }
+    /* ===================[ Matthew McNeill Feb 1997 ]========================= *
+     * there has been a structural change to TwmWindow in ctwm. The Icon information
+     * is in a sub-structure now, if there is no icon, this sub-structure does
+     * not exist and the attempted access (below) causes a core dump.
+     * we need to check that the structure exists before trying to access it
+     */
+    if (theWindow->icon)
+      {
+	if (!write_byte (configFile, theWindow->icon->w ? 1 : 0)) return 0; /* icon info exists */
+	if (theWindow->icon->w)
+	  {
+	    int icon_x, icon_y;
+	    XGetGeometry (dpy, theWindow->icon->w, &JunkRoot, &icon_x,
+			  &icon_y, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
+	    if (!write_short (configFile, (short) icon_x)) return 0;
+	    if (!write_short (configFile, (short) icon_y)) return 0;
+	  }
+      }
+    else
+      {
+	if (!write_byte (configFile, 0)) return 0; /* icon does not have any information */
+      }
+    /* ======================================================================= */
 
     if (!write_short (configFile, (short) theWindow->frame_x))
 	return 0;
@@ -408,24 +536,34 @@ char *windowRole;
 	return 0;
     if (!write_ushort (configFile, (unsigned short) theWindow->attr.height))
 	return 0;
-
     if (!write_byte (configFile, theWindow->widthEverChangedByUser ? 1 : 0))
 	return 0;
-
     if (!write_byte (configFile, theWindow->heightEverChangedByUser ? 1 : 0))
 	return 0;
+
+    /* ===================[ Matthew McNeill Feb 1997 ]=======================*
+     * write an extra piece of information to the file, this is the occupation 
+     * number and is a bit field of the workspaces occupied by the client.
+     */
+
+    if (!write_int (configFile, theWindow->occupation))
+	return 0;
+
+    /* ======================================================================*/
 
     return 1;
 }
 
+/*===[ Read Window Configuration Entry ]=====================================*/
 
 int
 ReadWinConfigEntry (configFile, version, pentry)
-
 FILE *configFile;
 unsigned short version;
 TWMWinConfigEntry **pentry;
-
+/* this function reads the next window configuration entry from the given file
+ * else it returns FALSE if none exists or there is a problem
+ */
 {
     TWMWinConfigEntry *entry;
     unsigned char byte;
@@ -482,10 +620,12 @@ TWMWinConfigEntry **pentry;
 
     if (!read_byte (configFile, &byte))
 	goto give_up;
+
     entry->iconified = byte;
 
     if (!read_byte (configFile, &byte))
 	goto give_up;
+
     entry->icon_info_present = byte;
 
     if (entry->icon_info_present)
@@ -521,6 +661,16 @@ TWMWinConfigEntry **pentry;
 	entry->height_ever_changed_by_user = False;
     }
 
+    /* ===================[ Matthew McNeill Feb 1997 ]======================= *
+     * read in the occupation information to restore the windows to the 
+     * correct workspaces.
+     */
+
+    if (!read_int (configFile, &entry->occupation))
+	goto give_up;
+
+    /* ====================================================================== */
+
     return 1;
 
 give_up:
@@ -550,12 +700,14 @@ give_up:
     return 0;
 }
 
+/*===[ Read In Win Config File ]=============================================*/
 
 void
 ReadWinConfigFile (filename)
-
 char *filename;
-
+/* this function reads the window configuration file and stores the information
+ * in a data structure which is returned
+ */
 {
     FILE *configFile;
     TWMWinConfigEntry *entry;
@@ -586,12 +738,15 @@ char *filename;
     fclose (configFile);
 }
 
+/*===[ Get Window Configuration ]============================================*
+ * Matthew McNeill Feb 1997 - added extra parameter (occupation) to return 
+ *                            restored occupation of the window 
+ */
 
-
 int
 GetWindowConfig (theWindow, x, y, width, height,
     iconified, icon_info_present, icon_x, icon_y,
-    width_ever_changed_by_user, height_ever_changed_by_user)
+    width_ever_changed_by_user, height_ever_changed_by_user, occupation)
 
 TwmWindow *theWindow;
 short *x, *y;
@@ -601,7 +756,12 @@ Bool *icon_info_present;
 short *icon_x, *icon_y;
 Bool *width_ever_changed_by_user;
 Bool *height_ever_changed_by_user;
+int *occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
 
+/* This function attempts to extract all the relevant information from the 
+ * given window and return values via the rest of the parameters to the
+ * function
+ */
 {
     char *clientId, *windowRole;
     TWMWinConfigEntry *ptr;
@@ -710,6 +870,9 @@ Bool *height_ever_changed_by_user;
 	    *icon_x = ptr->icon_x;
 	    *icon_y = ptr->icon_y;
 	}
+
+	*occupation = ptr->occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
+
 	ptr->tag = 1;
     }
     else
@@ -724,15 +887,17 @@ Bool *height_ever_changed_by_user;
     return found;
 }
 
+/*===[ Unique Filename Generator ]===========================================*/
 
-
 static char *
 unique_filename (path, prefix)
-
 char *path;
 char *prefix;
-
+/* this function attempts to allocate a temporary filename to store the 
+ * information of the windows
+ */
 {
+
 #ifndef X_NOT_POSIX
     return ((char *) tempnam (path, prefix));
 #else
@@ -752,14 +917,17 @@ char *prefix;
 #endif
 }
 
+/*===[ SAVE WINDOW INFORMATION ]=============================================*/
 
-
 void
 SaveYourselfPhase2CB (smcConn, clientData)
-
 SmcConn smcConn;
 SmPointer clientData;
-
+/* this is where all the work is done in saving the state of the windows.
+ * it is not done in Phase One because phase one is used for the other clients
+ * to make sure that all the property information on their windows is correct
+ * and up to date
+ */
 {
     int scrnum;
     ScreenInfo *theScreen;
@@ -819,11 +987,17 @@ SmPointer clientData;
 	if (!path)
 	    path = ".";
     }
-
-    if ((filename = unique_filename (path, ".twm")) == NULL)
+    /*==============[ Matthew McNeill Feb 1997 ]==============*
+     *        changed the unique name to CTWM rather than TWM 
+     *        this is tidier and more functional and prevents
+     *        TWM picking up CTWM config files. The format is 
+     *        no longer the same since the new format supports
+     *        virtaul workspaces.
+     *========================================================*/
+    if ((filename = unique_filename (path, ".ctwm")) == NULL)
 	goto bad;
 
-    if (!(configFile = fopen (filename, "wb")))
+    if (!(configFile = fopen (filename, "wb"))) /* wb = write bytes ? */
 	goto bad;
 
     if (!write_ushort (configFile, SAVEFILE_VERSION))
@@ -925,59 +1099,61 @@ SmPointer clientData;
 	free (filename);
 }
 
+/*===[ Save Yourself SM CallBack ]===========================================*/
 
-
 void
 SaveYourselfCB (smcConn, clientData, saveType, shutdown, interactStyle, fast)
-
 SmcConn smcConn;
 SmPointer clientData;
 int saveType;
 Bool shutdown;
 int interactStyle;
 Bool fast;
-
+/* this procedure is called by the session manager when requesting the 
+ * window manager to save its status, ie all the window configurations 
+ */
 {
     if (!SmcRequestSaveYourselfPhase2 (smcConn, SaveYourselfPhase2CB, NULL))
-    {
-	SmcSaveYourselfDone (smcConn, False);
-	sent_save_done = 1;
+    {  
+        SmcSaveYourselfDone (smcConn, False); 
+        sent_save_done = 1;
     }
     else
 	sent_save_done = 0;
 }
 
+/*===[ Die SM Call Back ]====================================================*/
 
-
 void
 DieCB (smcConn, clientData)
-
 SmcConn smcConn;
 SmPointer clientData;
-
+/* this procedure is called by the session manager when requesting that the 
+ * application shut istelf down
+ */
 {
     SmcCloseConnection (smcConn, 0, NULL);
     XtRemoveInput (iceInputId);
     Done();
 }
 
+/*===[ Save Complete SM Call Back ]==========================================*/
 
-
 void
 SaveCompleteCB (smcConn, clientData)
-
 SmcConn smcConn;
 SmPointer clientData;
-
+/* This function is called to say that the save has been completed and that
+ * the program can continue its operation
+ */
 {
     ;
 }
 
+/*===[ Shutdown Cancelled SM Call Back ]=====================================*/
 
-
 void
 ShutdownCancelledCB (smcConn, clientData)
-
 SmcConn smcConn;
 SmPointer clientData;
 
@@ -989,28 +1165,28 @@ SmPointer clientData;
     }
 }
 
+/*===[ Process ICE Message ]=================================================*/
 
-
 void
 ProcessIceMsgProc (client_data, source, id)
-
 XtPointer	client_data;
 int 		*source;
 XtInputId	*id;
 
 {
     IceConn	ice_conn = (IceConn) client_data;
-
     IceProcessMessages (ice_conn, NULL, NULL);
 }
 
 
-
+/*===[ Connect To Session Manager ]==========================================*/
+
 void
 ConnectToSessionManager (previous_id)
-
 char *previous_id;
-
+/* This procedure attempts to connect to the session manager and setup the
+ * interclent exchange via the Call Backs
+ */
 {
     char errorMsg[256];
     unsigned long mask;
@@ -1044,7 +1220,13 @@ char *previous_id;
 	256, errorMsg);
 
     if (smcConn == NULL)
-	return;
+      {
+#ifdef DEBUG
+       /* == [ Matthew McNeill Feb 1997 ] == */
+       fprintf (stderr, "%s : Connection to session manager failed. (%s)",ProgramName, errorMsg);
+#endif
+       return;
+      }
 
     iceConn = SmcGetIceConnection (smcConn);
 
@@ -1057,4 +1239,17 @@ char *previous_id;
 }
 
 #endif /* X11R6 */
+
+
+
+
+
+
+
+
+
+
+
+
+
 

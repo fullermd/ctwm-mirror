@@ -113,10 +113,9 @@
 #endif
 #define BUF_LEN 300
 
-int ParseJustification ();
-int ParseAlignement ();
 static int ParseRandomPlacement ();
 static int ParseButtonStyle ();
+extern int yyparse(),twmrc_error_prefix();
 
 static FILE *twmrc;
 static int ptr = 0;
@@ -146,6 +145,9 @@ void twmUnput();
 int (*twmInputFunc)();
 
 extern char *defTwmrc[];		/* default bindings */
+
+extern int captive;
+extern char *captivename;
 
 #ifdef SOUNDS
 extern int set_sound_host();
@@ -456,17 +458,20 @@ static int twmFileInput()
 
 static int m4twmFileInput()
 {
-        if (overflowlen) return((int) overflowbuff[--overflowlen]);
+    int pppp;
+    if (overflowlen){
+	return((int) overflowbuff[--overflowlen]);
+    }
 
-        while (ptr == len) {
-                if (fgets(buff, BUF_LEN, twmrc) == NULL) return(0);
-
-                yylineno++;
-
-                ptr = 0;
-                len = strlen(buff);
-        }
-        return ((int)buff[ptr++]);
+    while (ptr == len) {
+	if (fgets(buff, BUF_LEN, twmrc) == NULL) return(0);
+	
+	yylineno++;
+	
+	ptr = 0;
+	len = strlen(buff);
+    }
+    return ((int)buff[ptr++]);
 }
 #endif /* USEM4 */
 
@@ -595,6 +600,12 @@ typedef struct _TwmKeyword {
 #define kw0_AutoRaiseIcons		53
 #define kw0_use3DIconBorders		54
 #define kw0_UseSunkTitlePixmap          55
+#define kw0_ShortAllWindowsMenus	56
+#define kw0_RaiseWhenAutoUnSqueeze	57
+#define kw0_RaiseOnClick		58
+#define kw0_IgnoreLockModifier		59
+#define kw0_AutoFocusToTransients       60 /* kai */
+#define kw0_PackNewWindows		61
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -647,6 +658,8 @@ typedef struct _TwmKeyword {
 #define kwn_MovePackResistance		28
 #define kwn_XMoveGrid			29
 #define kwn_YMoveGrid			30
+#define kwn_OpenWindowTimeout		31
+#define kwn_RaiseOnClickButton		32
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -682,10 +695,12 @@ static TwmKeyword keytable[] = {
     { "alwaysontop",		ALWAYS_ON_TOP, 0 },
     { "alwaysshowwindowwhenmovingfromworkspacemanager", KEYWORD, kw0_ShowWinWhenMovingInWmgr },
     { "animationspeed",		NKEYWORD, kwn_AnimationSpeed },
+    { "autofocustotransients",  KEYWORD, kw0_AutoFocusToTransients }, /* kai */
     { "autooccupy",		KEYWORD, kw0_AutoOccupy },
     { "autoraise",		AUTO_RAISE, 0 },
     { "autoraiseicons",		KEYWORD, kw0_AutoRaiseIcons },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
+    { "autosqueeze",		AUTOSQUEEZE, 0 },
     { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
     { "borderresizecursors",	KEYWORD, kw0_BorderResizeCursors },
@@ -716,6 +731,7 @@ static TwmKeyword keytable[] = {
     { "donticonifybyunmapping",	DONT_ICONIFY_BY_UNMAPPING, 0 },
     { "dontmoveoff",		KEYWORD, kw0_DontMoveOff },
     { "dontpaintrootwindow",	KEYWORD, kw0_DontPaintRootWindow },
+    { "dontsetinactive",	DONTSETINACTIVE, 0 },
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
     { "dontwarpcursorinwmap",	KEYWORD, kw0_DontWarpCursorInWMap },
     { "east",			DKEYWORD, D_EAST },
@@ -743,6 +759,7 @@ static TwmKeyword keytable[] = {
     { "f.downworkspace",	FKEYWORD, F_DOWNWORKSPACE },
     { "f.exec",			FSKEYWORD, F_EXEC },
     { "f.file",			FSKEYWORD, F_FILE },
+    { "f.fill",			FSKEYWORD, F_FILL },
     { "f.focus",		FKEYWORD, F_FOCUS },
     { "f.forcemove",		FKEYWORD, F_FORCEMOVE },
     { "f.forwiconmgr",		FKEYWORD, F_FORWICONMGR },
@@ -755,6 +772,7 @@ static TwmKeyword keytable[] = {
     { "f.hideworkspacemgr",	FKEYWORD, F_HIDEWORKMGR },
     { "f.horizoom",		FKEYWORD, F_HORIZOOM },
     { "f.htzoom",		FKEYWORD, F_TOPZOOM },
+    { "f.hypermove",		FKEYWORD, F_HYPERMOVE },
     { "f.hzoom",		FKEYWORD, F_HORIZOOM },
     { "f.iconify",		FKEYWORD, F_ICONIFY },
     { "f.identify",		FKEYWORD, F_IDENTIFY },
@@ -772,6 +790,7 @@ static TwmKeyword keytable[] = {
     { "f.nop",			FKEYWORD, F_NOP },
     { "f.occupy",		FKEYWORD, F_OCCUPY },
     { "f.occupyall",		FKEYWORD, F_OCCUPYALL },
+    { "f.pack",			FSKEYWORD, F_PACK },
     { "f.pin",			FKEYWORD, F_PIN },
     { "f.previconmgr",		FKEYWORD, F_PREVICONMGR },
     { "f.prevworkspace",	FKEYWORD, F_PREVWORKSPACE },
@@ -786,9 +805,11 @@ static TwmKeyword keytable[] = {
 #endif
     { "f.resize",		FKEYWORD, F_RESIZE },
     { "f.restart",		FKEYWORD, F_RESTART },
+    { "f.restoregeometry",	FKEYWORD, F_RESTOREGEOMETRY },
     { "f.righticonmgr",		FKEYWORD, F_RIGHTICONMGR },
     { "f.rightworkspace",	FKEYWORD, F_RIGHTWORKSPACE },
     { "f.rightzoom",		FKEYWORD, F_RIGHTZOOM },
+    { "f.savegeometry",		FKEYWORD, F_SAVEGEOMETRY },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
     { "f.separator",		FKEYWORD, F_SEPARATOR },
     { "f.setbuttonsstate",	FKEYWORD, F_SETBUTTONSTATE },
@@ -808,6 +829,7 @@ static TwmKeyword keytable[] = {
     { "f.togglesound",		FKEYWORD, F_TOGGLESOUND },
 #endif
     { "f.togglestate",		FKEYWORD, F_TOGGLESTATE },
+    { "f.toggleworkspacemgr",	FKEYWORD, F_TOGGLEWORKMGR },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
     { "f.trace",		FSKEYWORD, F_TRACE },
     { "f.twmrc",		FKEYWORD, F_RESTART },
@@ -854,6 +876,7 @@ static TwmKeyword keytable[] = {
     { "iconregionalignement",	SKEYWORD, kws_IconRegionAlignement },
     { "iconregionjustification",SKEYWORD, kws_IconRegionJustification },
     { "icons",			ICONS, 0 },
+    { "ignorelockmodifier",	KEYWORD, kw0_IgnoreLockModifier },
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
     { "l",			LOCK, 0 },
     { "left",			JKEYWORD, J_LEFT },
@@ -912,10 +935,15 @@ static TwmKeyword keytable[] = {
     { "opaquemovethreshold",	NKEYWORD, kwn_OpaqueMoveThreshold },
     { "opaqueresize",		OPAQUERESIZE, 0 },
     { "opaqueresizethreshold",	NKEYWORD, kwn_OpaqueResizeThreshold },
+    { "openwindowtimeout",	NKEYWORD, kwn_OpenWindowTimeout },
+    { "packnewwindows",		KEYWORD, kw0_PackNewWindows },
     { "pixmapdirectory",	SKEYWORD, kws_PixmapDirectory },
     { "pixmaps",		PIXMAPS, 0 },
     { "r",			ROOT, 0 },
     { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
+    { "raiseonclick",		KEYWORD, kw0_RaiseOnClick },
+    { "raiseonclickbutton",	NKEYWORD, kwn_RaiseOnClickButton },
+    { "raisewhenautounsqueeze",	KEYWORD, kw0_RaiseWhenAutoUnSqueeze },
     { "randomplacement",	SKEYWORD, kws_RandomPlacement },
     { "reallymoveinworkspacemanager",	KEYWORD, kw0_ReallyMoveInWorkspaceManager },
     { "resize",			RESIZE, 0 },
@@ -930,6 +958,7 @@ static TwmKeyword keytable[] = {
     { "schrinkicontitles",	KEYWORD, kw0_SchrinkIconTitles },
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
+    { "shortallwindowsmenus",	KEYWORD, kw0_ShortAllWindowsMenus },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
     { "showworkspacemanager",	KEYWORD, kw0_ShowWorkspaceManager },
     { "smarticonify",		KEYWORD, kw0_SmartIconify },
@@ -941,6 +970,7 @@ static TwmKeyword keytable[] = {
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
     { "startinmapstate",	KEYWORD, kw0_StartInMapState },
+    { "startsqueezed",		STARTSQUEEZED, 0 },
     { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
     { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
     { "t",			TITLE, 0 },
@@ -958,6 +988,7 @@ static TwmKeyword keytable[] = {
     { "transienthasoccupation",	KEYWORD, kw0_TransientHasOccupation },
     { "transientontop",		NKEYWORD, kwn_TransientOnTop },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
+    { "unmapbymovingfaraway",	UNMAPBYMOVINGFARAWAY, 0 },
     { "usepposition",		SKEYWORD, kws_UsePPosition },
     { "usesunktitlepixmap",     KEYWORD, kw0_UseSunkTitlePixmap },
     { "usethreedborders",	KEYWORD, kw0_Use3DBorders },
@@ -1232,10 +1263,34 @@ int do_single_keyword (keyword)
 	Scr->AutoRaiseIcons = TRUE;
 	return 1;
 
+      /* kai */
+      case kw0_AutoFocusToTransients:
+        Scr->AutoFocusToTransients = TRUE;
+        return 1;
+
       case kw0_use3DIconBorders:
 	Scr->use3Diconborders = TRUE;
 	return 1;
 
+      case kw0_ShortAllWindowsMenus:
+	Scr->ShortAllWindowsMenus = TRUE;
+	return 1;
+
+      case kw0_RaiseWhenAutoUnSqueeze:
+	Scr->RaiseWhenAutoUnSqueeze = TRUE;
+	return 1;
+
+      case kw0_RaiseOnClick:
+	Scr->RaiseOnClick = TRUE;
+	return 1;
+
+      case kw0_IgnoreLockModifier:
+	Scr->IgnoreLockModifier = TRUE;
+	return 1;
+
+      case kw0_PackNewWindows:
+	Scr->PackNewWindows = TRUE;
+	return 1;
 
     }
     return 0;
@@ -1272,6 +1327,31 @@ int do_string_keyword (keyword, s)
 	    return 1;
 	}
 
+#ifdef I18N
+      case kws_IconFont:
+	if (!Scr->HaveFonts) Scr->IconFont.basename = s;
+	return 1;
+
+      case kws_ResizeFont:
+	if (!Scr->HaveFonts) Scr->SizeFont.basename = s;
+	return 1;
+
+      case kws_MenuFont:
+	if (!Scr->HaveFonts) Scr->MenuFont.basename = s;
+	return 1;
+
+      case kws_WorkSpaceFont:
+	if (!Scr->HaveFonts) Scr->workSpaceMgr.workspaceWindow.windowFont.basename = s;
+	return 1;
+
+      case kws_TitleFont:
+	if (!Scr->HaveFonts) Scr->TitleBarFont.basename = s;
+	return 1;
+
+      case kws_IconManagerFont:
+	if (!Scr->HaveFonts) Scr->IconManagerFont.basename = s;
+	return 1;
+#else	
       case kws_IconFont:
 	if (!Scr->HaveFonts) Scr->IconFont.name = s;
 	return 1;
@@ -1295,6 +1375,7 @@ int do_string_keyword (keyword, s)
       case kws_IconManagerFont:
 	if (!Scr->HaveFonts) Scr->IconManagerFont.name = s;
 	return 1;
+#endif
 
       case kws_UnknownIcon:
 	if (Scr->FirstTime) GetUnknownIcon (s);
@@ -1547,6 +1628,17 @@ int do_number_keyword (keyword, num)
 	if (Scr->MenuShadowDepth < 0) Scr->MenuShadowDepth = 2;
 	return 1;
 
+      case kwn_OpenWindowTimeout:
+	if (Scr->FirstTime) Scr->OpenWindowTimeout = num;
+	if (Scr->OpenWindowTimeout < 0) Scr->OpenWindowTimeout = 0;
+	return 1;
+
+      case kwn_RaiseOnClickButton:
+	if (Scr->FirstTime) Scr->RaiseOnClickButton = num;
+	if (Scr->RaiseOnClickButton < 1) Scr->RaiseOnClickButton = 1;
+	if (Scr->RaiseOnClickButton > MAX_BUTTONS) Scr->RaiseOnClickButton = MAX_BUTTONS;
+	return 1;
+
     }
 
     return 0;
@@ -1690,6 +1782,7 @@ int do_string_savecolor(colormode, s)
   Pixel p;
   GetColor(colormode, &p, s);
   put_pixel_on_root(p);
+  return 0;
 }
 
 /*
@@ -1712,6 +1805,7 @@ int key;
     cpnew = (Cptr)malloc(sizeof(Cnode));
     cpnew->i = key; cpnew->next = NULL; cptrav->next = cpnew;
   }
+  return 0;
 }
 
 /*
@@ -2064,6 +2158,12 @@ char *host;
 #ifdef XPM
 	fputs(MkDef("XPM", "Yes"), tmpf);
 #endif
+	if (captive && captivename) {
+            fputs (MkDef ("TWM_CAPTIVE", "Yes"), tmpf);
+            fputs (MkDef ("TWM_CAPTIVE_NAME", captivename), tmpf);
+	} else {
+            fputs (MkDef ("TWM_CAPTIVE", "No"), tmpf);
+	}
         if (KeepTmpFile) {
                 fprintf(stderr, "Left file: %s\n", tmp_name);
         } else {

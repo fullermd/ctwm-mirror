@@ -62,15 +62,28 @@
  ***********************************************************************/
 
 /* #include <stdio.h> */		/* lex already includes stdio.h */
+#ifdef VMS
+#  include <ctype.h>
+#  ifdef __DECC
+#    include <unistd.h>
+#  else
+#    include <unixio.h>
+#  endif
+#endif
 #include "gram.h"
 #include "parse.h"
 extern char *ProgramName;
 
 extern int ParseError;
+extern int parse_keyword(),twmrc_error_prefix();
 #ifdef FLEX_SCANNER
    int yylineno;
 #  undef YY_INPUT
+# ifdef I18N
+#  define YY_INPUT(buf,result,max_size) {buf[0]=twmInputFunc();result=(buf[0] != 0);}
+# else
 #  define YY_INPUT(buf,result,max_size) {buf[0]=twmInputFunc();result=(buf[0]>0);}
+# endif
 #endif
 
 %}
@@ -103,7 +116,7 @@ number				[0-9]+
 "!"				{ yylval.num = F_EXEC; return FSKEYWORD; }
 "^"				{ yylval.num = F_CUT; return FSKEYWORD; }
 
-{string}			{ yylval.ptr = (char *)yytext; return STRING; }
+{string}			{ yylval.ptr = (unsigned char *)yytext; return STRING; }
 {number}			{ (void)sscanf((char *)yytext, "%d", &yylval.num);
 				  return (NUMBER);
 				}
@@ -131,3 +144,4 @@ yywrap() { return(1);}
 #define output(c)	TwmOutput(c)
 #define feof()		(1)
 #endif
+

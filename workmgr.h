@@ -35,16 +35,25 @@
 #define STYLE_STYLE2	2
 #define STYLE_STYLE3	3
 
+void InitWorkSpaceManager ();
+int ConfigureWorkSpaceManager ();
 void CreateWorkSpaceManager ();
 void GotoWorkSpaceByName ();
 void GotoPrevWorkSpace ();
 void GotoNextWorkSpace ();
+void GotoRightWorkSpace ();
+void GotoLeftWorkSpace ();
+void GotoUpWorkSpace ();
+void GotoDownWorkSpace ();
 void GotoWorkSpace ();
 void AddWorkSpace ();
 void SetupOccupation ();
 void Occupy ();
 void OccupyHandleButtonEvent ();
 void OccupyAll ();
+void AddToWorkSpace ();
+void RemoveFromWorkSpace ();
+void ToggleOccupation ();
 void AllocateOthersIconManagers ();
 void ChangeOccupation ();
 void WmgrRedoOccupation ();
@@ -53,6 +62,7 @@ void WMgrAddToCurrentWosksaceAndWarp ();
 void WMgrHandleExposeEvent ();
 void PaintWorkSpaceManager ();
 void PaintOccupyWindow ();
+unsigned int GetMaskFromProperty ();
 void AddToClientsList ();
 void WMapToggleState ();
 void WMapSetMapState ();
@@ -74,6 +84,13 @@ void WMgrHandleButtonEvent ();
 void WMapRedrawName ();
 void WMapCreateCurrentBackGround ();
 void WMapCreateDefaultBackGround ();
+char *GetCurrentWorkSpaceName ();
+Bool AnimateRoot ();
+void AddToCaptiveList ();
+void RemoveFromCaptiveList ();
+Bool RedirectToCaptive ();
+void SetPropsIfCaptiveCtwm ();
+Window CaptiveCtwmRootWindow ();
 
 typedef struct WorkSpaceList WorkSpaceList;
 
@@ -173,5 +190,12 @@ typedef struct WorkSpaceMgr {
     int			count;
 } WorkSpaceMgr;
 
+typedef struct CaptiveCTWM {
+    Window	root;
+    String	name;
+} CaptiveCTWM;
+
+CaptiveCTWM GetCaptiveCTWMUnderPointer ();
+void SetNoRedirect ();
 
 #endif

@@ -64,7 +64,7 @@
 #ifndef _UTIL_
 #define _UTIL_
 
-#if defined(ultrix) || defined(sequent) || defined(sony_news) || defined(riscix)
+#if defined(VMS) || defined(ultrix) || defined(sequent) || defined(sony_news) || defined(riscix)
 #   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
 #endif
 
@@ -76,6 +76,7 @@ extern char 	*ExpandFilename();
 extern char 	*ExpandFilePath();
 
 void MaskScreen ();
+int UnmaskScreen ();
 void StartAnimation ();
 void StopAnimation ();
 void SetAnimationSpeed ();
@@ -87,7 +88,10 @@ void LocateStandardColormaps ();
 void GetColor ();
 void GetShadeColors ();
 void GetFont();
+void SetFocusVisualAttributes ();
 void SetFocus ();
+Pixmap Create3DMenuIcon ();
+Pixmap Create3DIconManagerIcon ();
 void Draw3DBorder ();
 void Draw3DCorner ();
 void PaintBorders ();
@@ -97,6 +101,8 @@ void PaintIcon ();
 void PaintTitleButton ();
 void PaintTitleButtons ();
 void adoptWindow ();
+void DebugTrace ();
+void SetBorderCursor ();
 void ChangeFocusGrab ();
 Cursor CalculateBorderCursor ();
 

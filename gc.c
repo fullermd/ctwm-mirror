@@ -73,6 +73,8 @@
 #include "gram.h"
 #include "screen.h"
 
+extern int twmrc_error_prefix();
+
 /***********************************************************************
  *
  *  Procedure:
@@ -110,7 +112,9 @@ CreateGCs()
     gcm = 0;
     gcm |= GCForeground;    gcv.foreground = Scr->MenuC.fore;
     gcm |= GCBackground;    gcv.background = Scr->MenuC.back;
+#ifndef I18N    
     gcm |= GCFont;	    gcv.font =  Scr->MenuFont.font->fid;
+#endif    
 
     Scr->MenuGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
 

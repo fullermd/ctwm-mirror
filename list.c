@@ -76,6 +76,8 @@
 #include "screen.h"
 #include "gram.h"
 
+extern int twmrc_error_prefix();
+
 /***********************************************************************
  *
  *  Procedure:

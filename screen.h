@@ -202,6 +202,10 @@ typedef struct ScreenInfo
     WorkSpaceMgr workSpaceMgr;
     short	workSpaceManagerActive;
     name_list	*OccupyAll;	/* list of window names occupying all workspaces at startup */
+    name_list	*UnmapByMovingFarAway;
+    name_list	*DontSetInactive;
+    name_list	*AutoSqueeze;
+    name_list	*StartSqueezed;
     short 	use3Dmenus;
     short 	use3Dtitles;
     short 	use3Diconmanagers;
@@ -228,6 +232,8 @@ typedef struct ScreenInfo
     short	CenterFeedbackWindow;
     short	SchrinkIconTitles;
     short	AutoRaiseIcons;
+    short       AutoFocusToTransients; /* kai */
+    short       PackNewWindows;
 
     name_list *BorderColorL;
     name_list *IconBorderColorL;
@@ -358,6 +364,12 @@ typedef struct ScreenInfo
     short WarpUnmapped;		/* allow warping to unmapped windows */
     short WindowRingAll;	/* add all windows to the ring */
     short WarpRingAnyWhere;	/* warp to ring even if window is not visible */
+    short ShortAllWindowsMenus;	/* Eliminates Icon and Workspace Managers */
+    short OpenWindowTimeout;	/* Timeout when a window tries to open */
+    short RaiseWhenAutoUnSqueeze;
+    short RaiseOnClick;		/* Raise a window when clieked into */
+    short RaiseOnClickButton;		/* Raise a window when clieked into */
+    short IgnoreLockModifier;	/* Should we ignore the lock modifier */
 
     FuncKey FuncKeyRoot;
     FuncButton FuncButtonRoot;

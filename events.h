@@ -72,6 +72,7 @@ extern Time lastTimestamp;
 extern void SimulateMapRequest();
 extern void AutoRaiseWindow();
 #define LastTimestamp() lastTimestamp
+extern void FixRootEvent ();
 extern Bool DispatchEvent();
 extern Bool DispatchEvent2();
 extern void HandleEvents();
@@ -93,6 +94,15 @@ extern void HandleKeyRelease();
 extern void HandleColormapNotify();
 extern void HandleVisibilityNotify();
 extern void HandleUnknown();
+extern int Transient();
+
+#if 0
+extern ScreenInfo *FindScreenInfo(w);
+#endif
+extern InstallWindowColormaps ();
+extern InstallRootColormap();
+extern UninstallRootColormap();
+extern ConfigureRootWindow ();
 
 extern event_proc EventHandler[];
 extern Window DragWindow;

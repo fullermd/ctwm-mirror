@@ -12,6 +12,7 @@ XCOMM
 #define XPM
 #define USEM4
 #undef X11R6
+#define I18N
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
@@ -78,12 +79,18 @@ XCOMM
       X11R6DEFS = 
 #endif
 
+#ifdef I18N
+     I18N_DEFS = -DI18N
+#else
+     I18N_DEFS =
+#endif
+
 #ifdef DEBUG
     CDEBUGFLAGS = -g
 #endif
 
 LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)
-        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(X11R6DEFS) $(SOUND_DEFS)
+        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(X11R6DEFS) $(SOUND_DEFS)  $(I18N_DEFS)
  EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(SOUND_INCLUDES)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \

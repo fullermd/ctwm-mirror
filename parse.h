@@ -151,6 +151,10 @@ extern void TwmOutput();
 #define F_SQUEEZE		77
 #define F_FORWMAPICONMGR	78
 #define F_BACKMAPICONMGR	79
+#define F_SAVEGEOMETRY		80
+#define F_RESTOREGEOMETRY	81
+#define F_TOGGLEWORKMGR		82
+#define F_HYPERMOVE		83
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
@@ -168,10 +172,15 @@ extern void TwmOutput();
 #define F_ADDTOWORKSPACE	114	/* string */
 #define F_REMOVEFROMWORKSPACE	115	/* string */
 #define F_TOGGLEOCCUPATION	116	/* string */
+#define F_PACK			117	/* string */
+#define F_FILL			118	/* string */
 
 #define D_NORTH			1
 #define D_SOUTH			2
 #define D_EAST			3
 #define D_WEST			4
+
+int ParseJustification ();
+int ParseAlignement ();
 
 #endif /* _PARSE_ */

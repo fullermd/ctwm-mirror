@@ -69,6 +69,8 @@
 
 #include "twm.h"
 #include "util.h"
+#include "events.h"
+#include "add_window.h"
 #include "gram.h"
 #include "screen.h"
 #include "icons.h"
@@ -76,15 +78,35 @@
 #ifdef VMS
 #include <decw$include/Xos.h>
 #include <decw$include/Xatom.h>
+#include <decw$include/Xutil.h>
 #include <X11Xmu/Drawing.h>
 #include <X11Xmu/CharSet.h>
 #include <X11Xmu/WinUtil.h>
+#ifdef HAVE_XWDFILE_H
+#include "XWDFile.h"		/* We do some tricks, since the original
+				   has bugs...		/Richard Levitte */
+#endif
 #include <unixlib.h>
 #include <starlet.h>
 #include <ssdef.h>
 #include <psldef.h>
 #include <lib$routines.h>
+#ifdef __DECC
+#include <unistd.h>
+#endif
 #define USE_SIGNALS
+#ifndef F_OK
+#  define F_OK 0
+#endif
+#ifndef X_OK
+#  define X_OK 1
+#endif
+#ifndef W_OK
+#  define W_OK 2
+#endif
+#ifndef R_OK
+#  define R_OK 4
+#endif
 #else
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
@@ -127,7 +149,7 @@ extern Atom _XA_WM_WORKSPACESLIST;
 
 static Image *LoadBitmapImage ();
 static Image *GetBitmapImage  ();
-#ifndef VMS
+#if !defined(VMS) || defined(HAVE_XWDFILE_H)
 static Image *LoadXwdImage    ();
 static Image *GetXwdImage     ();
 #endif
@@ -156,6 +178,9 @@ static Image  *Create3DBoxImage ();
 extern FILE *tracefile;
 
 void FreeImage ();
+
+int _swapshort ();
+int _swaplong ();
 
 static int    reportfilenotfound = 1;
 static Colormap AlternateCmap = None;
@@ -699,6 +724,7 @@ ColorPair cp;
     char	*fullname;
     Image	*image;
     int		status;
+    Colormap	stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
     XpmAttributes attributes;
     static XpmColorSymbol overrides[] = {
 	{"Foreground", NULL, 0},
@@ -730,7 +756,7 @@ ColorPair cp;
     overrides[3].pixel = cp.shadc;
 
 
-    attributes.colormap  = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, Scr->screen);
+    attributes.colormap  = AlternateCmap ? AlternateCmap : stdcmap;
     attributes.depth     = Scr->d_depth;
     attributes.visual    = Scr->d_visual;
     attributes.closeness = 65535; /* Never fail */
@@ -859,9 +885,9 @@ char *file;
 
     WelcomeCp.fore = Scr->Black;
     WelcomeCp.back = Scr->White;
-    Scr->WelcomeCmap  = XCreateColormap (dpy, Scr->WindowMask,
-				DefaultVisual (dpy, Scr->screen), AllocNone);
+    Scr->WelcomeCmap  = XCreateColormap (dpy, Scr->WindowMask, Scr->d_visual, AllocNone);
     if (! Scr->WelcomeCmap) return;
+    XSetWindowColormap (dpy, Scr->WindowMask, Scr->WelcomeCmap);
     black.red   = 0;
     black.green = 0;
     black.blue  = 0;
@@ -883,7 +909,10 @@ char *file;
     reportfilenotfound = 1;
     if (Scr->WelcomeImage == None) return;
 
-    if (captive) XSetWindowColormap (dpy, Scr->Root, Scr->WelcomeCmap);
+    if (captive) {
+	XSetWindowColormap (dpy, Scr->WindowMask, Scr->WelcomeCmap);
+	XSetWMColormapWindows (dpy, Scr->Root, &(Scr->WindowMask), 1);
+    }
     else XInstallColormap (dpy, Scr->WelcomeCmap);
 
     Scr->WelcomeGC = XCreateGC (dpy, Scr->WindowMask, 0, NULL);
@@ -903,7 +932,7 @@ UnmaskScreen () {
     struct timeval	timeout;
 #endif
     Pixel		stdpixels [256];
-    Colormap		stdcmap = DefaultColormap (dpy, Scr->screen);
+    Colormap		stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
     Colormap		cmap;
     XColor		colors [256], stdcolors [256];
     int			i, j, usec;
@@ -958,9 +987,32 @@ UnmaskScreen () {
     }
     if (Scr->Monochrome != COLOR) goto fin;
 
-    cmap = XCreateColormap (dpy, Scr->Root, DefaultVisual (dpy, Scr->screen), AllocNone);
+/*
+    XClearWindow (dpy, Scr->Root);
+    XSync (dpy, 0);
+    PaintAllDecoration ();
+    XSetWindowBackgroundPixmap (dpy, Scr->WindowMask, None);
+    for (i = 0; i < 128; i++) {
+	for (j = 0; j < 256; j++) {
+	    colors [j].pixel = j;
+	    colors [j].red   = stdcolors [j].red   * (i / 127.0);
+	    colors [j].green = stdcolors [j].green * (i / 127.0);
+	    colors [j].blue  = stdcolors [j].blue  * (i / 127.0);
+	    colors [j].flags = DoRed | DoGreen | DoBlue;
+	}
+	XStoreColors (dpy, cmap, colors, 256);
+#ifdef VMS
+        lib$wait(&timeout);
+#else
+	select (0, (void *) 0, (void *) 0, (void *) 0, &timeout);
+#endif
+    }
+    XUnmapWindow (dpy, Scr->WindowMask);
+*/
+
+    cmap = XCreateColormap (dpy, Scr->Root, Scr->d_visual, AllocNone);
     if (! cmap) goto fin;
-    XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
+    status = XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
     for (i = 0; i < 256; i++) {
 	colors [i].pixel = i;
 	colors [i].red   = 0;
@@ -969,6 +1021,7 @@ UnmaskScreen () {
 	colors [i].flags = DoRed | DoGreen | DoBlue;
     }
     XStoreColors (dpy, cmap, colors, 256);
+
     if (captive) XSetWindowColormap (dpy, Scr->Root, cmap);
     else XInstallColormap (dpy, cmap);
 
@@ -981,9 +1034,11 @@ UnmaskScreen () {
     XQueryColors (dpy, stdcmap, stdcolors, 256);
     for (i = 0; i < 128; i++) {
 	for (j = 0; j < 256; j++) {
+	    colors [j].pixel = j;
 	    colors [j].red   = stdcolors [j].red   * (i / 127.0);
 	    colors [j].green = stdcolors [j].green * (i / 127.0);
 	    colors [j].blue  = stdcolors [j].blue  * (i / 127.0);
+	    colors [j].flags = DoRed | DoGreen | DoBlue;
 	}
 	XStoreColors (dpy, cmap, colors, 256);
 #ifdef VMS
@@ -992,8 +1047,10 @@ UnmaskScreen () {
 	select (0, (void *) 0, (void *) 0, (void *) 0, &timeout);
 #endif
     }
-    if (captive) XSetWindowColormap (dpy, Scr->Root, DefaultColormap (dpy, Scr->screen));
-    else XInstallColormap (dpy, DefaultColormap (dpy, Scr->screen));
+
+    if (captive) XSetWindowColormap (dpy, Scr->Root, stdcmap);
+    else XInstallColormap (dpy, stdcmap);
+
     XFreeColormap (dpy, cmap);
 
 fin:
@@ -1473,9 +1530,57 @@ MyFont *font;
 {
     char *deffontname = "fixed";
 
-    if (font->font != NULL)
-	XFreeFont(dpy, font->font);
+#ifdef I18N
+    char **missing_charset_list_return;
+    int missing_charset_count_return;
+    char *def_string_return;
+    XFontSetExtents *font_extents;
+    XFontStruct **xfonts;
+    char **font_names;
+    register int i;
+    int ascent;
+    int descent;
+    XFontStruct *xf;
+    int fnum;
+    
+    if (font->font_set != NULL){
+	XFreeFontSet(dpy, font->font_set);
+    }
 
+    if( (font->font_set = XCreateFontSet(dpy, font->basename,
+				    &missing_charset_list_return,
+				    &missing_charset_count_return,
+				    &def_string_return)) == NULL) {
+	if (Scr->DefaultFont.basename) {
+	    deffontname = Scr->DefaultFont.basename;
+	}
+	if ((font->font_set = XCreateFontSet(dpy, deffontname,
+					     &missing_charset_list_return,
+					     &missing_charset_count_return,
+					     &def_string_return)) == NULL)
+	{
+	    fprintf (stderr, "%s:  unable to open fonts \"%s\" or \"%s\"\n",
+		     ProgramName, font->basename, deffontname);
+	    exit(1);
+	}
+    }
+    font_extents = XExtentsOfFontSet(font->font_set);
+
+    fnum = XFontsOfFontSet(font->font_set, &xfonts, &font_names);
+    for( i = 0, ascent = 0, descent = 0; i<fnum; i++){
+	ascent = MaxSize(ascent, (*xfonts)->ascent);
+	descent = MaxSize(descent, (*xfonts)->descent);
+	xfonts++;
+    }
+
+    font->height = font_extents->max_logical_extent.height;
+    font->y = ascent;
+    font->ascent = ascent;
+    font->descent = descent;
+#else
+    if (font->font != NULL){
+	XFreeFont(dpy, font->font);
+    }
     if ((font->font = XLoadQueryFont(dpy, font->name)) == NULL)
     {
 	if (Scr->DefaultFont.name) {
@@ -1487,10 +1592,10 @@ MyFont *font;
 		     ProgramName, font->name, deffontname);
 	    exit(1);
 	}
-
     }
     font->height = font->font->ascent + font->font->descent;
     font->y = font->font->ascent;
+#endif	
 }
 
 
@@ -1572,30 +1677,21 @@ void SetFocus (tmp_win, time)
     if (Scr->Focus == tmp_win) return;
 
     if (Scr->Focus) {
+	if (Scr->Focus->AutoSqueeze && !Scr->Focus->squeezed) {
+	    AutoSqueeze (Scr->Focus);
+	}
 	SetFocusVisualAttributes (Scr->Focus, False);
     }
     if (tmp_win)    {
+	if (tmp_win->AutoSqueeze && tmp_win->squeezed) {
+	    AutoSqueeze (tmp_win);
+	}
 	SetFocusVisualAttributes (tmp_win, True);
     }
-    if (Scr->ClickToFocus) ChangeFocusGrab (tmp_win);
     Scr->Focus = tmp_win;
 }
 
-#define MyWindow(win) ((win)->iconmgr || \
-		      ((win) == Scr->workSpaceMgr.workspaceWindow.twm_win) || \
-		      ((win) == Scr->workSpaceMgr.occupyWindow.twm_win))
-
-void ChangeFocusGrab (tmp_win)
-TwmWindow *tmp_win;
-{
-    if (tmp_win) {
-	ClickToFocusUngrab (tmp_win);
-    }
-    if (Scr->Focus && ! MyWindow (Scr->Focus)) {
-	ClickToFocusGrab (Scr->Focus);
-    }
-}
-
+#
 #ifdef NOPUTENV
 /*
  * define our own putenv() if the system doesn't have one.
@@ -1799,10 +1895,8 @@ ColorPair cp;
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point, point);
 
     FB (cp.shadc, cp.shadd);
-    XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point, point, h/2+1,
-     h-point);
-    XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point-1, point+1,
-     h/2+1, h-point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point, point, h/2+1, h-point);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, h-point-1, point+1, h/2+1, h-point-1);
 
     image->mask   = None;
     image->width  = h;
@@ -2049,10 +2143,8 @@ ColorPair cp;
 
     h = height;
     w = h * 7 / 8;
-    if (h < 1)
-	h = 1;
-    if (w < 1)
-	w = 1;
+    if (h < 1) h = 1;
+    if (w < 1) w = 1;
     *widthp  = w;
     *heightp = h;
 
@@ -2067,6 +2159,7 @@ ColorPair cp;
     col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     col->next = colori;
     colori = col;
+
     Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
     for (i = 3; i + 5 < h; i += 5) {
 	Draw3DBorder (col->pix, 4, i, w - 8, 3, 1, Scr->MenuC, off, True, False);
@@ -2313,7 +2406,7 @@ static Pixmap CreateQuestionPixmap (widthp, heightp)
 static Pixmap CreateMenuPixmap (widthp, heightp)
     int *widthp, *heightp;
 {
-    CreateMenuIcon (Scr->TBInfo.width - Scr->TBInfo.border * 2,widthp,heightp);
+    return (CreateMenuIcon (Scr->TBInfo.width - Scr->TBInfo.border * 2,widthp,heightp));
 }
 
 Pixmap CreateMenuIcon (height, widthp, heightp)
@@ -2652,7 +2745,7 @@ Bool focus;
 		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
 		Scr->BorderShadowDepth, cp, off, True, False);
 
-    if (tmp_win->squeeze_info) {
+    if (tmp_win->squeeze_info && !tmp_win->squeezed) {
 	Draw3DBorder (tmp_win->frame,
 		0,
 		Scr->TitleHeight,
@@ -2672,6 +2765,10 @@ void PaintTitle (tmp_win)
 TwmWindow *tmp_win;
 {
     int width, mwidth, len;
+#ifdef I18N
+    XRectangle inc_rect;
+    XRectangle logical_rect;
+#endif    
 
     if (Scr->use3Dtitles) {
 	if (Scr->SunkFocusWindowTitle && (Scr->Focus == tmp_win) &&
@@ -2688,31 +2785,72 @@ TwmWindow *tmp_win;
 		Scr->TitleHeight, Scr->TitleShadowDepth,
 		tmp_win->title, off, True, False);
     }
+#ifdef I18N
+    FB(tmp_win->title.fore, tmp_win->title.back);
+#else
     FBF(tmp_win->title.fore, tmp_win->title.back, Scr->TitleBarFont.font->fid);
+#endif
     if (Scr->use3Dtitles) {
 	len    = strlen(tmp_win->name);
+#ifdef I18N
+	XmbTextExtents(Scr->TitleBarFont.font_set,
+		       tmp_win->name, strlen (tmp_win->name),
+		       &inc_rect, &logical_rect);
+	width = logical_rect.width;
+#else	
 	width  = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, len);
+#endif	
 	mwidth = tmp_win->title_width  - Scr->TBInfo.titlex -
 		 Scr->TBInfo.rightoff  - Scr->TitlePadding  -
 		 Scr->TitleShadowDepth - 4;
 	while ((len > 0) && (width > mwidth)) {
 	    len--;
+#ifdef I18N
+	    XmbTextExtents(Scr->TitleBarFont.font_set,
+			   tmp_win->name, len,
+			   &inc_rect, &logical_rect);
+	    width = logical_rect.width;
+#else
 	    width  = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, len);
+#endif
 	}
 	if (Scr->Monochrome != COLOR) {
+#ifdef I18N
+	    XmbDrawImageString(dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
+			     Scr->NormalGC,
+			     tmp_win->name_x,
+			     Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
+			     tmp_win->name, len);
+#else	    
 	    XDrawImageString (dpy, tmp_win->title_w, Scr->NormalGC,
 		 tmp_win->name_x, Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
 		 tmp_win->name, len);
+#endif	    
 	}
-	else
+	else {
+#ifdef I18N
+	    XmbDrawString (dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
+			   Scr->NormalGC, tmp_win->name_x,
+			   Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
+			   tmp_win->name, len);
+#else	    
 	    XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
 		 tmp_win->name_x, Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
 		 tmp_win->name, len);
+#endif
+	}
     }
     else
+#ifdef I18N
+        XmbDrawString (dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
+		       Scr->NormalGC,
+		       tmp_win->name_x, Scr->TitleBarFont.y, 
+		       tmp_win->name, strlen(tmp_win->name));
+#else
         XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
 		 tmp_win->name_x, Scr->TitleBarFont.y, 
 		 tmp_win->name, strlen(tmp_win->name));
+#endif    
 }
 
 void PaintIcon (tmp_win)
@@ -2720,6 +2858,10 @@ TwmWindow *tmp_win;
 {
     int		width, twidth, mwidth, len, x;
     Icon	*icon;
+#ifdef I18N
+    XRectangle inc_rect;
+    XRectangle logical_rect;
+#endif    
 
     if (!tmp_win || !tmp_win->icon) return;
     icon = tmp_win->icon;
@@ -2732,7 +2874,14 @@ TwmWindow *tmp_win;
 	width = icon->width;
     }
     len    = strlen (tmp_win->icon_name);
+#ifdef I18N
+    XmbTextExtents(Scr->IconFont.font_set,
+		   tmp_win->icon_name, len,
+		   &inc_rect, &logical_rect);
+    twidth = logical_rect.width;
+#else
     twidth = XTextWidth (Scr->IconFont.font, tmp_win->icon_name, len);
+#endif
     mwidth = width - 2 * Scr->IconManagerShadowDepth - 6;
     if (Scr->use3Diconmanagers) {
 	Draw3DBorder (icon->w, x, icon->height, width,
@@ -2741,12 +2890,26 @@ TwmWindow *tmp_win;
     }
     while ((len > 0) && (twidth > mwidth)) {
 	len--;
+#ifdef I18N
+	XmbTextExtents(Scr->IconFont.font_set,
+		       tmp_win->icon_name, len,
+		       &inc_rect, &logical_rect);
+	twidth = logical_rect.width;
+#else
 	twidth = XTextWidth (Scr->IconFont.font, tmp_win->icon_name, len);
+#endif
     }
+#ifdef I18N
+    FB (icon->iconc.fore, icon->iconc.back);
+    XmbDrawString(dpy, icon->w, Scr->IconFont.font_set, Scr->NormalGC,
+		  x + ((mwidth - twidth)/2) + Scr->IconManagerShadowDepth + 3,
+		  icon->y, tmp_win->icon_name, len);
+#else    
     FBF (icon->iconc.fore, icon->iconc.back, Scr->IconFont.font->fid);
     XDrawString (dpy, icon->w, Scr->NormalGC,
 		x + ((mwidth - twidth) / 2) + Scr->IconManagerShadowDepth + 3,
 		icon->y, tmp_win->icon_name, len);
+#endif    
 }
 
 void PaintTitleButton (tmp_win, tbw)
@@ -2941,7 +3104,7 @@ ColorPair cp;
     }
     else
 #endif
-#ifndef VMS
+#if !defined(VMS) || defined(HAVE_XWDFILE_H)
     if ((strncmp (name, "xwd:", 4) == 0) || (name [0] == '|')) {
 	startn = (name [0] == '|') ? 0 : 4;
 	if ((image = (Image*) LookInNameList (*list, name)) == None) {
@@ -3106,7 +3269,7 @@ Image *image;
     }
 }
 
-#ifndef VMS
+#if !defined(VMS) || defined(HAVE_XWDFILE_H)
 static void compress ();
 
 static Image *LoadXwdImage (filename, cp)
@@ -3129,6 +3292,7 @@ ColorPair cp;
     int		w, h, depth, ncolors;
     int		scrn;
     Colormap	cmap;
+    Colormap	stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
     GC		gc;
     XGCValues   gcvalues;
     XWDFileHeader header;
@@ -3138,6 +3302,7 @@ ColorPair cp;
 
     ispipe = 0;
     anim   = False;
+#ifndef VMS
     if (filename [0] == '|') {
 	file = (FILE*) popen (filename + 1, "r");
 	if (file == NULL) return (None);
@@ -3146,6 +3311,7 @@ ColorPair cp;
 	if (anim) StopAnimation ();
 	goto file_opened;
     }
+#endif
     fullname = ExpandPixmapPath (filename);
     if (! fullname) return (None);
     file = fopen (fullname, "r");
@@ -3210,9 +3376,9 @@ file_opened:
     }
 
     scrn    = Scr->screen;
-    cmap    = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, scrn);
-    visual  = DefaultVisual (dpy, scrn);
-    gc      = DefaultGC     (dpy, scrn);
+    cmap    = AlternateCmap ? AlternateCmap : stdcmap;
+    visual  = Scr->d_visual;
+    gc      = DefaultGC (dpy, scrn);
 
     buffer_size = header.bytes_per_line * h;
     imagedata = (unsigned char*) malloc (buffer_size);
@@ -3232,7 +3398,12 @@ file_opened:
 #endif
 	return (None);
     }
-    if (ispipe) pclose (file); else fclose (file);
+#ifndef VMS
+    if (ispipe)
+      pclose (file);
+    else
+#endif
+      fclose (file);
 
     image = XCreateImage (dpy, visual,  depth, header.pixmap_format,
                           0, (char*) imagedata, w, h,
@@ -3411,6 +3582,7 @@ int	*width, *height;
     int			w, h, depth, ncolors;
     int			scrn;
     Colormap		cmap;
+    Colormap		stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
     GC			gc;
     unsigned char	red, green, blue;
     int			icol;
@@ -3499,9 +3671,9 @@ int	*width, *height;
     *height = h;
 
     scrn   = Scr->screen;
-    cmap   = AlternateCmap ? AlternateCmap : DefaultColormap (dpy, scrn);
-    visual = DefaultVisual (dpy, scrn);
-    gc     = DefaultGC     (dpy, scrn);
+    cmap   = AlternateCmap ? AlternateCmap : stdcmap;
+    visual = Scr->d_visual;
+    gc     = DefaultGC (dpy, scrn);
 
     buffer_size = w * h;
     imagedata = (unsigned char*) malloc (buffer_size);
@@ -3676,11 +3848,17 @@ Atom prop;
     if (text_prop.value != NULL) {
 	if (text_prop.encoding == XA_STRING) {
 	    /* property is encoded as string */
-	    stringptr = strcpy((char*)malloc(text_prop.nitems+1), (char*)text_prop.value);
+	    /*stringptr = strcpy((char*)malloc(text_prop.nitems+1), (char*)text_prop.value);*/
+	    stringptr = strncpy((char*)malloc(text_prop.nitems+1),
+				(char*)text_prop.value, text_prop.nitems);
+	    stringptr [text_prop.nitems] = '\0';
 	} else if (text_prop.encoding == XA_COMPOUND_TEXT) {
 	    /* property is encoded as compound text - convert to locale string */
 	    status = XmbTextPropertyToTextList(dpy, &text_prop,
 					       &text_list, &text_list_count);
+	    if (text_list == (char **)0) {
+		stringptr = NULL;
+	    } else
 	    if (status < 0 || text_list_count < 0) {
 		switch (status) {
 		case XConverterNotFound:

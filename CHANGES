@@ -887,3 +887,140 @@ IconRegion geomstring vgrav hgrav gridwidth gridheight [iconjust] [iconregjust] 
            [iconregalign] [{ win-list }]
 
 
+    Changes from version 3.4 to 3.5
+    -------------------------------
+
+
+    1 - f.pack direction
+	Where direction is either : "right", "left", "top" or "bottom"
+	The current window is moved in the specified direction until it reaches
+	an obstacle (either another window, or the screen border). The pointer
+	follows the window. Example :
+
+"Right" = m   : window        : f.pack "right"
+"Left"  = m   : window        : f.pack "left"
+"Up"    = m   : window        : f.pack "top"
+"Down"  = m   : window        : f.pack "bottom"
+
+    2 - f.fill direction
+	Where direction is either : "right", "left", "top" or "bottom"
+	The current window is resized in the specified direction until it
+	reaches an obstacle (either another window, or the screen border).
+
+"Right" = s|m   : window        : f.fill "right"
+"Left"  = s|m   : window        : f.fill "left"
+"Up"    = s|m   : window        : f.fill "top"
+"Down"  = s|m   : window        : f.fill "bottom"
+
+    3 - f.savegeometry
+	The geometry of the current window is saved. The next call to
+	f.restoregeometry will restore this window to this geometry.
+	
+    4 - f.restoregeometry
+	Restore the current window geometry to what was saved in the last
+	call to f.savegeometry.
+
+    5 - ShortAllWindowsMenus
+	Don't show WorkSpaceManager and IconManagers in the TwmWindows and
+	TwmAllWindows menus.
+
+    6 - f.toggleworkspacemgr
+	Toggle the presence of the WorkSpaceManager. If it is mapped, it will
+	be unmapped and vice verça.
+
+    7 - OpenWindowTimeout number
+	number is an integer representing a number of second. When a window
+	tries to open on an unattended display, it will be automatically
+	mapped after this number of seconds.
+
+    8 - DontSetInactive { win-list }
+	These windows won't be set to InactiveState when they become invisible
+	due to a change workspace. This has been added because some ill-behaved
+	clients (Frame5) don't like this.
+
+    9 - UnmapByMovingFarAway { win-list }
+	These windows will be moved out of the screen instead of beeing
+	unmapped when they become invisible due to a change workspace. This has
+	been added because some ill-behaved clients (Frame5) don't like to be
+	unmapped. Use this if point 8 doesn't work.
+
+   10 - AutoSqueeze { win-list }
+	These windows will be auto-squeezed. i.e. automatically unsqueezed when
+	they get focus, and squeezed when they loose it. Useful for the
+	workspace manager. (Note, it is not possible to AutoSqueeze icon managers).
+
+   11 - StartSqueezed  { win-list }
+	These windows will first show up squeezed.
+
+   12 - RaiseWhenAutoUnSqueeze
+	Windows are raised when auto-unsqueezed.
+
+   13 - Now if the string "$currentworkspace" is present inside the string
+	argument of f.exec, it will be substituated with the current workspace
+	name. So it is possible to do something like :
+
+	f.exec "someclient -xrm ctwm.workspace:$currentworkspace&"
+
+	and the client will popus up in the workspace where the command was
+	started even if you go elsewhere before it actually shows up.
+
+   14 - Fixes the VMS version. From Richard Levitte - VMS Whacker
+	<levitte@lp.se>.
+
+   15 - Better I18N. From Toshiya Yasukawa <t-yasuka@dd.iij4u.or.jp>. (Define
+	I18N in Imakefile to activate it).
+
+   16 - Better Session Management interface. Patches from Matthew McNeill
+	<M.R.McNeill@durham.ac.uk>.
+
+   17 - new flag : -name, useful only for captive Ctwm. Sets the name of the
+	captive root window. Useful too for next point. If no name is specified
+	ctwm-n is used, where n is a number automatically generated.
+
+   18 - Two new client resources are now handled by Ctwm :
+
+ctwm.captive: <captive_ctwm_name>
+
+    The new client window is open in the captive Ctwm with name :
+    <captive_ctwm_name>.
+
+ctwm.rootWindow: <window_id>
+
+    The new client window is reparented into <window_id> (whaa!!!).
+    It is up to you to find any usefullness to this.
+
+   19 - If the string "$redirect" is present inside the string
+	argument of f.exec, it will be substituated with a redirection
+	to the current captive Ctwm if any (or nothing if in a main Ctwm).
+	So it is possible to do something like :
+
+	f.exec "someclient $redirect&"
+
+	and the client will popus up in the right captive Ctwm.
+
+   20 - New function f.hypermove. With it, you can drag and drop a window
+	between 2 captives Ctwm (or between a captive and the root Ctwm).
+
+   21 - 2 new m4 variables defined in your startup file :
+
+TWM_CAPTIVE : value "Yes" if Ctwm is captive, "No" else.
+TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
+
+   22 - RaiseOnClick : if present a window will be raised on top of others
+	when clicked on, and the ButtonPress event will be correctly forwarded
+	to the client that owns this window (if it asked to).
+
+	RaiseOnClickButton <n> : Button number to use for RaiseOnClick.
+
+   23 - IgnoreLockModifier : if present, all bindings (buttons and keys) will
+	ignore the LockMask. Useful if you often use caps lock, and don't
+	want to define twice all your bindings.
+
+   24 - AutoFocusToTransients
+	Transient windows get focus automatically when created.  Useful with 
+	programs that have keyboard shortcuts that pop up windows.
+	(patch from Kai Grossjohann <grossjohann@charly.cs.uni-dortmund.de>).
+
+   25 - PackNewWindows
+	Use f.movepack algorithm instead of f.move when opening a new window.
+

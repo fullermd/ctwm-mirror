@@ -276,6 +276,17 @@ and \fBGrayScale\fP.
 .TP 24
 .B "XPM"
 Is defined only if \fIctwm\fP was compiled with XPM.
+
+.TP 24
+.B "TWM_CAPTIVE"
+This will be either 'Yes' or 'No'. 'Yes' if the current \fIctwm\fP is captive
+(flag -w), 'No' in the other case.
+
+.TP 24
+.B "TWM_CAPTIVE_NAME"
+Defined only if TWM_CAPTIVE is also defined. Contains the name of the captive
+\fIctwm\fP (-name flag);
+
 .PP
 You may well find that if you research the \fIm4(1)\fP manual well,
 and understand the power of \fIm4\fP, this will be a \fBvery\fP
@@ -335,6 +346,7 @@ Optional arguments are shown in square brackets:
 This variable specifies a list of windows (all windows if the list is defaulted)
 that \fIctwm\fP will try its best to maintain on top of others. This doesn't
 work in all case.
+
 .IP "\fBAlwaysShowWindowWhenMovingFromWorkspaceManager\fP" 8
 When \fBReallyMoveInWorkspaceManager\fP is present and the user is moving
 a window from the WorkSpaceMap, \fIctwm\fP display the actual window only
@@ -342,10 +354,16 @@ if it crosses the current active workspace. If
 \fBAlwaysShowWindowWhenMovingFromWorkspaceManager\fP is present, the actual
 window is always visible during the move, regardless of whether it crosses
 the current workspace or not. The Shift key toggles this behaviour.
+
 .IP "\fBAnimationSpeed\fP \fIspeed\fP" 8
 The \fIspeed\fP argument is a non-negative integer. It determines the number of
 times a second animations (if any) are updated. If \fIspeed\fP is 0, animations
 are freezed. The default value is 0.
+
+ \" kai
+.IP "\fBAutoFocusToTransients\fP" 8
+Transient windows get focus automatically when created.  Useful with 
+programs that have keyboard shortcuts that pop up windows.
 
 .IP "\fBAutoOccupy\fP" 8
 This variable specifies that clients will automatically change their occupation
@@ -376,11 +394,18 @@ titlebutton, \fIctwm\fP will still wait for the pointer to cross a window
 edge (to prevent accidents).  This option is
 particularly useful for people who like the press-drag-release method of
 sweeping out window sizes.
+
+.IP "\fBAutoSqueeze\fP { \fIwin-list\fP }" 8
+These windows will be auto-squeezed (see f.squeeze). i.e. automatically
+unsqueezed when they get focus, and squeezed when they loose it. Useful for
+the workspace manager. Not authorized for icon managers.
+
 .IP "\fBBeNiceToColormap\fP" 8
 By defaults new colors are allocated for shadows when a 3D look is used,
 but when you specify \fBBeNiceToColormap\fP ctwm uses stipling instead of
 new colors, the effect is less beautiful, but acceptable. In this case
 ClearShadowContrast and DarkShadowContrast have no effects.
+
 .IP "\fBBorderColor\fP \fIstring\fP [{ \fIwincolorlist\fP }]" 8
 This variable specifies the default color of the border to be placed around 
 all 
@@ -396,10 +421,12 @@ different types of windows.  For example:
 }
 .EE
 The default is "black".
+
 .IP "\fBBorderResizeCursors\fP
 This variable specifies that \fIctwm\fP should use resizing cursors when
 the pointer is on the window border. To be used preferably when you have
 bound a button to f.resize in the frame context.
+
 .IP "\fBBorderShadowDepth\fP \fIpixels\fP" 8
 This variable specifies the depth of the shadow \fIctwm\fP uses for
 3D window borders, when UseThreeDBorders is selected.
@@ -536,43 +563,59 @@ The value is a comprised between 0 and 100. The formula used is :
     dark.{RGB}  = color.{RGB} * ((100 - contrast) / 100),
 .EE
 Has no effect if \fBBeNiceToColormap\fP is active.
+
 .IP "\fBDecorateTransients\fP" 8
 This variable indicates that transient windows (those containing a 
 WM_TRANSIENT_FOR property) should have titlebars.  By default, transients 
 are not reparented.
+
 .IP "\fBDefaultBackground\fP \fIstring\fP" 8
 This variable specifies the background color to be used for sizing and
 information windows.  The default is "white".
+
 .IP "\fBDefaultForeground\fP \fIstring\fP" 8
 This variable specifies the foreground color to be used for sizing and
 information windows.  The default is "black".
+
 .IP "\fBDontIconifyByUnmapping\fP { \fIwin-list\fP }" 8
 This variable specifies a list of windows that should not be iconified by
 simply unmapping the window (as would be the case if \fBIconifyByUnmapping\fP
 had been set).  This is frequently used to force some windows to be treated
 as icons while other windows are handled by the icon manager.
+
 .IP "\fBDontMoveOff\fP" 8
 This variable indicates that windows should not be allowed to be moved off the
 screen.  It can be overridden by the \fBf.forcemove\fP function.
+
 .IP "\fBDontPaintRootWindow\fP" 8
 This variable tells \fIctwm\fP not to paint the root window, whatever you told in
 the Workspaces specification. This is useful to have pixmaps in the Workspace
 Map but not on the root window.
+
+.IP "\fBDontSetInactive\fP { \fIwin-list\fP } " 8
+These windows won't be set to InactiveState when they become invisible
+due to a change workspace. This has been added because some ill-behaved
+clients (Frame5) don't like this.
+
 .IP "\fBDontSqueezeTitle\fP [{ \fIwin-list\fP }] " 8
 This variable indicates that titlebars should not be squeezed to their 
 minimum size as described under \fBSqueezeTitle\fP below.
 If the optional window list is supplied, only those windows will be
 prevented from being squeezed.
+
 .IP "\fBDontWarpCursorInWMap\fP" 8
 Tells ctwm not to warp the cursor to the corresponding actual window
 when you click in a small window in the workspace map.
+
 .IP "\fBForceIcons\fP" 8
 This variable indicates that icon pixmaps specified in the \fBIcons\fP
 variable should override any client-supplied pixmaps.
+
 .IP "\fBFramePadding\fP \fIpixels\fP" 8
 This variable specifies the distance between the titlebar decorations (the
 button and text) and the window frame.  The default is 2 pixels if \fIUseThreeDTitles\fP is
 not set, 0 if it is set.
+
 .IP "\fBIconBackground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the background color of icons, and may
 only be specified inside of a \fBColor\fP or \fBMonochrome\fP list.
@@ -580,6 +623,7 @@ The optional \fIwin-list\fP is a list of window names and colors so that
 per-window colors may be specified.  See the \fBBorderColor\fP
 variable for a complete description of the \fIwin-list\fP.
 The default is "white".
+
 .IP "\fBIconBorderColor\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the color of the border used for icon windows, and
 may only be specified inside of a \fBColor\fP or \fBMonochrome\fP list.
@@ -715,12 +759,14 @@ Tells ctwm how to align icons inside their place in the IconRegion.
 This keyword needs a string value. The acceptable values are : "top", "center",
 "bottom" and "border". If "border" is given, the justification will be "top" if
 the icon region gravity is "north" and "bottom" if the icon region gravity is "south".
+
 .IP "\fBIconRegionJustification\fP \fIstring\fP" 8
 Where string is either \fB"left"\fP, \fB"center"\fP \fB"right"\fP or \fB"border"\fP.
 Tells ctwm how to justify icons inside their place in the IconRegion.
 This keyword needs a string value. The acceptable values are : "left", "center",
 "right" and "border". If "border" is given, the justification will be "left" if
 the icon region gravity is "west" and "right" if the icon region gravity is "east".
+
 .IP "\fBIcons\fP { \fIwin-list\fP }" 8
 This variable specifies a list of window names and the bitmap filenames that
 should be used as their icons.  For example:
@@ -731,11 +777,15 @@ should be used as their icons.  For example:
 	"xfd"		"xfd_icon"
 }
 .EE
-Windows that match ``XTerm'' and would not be iconified by unmapping, and 
-would try to use 
-the icon bitmap in the file ``xterm.icon''.  If \fBForceIcons\fP is
+Windows that match ``XTerm'' and would not be iconified by unmapping, and would try
+to use  the icon bitmap in the file ``xterm.icon''.If \fBForceIcons\fP is
 specified, this bitmap will be used even if the client has requested its
 own icon pixmap.
+
+.IP "\fBIgnoreLockModifier\fP" 8
+If present, all bindings (buttons and keys) will ignore the LockMask. Useful if you
+often use caps lock, and don't want to define twice all your bindings.
+
 .IP "\fBInterpolateMenuColors\fP" 8
 This variable indicates that menu entry colors should be interpolated between
 entry specified colors.  In the example below:
@@ -963,16 +1013,28 @@ what the window will look like in the new position.  This option is typically
 used on fast displays (particularly if \fBNoGrabServer\fP is set). The optional
 window list parameter indicates that only windows in this list should actually
 be moved in opaque mode. The \fBNoOpaqueMove\fP counterpart is also available.
+
 .IP "\fBOpaqueMoveThreshold\fP { \fIthreshold\fP }" 8
 The integer parameter is a percentage and indicates that only windows (elligible
 for opaque moving) with a surface smaller than this percentage of the surface
 of the screen should actually be moved in opaque mode. 
+
 .IP "\fBOpaqueResize\fP { \fIwindow-list\fP }" 8
 The opaque version of resize. Extremely resource intensive,
 but beautiful with fast server/client/network. See \fBOpaqueMove\fP. The
 \fBNoOpaqueResize\fP counterpart is also available.
+
 .IP "\fBOpaqueResizeThreshold\fP { \fIthreshold\fP }" 8
 The resize version of \fBOpaqueMoveThreshold\fP.
+
+.IP "\fBOpenWindowTimeout\fP \fIseconds\fP" 8
+seconds is an integer representing a number of second. When a window
+tries to open on an unattended display, it will be automatically
+mapped after this number of seconds.
+
+.IP "\fBPackNewWindows\fP" 8
+Use f.movepack algorithm instead of f.move when opening a new window.
+
 .IP "\fBPixmaps\fP { \fIpixmaps\fP }" 8
 This variable specifies a list of pixmaps that define the appearance of various
 images.  Each entry is a keyword indicating the pixmap to set, followed by a 
@@ -986,6 +1048,7 @@ may be specified:
 }
 .EE
 The default for \fITitleHighlight\fP is to use an even stipple pattern.
+
 .IP "\fBPixmapDirectory\fP \fIpath\fP " 8
 This variable specifies the path where \fIctwm\fP looks to find non-X11 bitmap
 files.  Whenever you want to use a image file that is not an X11 bitmap,
@@ -1004,11 +1067,25 @@ Icons
 .EE
 N.B This is only valid if your version of \fIctwm\fP has been compiled with the
 XPM and IMCONV options.
+
 .IP "\fBRaiseDelay\fP \fImilliseconds\fP" 8
 For windows that are to be automatically raised when the pointer enters
 (see the \fBAutoRaise\fP variable and the \fIf.autoraise\fP function)
 this variable specifies the length of time the pointer should rest in
 the window before it is raised.  The default is 0 milliseconds.
+
+.IP "\fBRaiseOnClick\fP" 8
+If present a window will be raised on top of others when clicked on, and the
+ButtonPress event will be correctly forwarded to the client that owns this window
+(if it asked to). See \fBRaiseOnClickButton\fP.
+
+.IP "\fBRaiseOnClickButton\fP \fIbutton_number\fP" 8
+Where \fIbutton_number\fP is a valid button number (generally 1 to 3). Specify
+the button to use for RaiseOnClick.
+
+.IP "\fBRaiseWhenAutoUnSqueeze\fP" 8
+Windows are raised when auto-unsqueezed (See AutoSqueeze).
+
 .IP "\fBRandomPlacement\fP [ \fIstring\fP ]" 8
 Where \fIstring\fP is either "on", "off", "all" or "unmapped".
 This variable indicates that windows with no specified geometry should
@@ -1016,19 +1093,23 @@ be placed in a pseudo-random location instead of having the user drag out
 an outline. The argument "on" or "all" tells ctwm do do this for all such windows,
 "off", not to do this, and "unmapped", only for unmapped windows, e.g.
 iconified or not visible in the current workspace.
+
 .IP "\fBReallyMoveInWorkspaceManager\fP" 8
 This keyword tells \fIctwm\fP to move the actual window when the user is
 moving the small windows in the WorkSpaceMap window. If not present the 
 WorkSpaceMap can be used only to modify the occupation of a window.
+
 .IP "\fBResizeFont\fP \fIstring\fP" 8
 This variable specifies the font to be used for in the dimensions window when
 resizing windows.  The default is "fixed".
+
 .IP "\fBRestartPreviousState\fP" 8
 This variable indicates that 
 \fIctwm\fP should attempt to use the WM_STATE property on client windows
 to tell which windows should be iconified and which should be left visible.
 This is typically used to try to regenerate the state that the screen
 was in before the previous window manager was shutdown.
+
 .IP "\fBReverseCurrentWorkspace\fP \fIstring\fP" 8
 This variable specifies tells \fIctwm\fP to reverse the background and
 foreground colors in the small windows in the workspace map for the current
@@ -1059,6 +1140,9 @@ as well as the three color strings, all taken from the default colormap.
 
 .IP "\fBSchrinkIconTitles\fP" 8
 A la Motif schrinking of icon titles, and expansion when mouse is inside icon.
+
+.IP "\fBShortAllWindowsMenus\fP" 8
+Don't show WorkSpaceManager and IconManagers in the TwmWindows and TwmAllWindows menus.
 
 .IP "\fBShowIconManager\fP" 8
 This variable indicates that the icon manager window should be displayed when
@@ -1103,24 +1187,33 @@ for \fBright\fP.  For example:
 .EE
 The \fBDontSqueezeTitle\fP list can be used to turn off squeezing on 
 certain titles.
+
 .IP "\fBStartIconified\fP [{ \fIwin-list\fP }] " 8
 This variable indicates that client windows should initially be left as
 icons until explicitly deiconified by the user.  If the optional \fIwin-list\fP
 is given, only those windows will be started iconic.  This is useful for
 programs that do not support an \fI-iconic\fP command line option or
 resource.
+
 .IP "\fBStartInMapState\fP" 8
 This variable specifies that the WorkSpaceManager should be started
 in its map form when created.
+
+.IP "\fBStartSqueezed\fP" { \fIwin-list\fP }" 8
+These windows will first show up squeezed (see f.squeeze).
+
 .IP "\fBStayUpMenus\fP" 8
 Tells ctwm to use stayup menus. These menus
 will stay on the screen when ButtonUp, if either the menu has not
 yet been entered by the pointer, or the current item is a f.title.
+
 .IP "\fBSunkFocusWindowTitle\fP" 8
 This variable specifies that the title of the focus window (if exists)
 should be sunken instead of raised. Only valid if UseThreeDTitles is set.
+
 .IP "\fBThreeDBorderWidth\fP  \fIpixels\fP" 8
 The width of the 3D border in pixels, if any.
+
 .IP "\fBTitleBackground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the background color used in titlebars,
 and may only be specified inside of a 
@@ -1128,17 +1221,21 @@ and may only be specified inside of a
 The optional \fIwin-list\fP is a list of window names and colors so that
 per-window colors may be specified.
 The default is "white".
+
 .IP "\fBTitleButtonBorderWidth\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of the border surrounding
 titlebuttons.  This is typically set to 0 to allow titlebuttons to take up as
 much space as possible and to not have a border.
 The default is 1 if \fIUseThreeDTitles\fP is not set, 0 if it is set.
+
 .IP "\fBTitleButtonShadowDepth\fP \fIpixels\fP" 8
 This variable specifies the depth of the shadow \fIctwm\fP uses for
 3D title buttons, when UseThreeDTitles is selected.
+
 .IP "\fBTitleFont\fP \fIstring\fP" 8
 This variable specifies the font to used for displaying window names in
 titlebars.  The default is "variable".
+
 .IP "\fBTitleForeground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the foreground color used in titlebars, and
 may only be specified inside of a 
@@ -1146,10 +1243,12 @@ may only be specified inside of a
 The optional \fIwin-list\fP is a list of window names and colors so that
 per-window colors may be specified.
 The default is "black".
+
 .IP "\fBTitleJustification\fP \fIstring\fP" 8
 This keyword needs a string value. The acceptable values are : "left",
 "center" and "right". The window titles will be justified according to
 this in the title window.
+
 .IP "\fBTitlePadding\fP \fIpixels\fP" 8
 This variable specifies the distance between the various buttons, text, and
 highlight areas in the titlebar.  The default is 8 pixels if \fIUseThreeDTitles\fP
@@ -1176,6 +1275,11 @@ This variable specifies the filename of a bitmap file to be
 used as the default icon.  This bitmap will be used as the icon of all
 clients which do not provide an icon bitmap and are not listed
 in the \fBIcons\fP list.
+
+.IP "\fBUnmapByMovingFarAway\fP [{ \fIwin-list\fP }] " 8
+These windows will be moved out of the screen instead of beeing unmapped
+when they become invisible due to a change workspace. This has been
+added because some ill-behaved clients (Frame5) don't like to be unmapped.
 
 .IP "\fBUsePPosition\fP \fIstring\fP" 8
 This variable specifies whether or not \fIctwm\fP should honor 
@@ -1502,7 +1606,8 @@ For example:
 "n"	= 	: alter		: f.nextworkspace
 "p"	= 	: alter		: f.prevworkspace
 .EE
-.IP "\fBf.altkeymap\fP" \fB"number"\fP 8
+
+.IP "\fBf.altkeymap\fP \fInumber\fP" 8
 Set the alternate keymap \fBnumber\fP, where \fBnumber\fP is an integer
 between 1 and 5 included. The next key or button event \fIctwm\fP reveives will
 be interpreted using this alternate keymap. To define bindings in an alternate
@@ -1603,11 +1708,18 @@ same column. The result depends on the layout of the workspace manager.
 This function passes the argument \fIstring\fP to /bin/sh for execution.
 In multiscreen mode, if \fIstring\fP starts a new X client without
 giving a display argument, the client will appear on the screen from
-which this function was invoked.
+which this function was invoked. If the string "$currentworkspace" is present
+inside the string argument, it will be substituated with the current workspace
+name.
 
 .\".IP "\fBf.file\fP \fIstring\fP" 8
 .\"This function assumes \fIstring\fP is a file name.  This file is read into
 .\"the window server's cut buffer.
+
+.IP "\fBf.fill\fI \fIstring\fP" 8
+Where string is either : "right", "left", "top" or "bottom".
+The current window is resized in the specified direction until it
+reaches an obstacle (either another window, or the screen border).
 
 .IP "\fBf.focus\fP" 8
 This function toggles the keyboard focus of the server to the
@@ -1650,30 +1762,44 @@ Unmap the WorkSpace manager.
 .IP "\fBf.horizoom\fP" 8
 This variable is similar to the \fBf.zoom\fP function except that the 
 selected window is resized to the full width of the display.
+
 .IP "\fBf.htzoom\fP" 8
 This function is a synonym for \fBf.topzoom\fP.
+
+.IP "\fBf.hypermove\fP" 8
+Use this function to "move" a window between 2 captives ctwm (or between a
+captive and the root ctwm). Of course 2 Ctwm's are completely different
+universes. You have to go in hyperspace to achieve this, hence the name.
+
 .IP "\fBf.hzoom\fP" 8
 This function is a synonym for \fBf.horizoom\fP.
+
 .IP "\fBf.iconify\fP" 8
 This function iconifies or deiconifies the selected window or icon, 
 respectively.
+
 .IP "\fBf.identify\fP" 8
 This function displays a summary of the name and geometry of the
 selected window.  Clicking the pointer or pressing a key in the window
 will dismiss it.
+
 .IP "\fBf.lefticonmgr\fI" 8
 This function similar to \fBf.backiconmgr\fP except that wrapping does not
 change rows.
+
 .IP "\fBf.leftworkspace\fP" 8
 Goto the workspace immediately on the left of the current workspace in the
 workspace manager. If the current workspace is the leftest one, goto the
 rightest one in the same row. The result depends on the layout of the workspace
 manager.
+
 .IP "\fBf.leftzoom\fP" 8
 This variable is similar to the \fBf.bottomzoom\fP function but causes
 the selected window is only resized to the left half of the display.
+
 .IP "\fBf.lower\fP" 8
 This function lowers the selected window.
+
 .IP "\fBf.menu\fP \fIstring\fP" 8
 This function invokes the menu specified by the argument \fIstring\fP.
 Cascaded menus may be built by nesting calls to \fBf.menu\fP. When a menu
@@ -1684,6 +1810,7 @@ entry (the first one if several entries match). If the first letter is ~ then
 Meta-the-second-letter activates it, if this first letter is ^ then
 Control-the-second-letter activates it, and if this first letter is space,
 then the second letter activates it.
+
 .IP "\fBf.move\fP" 8
 This function drags an outline of the selected window (or the window itself
 if the \fBOpaqueMove\fP variable is set) until the invoking pointer button
@@ -1694,12 +1821,14 @@ constrains the move to be either horizontal or vertical depending on which
 grid line is crossed.
 To abort a move, press another button before releasing the
 first button.
+
 .IP "\fBf.movepack\fP" 8
 This function is like \fBf.move\fP except that it tries to avoid overlapping
 of windows. When the moving window begin to overlap with another window, the
 move is stopped. If you go too far over the other window (more that
 \fIMovePackResistance\fP pixels), the move is resumed and the moving window
 can overlap with the other window. Useful to pack windows closely.
+
 .IP "\fBf.movepush\fP" 8
 This function is like \fBf.move\fP except that it tries to avoid overlapping
 of windows. When the moving window begin to overlap with another window, the
@@ -1707,63 +1836,96 @@ other window is pushed. If you go too far over the other window (more that
 \fIMovePackResistance\fP pixels), there is no push and the moving window
 can overlap with the other window. Only available if \fIOpaqueMove\fP is
 active.
+
 .IP "\fBf.nexticonmgr\fI" 8
 This function warps the pointer to the next icon manager containing any windows
 on the current or any succeeding screen.
+
 .IP "\fBf.nextworkspace\fP" 8
 Goto the next workspace in the list, using the order given in the \fI.ctwmrc\fP file.
+
 .IP "\fBf.nop\fP" 8
 This function does nothing and is typically used with the \fBDefaultFunction\fP
 or \fBWindowFunction\fP variables or to introduce blank lines in menus.
+
 .IP "\fBf.occupy\fP" 8
 This function pops up a window for the user to choose which workspaces a window
 belongs to.
+
 .IP "\fBf.occupyall\fP" 8
 This function makes the specified window occupy all the workspaces.
+
+.IP "\fBf.pack\fI \fIstring\fP" 8
+Where string is either : "right", "left", "top" or "bottom"
+The current window is moved in the specified direction until it reaches
+an obstacle (either another window, or the screen border). The pointer
+follows the window. Example :
+
 .IP "\fBf.previconmgr\fI" 8
 This function warps the pointer to the previous icon manager containing any
 windows on the current or preceding screens.
+
 .IP "\fBf.prevworkspace\fP" 8
 Goto the previous workspace in the list, using the order given in the \fI.ctwmrc\fP file.
+
 .IP "\fBf.pin\fP" 8
 Valid only in a root menu. Make a menu permanent on the screen. This is a toggle
 function, if you select it while the menu is already permanent, it becomes
 non-permanent.
+
 .IP "\fBf.quit\fP" 8
 This function causes \fIctwm\fP to restore the window's borders and exit.  If
 \fIctwm\fP is the first client invoked from \fIxdm\fP, this will result in a
 server reset.
+
 .IP "\fBf.raiseicons\fP" 8
 This function raises all the icons in the current workspace.
+
 .IP "\fBf.raise\fP" 8
 This function raises the selected window.
+
 .IP "\fBf.raiselower\fP" 8
 This function raises the selected window to the top of the stacking order if
 it is occluded by any windows, otherwise the window will be lowered.
+
 .IP "\fBf.removefromworkspace\fP \fIstring\fP" 8
 This function removes the selected window from the workspace whose name
 is \fIstring\fP.
+
 .IP "\fBf.refresh\fP" 8
 This function causes all windows to be refreshed.
+
 .IP "\fBf.resize\fP" 8
 This function displays an outline of the selected window.  Crossing a border
 (or setting \fBAutoRelativeResize\fP) will cause the outline to begin to 
 rubber band until the invoking button is released.  To abort a resize,
 press another button before releasing the first button.
-.IP "\fBf.restart\fP" 8
 
+.IP "\fBf.restart\fP" 8
 This function kills and restarts \fIctwm\fP.
+
+.IP "\fBf.restoregeometry\fP" 8
+Restore the current window geometry to what was saved in the last
+call to f.savegeometry.
+
 .IP "\fBf.righticonmgr\fI" 8
 This function is similar to \fBf.nexticonmgr\fP except that wrapping does
 not change rows.
+
 .IP "\fBf.rightworkspace\fP" 8
 Goto the workspace immediately on the right of the current workspace in the
 workspace manager. If the current workspace is the rightest one, goto the
 leftest one in the same row. The result depends on the layout of the workspace
 manager.
+
 .IP "\fBf.rightzoom\fP" 8
 This variable is similar to the \fBf.bottomzoom\fP function except that
 the selected window is only resized to the right half of the display.
+
+.IP "\fBf.savegeometry\fP" 8
+The geometry of the current window is saved. The next call to
+f.restoregeometry will restore this window to this geometry.
+
 .IP "\fBf.saveyourself\fP" 8
 This function sends a WM_SAVEYOURSELF message to the selected window if it
 has requested the message in its WM_PROTOCOLS window property.  Clients that
@@ -1771,16 +1933,21 @@ accept this message are supposed to checkpoint all state associated with the
 window and update the WM_COMMAND property as specified in the ICCCM.  If
 the selected window has not selected for this message, the keyboard bell
 will be rung.
+
 .IP "\fBf.separator\fP" 8
 Valid only in menus. The effect is to add a line separator between the
 previous and the following entry. The name selector part in the menu is not
 used (but must be present).
+
 .IP "\fBf.setbuttonsstate\fP" 8
 Set the WorkSpace manager in button state.
+
 .IP "\fBf.setmapstate\fP" 8
 Set the WorkSpace manager in map state.
+
 .IP "\fBf.showiconmgr\fP" 8
 This function maps the current icon manager.
+
 .IP "\fBf.sorticonmgr\fP" 8
 This function sorts the entries in the current icon manager alphabetically.
 See the variable \fBSortIconManager\fP.
@@ -1823,23 +1990,32 @@ from this workspace if not.
 .IP "\fBf.togglestate\fP" 8
 Toggle the state of the WorkSpace manager.
 
+.IP "\fBf.toggleworkspacemgr\fP" 8
+Toggle the presence of the WorkSpaceManager. If
+it is mapped, it will be unmapped and vice versa.
+
 .IP "\fBf.topzoom\fP" 8
 This variable is similar to the \fBf.bottomzoom\fP function except that 
 the selected window is only resized to the top half of the display.
+
 .\".IP "\fBf.ctwmrc\fP" 8
 .\"This function causes the startup customization file to be re-read.  This
 .\"function is exactly like the \fBf.source\fP function without having to
 .\"specify the filename.
+
 .IP "\fBf.unfocus\fP" 8
 This function resets the focus back to pointer-driven.  This should be used
 when a focused window is no longer desired.
+
 .IP "\fBf.upiconmgr\fI" 8
 This function warps the pointer to the previous row in the current icon
 manager, wrapping to the last row in the same column if necessary.
+
 .IP "\fBf.upworkspace\fP" 8
 Goto the workspace immediately above the current workspace in the workspace
 manager. If the current workspace is the top one, goto the bottom one in the
 same column. The result depends on the layout of the workspace manager.
+
 .IP "\fBf.vanish\fP" 8
 The specified window vanishes from the current workspace if it occupies at least
 one other WorkSpace. Do nothing in the others cases.
@@ -1849,25 +2025,31 @@ one other WorkSpace. Do nothing in the others cases.
 .\"pointer is moved from one window to another.
 .IP "\fBf.vlzoom\fP" 8
 This function is a synonym for \fBf.leftzoom\fP.
+
 .IP "\fBf.vrzoom\fP" 8
 This function is a synonym for \fBf.rightzoom\fP.
+
 .IP "\fBf.warphere\fP \fIwin_name\fP" 8
 This function adds the window which has a name or class that matches string
 to the current workspace and warps the pointer to it. If the window is iconified,
 it will be deiconified if the variable WarpUnmapped is set or else ignored.
+
 .IP "\fBf.warpring\fP \fIstring\fP" 8
 This function warps the pointer to the next or previous window (as indicated
 by the argument \fIstring\fP, which may be \fB"next"\fP or \fB"prev"\fP) 
 specified in the \fBWindowRing\fP variable.
+
 .IP "\fBf.warpto\fP \fIstring\fP" 8
 This function warps the pointer to the window which has a name or class 
 that matches \fIstring\fP.  If the window is iconified, it will be deiconified
 if the variable \fBWarpUnmapped\fP is set or else ignored.
+
 .IP "\fBf.warptoiconmgr\fP \fIstring\fP" 8
 This function warps the pointer to the icon manager entry 
 associated with the window containing the pointer in the icon manager
 specified by the argument \fIstring\fP.  If \fIstring\fP is empty (i.e. ""),
 the current icon manager is chosen.
+
 .IP "\fBf.warptoscreen\fP \fIstring\fP" 8
 This function warps the pointer to the screen specified by the
 argument \fIstring\fP.  \fIString\fP may be a number (e.g. \fB"0"\fP or

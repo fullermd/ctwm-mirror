@@ -96,10 +96,15 @@
 #include "icons.h"
 #include "iconmgr.h"
 #ifdef VMS
+#  include <stdlib.h>
 #  include <decw$include/Xproto.h>
 #  include <decw$include/Xatom.h>
 #  include <X11Xmu/Error.h>
 #  include "vms_cmd_services.h"
+
+#  ifndef NO_LOCALE
+#    include <locale.h>
+#  endif /* NO_LOCALE */
 
 #  ifndef PIXMAP_DIRECTORY
 #    define PIXMAP_DIRECTORY "DECW$BITMAPS:"
@@ -113,9 +118,13 @@
 #    include <X11/SM/SMlib.h>
 #  endif /* X11R6 */
 
+#ifdef I18N
+#include <X11/Xlocale.h>
+#else
 #  ifndef NO_LOCALE
 #    include <locale.h>
 #  endif /* NO_LOCALE */
+#endif
 
 #  ifndef PIXMAP_DIRECTORY
 #    define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
@@ -134,7 +143,8 @@ int GoThroughM4 = True;
 #endif
 Window ResizeWindow;		/* the window we are resizing */
 
-int    captive     = FALSE;
+int  captive      = FALSE;
+char *captivename = NULL;
 
 int MultiScreen = TRUE;		/* try for more than one screen? */
 int Monochrome  = FALSE;	/* Force monochrome, for testing purpose */
@@ -155,6 +165,9 @@ int InfoLines,InfoWidth,InfoHeight;
 char *InitFile = NULL;
 static Window CreateRootWindow ();
 static void DisplayInfo ();
+int InternUsefulAtoms ();
+int InitVariables();
+int CreateFonts();
 
 Cursor	UpperLeftCursor;
 Cursor	TopRightCursor,
@@ -256,12 +269,22 @@ main(argc, argv, environ)
     Window capwin = (Window) 0;
     IconRegion *ir;
 
+#ifdef I18N
+    XRectangle ink_rect;
+    XRectangle logical_rect;
+
+    (void)setlocale(LC_ALL, "");
+    
+#else    
 #ifndef NO_LOCALE
     (void)setlocale(LC_ALL, NULL);
 #endif
+#endif    
 
 #ifdef VMS
+#if 0
     vms_do_init();
+#endif
 	{
         char *ep;
         ProgramName = strrchr(argv[0], ']');
@@ -333,9 +356,18 @@ main(argc, argv, environ)
 		KeepTmpFile = True;
 		continue;
 	      case 'n':				/* -don't preprocess through m4 */
+		if (!strcmp(argv[i],"-name")) {
+		    if (++i >= argc) goto usage;
+		    captivename = argv[i];
+		    continue;
+		}
 		GoThroughM4 = False;
 		continue;
 #endif
+	      case 'x':				/* -xrm resource */
+		if (strcmp(argv[i],"-xrm")) goto usage;
+		if (++i >= argc) goto usage;
+		continue;
 	      case 'i':
 		if (!strcmp(argv[i],"-info")) {
 		    DisplayInfo ();
@@ -460,12 +492,14 @@ main(argc, argv, environ)
 		rooth = wa.height;
 		XTranslateCoordinates (dpy, capwin, wa.root, 0, 0, &rootx, &rooty, &junk);
 	    }
-	    else
+	    else {
 		root = CreateRootWindow (rootx, rooty, rootw, rooth);
+	    }
 	}
 	else {
 	    root = RootWindow (dpy, scrnum);
 	}
+
         /* Make sure property priority colors is empty */
         XChangeProperty (dpy, root, _XA_MIT_PRIORITY_COLORS,
 			 XA_CARDINAL, 32, PropModeReplace, NULL, 0);
@@ -523,6 +557,10 @@ main(argc, argv, environ)
 	Scr->NoIconTitle = NULL;
 	Scr->NoTitle = NULL;
 	Scr->OccupyAll = NULL;
+	Scr->UnmapByMovingFarAway = NULL;
+	Scr->DontSetInactive = NULL;
+	Scr->AutoSqueeze = NULL;
+	Scr->StartSqueezed = NULL;
 	Scr->MakeTitle = NULL;
 	Scr->AutoRaise = NULL;
 	Scr->IconNames = NULL;
@@ -558,8 +596,16 @@ main(argc, argv, environ)
 	Scr->d_depth = DefaultDepth(dpy, scrnum);
 	Scr->d_visual = DefaultVisual(dpy, scrnum);
 	Scr->Root = root;
-	XSaveContext (dpy, Scr->Root, ScreenContext, (caddr_t) Scr);
-
+	XSaveContext (dpy, Scr->Root, ScreenContext, (XPointer) Scr);
+	if (captive) {
+	    AddToCaptiveList ();
+	    if (captivename) {
+		XSetStandardProperties (dpy, root, captivename, captivename,
+				None, NULL, 0, NULL);
+	    }
+	} else {
+	    captivename = "Root";
+	}
 	Scr->TwmRoot.cmaps.number_cwins = 1;
 	Scr->TwmRoot.cmaps.cwins =
 		(ColormapWindow **) malloc(sizeof(ColormapWindow *));
@@ -765,8 +811,11 @@ main(argc, argv, environ)
 	{
 	    if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
 	    SetMapStateProp (Scr->workSpaceMgr.workspaceWindow.twm_win, NormalState);
-	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w);
 	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.twm_win->frame);
+	    if (Scr->workSpaceMgr.workspaceWindow.twm_win->StartSqueezed)
+		Squeeze (Scr->workSpaceMgr.workspaceWindow.twm_win);
+	    else
+		XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w);
 	    Scr->workSpaceMgr.workspaceWindow.twm_win->mapped = TRUE;
 	}
 	
@@ -786,8 +835,15 @@ main(argc, argv, environ)
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 
+#ifdef I18N
+	XmbTextExtents(Scr->SizeFont.font_set,
+		       " 8888 x 8888 ", 13,
+		       &ink_rect, &logical_rect);
+	Scr->SizeStringWidth = logical_rect.width;
+#else	
 	Scr->SizeStringWidth = XTextWidth (Scr->SizeFont.font,
 					   " 8888 x 8888 ", 13);
+#endif	
 	valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
 	attributes.bit_gravity = NorthWestGravity;
 
@@ -884,6 +940,10 @@ InitVariables()
     FreeList(&Scr->DontSqueezeTitleL);
     FreeList(&Scr->WindowRingL);
     FreeList(&Scr->WarpCursorL);
+    FreeList(&Scr->UnmapByMovingFarAway);
+    FreeList(&Scr->DontSetInactive);
+    FreeList(&Scr->AutoSqueeze);
+    FreeList(&Scr->StartSqueezed);
 
     NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
     NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
@@ -974,7 +1034,7 @@ InitVariables()
     Scr->RandomPlacement = RP_OFF;
     Scr->DoOpaqueMove = FALSE;
     Scr->OpaqueMove = FALSE;
-    Scr->OpaqueMoveThreshold = 1000;
+    Scr->OpaqueMoveThreshold = 200;
     Scr->OpaqueResize = FALSE;
     Scr->DoOpaqueResize = FALSE;
     Scr->OpaqueResizeThreshold = 1000;
@@ -1000,6 +1060,7 @@ InitVariables()
     Scr->WarpUnmapped = FALSE;
     Scr->WindowRingAll = FALSE;
     Scr->WarpRingAnyWhere = TRUE;
+    Scr->ShortAllWindowsMenus = FALSE;
     Scr->use3Diconmanagers = FALSE;
     Scr->use3Dmenus = FALSE;
     Scr->use3Dtitles = FALSE;
@@ -1026,12 +1087,33 @@ InitVariables()
     Scr->CenterFeedbackWindow = False;
     Scr->SchrinkIconTitles = False;
     Scr->AutoRaiseIcons = False;
+    Scr->AutoFocusToTransients = False; /* kai */
     Scr->use3Diconborders = False;
+    Scr->OpenWindowTimeout = 0;
+    Scr->RaiseWhenAutoUnSqueeze = False;
+    Scr->RaiseOnClick = False;
+    Scr->RaiseOnClickButton = 1;
+    Scr->IgnoreLockModifier = False;
+    Scr->PackNewWindows = False;
 
     /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"
 #define DEFAULT_FAST_FONT "fixed"
 
+#ifdef I18N
+    Scr->TitleBarFont.font_set = NULL;
+    Scr->TitleBarFont.basename = DEFAULT_NICE_FONT;
+    Scr->MenuFont.font_set = NULL;
+    Scr->MenuFont.basename = DEFAULT_NICE_FONT;
+    Scr->IconFont.font_set = NULL;
+    Scr->IconFont.basename = DEFAULT_NICE_FONT;
+    Scr->SizeFont.font_set = NULL;
+    Scr->SizeFont.basename = DEFAULT_FAST_FONT;
+    Scr->IconManagerFont.font_set = NULL;
+    Scr->IconManagerFont.basename = DEFAULT_NICE_FONT;
+    Scr->DefaultFont.font_set = NULL;
+    Scr->DefaultFont.basename = DEFAULT_FAST_FONT;
+#else    
     Scr->TitleBarFont.font = NULL;
     Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
     Scr->MenuFont.font = NULL;
@@ -1044,6 +1126,7 @@ InitVariables()
     Scr->IconManagerFont.name = DEFAULT_NICE_FONT;
     Scr->DefaultFont.font = NULL;
     Scr->DefaultFont.name = DEFAULT_FAST_FONT;
+#endif    
 
 }
 
@@ -1068,6 +1151,10 @@ RestoreWithdrawnLocation (tmp)
     unsigned int bw, mask;
     XWindowChanges xwc;
 
+    if (tmp->UnmapByMovingFarAway && !VISIBLE(tmp)) {
+	XMoveWindow (dpy, tmp->frame, tmp->frame_x, tmp->frame_y);
+    }
+    if (tmp->squeezed) Squeeze (tmp);
     if (XGetGeometry (dpy, tmp->w, &JunkRoot, &xwc.x, &xwc.y, 
 		      &JunkWidth, &JunkHeight, &bw, &JunkDepth)) {
 
@@ -1165,13 +1252,19 @@ SIGNAL_T Done()
     play_exit_sound();
 #endif
     Reborder (CurrentTime);
-#ifdef VMS
+#if defined(VMS) && EXIT_ENDSESSION /* was: #ifdef VMS */
     createProcess("run sys$system:decw$endsession.exe");
     sleep(10);  /* sleep until stopped */
 #else
     XDeleteProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
+    if (captive) RemoveFromCaptiveList ();
     XCloseDisplay(dpy);
+#ifdef VMS
+    exit(20);			/* Will generate a fatal error, even
+				   when compiled with DEC C 5.3 and above. */
+#else
     exit(0);
+#endif
 #endif
 }
 
@@ -1179,6 +1272,7 @@ SIGNAL_T Crash ()
 {
     Reborder (CurrentTime);
     XDeleteProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
+    if (captive) RemoveFromCaptiveList ();
     XCloseDisplay(dpy);
 
     fprintf (stderr, "\nCongratulations, you have found a bug in ctwm\n");
@@ -1303,13 +1397,23 @@ unsigned int	width, height;
 {
     int		scrnum;
     Window	ret;
+    XWMHints	wmhints;
+    Atom	_XA_WM_CTWM_ROOT;
 
     scrnum = DefaultScreen (dpy);
     ret = XCreateSimpleWindow (dpy, RootWindow (dpy, scrnum),
 			x, y, width, height, 2, WhitePixel (dpy, scrnum),
 			BlackPixel (dpy, scrnum));
+    XSetStandardProperties (dpy, ret, "Captive ctwm", NULL, None, NULL, 0, NULL);
+    wmhints.initial_state = NormalState;
+    wmhints.input         = True;
+    wmhints.flags         = InputHint | StateHint;
+    XSetWMHints (dpy, ret, &wmhints);
+
+    _XA_WM_CTWM_ROOT = XInternAtom (dpy, "WM_CTWM_ROOT", False);
+    XChangeProperty (dpy, ret, _XA_WM_CTWM_ROOT, XA_WINDOW, 32, 
+		     PropModeReplace, (unsigned char *) &ret, 4);
     XMapWindow (dpy, ret);
-    XStoreName (dpy, ret, "Captive ctwm");
     return (ret);
 }
 
@@ -1328,6 +1432,9 @@ static void DisplayInfo () {
 #ifdef SOUNDS
     (void) printf (" SOUNDS");
 #endif
+#ifdef I18N
+    (void) printf (" I18N");
+#endif    
     (void) printf ("\n");
 }
 

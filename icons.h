@@ -100,9 +100,14 @@ typedef struct IconEntry
     short 		used;
 }IconEntry;
 
+extern int IconUp ();
+extern int IconDown ();
 extern name_list **AddIconRegion();
+extern CreateIconWindow();
 extern void SchrinkIconTitle ();
 extern void ExpandIconTitle ();
 extern void ReshapeIcon ();
+extern int GetIconOffset ();
+extern Bool AnimateIcons ();
 
 #endif /* ICONS_H */

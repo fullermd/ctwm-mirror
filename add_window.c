@@ -69,6 +69,14 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifndef VMS
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+#if defined(AIXV3) || defined(_SYSTYPE_SVR4) || defined(ibm) || defined __QNX__
+#include <sys/select.h>
+#endif
 #include "twm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
@@ -102,8 +110,6 @@ int AddingH;
 static int PlaceX = 50;
 static int PlaceY = 50;
 static void CreateWindowTitlebarButtons();
-void ClickToFocusGrab   ();
-void ClickToFocusUngrab ();
 
 static void		splitWindowRegionEntry ();
 static WindowEntry	*findWindowEntry ();
@@ -114,7 +120,13 @@ char NoName[] = "Untitled"; /* name if no name is specified */
 int  resizeWhenAdd;
 
 extern Atom _OL_WIN_ATTR;
+extern int captive;
 
+#if defined(__hpux) && !defined(_XPG4_EXTENDED)
+#   define FDSET int*
+#else
+#   define FDSET fd_set*
+#endif
 /************************************************************************
  *
  *  Procedure:
@@ -202,11 +214,25 @@ IconMgr *iconp;
     int restoredFromPrevSession;
     Bool width_ever_changed_by_user;
     Bool height_ever_changed_by_user;
+    int saved_occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
+#endif
+    int		found;
+#ifndef VMS
+    fd_set	mask;
+    int		fd;
+    struct timeval timeout;
+#endif
+#ifdef I18N
+    XRectangle ink_rect;
+    XRectangle logical_rect;
 #endif
 
 #ifdef DEBUG
     fprintf(stderr, "AddWindow: w = 0x%x\n", w);
 #endif
+
+    if (!captive && RedirectToCaptive (w)) return (NULL);
+
     /* allocate space for the twm window */
     tmp_win = (TwmWindow *)calloc(1, sizeof(TwmWindow));
     if (tmp_win == 0)
@@ -220,6 +246,7 @@ IconMgr *iconp;
     tmp_win->iconmgr = iconm;
     tmp_win->iconmgrp = iconp;
     tmp_win->cmaps.number_cwins = 0;
+    tmp_win->savegeometry.width = -1;
 
     XSelectInput(dpy, tmp_win->w, PropertyChangeMask);
     XGetWindowAttributes(dpy, tmp_win->w, &tmp_win->attr);
@@ -238,7 +265,8 @@ IconMgr *iconp;
 	&saved_x, &saved_y, &saved_width, &saved_height,
 	&restore_iconified, &restore_icon_info_present,
 	&restore_icon_x, &restore_icon_y,
-	&width_ever_changed_by_user, &height_ever_changed_by_user))
+	&width_ever_changed_by_user, &height_ever_changed_by_user,
+	&saved_occupation)) /* <== [ Matthew McNeill Feb 1997 ] == */
     {
 	tmp_win->attr.x = saved_x;
 	tmp_win->attr.y = saved_y;
@@ -291,6 +319,11 @@ IconMgr *iconp;
     }
 #endif
 
+    if (tmp_win->wmhints) tmp_win->wmhints->input = True;
+				/* CL: Having with not willing focus
+				cause problems with AutoSqueeze and a few others
+				things. So I suppress it. And the whole focus thing
+				is buggy anyway */
     if (tmp_win->wmhints && !(tmp_win->wmhints->flags & InputHint))
 	tmp_win->wmhints->input = True;
     if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint)) 
@@ -348,6 +381,34 @@ IconMgr *iconp;
 	(short)(int) LookInList(Scr->IconifyByUn, tmp_win->full_name,
 	    &tmp_win->class);
 
+    if (LookInList (Scr->UnmapByMovingFarAway, tmp_win->full_name, &tmp_win->class))
+	tmp_win->UnmapByMovingFarAway = True;
+    else
+	tmp_win->UnmapByMovingFarAway = False;
+
+    if (LookInList (Scr->DontSetInactive, tmp_win->full_name, &tmp_win->class))
+	tmp_win->DontSetInactive = True;
+    else
+	tmp_win->DontSetInactive = False;
+
+    if (LookInList (Scr->AutoSqueeze, tmp_win->full_name, &tmp_win->class))
+	tmp_win->AutoSqueeze = True;
+    else
+	tmp_win->AutoSqueeze = False;
+
+    if (LookInList (Scr->StartSqueezed, tmp_win->full_name, &tmp_win->class))
+	tmp_win->StartSqueezed = True;
+    else
+	tmp_win->StartSqueezed = False;
+
+    if (tmp_win->transient || tmp_win->group) {
+	TwmWindow *t;
+	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+	    if (tmp_win->transient && (tmp_win->transientfor == t->w)) break;
+	    if (tmp_win->group     && (tmp_win->group        == t->w)) break;
+	}
+	if (t) tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
+    }
     if (Scr->WindowRingAll ||
 	LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
 	if (Scr->Ring) {
@@ -475,7 +536,23 @@ IconMgr *iconp;
 	  tmp_win->attr.x != 0 || tmp_win->attr.y != 0)))
       ask_user = FALSE;
 
-    SetupOccupation (tmp_win);
+    /*===============[ Matthew McNeill 1997 ]==========================*
+     * added the occupation parameter to this function call so that the 
+     * occupation can be set up in a specific state if desired 
+     * (restore session for example)
+     */
+
+#ifdef X11R6
+    if (restoredFromPrevSession) {
+      SetupOccupation (tmp_win, saved_occupation);
+    } else {
+      SetupOccupation (tmp_win, 0);
+    }
+#else
+      SetupOccupation (tmp_win, 0);
+#endif      
+    /*=================================================================*/
+
     tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;
     tmp_win->frame_height = tmp_win->attr.height + 2 * tmp_win->frame_bw3D +
 			    tmp_win->title_height;
@@ -563,16 +640,33 @@ IconMgr *iconp;
 		    break;
 	    }
 
+#ifdef I18N
+	    XmbTextExtents(Scr->SizeFont.font_set,
+			   tmp_win->name, namelen,
+			   &ink_rect, &logical_rect);
+	    width = SIZE_HINDENT + ink_rect.width;
+	    height = logical_rect.height + SIZE_VINDENT * 2;
+	    XmbTextExtents(Scr->SizeFont.font_set,
+			   ": ", 2,  &logical_rect, &logical_rect);
+	    Scr->SizeStringOffset = width + logical_rect.width;
+#else	    
 	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
 						tmp_win->name, namelen));
 	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
 	    Scr->SizeStringOffset = width + XTextWidth (Scr->SizeFont.font, ": ", 2);
+#endif	    
 	    
 	    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
 				Scr->SizeStringWidth + SIZE_HINDENT, height);
 	    XMapRaised(dpy, Scr->SizeWindow);
 	    InstallRootColormap();
-
+#ifdef I18N
+	    FB(Scr->DefaultC.fore, Scr->DefaultC.back);
+	    XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
+				Scr->NormalGC, SIZE_HINDENT,
+				SIZE_VINDENT + Scr->SizeFont.ascent,
+				tmp_win->name, namelen);
+#else
 	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
 		Scr->SizeFont.font->fid);
 
@@ -580,6 +674,7 @@ IconMgr *iconp;
 			      SIZE_HINDENT,
 			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
 			      tmp_win->name, namelen);
+#endif	    
 
 	    AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
 	    AddingH = tmp_win->attr.height + tmp_win->title_height +
@@ -588,8 +683,14 @@ IconMgr *iconp;
 		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
+#ifdef I18N
+	    XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
+				Scr->NormalGC, width,
+				SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
+#else	    
 	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
 				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
+#endif	  
 	    DisplayPosition (tmp_win, AddingX, AddingY);
 
 	    tmp_win->frame_width  = AddingW;
@@ -597,8 +698,25 @@ IconMgr *iconp;
 	    /*SetFocus ((TwmWindow *) NULL, CurrentTime);*/
 	    while (TRUE)
 		{
-		XMaskEvent(dpy, ButtonPressMask | PointerMotionMask, &event);
-
+#ifndef VMS			/* I'll try to implement this later.  RL */
+		if (Scr->OpenWindowTimeout) {
+		    fd = ConnectionNumber (dpy);
+		    while (!XCheckMaskEvent (dpy, ButtonMotionMask | ButtonPressMask, &event)) {
+			FD_ZERO (&mask);
+			FD_SET  (fd, &mask);
+			timeout.tv_sec  = Scr->OpenWindowTimeout;
+			timeout.tv_usec = 0;
+			found = select (fd + 1, (FDSET)&mask, (FDSET)0, (FDSET)0, &timeout);
+			if (found == 0) break;
+		    }
+		    if (found == 0) break;
+		} else {
+#else
+		{
+#endif
+		    found = 1;
+		    XMaskEvent(dpy, ButtonPressMask | PointerMotionMask, &event);
+		}
 		if (event.type == MotionNotify) {
 		    /* discard any extra motion events before a release */
 		    while(XCheckMaskEvent(dpy,
@@ -614,6 +732,8 @@ IconMgr *iconp;
 		  AddingY = event.xbutton.y_root;
 
 		  TryToGrid (tmp_win, &AddingX, &AddingY);
+		  if (Scr->PackNewWindows) TryToPack (tmp_win, &AddingX, &AddingY);
+
 		  /* DontMoveOff prohibits user form off-screen placement */
 		  if (Scr->DontMoveOff)	
   		    {
@@ -650,6 +770,7 @@ IconMgr *iconp;
 		    &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
 
 		TryToGrid (tmp_win, &AddingX, &AddingY);
+		if (Scr->PackNewWindows) TryToPack (tmp_win, &AddingX, &AddingY);
 		if (Scr->DontMoveOff)
 		{
 		    int AddingR, AddingB;
@@ -679,9 +800,22 @@ IconMgr *iconp;
 		DisplayPosition (tmp_win, AddingX, AddingY);
 	    }
 
+	  if (found) {
 	    if (event.xbutton.button == Button2) {
 		int lastx, lasty;
 
+#ifdef I18N
+		XmbTextExtents(Scr->SizeFont.font_set,
+			       ": ", 2,  &logical_rect, &logical_rect);
+		Scr->SizeStringOffset = width + logical_rect.width;
+
+		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
+			       Scr->SizeStringWidth + SIZE_HINDENT, height);
+
+		XmbDrawImageString(dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
+				   Scr->NormalGC, width,
+				   SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
+#else		
 		Scr->SizeStringOffset = width +
 		  XTextWidth(Scr->SizeFont.font, ": ", 2);
 		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
@@ -690,6 +824,8 @@ IconMgr *iconp;
 		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
 				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
 				  ": ", 2);
+#endif
+		
 		if (0/*Scr->AutoRelativeResize*/) {
 		    int dx = (tmp_win->attr.width / 4);
 		    int dy = (tmp_win->attr.height / 4);
@@ -781,7 +917,7 @@ IconMgr *iconp;
 	    {
 		XMaskEvent(dpy, ButtonReleaseMask, &event);
 	    }
-
+	  }
 	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
 	    XUnmapWindow(dpy, Scr->SizeWindow);
 	    UninstallRootColormap();
@@ -817,8 +953,15 @@ IconMgr *iconp;
 
     tmp_win->title_width = tmp_win->attr.width;
 
+#ifdef I18N
+    XmbTextExtents(Scr->TitleBarFont.font_set, tmp_win->name, namelen,
+		   &ink_rect, &logical_rect);
+    
+    tmp_win->name_width = logical_rect.width;
+#else    
     tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font, tmp_win->name,
 				     namelen);
+#endif    
 
 #ifndef NO_LOCALE
     tmp_win->icon_name = GetWMPropertyString(tmp_win->w, XA_WM_ICON_NAME);
@@ -919,9 +1062,10 @@ IconMgr *iconp;
 
     ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
 
-    valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask;
+    valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask | CWBackPixel;
     attributes.background_pixmap = None;
-    attributes.border_pixel = tmp_win->borderC.back;
+    attributes.border_pixel = tmp_win->border_tile.back;
+    attributes.background_pixel = tmp_win->border_tile.back;
     attributes.cursor = Scr->FrameCursor;
     attributes.event_mask = (SubstructureRedirectMask | 
 			     ButtonPressMask | ButtonReleaseMask |
@@ -1057,51 +1201,47 @@ IconMgr *iconp;
     {
 	GrabButtons(tmp_win);
 	GrabKeys(tmp_win);
-	if (Scr->ClickToFocus &&
-	    tmp_win->wmhints && tmp_win->wmhints->input &&
-	    (w != Scr->workSpaceMgr.workspaceWindow.w) &&
-	    (w != Scr->workSpaceMgr.occupyWindow.w)) ClickToFocusGrab (tmp_win);
     }
 
     (void) AddIconManager(tmp_win);
 
-    XSaveContext(dpy, tmp_win->w, TwmContext, (caddr_t) tmp_win);
-    XSaveContext(dpy, tmp_win->w, ScreenContext, (caddr_t) Scr);
-    XSaveContext(dpy, tmp_win->frame, TwmContext, (caddr_t) tmp_win);
-    XSaveContext(dpy, tmp_win->frame, ScreenContext, (caddr_t) Scr);
+    XSaveContext(dpy, tmp_win->w, TwmContext, (XPointer) tmp_win);
+    XSaveContext(dpy, tmp_win->w, ScreenContext, (XPointer) Scr);
+    XSaveContext(dpy, tmp_win->frame, TwmContext, (XPointer) tmp_win);
+    XSaveContext(dpy, tmp_win->frame, ScreenContext, (XPointer) Scr);
 
     if (tmp_win->title_height)
     {
 	int i;
 	int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
 
-	XSaveContext(dpy, tmp_win->title_w, TwmContext, (caddr_t) tmp_win);
-	XSaveContext(dpy, tmp_win->title_w, ScreenContext, (caddr_t) Scr);
+	XSaveContext(dpy, tmp_win->title_w, TwmContext, (XPointer) tmp_win);
+	XSaveContext(dpy, tmp_win->title_w, ScreenContext, (XPointer) Scr);
 	for (i = 0; i < nb; i++) {
 	    XSaveContext(dpy, tmp_win->titlebuttons[i].window, TwmContext,
-			 (caddr_t) tmp_win);
+			 (XPointer) tmp_win);
 	    XSaveContext(dpy, tmp_win->titlebuttons[i].window, ScreenContext,
-			 (caddr_t) Scr);
+			 (XPointer) Scr);
 	}
 	if (tmp_win->hilite_wl)
 	{
-	    XSaveContext(dpy, tmp_win->hilite_wl, TwmContext, (caddr_t)tmp_win);
-	    XSaveContext(dpy, tmp_win->hilite_wl, ScreenContext, (caddr_t)Scr);
+	    XSaveContext(dpy, tmp_win->hilite_wl, TwmContext, (XPointer)tmp_win);
+	    XSaveContext(dpy, tmp_win->hilite_wl, ScreenContext, (XPointer)Scr);
 	}
 	if (tmp_win->hilite_wr)
 	{
-	    XSaveContext(dpy, tmp_win->hilite_wr, TwmContext, (caddr_t)tmp_win);
-	    XSaveContext(dpy, tmp_win->hilite_wr, ScreenContext, (caddr_t)Scr);
+	    XSaveContext(dpy, tmp_win->hilite_wr, TwmContext, (XPointer)tmp_win);
+	    XSaveContext(dpy, tmp_win->hilite_wr, ScreenContext, (XPointer)Scr);
 	}
 	if (tmp_win->lolite_wl)
 	{
-	    XSaveContext(dpy, tmp_win->lolite_wl, TwmContext, (caddr_t)tmp_win);
-	    XSaveContext(dpy, tmp_win->lolite_wl, ScreenContext, (caddr_t)Scr);
+	    XSaveContext(dpy, tmp_win->lolite_wl, TwmContext, (XPointer)tmp_win);
+	    XSaveContext(dpy, tmp_win->lolite_wl, ScreenContext, (XPointer)Scr);
 	}
 	if (tmp_win->lolite_wr)
 	{
-	    XSaveContext(dpy, tmp_win->lolite_wr, TwmContext, (caddr_t)tmp_win);
-	    XSaveContext(dpy, tmp_win->lolite_wr, ScreenContext, (caddr_t)Scr);
+	    XSaveContext(dpy, tmp_win->lolite_wr, TwmContext, (XPointer)tmp_win);
+	    XSaveContext(dpy, tmp_win->lolite_wr, ScreenContext, (XPointer)Scr);
 	}
     }
 
@@ -1113,6 +1253,7 @@ IconMgr *iconp;
     if (RootFunction)
 	ReGrab();
     WMapAddWindow (tmp_win);
+    SetPropsIfCaptiveCtwm (tmp_win);
     return (tmp_win);
 }
 
@@ -1201,25 +1342,32 @@ TwmWindow *tmp_win;
 		    GrabModeAsync, GrabModeAsync, None, 
 		    Scr->FrameCursor);
 	    
-    }
-}
-
-void ClickToFocusGrab (tmp_win)
-TwmWindow *tmp_win;
-{
-    if (tmp_win) {
-	XGrabButton (dpy, AnyButton, None, tmp_win->w, 
+	if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask)) {
+	    XGrabButton (dpy, tmp->num, tmp->mods | LockMask, tmp_win->frame, 
 		    True, ButtonPressMask | ButtonReleaseMask,
 		    GrabModeAsync, GrabModeAsync, None, 
 		    Scr->FrameCursor);
+	}
     }
-}
-
-void ClickToFocusUngrab (tmp_win)
-TwmWindow *tmp_win;
-{
-    if (tmp_win) {
-	XUngrabButton (dpy, AnyButton, AnyModifier, tmp_win->w);
+    if (Scr->ClickToFocus) {
+	XGrabButton (dpy, AnyButton, None, tmp_win->w, 
+		    True, ButtonPressMask | ButtonReleaseMask,
+		    GrabModeSync, GrabModeAsync, None, 
+		    Scr->FrameCursor);
+	XGrabButton (dpy, AnyButton, LockMask, tmp_win->w, 
+		    True, ButtonPressMask | ButtonReleaseMask,
+		    GrabModeSync, GrabModeAsync, None, 
+		    Scr->FrameCursor);
+    } else
+    if (Scr->RaiseOnClick) {
+	XGrabButton (dpy, Scr->RaiseOnClickButton, None, tmp_win->w, 
+		    True, ButtonPressMask | ButtonReleaseMask,
+		    GrabModeSync, GrabModeAsync, None, 
+		    Scr->FrameCursor);
+	XGrabButton (dpy, Scr->RaiseOnClickButton, LockMask, tmp_win->w, 
+		    True, ButtonPressMask | ButtonReleaseMask,
+		    GrabModeSync, GrabModeAsync, None, 
+		    Scr->FrameCursor);
     }
 }
 
@@ -1251,29 +1399,49 @@ TwmWindow *tmp_win;
 	    if (tmp->mods & AltMask) break;
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
 		GrabModeAsync, GrabModeAsync);
+	    if (!Scr->IgnoreLockModifier || (tmp->mods & LockMask)) break;
+	    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->w, True,
+		GrabModeAsync, GrabModeAsync);
 	    break;
 
 	case C_ICON:
-	    if (tmp_win->icon && tmp_win->icon->w)
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
+	    if (!tmp_win->icon || tmp_win->icon->w) break;
+	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
+		    GrabModeAsync, GrabModeAsync);
+	    if (!Scr->IgnoreLockModifier || (tmp->mods & LockMask)) break;
+	    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->icon->w, True,
 		    GrabModeAsync, GrabModeAsync);
 	    break;
 
 	case C_TITLE:
-	    if (tmp_win->title_w)
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
+	    if (!tmp_win->title_w) break;
+	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
+		    GrabModeAsync, GrabModeAsync);
+	    if (!Scr->IgnoreLockModifier || (tmp->mods & LockMask)) break;
+	    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->title_w, True,
 		    GrabModeAsync, GrabModeAsync);
 	    break;
 
 	case C_NAME:
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
 		GrabModeAsync, GrabModeAsync);
-	    if (tmp_win->icon && tmp_win->icon->w)
+	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
+		XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->w, True,
+			GrabModeAsync, GrabModeAsync);
+	    if (tmp_win->icon && tmp_win->icon->w) {
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
 		    GrabModeAsync, GrabModeAsync);
-	    if (tmp_win->title_w)
+		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
+		    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->icon->w,
+			True, GrabModeAsync, GrabModeAsync);
+	    }
+	    if (tmp_win->title_w) {
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
 		    GrabModeAsync, GrabModeAsync);
+		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
+		    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->title_w,
+			True, GrabModeAsync, GrabModeAsync);
+	    }
 	    break;
 	/*
 	case C_ROOT:
@@ -1290,6 +1458,8 @@ TwmWindow *tmp_win;
 	    for (p = Scr->iconmgr; p != NULL; p = p->next)
 	    {
 		XUngrabKey(dpy, tmp->keycode, tmp->mods, p->twm_win->w);
+		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
+		    XUngrabKey(dpy, tmp->keycode, tmp->mods | LockMask, p->twm_win->w);
 	    }
 	}
     }
@@ -1505,7 +1675,7 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
     if (tmp_win->hilite_wr || Scr->TBInfo.nright > 0) 
       tmp_win->highlightxr += Scr->TitlePadding;
     tmp_win->rightx = width - Scr->TBInfo.rightoff;
-    if (squeeze && tmp_win->squeeze_info) {
+    if (squeeze && tmp_win->squeeze_info && !tmp_win->squeezed) {
 	int rx = (tmp_win->highlightxr + 
 		  (tmp_win->hilite_wr
 		    ? Scr->TBInfo.width * 2 : 0) +
@@ -1528,7 +1698,7 @@ void ComputeTitleLocation (tmp)
     tmp->title_x = tmp->frame_bw3D - tmp->frame_bw;
     tmp->title_y = tmp->frame_bw3D - tmp->frame_bw;
 
-    if (tmp->squeeze_info) {
+    if (tmp->squeeze_info && !tmp->squeezed) {
 	register SqueezeInfo *si = tmp->squeeze_info;
 	int basex;
 	int maxwidth = tmp->frame_width;
@@ -1704,7 +1874,7 @@ CreateTwmColormap(c)
     TwmColormap *cmap;
     cmap = (TwmColormap *) malloc(sizeof(TwmColormap));
     if (!cmap ||
-	XSaveContext(dpy, c, ColormapContext, (caddr_t) cmap)) {
+	XSaveContext(dpy, c, ColormapContext, (XPointer) cmap)) {
 	if (cmap) free((char *) cmap);
 	return (NULL);
     }
@@ -1729,13 +1899,13 @@ CreateColormapWindow(w, creating_parent, property_window)
     cwin = (ColormapWindow *) malloc(sizeof(ColormapWindow));
     if (cwin) {
 	if (!XGetWindowAttributes(dpy, w, &attributes) ||
-	    XSaveContext(dpy, w, ColormapContext, (caddr_t) cwin)) {
+	    XSaveContext(dpy, w, ColormapContext, (XPointer) cwin)) {
 	    free((char *) cwin);
 	    return (NULL);
 	}
 
 	if (XFindContext(dpy, attributes.colormap,  ColormapContext,
-		(caddr_t *)&cwin->colormap) == XCNOENT) {
+		(XPointer *)&cwin->colormap) == XCNOENT) {
 	    cwin->colormap = cmap = CreateTwmColormap(attributes.colormap);
 	    if (!cmap) {
 		XDeleteContext(dpy, w, ColormapContext);
@@ -1847,7 +2017,7 @@ FetchWmColormapWindows (tmp)
 		 */
 		if (j == tmp->cmaps.number_cwins) {
 		    if (XFindContext(dpy, cmap_windows[i], ColormapContext,
-				     (caddr_t *)&cwins[i]) == XCNOENT) {
+				     (XPointer *)&cwins[i]) == XCNOENT) {
 			if ((cwins[i] = CreateColormapWindow(cmap_windows[i],
 				    (Bool) tmp->cmaps.number_cwins == 0,
 				    True)) == NULL) {
@@ -1871,7 +2041,7 @@ FetchWmColormapWindows (tmp)
 	number_cmap_windows = 1;
 
 	cwins = (ColormapWindow **) malloc(sizeof(ColormapWindow *));
-	if (XFindContext(dpy, tmp->w, ColormapContext, (caddr_t *)&cwins[0]) ==
+	if (XFindContext(dpy, tmp->w, ColormapContext, (XPointer *)&cwins[0]) ==
 		XCNOENT)
 	    cwins[0] = CreateColormapWindow(tmp->w,
 			    (Bool) tmp->cmaps.number_cwins == 0, False);

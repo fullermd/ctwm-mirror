@@ -70,6 +70,7 @@
 #include <stdio.h>
 #include "twm.h"
 #include "parse.h"
+#include "events.h"
 #include "util.h"
 #include "resize.h"
 #include "add_window.h"
@@ -575,7 +576,7 @@ int height;
     char str[100];
     int dwidth;
     int dheight;
-
+    
     if (last_width == width && last_height == height)
         return;
 
@@ -614,11 +615,18 @@ int height;
 		Scr->SizeFont.height + SIZE_VINDENT * 2,
 		2, Scr->DefaultC, off, False, False);
 
+#ifdef I18N
+    FB(Scr->DefaultC.fore, Scr->DefaultC.back);
+    XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
+		      Scr->NormalGC, Scr->SizeStringOffset,
+		      Scr->SizeFont.ascent + SIZE_VINDENT, str, 13);
+#else    
     FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
     XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
 		      Scr->SizeStringOffset,
 		      Scr->SizeFont.font->ascent + SIZE_VINDENT,
 		      str, 13);
+#endif
 }
 
 /***********************************************************************
@@ -641,7 +649,7 @@ EndResize()
     MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
     XUnmapWindow(dpy, Scr->SizeWindow);
 
-    XFindContext(dpy, ResizeWindow, TwmContext, (caddr_t *)&tmp_win);
+    XFindContext(dpy, ResizeWindow, TwmContext, (XPointer *)&tmp_win);
 
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
 
@@ -906,7 +914,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 
     if (tmp_win->iconmgr) {
 	tmp_win->iconmgrp->width = w - (2 * tmp_win->frame_bw3D);
-        h = tmp_win->iconmgrp->height + tmp_win->title_height + (2 * tmp_win->frame_bw3D);
+	h = tmp_win->iconmgrp->height + tmp_win->title_height + (2 * tmp_win->frame_bw3D);
     }
 
     /*
@@ -925,7 +933,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     ComputeWindowTitleOffsets (tmp_win, xwc.width, True);
 
     reShape = (tmp_win->wShaped ? TRUE : FALSE);
-    if (tmp_win->squeeze_info)		/* check for title shaping */
+    if (tmp_win->squeeze_info/* && !tmp_win->squeezed*/)	/* check for title shaping */
     {
 	title_width = tmp_win->rightx + Scr->TBInfo.rightoff;
 	if (title_width < xwc.width)
@@ -968,8 +976,9 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	tmp_win->attr.width  = w - (2 * tmp_win->frame_bw3D);
 	tmp_win->attr.height = h - tmp_win->title_height - (2 * tmp_win->frame_bw3D);
     }
-    if (tmp_win->squeezed && (y != tmp_win->frame_y)) {
-	tmp_win->actual_frame_y += y - tmp_win->frame_y;
+    if (tmp_win->squeezed) {
+	if (x != tmp_win->frame_x) tmp_win->actual_frame_x += x - tmp_win->frame_x;
+	if (y != tmp_win->frame_y) tmp_win->actual_frame_y += y - tmp_win->frame_y;
     }
     /* 
      * fix up frame and assign size/location values in tmp_win
@@ -979,8 +988,15 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	frame_wc.border_width = tmp_win->frame_bw = bw;
 	frame_mask |= CWBorderWidth;
     }
-    frame_wc.x = tmp_win->frame_x = x;
-    frame_wc.y = tmp_win->frame_y = y;
+    tmp_win->frame_x = x;
+    tmp_win->frame_y = y;
+    if (tmp_win->UnmapByMovingFarAway && !VISIBLE(tmp_win)) {
+	frame_wc.x = Scr->MyDisplayWidth  + 1;
+	frame_wc.y = Scr->MyDisplayHeight + 1;
+    } else {
+	frame_wc.x = tmp_win->frame_x;
+	frame_wc.y = tmp_win->frame_y;
+    }
     frame_wc.width = tmp_win->frame_width = w;
     frame_wc.height = tmp_win->frame_height = h;
     frame_mask |= (CWX | CWY | CWWidth | CWHeight);
@@ -1190,6 +1206,30 @@ int flag;
     XUngrabServer (dpy);
 }
 
+void savegeometry (tmp_win)
+TwmWindow *tmp_win;
+{
+    if (!tmp_win) return;
+    tmp_win->savegeometry.x      = tmp_win->frame_x;
+    tmp_win->savegeometry.y      = tmp_win->frame_y;
+    tmp_win->savegeometry.width  = tmp_win->frame_width;
+    tmp_win->savegeometry.height = tmp_win->frame_height;
+}
+
+void restoregeometry (tmp_win)
+TwmWindow *tmp_win;
+{
+    int x, y, w, h;
+
+    if (!tmp_win) return;
+    if (tmp_win->savegeometry.width == -1) return;
+    x = tmp_win->savegeometry.x;
+    y = tmp_win->savegeometry.y;
+    w = tmp_win->savegeometry.width;
+    h = tmp_win->savegeometry.height;
+    SetupWindow (tmp_win, x, y, w, h, -1);
+}
+
 SetFrameShape (tmp)
     TwmWindow *tmp;
 {
@@ -1226,7 +1266,7 @@ SetFrameShape (tmp)
 	/*
 	 * can optimize rectangular contents window
 	 */
-	if (tmp->squeeze_info) {
+	if (tmp->squeeze_info && !tmp->squeezed) {
 	    XRectangle  newBounding[2];
 	    XRectangle  newClip[2];
 	    int fbw2 = 2 * tmp->frame_bw;

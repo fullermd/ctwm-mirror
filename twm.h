@@ -177,10 +177,22 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
     Gcv.background = fix_back;\
     XChangeGC(dpy, Scr->NormalGC, GCForeground|GCBackground,&Gcv)
 
+#ifdef I18N
+#define MaxSize(a, b)  (((a) < (b)) ? (b) : (a))
+#define MinSize(a, b)  (((a) > (b)) ? (b) : (a))
+#endif
+
 typedef struct MyFont
 {
+#ifdef I18N    
+    char *basename;			/* name of the font */
+    XFontSet	font_set;
+    int         ascent;
+    int         descent;
+#else    
     char *name;			/* name of the font */
-    XFontStruct *font;		/* font structure */
+    XFontStruct	*font;		/* font structure */
+#endif
     int height;			/* height of the font */
     int y;			/* Y coordinate to draw characters */
 } MyFont;
@@ -303,7 +315,9 @@ typedef struct TwmWindow
     int frame_height;		/* height of frame */
     int frame_bw;		/* borderwidth of frame */
     int frame_bw3D;		/* 3D borderwidth of frame */
+    int actual_frame_x;		/* save frame_y of frame when squeezed */
     int actual_frame_y;		/* save frame_x of frame when squeezed */
+    int actual_frame_width;	/* save width of frame when squeezed */
     int actual_frame_height;	/* save height of frame when squeezed */
     int title_x;
     int title_y;
@@ -365,11 +379,19 @@ typedef struct TwmWindow
 
     short OpaqueMove;
     short OpaqueResize;
+    short UnmapByMovingFarAway;
+    short AutoSqueeze;
+    short StartSqueezed;
+    short DontSetInactive;
     Bool hasfocusvisible;	/* The window has visivle focus*/
     int  occupation;
     Image *HiliteImage;                /* focus highlight window background */
     Image *LoliteImage;                /* focus lowlight window background */
     WindowRegion *wr;
+    struct {
+	int x, y;
+	int width, height;
+    } savegeometry;
 
 #ifdef X11R6
     Bool nameChanged;	/* did WM_NAME ever change? */
@@ -398,6 +420,13 @@ typedef struct TWMWinConfigEntry
     Bool icon_info_present;
     Bool width_ever_changed_by_user;
     Bool height_ever_changed_by_user;
+   /* ===================[ Matthew McNeill Feb 1997 ]======================= *
+    * Added this property to facilitate restoration of workspaces when 
+    * restarting a session.
+    */
+    int occupation;
+   /* ====================================================================== */
+
 } TWMWinConfigEntry;
 #endif
 
@@ -434,8 +463,12 @@ typedef struct TWMWinConfigEntry
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
 #else
+#ifdef VMS
+#include <stdlib.h>
+#else
 extern char *malloc(), *calloc(), *realloc(), *getenv();
 extern void free();
+#endif
 #endif
 extern void Reborder();
 extern SIGNAL_T Done();
@@ -511,6 +544,10 @@ extern Atom _XA_WM_CLIENT_MACHINE;
 #endif
 
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
-#define VISIBLE(w) (w->occupation & Scr->workSpaceMgr.visibility)
+#define VISIBLE(w) OCCUPY(w, Scr->workSpaceMgr.activeWSPC)
+
+#ifdef X11R4
+#define XPointer caddr_t
+#endif
 
 #endif /* _TWM_ */

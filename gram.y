@@ -75,8 +75,14 @@
 #include "util.h"
 #include "screen.h"
 #include "parse.h"
-#include <X11/Xos.h>
-#include <X11/Xmu/CharSet.h>
+#include "cursor.h"
+#ifdef VMS
+#  include <decw$include/Xos.h>
+#  include <X11Xmu/CharSet.h>
+#else
+#  include <X11/Xos.h>
+#  include <X11/Xmu/CharSet.h>
+#endif
 
 static char *Action = "";
 static char *Name = "";
@@ -85,6 +91,9 @@ static MenuRoot	*root, *pull = NULL;
 static char *curWorkSpc;
 static char *client, *workspace;
 static MenuItem *lastmenuitem = (MenuItem*) 0;
+
+extern yyerror();
+extern RemoveDQuote();
 
 static MenuRoot *GetRoot();
 
@@ -98,17 +107,22 @@ static int color;
 int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 
+extern twmrc_error_prefix();
+
 extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
 extern name_list **do_colorlist_keyword();
 extern int do_color_keyword(), do_string_savecolor();
+extern int do_var_savecolor(), do_squeeze_entry();
 extern int yylineno;
+extern yylex();
 %}
 
 %union
 {
     int num;
-    char *ptr;
+    unsigned char *ptr;
 };
+
 
 %token <num> LB RB LP RP MENUS MENU BUTTON DEFAULT_FUNCTION PLUS MINUS
 %token <num> ALL OR CURSORS PIXMAPS ICONS COLOR SAVECOLOR MONOCHROME FUNCTION 
@@ -124,8 +138,9 @@ extern int yylineno;
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
 %token <num> NO_STACKMODE ALWAYS_ON_TOP WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
 %token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
-%token <num> OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
-%token <num> CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
+%token <num> UNMAPBYMOVINGFARAWAY OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
+%token <num> DONTSETINACTIVE CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
+%token <num> AUTOSQUEEZE STARTSQUEEZED
 %token <ptr> STRING
 
 %type <ptr> string
@@ -182,21 +197,21 @@ stmt		: error
 
 		| ICONMGR_GEOMETRY string number	{ if (Scr->FirstTime)
 						  {
-						    Scr->iconmgr->geometry= $2;
+						    Scr->iconmgr->geometry= (char*)$2;
 						    Scr->iconmgr->columns=$3;
 						  }
 						}
 		| ICONMGR_GEOMETRY string	{ if (Scr->FirstTime)
-						    Scr->iconmgr->geometry = $2;
+						    Scr->iconmgr->geometry = (char*)$2;
 						}
 		| WORKSPCMGR_GEOMETRY string number	{ if (Scr->FirstTime)
-						  {
-						    Scr->workSpaceMgr.workspaceWindow.geometry= $2;
-						    Scr->workSpaceMgr.workspaceWindow.columns=$3;
-						  }
+				{
+				    Scr->workSpaceMgr.workspaceWindow.geometry= (char*)$2;
+				    Scr->workSpaceMgr.workspaceWindow.columns=$3;
+				}
 						}
 		| WORKSPCMGR_GEOMETRY string	{ if (Scr->FirstTime)
-						    Scr->workSpaceMgr.workspaceWindow.geometry = $2;
+				    Scr->workSpaceMgr.workspaceWindow.geometry = (char*)$2;
 						}
 		| MAPWINDOWCURRENTWORKSPACE {}
 		  curwork
@@ -273,6 +288,14 @@ stmt		: error
 		  win_list
 		| OCCUPYLIST {}
 		  occupy_list
+		| UNMAPBYMOVINGFARAWAY	{ list = &Scr->UnmapByMovingFarAway; }
+		  win_list
+		| AUTOSQUEEZE		{ list = &Scr->AutoSqueeze; }
+		  win_list
+		| STARTSQUEEZED		{ list = &Scr->StartSqueezed; }
+		  win_list
+		| DONTSETINACTIVE	{ list = &Scr->DontSetInactive; }
+		  win_list
 		| ICONMGR_NOSHOW	{ list = &Scr->IconMgrNoShow; }
 		  win_list
 		| ICONMGR_NOSHOW	{ Scr->IconManagerDontShow = TRUE; }
@@ -490,7 +513,7 @@ contextkey	: WINDOW		{ cont |= C_WINDOW_BIT; }
 		| ALL			{ cont |= C_ALL_BITS; }
 		| ALTER                 { cont |= C_ALTER_BIT; }
 		| OR			{ }
-		| string		{ Name = $1; cont |= C_NAME_BIT; }
+		| string		{ Name = (char*)$1; cont |= C_NAME_BIT; }
 		;
 
 
@@ -684,7 +707,7 @@ workspc_entry	: string	{
 			AddWorkSpace ($1, NULLSTR, NULLSTR, NULLSTR, NULLSTR, NULLSTR);
 		}
 		| string	{
-			curWorkSpc = $1;
+			curWorkSpc = (char*)$1;
 		}
 		workapp_list
 		;
@@ -760,11 +783,11 @@ occupy_entries	:  /* Empty */
 		| occupy_entries occupy_entry
 		;
 
-occupy_entry	: string {client = $1;}
+occupy_entry	: string {client = (char*)$1;}
 		  occupy_workspc_list
-		| WINDOW    string {client = $2;}
+		| WINDOW    string {client = (char*)$2;}
 		  occupy_workspc_list
-		| WORKSPACE string {workspace = $2;}
+		| WORKSPACE string {workspace = (char*)$2;}
 		  occupy_window_list
 		;
 
@@ -845,7 +868,7 @@ menu_entry	: string action		{
 action		: FKEYWORD	{ $$ = $1; }
 		| FSKEYWORD string {
 				$$ = $1;
-				Action = $2;
+				Action = (char*)$2;
 				switch ($1) {
 				  case F_MENU:
 				    pull = GetRoot ($2, NULLSTR,NULLSTR);
@@ -901,10 +924,10 @@ button		: BUTTON number		{ $$ = $2;
 					}
 		;
 
-string		: STRING		{ ptr = (char *)malloc(strlen($1)+1);
-					  strcpy(ptr, $1);
+string		: STRING		{ ptr = (char *)malloc(strlen((char*)$1)+1);
+					  strcpy((char*)ptr, (char*)$1);
 					  RemoveDQuote(ptr);
-					  $$ = ptr;
+					  $$ = (unsigned char*)ptr;
 					}
 number		: NUMBER		{ $$ = $1; }
 		;

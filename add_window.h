@@ -67,13 +67,17 @@
 extern char NoName[];
 extern int  resizeWhenAdd;
 
+extern int GetGravityOffsets ();
 extern TwmWindow *AddWindow();
 extern int MappedNotOverride();
+extern AddDefaultBindings ();
 extern void GrabButtons();
 extern void GrabKeys();
 extern void UngrabButtons();
 extern void UngrabKeys();
 extern void GetWindowSizeHints();
+extern int AnimateButton ();
+extern int AnimateHighlight ();
 extern void CreateWindowRegions ();
 extern Bool PlaceWindowInRegion ();
 extern void RemoveWindowFromRegion ();
@@ -87,5 +91,8 @@ extern int AddingH;
 extern char *GetWMPropertyString();
 #endif /* NO_LOCALE */
 
+extern SetHighlightPixmap ();
+extern FetchWmColormapWindows ();
+extern FetchWmProtocols ();
 #endif /* _ADD_WINDOW_ */
 

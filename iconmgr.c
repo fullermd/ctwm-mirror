@@ -62,6 +62,11 @@
 
 #include <stdio.h>
 #include "twm.h"
+#ifdef VMS
+#include <decw$include/Xatom.h>
+#else
+#include <X11/Xatom.h>
+#endif
 #include "util.h"
 #include "parse.h"
 #include "screen.h"
@@ -111,6 +116,8 @@ void CreateIconManagers()
     char *icon_name;
     WorkSpaceList *wlist;
     XWMHints	  wmhints;
+    XSizeHints	  sizehints;
+    int		  gravity;
     int bw;
 
     if (Scr->NoIconManagers)
@@ -141,9 +148,12 @@ void CreateIconManagers()
 	bw = LookInList (Scr->NoBorder, str, NULL) ? 0 :
 		(Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth);
 
-	if (mask & XNegative)
+	if (mask & XNegative) {
 	    JunkX += Scr->MyDisplayWidth - p->width - 2 * bw;
-
+	    gravity = (mask & YNegative) ? SouthEastGravity : NorthEastGravity;
+	} else {
+	    gravity = (mask & YNegative) ? SouthWestGravity : NorthWestGravity;
+	}
 	if (mask & YNegative)
 	    JunkY += Scr->MyDisplayHeight - p->height - 2 * bw;
 
@@ -162,8 +172,13 @@ void CreateIconManagers()
 	Scr->workSpaceMgr.activeWSPC = wlist;
 	wmhints.initial_state = NormalState;
 	wmhints.input         = True;
+	wmhints.flags         = InputHint | StateHint;
 	XSetWMHints (dpy, p->w, &wmhints);
 	p->twm_win = AddWindow(p->w, TRUE, p);
+
+	sizehints.flags       = PWinGravity;
+	sizehints.win_gravity = gravity;
+	XSetWMSizeHints (dpy, p->w, &sizehints, XA_WM_NORMAL_HINTS);
 
 	p->twm_win->mapped = FALSE;
 	SetMapStateProp (p->twm_win, WithdrawnState);
@@ -649,19 +664,19 @@ WList *AddIconManager(tmp_win)
     if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
     XMapWindow(dpy, tmp->w);
 
-    XSaveContext(dpy, tmp->w, IconManagerContext, (caddr_t) tmp);
-    XSaveContext(dpy, tmp->w, TwmContext, (caddr_t) tmp_win);
-    XSaveContext(dpy, tmp->w, ScreenContext, (caddr_t) Scr);
-    XSaveContext(dpy, tmp->icon, TwmContext, (caddr_t) tmp_win);
-    XSaveContext(dpy, tmp->icon, ScreenContext, (caddr_t) Scr);
+    XSaveContext(dpy, tmp->w, IconManagerContext, (XPointer) tmp);
+    XSaveContext(dpy, tmp->w, TwmContext, (XPointer) tmp_win);
+    XSaveContext(dpy, tmp->w, ScreenContext, (XPointer) Scr);
+    XSaveContext(dpy, tmp->icon, TwmContext, (XPointer) tmp_win);
+    XSaveContext(dpy, tmp->icon, ScreenContext, (XPointer) Scr);
 
     if (!ip->twm_win->isicon)
     {
-      if (OCCUPY (ip->twm_win, Scr->workSpaceMgr.activeWSPC)) {
-	SetMapStateProp (ip->twm_win, NormalState);
-	XMapWindow (dpy, ip->w);
-	XMapWindow (dpy, ip->twm_win->frame);
-      }
+	if (OCCUPY (ip->twm_win, Scr->workSpaceMgr.activeWSPC)) {
+	    SetMapStateProp (ip->twm_win, NormalState);
+	    XMapWindow (dpy, ip->w);
+	    XMapWindow (dpy, ip->twm_win->frame);
+	}
 	ip->twm_win->mapped = TRUE;
     }
     tmp->nextv = old;

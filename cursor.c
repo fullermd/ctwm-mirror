@@ -211,3 +211,58 @@ char *source, *mask;
     *cp = XCreatePixmapCursor(dpy, spm, mpm, &fore, &back, hotx,hoty);
     return (0);
 }
+
+Cursor MakeStringCursor (string)
+char *string;
+{
+    Cursor	cursor;
+    XColor	black, white;
+    Pixmap	bitmap;
+    unsigned int width, height, rwidth, rheight, middle;
+    GC		gc;
+    Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    MyFont	myfont = Scr->TitleBarFont;
+#ifdef I18N
+    XRectangle inc_rect;
+    XRectangle logical_rect;
+#endif    
+
+    black.pixel = Scr->Black;
+    XQueryColor (dpy, cmap, &black);
+    white.pixel = Scr->White;
+    XQueryColor (dpy, cmap, &white);
+
+#ifdef I18N
+    XmbTextExtents (myfont.font_set, string, strlen (string),
+		       &inc_rect, &logical_rect);
+    width  = logical_rect.width  + 4;
+    height = logical_rect.height + 2;
+    middle = myfont.ascent;
+#else	
+    width  = XTextWidth (myfont.font, string, strlen (string)) + 4;
+    height = myfont.height + 2;
+    middle = myfont.font->ascent;
+#endif
+    /*XQueryBestCursor (dpy, Scr->Root, width, height, &rwidth, &rheight);*/
+
+    bitmap = XCreatePixmap (dpy, Scr->Root, width, height, 1);
+    gc     = XCreateGC (dpy, bitmap, 0L, NULL);
+
+    XSetForeground (dpy, gc, 0L);
+    XFillRectangle (dpy, bitmap, gc, 0, 0, width, height);
+    XSetForeground (dpy, gc, 1L);
+    XDrawRectangle (dpy, bitmap, gc, 0, 0, width - 1, height - 1);
+
+#ifdef I18N
+    XmbDrawString (dpy, bitmap, myfont.font_set,
+		     gc, 2, middle, string, strlen (string));
+#else	    
+    XSetFont    (dpy, gc, myfont.font->fid);
+    XDrawString (dpy, bitmap, gc, 2, 12, string, strlen (string));
+#endif
+
+    cursor = XCreatePixmapCursor (dpy, bitmap, None, &black, &white, 0, 0);
+    XFreePixmap (dpy, bitmap);
+    XFreeGC (dpy, gc);
+    return (cursor);
+}

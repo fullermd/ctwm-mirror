@@ -69,6 +69,7 @@
 #include "parse.h"
 #include "util.h"
 
+extern int twmrc_error_prefix();
 extern Bool AnimationPending;
 extern Bool AnimationActive;
 extern Bool MaybeAnimate;
@@ -650,8 +651,19 @@ int def_x, def_y;
 	icon->has_title = False;
     }
     else {
+#ifdef I18N
+	XRectangle inc_rect;
+	XRectangle logical_rect;
+	
+	XmbTextExtents(Scr->IconFont.font_set,
+		       tmp_win->icon_name, strlen (tmp_win->icon_name),
+		       &inc_rect, &logical_rect);
+	icon->w_width = logical_rect.width;
+
+#else
 	icon->w_width = XTextWidth(Scr->IconFont.font,
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
+#endif
 
 	icon->w_width += 2 * Scr->IconManagerShadowDepth + 6;
 	if (icon->w_width > Scr->MaxIconTitleWidth) icon->w_width = Scr->MaxIconTitleWidth;
@@ -775,7 +787,8 @@ int def_x, def_y;
 	PlaceIcon(tmp_win, def_x, def_y, &final_x, &final_y);
     }
 
-  if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) {
+  if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC) ||
+      (tmp_win->wmhints && tmp_win->wmhints->flags & IconPositionHint)) {
     if (final_x > Scr->MyDisplayWidth)
 	final_x = Scr->MyDisplayWidth - icon->w_width -
 	    (2 * Scr->IconBorderWidth);
@@ -794,8 +807,8 @@ int def_x, def_y;
     tmp_win->iconified = TRUE;
 
     XMapSubwindows(dpy, icon->w);
-    XSaveContext(dpy, icon->w, TwmContext, (caddr_t)tmp_win);
-    XSaveContext(dpy, icon->w, ScreenContext, (caddr_t)Scr);
+    XSaveContext(dpy, icon->w, TwmContext, (XPointer)tmp_win);
+    XSaveContext(dpy, icon->w, ScreenContext, (XPointer)Scr);
     XDefineCursor(dpy, icon->w, Scr->IconCursor);
     MaybeAnimate = True;
     return (0);

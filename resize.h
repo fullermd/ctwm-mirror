@@ -64,15 +64,22 @@
 #ifndef _RESIZE_
 #define _RESIZE_
 
+extern void MenuStartResize();
 extern void StartResize();
 extern void AddStartResize();
+extern void MenuDoResize();
 extern void DoResize();
 extern void DisplaySize();
 extern void EndResize();
+extern void MenuEndResize();
 extern void AddEndResize();
 extern void SetupWindow();
 extern void SetupFrame();
-
-#endif /* _RESIZE_ */
+extern ConstrainSize ();
 
 extern void fullzoom();
+extern void savegeometry ();
+extern void restoregeometry ();
+extern int SetFrameShape ();
+#endif /* _RESIZE_ */
+
