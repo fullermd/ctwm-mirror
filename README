@@ -45,6 +45,24 @@ funny prompt> xmkmf
 funny prompt> make
 
 
+Build configuration changes are done entirely in Imakefile, through a
+number of C macros that are defined or undefined at the beginning of
+the file.  These are the macros of interest:
+
+USEM4		If defined, enables the use of the m4 preprocessor on
+		the run-time configuration file.  Disable if m4 isn't
+		present.
+XPM		If defined, enables the use of xpm images.  Disable if
+		libxpm isn't present.
+JPEG		If defined, enables the use of jpeg images.  Disable
+		if libjpeg isn't present.
+GNOME		If defined, build to work with Gnome.
+X11R6		If defined, build to work with X11R6 (basically, add
+		session management capabilities)
+I18N		If defined, build with i18n capabilities.
+USE_SOUND	if defined, build with sound support.  Disable if
+		librplay isn't present.
+
 If you don't have xpm, fetch it from ftp.x.org or comment out the
 #define XPM in Imakefile.  If you don't have the m4 preprocessor (or
 don't want to use it) comment out #define USEM4, if you have the
