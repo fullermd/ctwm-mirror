@@ -31,6 +31,7 @@
 #include "resize.h"
 #include "add_window.h"
 #include "events.h"
+#include "gram.h"
 #include "siconify.bm"
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
@@ -53,171 +54,83 @@ int strcmp(); /* missing from string.h in AUX 2.0 */
  *
  ***********************************************************************
  */
+#define WSPCWINDOW    0
+#define OCCUPYWINDOW  1
+#define OCCUPYBUTTON  2
+
 unsigned int GetMaskFromNameList ();
+static void PaintButton		();
+static void Draw3DBorder	();
+static void WMapRemoveFromList	();
+static void WMapAddToList	();
 
 
 typedef enum {on, off} ButtonState;
 static GC rootGC;
-int workSpaceManagerActive = 0;
-int fullOccupation         = 0;
-int useBackgroundInfo      = False;
+int       fullOccupation    = 0;
+int       useBackgroundInfo = False;
+XContext  MapWListContext;
+static Cursor handCursor;
 
 void InitWorkSpaceManager ()
 {
-    Scr->workSpaceMgr.buttonList = NULL;
-    Scr->workSpaceMgr.name       = "WorkSpaceManager";
-    Scr->workSpaceMgr.icon_name  = "WSManager Icon";
-    Scr->workSpaceMgr.geometry   = NULL;
-    Scr->workSpaceMgr.columns    = 0;
-    Scr->workSpaceMgr.vspace     = 5;
-    Scr->workSpaceMgr.hspace     = 5;
-    Scr->workSpaceMgr.twm_win    = (TwmWindow*) 0;
-    Scr->workSpaceMgr.occupyWindow.twm_win = (TwmWindow*) 0;
+    Scr->workSpaceMgr.workSpaceList		= NULL;
+
+    Scr->workSpaceMgr.workspaceWindow.name	= "WorkSpaceManager";
+    Scr->workSpaceMgr.workspaceWindow.icon_name	= "WorkSpaceManager Icon";
+    Scr->workSpaceMgr.workspaceWindow.geometry	= NULL;
+    Scr->workSpaceMgr.workspaceWindow.columns	= 0;
+    Scr->workSpaceMgr.workspaceWindow.vspace	= 5;
+    Scr->workSpaceMgr.workspaceWindow.hspace	= 5;
+    Scr->workSpaceMgr.workspaceWindow.twm_win	= (TwmWindow*) 0;
+    Scr->workSpaceMgr.workspaceWindow.state	= BUTTONSSTATE;
+    Scr->workSpaceMgr.workspaceWindow.windowFont.name	=
+			"-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1";
+
+    Scr->workSpaceMgr.occupyWindow.name		= "Occupy Window";
+    Scr->workSpaceMgr.occupyWindow.icon_name	= "Occupy Window Icon";
+    Scr->workSpaceMgr.occupyWindow.geometry	= NULL;
+    Scr->workSpaceMgr.occupyWindow.columns	= 0;
+    Scr->workSpaceMgr.occupyWindow.vspace	= 5;
+    Scr->workSpaceMgr.occupyWindow.hspace	= 5;
+    Scr->workSpaceMgr.occupyWindow.twm_win	= (TwmWindow*) 0;
+
     XrmInitialize ();
 }
 
 void CreateWorkSpaceManager ()
 {
-    int        mask;
-    int        lines, vspace, hspace, count, columns;
-    int        width, height, bwidth, bheight;
-    char       *name, *icon_name, *geometry;
-    int        i, j;
-    Window     w;
-    ColorPair  cp;
-    MyFont     font;
-    ButtonList *blist;
-    Window     junkW;
-    int        x, y, strWid, wid;
-    XGCValues  gcvalues;
+    if (! Scr->workSpaceManagerActive) return;
 
-    if (! workSpaceManagerActive) return;
+    NewFontCursor (&handCursor, "hand2");
+    MapWListContext = XUniqueContext();
 
-    name      = Scr->workSpaceMgr.name;
-    icon_name = Scr->workSpaceMgr.icon_name;
-    geometry  = Scr->workSpaceMgr.geometry;
-    columns   = Scr->workSpaceMgr.columns;
-    vspace    = Scr->workSpaceMgr.vspace;
-    hspace    = Scr->workSpaceMgr.hspace;
-    font      = Scr->IconManagerFont;
-
-    count = 0;
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) count++;
-    Scr->workSpaceMgr.count = count;
-
-    if (columns == 0) {
-	lines   = 2;
-	columns = ((count - 1) / lines) + 1;
-    }
-    else {
-	lines   = ((count - 1) / columns) + 1;
-    }
-    strWid = 0;
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	wid = XTextWidth (font.font, blist->label, strlen (blist->label));
-	if (wid > strWid) strWid = wid;
-    }
-    bwidth  = strWid + 10;
-    width   = (columns * bwidth) + ((columns + 1) * hspace);
-    bheight = 22;
-    height  = (lines * bheight) + ((lines + 1) * vspace);
-    x       = (Scr->MyDisplayWidth - width) / 2;
-    y       = Scr->MyDisplayHeight - height;
-
-    if (geometry != NULL) {
-	mask = XParseGeometry (geometry, &x, &y, (unsigned int *) &width, (unsigned int *) &height);
-	if (mask & XNegative) x += Scr->MyDisplayWidth  - width  - (2 * Scr->BorderWidth);
-	if (mask & YNegative) y += Scr->MyDisplayHeight - height - (2 * Scr->BorderWidth);
-	if (!(mask & XValue)) x  = (Scr->MyDisplayWidth -  width) / 2;
-	if (!(mask & YValue)) y  = Scr->MyDisplayHeight - height;
-	bwidth  = (width  - ((columns + 1) * hspace)) / columns;
-	bheight = (height - ((lines   + 1) * vspace)) / lines;
-    }
-
-    cp = Scr->IconManagerC;
-    Scr->workSpaceMgr.w = XCreateSimpleWindow (dpy, Scr->Root, x, y, width, height, 0, Scr->Black, cp.back);
-
-    i = 0;
-    j = 0;
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	blist->w = XCreateSimpleWindow(dpy, Scr->workSpaceMgr.w,
-		       i * (bwidth  + hspace) + hspace,
-		       j * (bheight + vspace) + vspace, bwidth, bheight, 0,
-		       Scr->Black, blist->cp.back);
-	XMapWindow (dpy, blist->w);
-	i++;
-	if (i == columns) {i = 0; j++;};
-    }
-
-    XSetStandardProperties (dpy, Scr->workSpaceMgr.w, name, icon_name, None, NULL, 0, NULL);
-    Scr->workSpaceMgr.twm_win = AddWindow (Scr->workSpaceMgr.w, FALSE, Scr->iconmgr);
-    Scr->workSpaceMgr.twm_win->occupation = fullOccupation;
-    XSelectInput (dpy, Scr->workSpaceMgr.w, ButtonPressMask |
-					    ButtonReleaseMask |
-					    KeyPressMask |
-					    KeyReleaseMask |
-					    ExposureMask);
-
-    SetMapStateProp (Scr->workSpaceMgr.twm_win, WithdrawnState);
-
-    Scr->workSpaceMgr.lines     = lines;
-    Scr->workSpaceMgr.columns   = columns;
-    Scr->workSpaceMgr.bwidth    = bwidth;
-    Scr->workSpaceMgr.bheight   = bheight;
-    Scr->workSpaceMgr.width     = width;
-    Scr->workSpaceMgr.height    = height;
-    Scr->workSpaceMgr.cp        = cp;
-    Scr->workSpaceMgr.font      = font;
-
+    CreateWorkSpaceManagerWindow ();
     CreateOccupyWindow ();
-
-    if (useBackgroundInfo) {
-	if (Scr->workSpaceMgr.buttonList->backpix == None)
-	    XSetWindowBackground (dpy, Scr->Root, Scr->workSpaceMgr.buttonList->backcp.back);
-	else
-	    XSetWindowBackgroundPixmap (dpy, Scr->Root, Scr->workSpaceMgr.buttonList->backpix);
-    }
-    XClearWindow (dpy, Scr->Root);
 }
 
-ChangeWorkSpace (buttonW)
-Window buttonW;
+GotoWorkSpaceByName (wname)
+char *wname;
 {
-    ButtonList *blist;
+    WorkSpaceList *wlist;
 
-    if (buttonW == 0) return; /* icon */
-    blist = Scr->workSpaceMgr.buttonList;
-    while (blist != NULL) {
-	if (blist->w == buttonW) break;
-	blist = blist->next;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (strcmp (wlist->label, wname) == 0) break;
     }
-    if (blist == NULL) return; /* someone told me it happens */
-    GotoWorkSpace (blist);
+    if (wlist == NULL) return;
+    GotoWorkSpace (wlist);
 }
 
-GotoWorkSpaceByName (bname)
-char *bname;
+GotoWorkSpace (wlist)
+WorkSpaceList *wlist;
 {
-    ButtonList *blist;
-
-    blist = Scr->workSpaceMgr.buttonList;
-    while (blist != NULL) {
-	if (strcmp (blist->label, bname) == 0) break;
-	blist = blist->next;
-    }
-    if (blist == NULL) return;
-    GotoWorkSpace (blist);
-}
-
-GotoWorkSpace (blist)
-ButtonList *blist;
-{
-    TwmWindow  *twmWin;
-    ButtonList *oldscr, *newscr;
-    WList      *wl, *wl1;
+    TwmWindow	  *twmWin;
+    WorkSpaceList *oldscr, *newscr;
+    WList	  *wl, *wl1;
+    XSetWindowAttributes attr;
 
     oldscr = Scr->workSpaceMgr.activeWSPC;
-    newscr = blist;
+    newscr = wlist;
     if (oldscr == newscr) return;
 
     if (useBackgroundInfo) {
@@ -276,88 +189,118 @@ ButtonList *blist;
 	    twmWin->list = wl;
 	}
     }
-    SetButton  (Scr->workSpaceMgr.activeWSPC->w, off);
-    Scr->workSpaceMgr.activeWSPC = blist;
-    SetButton (Scr->workSpaceMgr.activeWSPC->w, on);
+    Scr->workSpaceMgr.activeWSPC = newscr;
+    PaintButton (WSPCWINDOW, oldscr->buttonw, oldscr->label, oldscr->cp, off);
+    PaintButton (WSPCWINDOW, newscr->buttonw, newscr->label, newscr->cp,  on);
     oldscr->iconmgr = Scr->iconmgr;
     Scr->iconmgr = newscr->iconmgr;
     XFlush (dpy);
+
+    if (useBackgroundInfo) {
+	if (oldscr->backpix == None)
+	    XSetWindowBackground (dpy, oldscr->mapSubwindow.w, oldscr->backcp.back);
+	else
+	    XSetWindowBackgroundPixmap (dpy, oldscr->mapSubwindow.w, oldscr->backpix);
+    }
+    else {
+	if (Scr->workSpaceMgr.workspaceWindow.defPixmap == None)
+	    XSetWindowBackground (dpy, oldscr->mapSubwindow.w,
+			Scr->workSpaceMgr.workspaceWindow.defColors.back);
+	else
+	    XSetWindowBackgroundPixmap (dpy, oldscr->mapSubwindow.w,
+			Scr->workSpaceMgr.workspaceWindow.defPixmap);
+    }
+    attr.border_pixel = Scr->workSpaceMgr.workspaceWindow.defBorderColor;
+    XChangeWindowAttributes (dpy, oldscr->mapSubwindow.w, CWBorderPixel, &attr);
+
+    if (Scr->workSpaceMgr.workspaceWindow.curPixmap == None)
+	XSetWindowBackground (dpy, newscr->mapSubwindow.w,
+			Scr->workSpaceMgr.workspaceWindow.curColors.back);
+    else
+	XSetWindowBackgroundPixmap (dpy, newscr->mapSubwindow.w,
+			Scr->workSpaceMgr.workspaceWindow.curPixmap);
+    attr.border_pixel = Scr->workSpaceMgr.workspaceWindow.curBorderColor;
+    XChangeWindowAttributes (dpy, newscr->mapSubwindow.w, CWBorderPixel, &attr);
+
+    XClearWindow (dpy, oldscr->mapSubwindow.w);
+    XClearWindow (dpy, newscr->mapSubwindow.w);
 }
 
 AddWorkSpace (name, background, foreground, backback, backfore, backpix)
 char *name, *background, *foreground, *backback, *backfore, *backpix;
 {
-    ButtonList   *blist, *b;
-    static int   scrnum = 0;
-    Pixmap       pix;
-    unsigned int width, height, depth;
-    XGCValues    gcvalues;
+    WorkSpaceList *wlist, *wl;
+    static int	  scrnum = 0;
+    Pixmap	  pix;
+    unsigned int  width, height, depth;
+    XGCValues	  gcvalues;
 
     if (scrnum == MAXWORKSPACE) return;
-    fullOccupation |= (1 << scrnum);
-    blist = (ButtonList*) malloc (sizeof (ButtonList));
-    blist->label = strdup (name);
-    blist->clientlist = NULL;
+
+    fullOccupation     |= (1 << scrnum);
+    wlist		= (WorkSpaceList*) malloc (sizeof (WorkSpaceList));
+    wlist->label	= strdup (name);
+    wlist->clientlist	= NULL;
 
     if (background == NULL)
-	blist->cp.back = Scr->IconManagerC.back;
+	wlist->cp.back = Scr->IconManagerC.back;
     else
-	GetColor(Scr->Monochrome, &(blist->cp.back), background);
+	GetColor (Scr->Monochrome, &(wlist->cp.back), background);
 
     if (foreground == NULL)
-	blist->cp.fore = Scr->IconManagerC.fore;
+	wlist->cp.fore = Scr->IconManagerC.fore;
     else
-	GetColor (Scr->Monochrome, &(blist->cp.fore), foreground);
+	GetColor (Scr->Monochrome, &(wlist->cp.fore), foreground);
 
     if (backback == NULL)
-	GetColor (Scr->Monochrome, &(blist->backcp.back), "Black");
+	GetColor (Scr->Monochrome, &(wlist->backcp.back), "Black");
     else {
-	GetColor (Scr->Monochrome, &(blist->backcp.back), backback);
+	GetColor (Scr->Monochrome, &(wlist->backcp.back), backback);
 	useBackgroundInfo = True;
     }
 
     if (backfore == NULL)
-	GetColor (Scr->Monochrome, &(blist->backcp.fore), "White");
+	GetColor (Scr->Monochrome, &(wlist->backcp.fore), "White");
     else {
-	GetColor (Scr->Monochrome, &(blist->backcp.fore), backfore);
+	GetColor (Scr->Monochrome, &(wlist->backcp.fore), backfore);
 	useBackgroundInfo = True;
     }
 
     if (scrnum == 0) rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
 
     if (backpix == NULL)
-	blist->backpix = None;
+	wlist->backpix = None;
     else
     if (*backpix == '/') {
-	blist->backpix = None;
+	wlist->backpix = None;
     }
     else
     if ((pix = FindBitmap (backpix, &width, &height)) == None) {
-	blist->backpix = None;
+	wlist->backpix = None;
     }
     else {
 	depth = (unsigned int) DefaultDepth (dpy, Scr->screen);
-	blist->backpix = XCreatePixmap (dpy, Scr->Root, width, height, depth);
-	gcvalues.background = blist->backcp.back;
-	gcvalues.foreground = blist->backcp.fore;
+	wlist->backpix = XCreatePixmap (dpy, Scr->Root, width, height, depth);
+	gcvalues.background = wlist->backcp.back;
+	gcvalues.foreground = wlist->backcp.fore;
 	XChangeGC (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
-	XCopyPlane (dpy, pix, blist->backpix, rootGC, 0, 0, width, height, 0, 0, (unsigned long) 1);
+	XCopyPlane (dpy, pix, wlist->backpix, rootGC, 0, 0, width, height, 0, 0, (unsigned long) 1);
 	XFreePixmap (dpy, pix);
 	useBackgroundInfo = True;
     }
-    blist->next        = NULL;
-    blist->number      = scrnum++;
+    wlist->next        = NULL;
+    wlist->number      = scrnum++;
     Scr->workSpaceMgr.count = scrnum;
 
-    if (Scr->workSpaceMgr.buttonList == NULL) {
-	Scr->workSpaceMgr.buttonList = blist;
+    if (Scr->workSpaceMgr.workSpaceList == NULL) {
+	Scr->workSpaceMgr.workSpaceList = wlist;
     }
     else {
-	b = Scr->workSpaceMgr.buttonList;
-	while (b->next != NULL) {b = b->next;}
-	b->next = blist;
+	wl = Scr->workSpaceMgr.workSpaceList;
+	while (wl->next != NULL) {wl = wl->next;}
+	wl->next = wlist;
     }
-    workSpaceManagerActive = 1;
+    Scr->workSpaceManagerActive = 1;
 }
 
 static XrmDatabase db;
@@ -369,30 +312,30 @@ static XrmOptionDescRec table [] = {
 SetupOccupation (twm_win)
 TwmWindow *twm_win;
 {
-    unsigned char *prop;
-    unsigned long  nitems, bytesafter;
-    Atom   actual_type;
-    int    actual_format;
-    int    state;
-    Window icon;
-    char   **cliargv = NULL;
-    int    cliargc;
-    Bool   status;
-    char   *str_type;
-    XrmValue value;
-    char   wrkSpcList [256];
-    ButtonList   *blist;
+    unsigned char	*prop;
+    unsigned long	nitems, bytesafter;
+    Atom		actual_type;
+    int			actual_format;
+    int			state;
+    Window		icon;
+    char		**cliargv = NULL;
+    int			cliargc;
+    Bool		status;
+    char		*str_type;
+    XrmValue		value;
+    char		wrkSpcList [256];
+    WorkSpaceList	*wlist;
 
-    if (! workSpaceManagerActive) {
+    if (! Scr->workSpaceManagerActive) {
 	twm_win->occupation = 1;
 	return;
     }
 
     twm_win->occupation = 0;
 
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	if (LookInList (blist->clientlist, twm_win->full_name, &twm_win->class)) {
-            twm_win->occupation |= 1 << blist->number;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (LookInList (wlist->clientlist, twm_win->full_name, &twm_win->class)) {
+            twm_win->occupation |= 1 << wlist->number;
 	}
     }
 
@@ -451,26 +394,26 @@ static TwmWindow *occupyWin = (TwmWindow*) 0;
 Occupy (twm_win)
 TwmWindow *twm_win;
 {
-    int x, y, junkX, junkY;
-    unsigned int junkB, junkD;
-    unsigned int width, height;
-    int xoffset, yoffset;
-    Window junkW, w;
-    unsigned int junkK;
-    ButtonList *blist;
+    int			x, y, junkX, junkY;
+    unsigned int	junkB, junkD;
+    unsigned int	width, height;
+    int			xoffset, yoffset;
+    Window		junkW, w;
+    unsigned int	junkK;
+    WorkSpaceList	*wlist;
 
-    if (! workSpaceManagerActive) return;
+    if (! Scr->workSpaceManagerActive) return;
     if (occupyWin != (TwmWindow*) 0) return;
     if (twm_win->iconmgr) return;
 
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	if (OCCUPY (twm_win, blist)) {
-	    SetButton (blist->ow, on);
-	    Scr->workSpaceMgr.occupyWindow.tmpOccupation |= (1 << blist->number);
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (OCCUPY (twm_win, wlist)) {
+	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, on);
+	    Scr->workSpaceMgr.occupyWindow.tmpOccupation |= (1 << wlist->number);
 	}
 	else {
-	    SetButton (blist->ow, off);
-	    Scr->workSpaceMgr.occupyWindow.tmpOccupation &= ~(1 << blist->number);
+	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, off);
+	    Scr->workSpaceMgr.occupyWindow.tmpOccupation &= ~(1 << wlist->number);
 	}
     }
     w = Scr->workSpaceMgr.occupyWindow.w;
@@ -491,51 +434,49 @@ TwmWindow *twm_win;
     XMapWindow      (dpy, Scr->workSpaceMgr.occupyWindow.w);
     XMapRaised      (dpy, Scr->workSpaceMgr.occupyWindow.twm_win->frame);
     Scr->workSpaceMgr.occupyWindow.twm_win->mapped = TRUE;
+    Scr->workSpaceMgr.occupyWindow.x = x;
+    Scr->workSpaceMgr.occupyWindow.y = y;
     occupyWin = twm_win;
 }
 
-EndOccupy (buttonW)
-Window buttonW;
+OccupyHandleButtonEvent (event)
+XEvent *event;
 {
-    TwmWindow    *twmWin;
-    ButtonList   *blist;
-    OccupyWindow *occupyW;
+    TwmWindow		*twmWin;
+    WorkSpaceList	*wlist;
+    OccupyWindow	*occupyW;
+    Window		buttonW;
 
-    if (! workSpaceManagerActive) return;
+    if (! Scr->workSpaceManagerActive) return;
     if (occupyWin == (TwmWindow*) 0) return;
+
+    buttonW = event->xbutton.window;
     if (buttonW == 0) return; /* icon */
 
     XGrabPointer (dpy, Scr->Root, True,
 		  ButtonPressMask | ButtonReleaseMask,
 		  GrabModeAsync, GrabModeAsync,
-		  Scr->Root, Scr->WaitCursor, CurrentTime);
+		  Scr->Root, None, CurrentTime);
 
     occupyW = &Scr->workSpaceMgr.occupyWindow;
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	if (blist->ow == buttonW) break;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (wlist->obuttonw == buttonW) break;
     }
-    if (blist != NULL) {
-	if ((occupyW->tmpOccupation & (1 << blist->number)) == 0) {
-	    SetButton (blist->ow, on);
-	    occupyW->tmpOccupation |= (1 << blist->number);
+    if (wlist != NULL) {
+	if ((occupyW->tmpOccupation & (1 << wlist->number)) == 0) {
+	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, on);
+	    occupyW->tmpOccupation |= (1 << wlist->number);
 	}
 	else {
-	    SetButton (blist->ow, off);
-	    occupyW->tmpOccupation &= ~(1 << blist->number);
+	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, off);
+	    occupyW->tmpOccupation &= ~(1 << wlist->number);
 	}
     }
     else
     if (buttonW == occupyW->OK) {
 	if (occupyW->tmpOccupation == 0) return;
-	occupyWin->occupation = occupyW->tmpOccupation & ~occupyWin->occupation;
-	AddIconManager (occupyWin);
-	occupyWin->occupation = occupyW->tmpOccupation;
-	RemoveIconManager (occupyWin);
-	if (! OCCUPY (occupyWin, Scr->workSpaceMgr.activeWSPC)) Vanish (occupyWin);
+	ChangeOccupation (occupyWin, occupyW->tmpOccupation);
 	Vanish (occupyW->twm_win);
-	XChangeProperty (dpy, occupyWin->w, _XA_WM_WORKSPACES, _XA_WM_WORKSPACES, 32, 
-			 PropModeReplace, (unsigned char *) &occupyWin->occupation, 1);
-
 	occupyW->twm_win->mapped = FALSE;
 	occupyW->twm_win->occupation = 0;
 	occupyWin = (TwmWindow*) 0;
@@ -551,49 +492,12 @@ Window buttonW;
     }
     else
     if (buttonW == occupyW->allworkspc) {
-	for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	    SetButton (blist->ow, on);
+	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, on);
 	}
 	occupyW->tmpOccupation = fullOccupation;
     }
     if (ButtonPressed == -1) XUngrabPointer (dpy, CurrentTime);
-}
-
-ChangeLabel (event)
-XEvent *event;
-{
-    ButtonList *blist;
-    Window     buttonW;
-    int        len, i, lname;
-    char       key [16], k;
-    char       name [128];
-
-    buttonW = event->xkey.subwindow;
-
-    if (buttonW == 0) return; /* icon */
-    blist = Scr->workSpaceMgr.buttonList;
-    while (blist != NULL) {
-	if (blist->w == buttonW) break;
-	blist = blist->next;
-    }
-    if (blist == NULL) return;
-    strcpy (name, blist->label);
-    lname = strlen (name);
-    len   = XLookupString (&(event->xkey), key, 16, NULL, NULL);
-    for (i = 0; i < len; i++) {
-        k = key [i];
-	if (isprint (k)) {
-	    name [lname++] = k;
-	}
-	else
-	if ((k == 127) || (k == 8)) {
-	    if (lname != 0) lname--;
-	}
-	else
-	    break;
-    }
-    name [lname] = '\0';
-    SetButtonLabel (blist, name);
 }
 
 OccupyAll (twm_win)
@@ -601,30 +505,26 @@ TwmWindow *twm_win;
 {
     IconMgr *save;
 
-    if (! workSpaceManagerActive) return;
+    if (! Scr->workSpaceManagerActive) return;
     if (twm_win->iconmgr) return;
     save = Scr->iconmgr;
-    Scr->iconmgr = Scr->workSpaceMgr.buttonList->iconmgr;
-    twm_win->occupation = fullOccupation & ~twm_win->occupation;
-    AddIconManager (twm_win);
-    twm_win->occupation = fullOccupation;
+    Scr->iconmgr = Scr->workSpaceMgr.workSpaceList->iconmgr;
+    ChangeOccupation (twm_win, fullOccupation);
     Scr->iconmgr = save;
-    XChangeProperty (dpy, twm_win->w, _XA_WM_WORKSPACES, _XA_WM_WORKSPACES, 32, 
-			 PropModeReplace, (unsigned char *) &twm_win->occupation, 1);
 }
 
 AllocateOthersIconManagers () {
-    IconMgr    *p, *ip, *oldp, *oldv;
-    ButtonList *blist;
+    IconMgr		*p, *ip, *oldp, *oldv;
+    WorkSpaceList	*wlist;
 
-    if (! workSpaceManagerActive) return;
+    if (! Scr->workSpaceManagerActive) return;
 
     oldp = Scr->iconmgr;
-    for (blist = Scr->workSpaceMgr.buttonList->next; blist != NULL; blist = blist->next) {
-	blist->iconmgr  = (IconMgr *) malloc (sizeof (IconMgr));
-	*blist->iconmgr = *oldp;
-	oldv = blist->iconmgr;
-	oldp->nextv = blist->iconmgr;
+    for (wlist = Scr->workSpaceMgr.workSpaceList->next; wlist != NULL; wlist = wlist->next) {
+	wlist->iconmgr  = (IconMgr *) malloc (sizeof (IconMgr));
+	*wlist->iconmgr = *oldp;
+	oldv = wlist->iconmgr;
+	oldp->nextv = wlist->iconmgr;
 	oldv->nextv = NULL;
 
 	for (ip = oldp->next; ip != NULL; ip = ip->next) {
@@ -637,21 +537,20 @@ AllocateOthersIconManagers () {
 	    oldv->next = p;
 	    oldv = p;
         }
-	for (ip = blist->iconmgr; ip != NULL; ip = ip->next) {
+	for (ip = wlist->iconmgr; ip != NULL; ip = ip->next) {
 	    ip->lasti = p;
         }
-	oldp = blist->iconmgr;
+	oldp = wlist->iconmgr;
     }
-    Scr->workSpaceMgr.buttonList->iconmgr = Scr->iconmgr;
+    Scr->workSpaceMgr.workSpaceList->iconmgr = Scr->iconmgr;
 }
 
-Vanish(tmp_win)
+Vanish (tmp_win)
 TwmWindow *tmp_win;
 {
-    TwmWindow *t;
-    int iconify;
-    XWindowAttributes winattrs;
-    unsigned long eventMask;
+    TwmWindow		*t;
+    XWindowAttributes	winattrs;
+    unsigned long	eventMask;
 
     XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
     eventMask = winattrs.your_event_mask;
@@ -660,264 +559,482 @@ TwmWindow *tmp_win;
      * Prevent the receipt of an UnmapNotify, since that would
      * cause a transition to the Withdrawn state.
      */
-    XSelectInput(dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
-    XUnmapWindow(dpy, tmp_win->w);
-    XSelectInput(dpy, tmp_win->w, eventMask);
-    XUnmapWindow(dpy, tmp_win->frame);
+    XSelectInput    (dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
+    XUnmapWindow    (dpy, tmp_win->w);
+    XSelectInput    (dpy, tmp_win->w, eventMask);
+    XUnmapWindow    (dpy, tmp_win->frame);
     SetMapStateProp (tmp_win, InactiveState);
 }
 
-DisplayWin(tmp_win)
+DisplayWin (tmp_win)
 TwmWindow *tmp_win;
 {
-    TwmWindow *t;
-    int iconify;
-    XWindowAttributes winattrs;
-    unsigned long eventMask;
+    TwmWindow		*t;
+    XWindowAttributes	winattrs;
+    unsigned long	eventMask;
 
-    XMapWindow(dpy, tmp_win->w);
-    XMapWindow(dpy, tmp_win->frame);
+    XMapWindow      (dpy, tmp_win->w);
+    XMapWindow      (dpy, tmp_win->frame);
     SetMapStateProp (tmp_win, NormalState);
 }
 
-SetButton (w, state)
-Window      w;
-ButtonState state;
+ChangeOccupation (tmp_win, newoccupation)
+TwmWindow *tmp_win;
+int newoccupation;
 {
-    int       bwidth, bheight;
+    WorkSpaceList *wlist;
+    int oldoccupation;
+    
+    if (newoccupation == 0) return;
+    oldoccupation = tmp_win->occupation;
+    tmp_win->occupation = newoccupation & ~tmp_win->occupation;
+    AddIconManager (tmp_win);
+    tmp_win->occupation = newoccupation;
+    RemoveIconManager (tmp_win);
+    if (! OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) Vanish (tmp_win);
+    if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) DisplayWin (tmp_win);
+    XChangeProperty (dpy, tmp_win->w, _XA_WM_WORKSPACES, _XA_WM_WORKSPACES, 32, 
+			 PropModeReplace, (unsigned char *) &newoccupation, 1);
 
-    bwidth  = Scr->workSpaceMgr.bwidth;
-    bheight = Scr->workSpaceMgr.bheight;
-
-    if (state == on) {FB (Scr->Black, Scr->White);}
-    else {FB (Scr->White, Scr->Black);}
-    XDrawLine (dpy, w, Scr->NormalGC, 0, 0, bwidth,     0);
-    XDrawLine (dpy, w, Scr->NormalGC, 0, 1, bwidth - 1, 1);
-    XDrawLine (dpy, w, Scr->NormalGC, 0, 0, 0,          bheight);
-    XDrawLine (dpy, w, Scr->NormalGC, 1, 0, 1,          bheight - 1);
-    if (state == on) {FB (Scr->White, Scr->Black);}
-    else {FB (Scr->Black, Scr->White);}
-    XDrawLine (dpy, w, Scr->NormalGC, bwidth - 1,     1, bwidth - 1, bheight);
-    XDrawLine (dpy, w, Scr->NormalGC, bwidth - 2,     2, bwidth - 2, bheight);
-    XDrawLine (dpy, w, Scr->NormalGC, 1, bheight - 1, bwidth, bheight - 1);
-    XDrawLine (dpy, w, Scr->NormalGC, 2, bheight - 2, bwidth, bheight - 2);
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (((oldoccupation & (1 << wlist->number)) != 0) &&
+	    ((newoccupation & (1 << wlist->number)) == 0)) {
+	    WMapRemoveFromList (tmp_win, wlist);
+	}
+	else
+	if (((newoccupation & (1 << wlist->number)) != 0) &&
+	    ((oldoccupation & (1 << wlist->number)) == 0)) {
+	    WMapAddToList (tmp_win, wlist);
+	}
+    }
 }
 
-ColorPair occupyButtoncp;
+CreateWorkSpaceManagerWindow ()
+{
+    int		  mask;
+    int		  lines, vspace, hspace, count, columns;
+    int		  width, height, bwidth, bheight, wwidth, wheight;
+    char	  *name, *icon_name, *geometry;
+    int		  i, j;
+    Window	  w;
+    ColorPair	  cp;
+    MyFont	  font;
+    WorkSpaceList *wlist;
+    Window	  junkW;
+    int		  x, y, strWid, wid;
+    unsigned long border;
+    TwmWindow	  *tmp_win;
+    XSizeHints	  sizehints;
 
-CreateOccupyWindow () {
-    int width, height, lines, columns, x, y;
-    int bwidth, bheight, hspace, vspace, bspace;
-    int i, j;
-    Window w, OK, cancel, allworkspc;
-    ColorPair cp;
-    TwmWindow *twm_win;
-    ButtonList *blist;
+    Scr->workSpaceMgr.workspaceWindow.buttonFont = Scr->IconManagerFont;
+    Scr->workSpaceMgr.workspaceWindow.cp	 = Scr->IconManagerC;
 
-    lines   = Scr->workSpaceMgr.lines;
-    columns = Scr->workSpaceMgr.columns;
-    bwidth  = Scr->workSpaceMgr.bwidth;
-    bheight = Scr->workSpaceMgr.bheight;
-    vspace  = Scr->workSpaceMgr.vspace;
-    hspace  = Scr->workSpaceMgr.hspace;
-    cp      = Scr->workSpaceMgr.cp;
+    name      = Scr->workSpaceMgr.workspaceWindow.name;
+    icon_name = Scr->workSpaceMgr.workspaceWindow.icon_name;
+    geometry  = Scr->workSpaceMgr.workspaceWindow.geometry;
+    columns   = Scr->workSpaceMgr.workspaceWindow.columns;
+    vspace    = Scr->workSpaceMgr.workspaceWindow.vspace;
+    hspace    = Scr->workSpaceMgr.workspaceWindow.hspace;
+    font      = Scr->workSpaceMgr.workspaceWindow.buttonFont;
+    cp        = Scr->workSpaceMgr.workspaceWindow.cp;
+    border    = Scr->workSpaceMgr.workspaceWindow.defBorderColor;
 
-    width  = (bwidth * columns) + (hspace * (columns + 1));
-    height = ((bheight + vspace) * lines) + bheight + (3 * vspace);
-    if (width < ((3 * bwidth) + (4 * hspace))) width = (3 * bwidth) + (4 * hspace);
+    count = 0;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) count++;
+    Scr->workSpaceMgr.count = count;
 
-    w = XCreateSimpleWindow (dpy, Scr->Root, 0, 0, width, height, 1, Scr->Black, cp.back);
-    Scr->workSpaceMgr.occupyWindow.w = w;
+    if (columns == 0) {
+	lines   = 2;
+	columns = ((count - 1) / lines) + 1;
+    }
+    else {
+	lines   = ((count - 1) / columns) + 1;
+    }
+    Scr->workSpaceMgr.workspaceWindow.lines     = lines;
+    Scr->workSpaceMgr.workspaceWindow.columns   = columns;
+
+    if (geometry != NULL) {
+	mask = XParseGeometry (geometry, &x, &y, (unsigned int *) &width, (unsigned int *) &height);
+	if (mask & XNegative) x += Scr->MyDisplayWidth  - width  - (2 * Scr->BorderWidth);
+	if (mask & YNegative) y += Scr->MyDisplayHeight - height - (2 * Scr->BorderWidth);
+	if (!(mask & XValue)) x  = (Scr->MyDisplayWidth - width) / 2;
+	if (!(mask & YValue)) y  = Scr->MyDisplayHeight - height;
+	bwidth  = (width  - ((columns + 1) * hspace)) / columns;
+	bheight = (height - ((lines   + 1) * vspace)) / lines;
+    }
+    else {
+	strWid = 0;
+	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    wid = XTextWidth (font.font, wlist->label, strlen (wlist->label));
+	    if (wid > strWid) strWid = wid;
+	}
+	bwidth  = strWid + 10;
+	width   = (columns * bwidth) + ((columns + 1) * hspace);
+	bheight = 22;
+	height  = (lines * bheight) + ((lines + 1) * vspace);
+	x       = (Scr->MyDisplayWidth - width) / 2;
+	y       = Scr->MyDisplayHeight - height;
+    }
+    wwidth  = width   / columns;
+    wheight = height  / lines;
+    width   = wwidth  * columns;
+    height  = wheight * lines;
+
+    Scr->workSpaceMgr.workspaceWindow.width     = width;
+    Scr->workSpaceMgr.workspaceWindow.height    = height;
+    Scr->workSpaceMgr.workspaceWindow.bwidth    = bwidth;
+    Scr->workSpaceMgr.workspaceWindow.bheight   = bheight;
+    Scr->workSpaceMgr.workspaceWindow.wwidth    = wwidth;
+    Scr->workSpaceMgr.workspaceWindow.wheight   = wheight;
+
+    Scr->workSpaceMgr.workspaceWindow.w		= XCreateSimpleWindow (dpy, Scr->Root,
+						x, y, width, height, 0, Scr->Black, cp.back);
     i = 0;
     j = 0;
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	blist->ow = XCreateSimpleWindow(dpy, w,
-		       i * (bwidth  + hspace) + hspace,
-		       j * (bheight + vspace) + vspace, bwidth, bheight, 0,
-		       Scr->Black, blist->cp.back);
-	XMapWindow (dpy, blist->ow);
-	i++;
-	if (i == columns) {i = 0; j++;}
-    }
-    GetColor (Scr->Monochrome, &(occupyButtoncp.back), "gray50");
-    occupyButtoncp.fore = Scr->White;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	wlist->buttonw = XCreateSimpleWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w,
+			i * (bwidth  + hspace) + hspace, j * (bheight + vspace) + vspace,
+			bwidth, bheight, 0,
+			Scr->Black, wlist->cp.back);
 
-    bspace = (width - (3 * bwidth)) / 4;
-    x = bspace;
-    y = ((bheight + vspace) * lines) + ( 2 * vspace);
-    OK         = XCreateSimpleWindow(dpy, w, x, y, bwidth, bheight, 0, Scr->Black, occupyButtoncp.back);
-    XMapWindow (dpy, OK);
-    x += bwidth + bspace;
-    cancel     = XCreateSimpleWindow(dpy, w, x, y, bwidth, bheight, 0, Scr->Black, occupyButtoncp.back);
-    XMapWindow (dpy, cancel);
-    x += bwidth + bspace;
-    allworkspc = XCreateSimpleWindow(dpy, w, x, y, bwidth, bheight, 0, Scr->Black, occupyButtoncp.back);
-    XMapWindow (dpy, allworkspc);
+	wlist->mapSubwindow.x = i * wwidth;
+	wlist->mapSubwindow.y = j * wheight;
+	wlist->mapSubwindow.w = XCreateSimpleWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w,
+			wlist->mapSubwindow.x, wlist->mapSubwindow.y,
+			wwidth - 2, wheight - 2, 1, border, wlist->cp.back);
 
-    XSetStandardProperties (dpy, w, "Occupy Window", "Occupy Window Icon", None, NULL, 0, NULL);
-    twm_win = AddWindow (w, FALSE, Scr->iconmgr);
-    XGrabButton (dpy, AnyButton, AnyModifier, w, 
-		True, ButtonPressMask | ButtonReleaseMask,
-		GrabModeAsync, GrabModeAsync, None, 
-		Scr->WaitCursor);
-
-    XSelectInput (dpy, w, ButtonPressMask | ButtonReleaseMask | ExposureMask);
-    SetMapStateProp (Scr->workSpaceMgr.twm_win, WithdrawnState);
-    twm_win->occupation = 0;
-
-    Scr->workSpaceMgr.occupyWindow.OK         = OK;
-    Scr->workSpaceMgr.occupyWindow.cancel     = cancel;
-    Scr->workSpaceMgr.occupyWindow.allworkspc = allworkspc;
-    Scr->workSpaceMgr.occupyWindow.twm_win    = twm_win;
-}
-
-void PaintOccupyWindow (twm_win)
-TwmWindow *twm_win;
-{
-    Window       w;
-    int          bwidth, bheight;
-    ColorPair    cp;
-    MyFont       font;
-    ButtonList   *blist;
-    char         *name;
-    int          strWid, strHei, hspace, vspace;
-    OccupyWindow *occupyW;
-
-    bwidth  = Scr->workSpaceMgr.bwidth;
-    bheight = Scr->workSpaceMgr.bheight;
-    font    = Scr->workSpaceMgr.font;
-
-    strHei = font.font->max_bounds.ascent + font.font->max_bounds.descent;
-    vspace = ((bheight + strHei) / 2) - font.font->max_bounds.descent;
-
-    occupyW = &Scr->workSpaceMgr.occupyWindow;
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	w    = blist->ow;
-	name = blist->label;
-	cp   = blist->cp;
-
-	if (occupyW->tmpOccupation & (1 << blist->number))
-	    SetButton (w, on);
+	if (Scr->workSpaceMgr.workspaceWindow.state == BUTTONSSTATE)
+	    XMapWindow (dpy, wlist->buttonw);
 	else
-	    SetButton (w, off);
+	    XMapWindow (dpy, wlist->mapSubwindow.w);
 
-	FBF (cp.fore, cp.back, font.font->fid);
-	strWid = XTextWidth (font.font, name, strlen (name));
-	hspace  = (bwidth - strWid - 4) / 2 + 2;
-	if (hspace < 3) hspace = 3;
-	XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, name, strlen (name));
+	wlist->mapSubwindow.wl = NULL;
+	if (useBackgroundInfo) {
+	    if (wlist->backpix == None)
+		XSetWindowBackground (dpy, wlist->mapSubwindow.w, wlist->backcp.back);
+	    else
+		XSetWindowBackgroundPixmap (dpy, wlist->mapSubwindow.w, wlist->backpix);
+	}
+	else {
+	    if (Scr->workSpaceMgr.workspaceWindow.defPixmap == None)
+		XSetWindowBackground (dpy, wlist->mapSubwindow.w,
+			Scr->workSpaceMgr.workspaceWindow.defColors.back);
+	    else
+		XSetWindowBackgroundPixmap (dpy, wlist->mapSubwindow.w,
+			Scr->workSpaceMgr.workspaceWindow.defPixmap);
+	}
+	XClearWindow (dpy, wlist->mapSubwindow.w);
+	i++;
+	if (i == columns) {i = 0; j++;};
     }
 
-    w = Scr->workSpaceMgr.occupyWindow.OK;
-    SetButton (w,  off);
-    FBF (occupyButtoncp.fore, occupyButtoncp.back, font.font->fid);
-    strWid = XTextWidth (font.font, "OK", 2);
-    hspace  = ((bwidth - strWid - 4) / 2) + 2;
-    if (hspace < 3) hspace = 3;
-    XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, "OK", 2);
+    sizehints.flags       = PBaseSize | PMinSize | PResizeInc;
+    sizehints.base_width  = columns;
+    sizehints.base_height = lines;
+    sizehints.width_inc   = columns;
+    sizehints.height_inc  = lines;
+    sizehints.min_width   = 2 * columns;
+    sizehints.min_height  = 2 * lines;
+    XSetStandardProperties (dpy, Scr->workSpaceMgr.workspaceWindow.w,
+			name, icon_name, None, NULL, 0, &sizehints);
 
-    w = Scr->workSpaceMgr.occupyWindow.cancel;
-    SetButton (w, off);
-    FBF (occupyButtoncp.fore, occupyButtoncp.back, font.font->fid);
-    strWid = XTextWidth (font.font, "Cancel", 6);
-    hspace  = ((bwidth - strWid - 4) / 2) + 2;
-    if (hspace < 3) hspace = 3;
-    XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, "Cancel", 6);
+    tmp_win = AddWindow (Scr->workSpaceMgr.workspaceWindow.w, FALSE, Scr->iconmgr);
+    tmp_win->occupation = fullOccupation;
+    XSelectInput (dpy, Scr->workSpaceMgr.workspaceWindow.w, KeyPressMask |
+							    KeyReleaseMask |
+							    ExposureMask);
 
-    w = Scr->workSpaceMgr.occupyWindow.allworkspc;
-    SetButton (w, off);
-    FBF (occupyButtoncp.fore, occupyButtoncp.back, font.font->fid);
-    strWid = XTextWidth (font.font, "Everywhere", 10);
-    hspace  = ((bwidth - strWid - 4) / 2) + 2;
-    if (hspace < 3) hspace = 3;
-    XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, "Everywhere", 10);
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	XSelectInput (dpy, wlist->buttonw, ButtonPressMask | ButtonReleaseMask);
+	XSaveContext (dpy, wlist->buttonw, TwmContext,    (caddr_t) tmp_win);
+	XSaveContext (dpy, wlist->buttonw, ScreenContext, (caddr_t) Scr);
+
+	XSelectInput (dpy, wlist->mapSubwindow.w, ButtonPressMask | ButtonReleaseMask);
+	XSaveContext (dpy, wlist->mapSubwindow.w, TwmContext,    (caddr_t) tmp_win);
+	XSaveContext (dpy, wlist->mapSubwindow.w, ScreenContext, (caddr_t) Scr);
+    }
+    SetMapStateProp (tmp_win, WithdrawnState);
+    Scr->workSpaceMgr.workspaceWindow.twm_win = tmp_win;
+
+    wlist = Scr->workSpaceMgr.workSpaceList;
+    if (useBackgroundInfo) {
+	if (wlist->backpix == None)
+	    XSetWindowBackground (dpy, Scr->Root, wlist->backcp.back);
+	else
+	    XSetWindowBackgroundPixmap (dpy, Scr->Root, wlist->backpix);
+	XClearWindow (dpy, Scr->Root);
+    }
+    if (Scr->workSpaceMgr.workspaceWindow.curPixmap == None)
+	XSetWindowBackground (dpy, wlist->mapSubwindow.w,
+		Scr->workSpaceMgr.workspaceWindow.curColors.back);
+    else
+	XSetWindowBackgroundPixmap (dpy, wlist->mapSubwindow.w,
+		Scr->workSpaceMgr.workspaceWindow.curPixmap);
+    XClearWindow (dpy, wlist->mapSubwindow.w);
 }
 
-void PaintWorkSpaceManager ()
+void WMgrHandleExposeEvent (event)
+XEvent *event;
 {
-    Window     w;
-    int        bwidth, bheight, width, height;
-    ColorPair  cp;
-    MyFont     font;
-    ButtonList *blist;
-    char       *name;
-    int        strWid, strHei, hspace, vspace;
+    if (Scr->workSpaceMgr.workspaceWindow.state == BUTTONSSTATE) {
+	PaintWorkSpaceManager ();
+    }
+    else {
+	WinList	  wl;
 
-    width   = Scr->workSpaceMgr.width;
-    height  = Scr->workSpaceMgr.height;
-    bwidth  = Scr->workSpaceMgr.bwidth;
-    bheight = Scr->workSpaceMgr.bheight;
-    font    = Scr->workSpaceMgr.font;
+        if (XFindContext (dpy, event->xexpose.window, MapWListContext, (caddr_t *) &wl) == XCNOENT) return;
+	if (wl->twm_win->mapped) WMapRedrawName (wl);
+    }
+}
 
-    w = Scr->workSpaceMgr.w;
+void PaintWorkSpaceManager () {
+    Window        w;
+    int           bwidth, bheight, width, height;
+    WorkSpaceList *wlist;
+
+    width   = Scr->workSpaceMgr.workspaceWindow.width;
+    height  = Scr->workSpaceMgr.workspaceWindow.height;
+    bwidth  = Scr->workSpaceMgr.workspaceWindow.bwidth;
+    bheight = Scr->workSpaceMgr.workspaceWindow.bheight;
+
+    w = Scr->workSpaceMgr.workspaceWindow.w;
     FB (Scr->White, Scr->Black);
     XDrawLine (dpy, w, Scr->NormalGC, 0, 0, width - 1, 0);
     XDrawLine (dpy, w, Scr->NormalGC, 0, 1, width - 2, 1);
     XDrawLine (dpy, w, Scr->NormalGC, 0, 0, 0, height - 1);
     XDrawLine (dpy, w, Scr->NormalGC, 1, 0, 1, height - 2);
+
     FB (Scr->Black, Scr->White);
     XDrawLine (dpy, w, Scr->NormalGC, width - 1, 1, width - 1, height - 1);
     XDrawLine (dpy, w, Scr->NormalGC, width - 2, 2, width - 2, height - 1);
     XDrawLine (dpy, w, Scr->NormalGC, 1, height - 1, width, height - 1);
     XDrawLine (dpy, w, Scr->NormalGC, 2, height - 2, width, height - 2);
 
-    strHei = font.font->max_bounds.ascent + font.font->max_bounds.descent;
-    vspace = ((bheight + strHei) / 2) - font.font->max_bounds.descent;
-    for (blist = Scr->workSpaceMgr.buttonList; blist != NULL; blist = blist->next) {
-	w    = blist->w;
-	name = blist->label;
-	cp   = blist->cp;
-
-	if (blist == Scr->workSpaceMgr.activeWSPC) SetButton (blist->w, on);
-	else SetButton (blist->w, off);
-	FBF (cp.fore, cp.back, font.font->fid);
-	strWid = XTextWidth (font.font, name, strlen (name));
-	hspace = (bwidth - strWid) / 2;
-	if (hspace < 3) hspace = 3;
-	XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, name, strlen (name));
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (wlist == Scr->workSpaceMgr.activeWSPC)
+	    PaintButton (WSPCWINDOW, wlist->buttonw, wlist->label, wlist->cp, on);
+	else
+	    PaintButton (WSPCWINDOW, wlist->buttonw, wlist->label, wlist->cp, off);
     }
 }
 
-void SetButtonLabel (blist, label)
-ButtonList *blist;
-char       *label;
+ColorPair occupyButtoncp;
+
+CreateOccupyWindow () {
+    int		  width, height, lines, columns, x, y;
+    int		  bwidth, bheight, owidth, oheight, hspace, vspace;
+    int		  i, j;
+    Window	  w, OK, cancel, allworkspc;
+    char	  *name, *icon_name;
+    ColorPair	  cp;
+    TwmWindow	  *tmp_win;
+    WorkSpaceList *wlist;
+    XSizeHints	  sizehints;
+
+    Scr->workSpaceMgr.occupyWindow.font	= Scr->IconManagerFont;
+    Scr->workSpaceMgr.occupyWindow.cp	= Scr->IconManagerC;
+
+    name      = Scr->workSpaceMgr.occupyWindow.name;
+    icon_name = Scr->workSpaceMgr.occupyWindow.icon_name;
+    lines     = Scr->workSpaceMgr.workspaceWindow.lines;
+    columns   = Scr->workSpaceMgr.workspaceWindow.columns;
+    bwidth    = Scr->workSpaceMgr.workspaceWindow.bwidth;
+    bheight   = Scr->workSpaceMgr.workspaceWindow.bheight;
+    owidth    = Scr->workSpaceMgr.workspaceWindow.bwidth;
+    oheight   = Scr->workSpaceMgr.workspaceWindow.bheight;
+    vspace    = Scr->workSpaceMgr.occupyWindow.vspace;
+    hspace    = Scr->workSpaceMgr.occupyWindow.hspace;
+    cp        = Scr->workSpaceMgr.occupyWindow.cp;
+
+    height = ((bheight + vspace) * lines) + oheight + (3 * vspace);
+    if (columns < 3) {
+	width  = (3 * bwidth) + (4 * hspace);
+	owidth = bwidth;
+	bwidth = (width - (columns + 1) * hspace) / columns;
+    }
+    else {
+	width  = (bwidth * columns) + (hspace * (columns + 1));
+	owidth = (width - 4 * hspace) / 3;
+    }
+    Scr->workSpaceMgr.occupyWindow.lines      = lines;
+    Scr->workSpaceMgr.occupyWindow.columns    = columns;
+    Scr->workSpaceMgr.occupyWindow.width      = width;
+    Scr->workSpaceMgr.occupyWindow.height     = height;
+    Scr->workSpaceMgr.occupyWindow.bwidth     = bwidth;
+    Scr->workSpaceMgr.occupyWindow.bheight    = bheight;
+    Scr->workSpaceMgr.occupyWindow.owidth     = owidth;
+    Scr->workSpaceMgr.occupyWindow.oheight    = oheight;
+
+    w = XCreateSimpleWindow (dpy, Scr->Root, 0, 0, width, height, 1, Scr->Black, cp.back);
+    Scr->workSpaceMgr.occupyWindow.w = w;
+    i = 0;
+    j = 0;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	wlist->obuttonw = XCreateSimpleWindow(dpy, w,
+		       i * (bwidth  + hspace) + hspace,
+		       j * (bheight + vspace) + vspace, bwidth, bheight, 0,
+		       Scr->Black, wlist->cp.back);
+	XMapWindow (dpy, wlist->obuttonw);
+	i++;
+	if (i == columns) {i = 0; j++;}
+    }
+    GetColor (Scr->Monochrome, &(occupyButtoncp.back), "gray50");
+    occupyButtoncp.fore = Scr->White;
+
+    x = vspace;
+    y = ((bheight + vspace) * lines) + ( 2 * vspace);
+    OK         = XCreateSimpleWindow(dpy, w, x, y, owidth, oheight, 0, Scr->Black, occupyButtoncp.back);
+    XMapWindow (dpy, OK);
+    x += owidth + vspace;
+    cancel     = XCreateSimpleWindow(dpy, w, x, y, owidth, oheight, 0, Scr->Black, occupyButtoncp.back);
+    XMapWindow (dpy, cancel);
+    x += owidth + vspace;
+    allworkspc = XCreateSimpleWindow(dpy, w, x, y, owidth, oheight, 0, Scr->Black, occupyButtoncp.back);
+    XMapWindow (dpy, allworkspc);
+
+    Scr->workSpaceMgr.occupyWindow.OK         = OK;
+    Scr->workSpaceMgr.occupyWindow.cancel     = cancel;
+    Scr->workSpaceMgr.occupyWindow.allworkspc = allworkspc;
+
+    sizehints.flags       = PBaseSize | PMinSize | PResizeInc;
+    sizehints.base_width  = columns;
+    sizehints.base_height = lines;
+    sizehints.width_inc   = columns;
+    sizehints.height_inc  = lines;
+    sizehints.min_width   = 2 * columns;
+    sizehints.min_height  = 2 * lines;
+    XSetStandardProperties (dpy, w, name, icon_name, None, NULL, 0, &sizehints);
+    tmp_win = AddWindow (w, FALSE, Scr->iconmgr);
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	XSelectInput (dpy, wlist->obuttonw, ButtonPressMask | ButtonReleaseMask);
+	XSaveContext (dpy, wlist->obuttonw, TwmContext,    (caddr_t) tmp_win);
+	XSaveContext (dpy, wlist->obuttonw, ScreenContext, (caddr_t) Scr);
+    }
+    XSelectInput (dpy, Scr->workSpaceMgr.occupyWindow.OK, ButtonPressMask | ButtonReleaseMask);
+    XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.OK, TwmContext,    (caddr_t) tmp_win);
+    XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.OK, ScreenContext, (caddr_t) Scr);
+    XSelectInput (dpy, Scr->workSpaceMgr.occupyWindow.cancel, ButtonPressMask | ButtonReleaseMask);
+    XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.cancel, TwmContext,    (caddr_t) tmp_win);
+    XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.cancel, ScreenContext, (caddr_t) Scr);
+    XSelectInput (dpy, Scr->workSpaceMgr.occupyWindow.allworkspc, ButtonPressMask | ButtonReleaseMask);
+    XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.allworkspc, TwmContext,    (caddr_t) tmp_win);
+    XSaveContext (dpy, Scr->workSpaceMgr.occupyWindow.allworkspc, ScreenContext, (caddr_t) Scr);
+
+    XSelectInput (dpy, w, ExposureMask);
+    SetMapStateProp (tmp_win, WithdrawnState);
+    tmp_win->occupation = 0;
+    Scr->workSpaceMgr.occupyWindow.twm_win = tmp_win;
+}
+
+void PaintOccupyWindow () {
+    WorkSpaceList *wlist;
+    OccupyWindow  *occupyW;
+
+    occupyW = &Scr->workSpaceMgr.occupyWindow;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (occupyW->tmpOccupation & (1 << wlist->number))
+	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, on);
+	else
+	    PaintButton (OCCUPYWINDOW, wlist->obuttonw, wlist->label, wlist->cp, off);
+    }
+    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.OK,         "OK",         occupyButtoncp, off);
+    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.cancel,     "Cancel",     occupyButtoncp, off);
+    PaintButton (OCCUPYBUTTON, Scr->workSpaceMgr.occupyWindow.allworkspc, "Everywhere", occupyButtoncp, off);
+}
+
+static void PaintButton (which, w, label, cp, state)
+int       which;
+Window    w;
+char      *label;
+ColorPair cp;
+int       state;
 {
-    Window     w;
     int        bwidth, bheight, width, height;
-    ColorPair  cp;
     MyFont     font;
     int        strWid, strHei, hspace, vspace;
 
-    width   = Scr->workSpaceMgr.width;
-    height  = Scr->workSpaceMgr.height;
-    bwidth  = Scr->workSpaceMgr.bwidth;
-    bheight = Scr->workSpaceMgr.bheight;
-    font    = Scr->workSpaceMgr.font;
-
-    w    = blist->w;
-    blist->label = realloc (blist->label, (strlen (label) + 1));
-    strcpy (blist->label, label);
-    cp   = blist->cp;
+    if (which == WSPCWINDOW) {
+	bwidth  = Scr->workSpaceMgr.workspaceWindow.bwidth;
+	bheight = Scr->workSpaceMgr.workspaceWindow.bheight;
+	font    = Scr->workSpaceMgr.workspaceWindow.buttonFont;
+    }
+    else
+    if (which == OCCUPYWINDOW) {
+	bwidth  = Scr->workSpaceMgr.occupyWindow.bwidth;
+	bheight = Scr->workSpaceMgr.occupyWindow.bheight;
+	font    = Scr->workSpaceMgr.occupyWindow.font;
+    }
+    else
+    if (which == OCCUPYBUTTON) {
+	bwidth  = Scr->workSpaceMgr.occupyWindow.owidth;
+	bheight = Scr->workSpaceMgr.occupyWindow.oheight;
+	font    = Scr->workSpaceMgr.occupyWindow.font;
+    }
+    else return;
 
     strHei = font.font->max_bounds.ascent + font.font->max_bounds.descent;
     vspace = ((bheight + strHei) / 2) - font.font->max_bounds.descent;
-    XClearWindow (dpy, blist->w);
-    if (blist == Scr->workSpaceMgr.activeWSPC) SetButton (blist->w, on);
-    else SetButton (blist->w, off);
-    FBF (cp.fore, cp.back, font.font->fid);
     strWid = XTextWidth (font.font, label, strlen (label));
     hspace = (bwidth - strWid) / 2;
     if (hspace < 3) hspace = 3;
-    XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
+    XClearWindow (dpy, w);
+
+    if (Scr->Monochrome == COLOR) {
+	Draw3DBorder (w, bwidth, bheight, state);
+	FBF (cp.fore, cp.back, font.font->fid);
+	XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
+    }
+    else {
+	if (state == on) {
+	    FB  (Scr->Black, Scr->White);
+	    XFillRectangle (dpy, w, Scr->NormalGC, 0, 0, bwidth, bheight);
+	    FBF (Scr->White, Scr->Black, font.font->fid);
+	    XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
+	}
+	else {
+	    FB  (Scr->White, Scr->Black);
+	    XFillRectangle (dpy, w, Scr->NormalGC, 0, 0, bwidth, bheight);
+	    FBF (Scr->Black, Scr->White, font.font->fid);
+	    XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
+	}
+    }
+}
+
+static void Draw3DBorder (w, width, height, state)
+Window w;
+int    width, height;
+int    state;
+{
+    if (Scr->Monochrome != COLOR) return;
+    if (state == on) {
+	FB (Scr->Black, Scr->White);
+    }
+    else {
+	FB (Scr->White, Scr->Black);
+    }
+    XDrawLine (dpy, w, Scr->NormalGC, 0, 0, width,     0);
+    XDrawLine (dpy, w, Scr->NormalGC, 0, 1, width - 1, 1);
+    XDrawLine (dpy, w, Scr->NormalGC, 0, 0, 0,         height);
+    XDrawLine (dpy, w, Scr->NormalGC, 1, 0, 1,         height - 1);
+    if (state == on) {
+	FB (Scr->White, Scr->Black);
+    }
+    else {
+	FB (Scr->Black, Scr->White);
+    }
+    XDrawLine (dpy, w, Scr->NormalGC, width - 1,  1, width - 1, height);
+    XDrawLine (dpy, w, Scr->NormalGC, width - 2,  2, width - 2, height);
+    XDrawLine (dpy, w, Scr->NormalGC, 1, height - 1, width, height - 1);
+    XDrawLine (dpy, w, Scr->NormalGC, 2, height - 2, width, height - 2);
 }
 
 unsigned int GetMaskFromNameList (res)
 char *res;
 {
-    char       *name;
-    char       wrkSpcName [64];
-    ButtonList *bl;
-    int        mask, num;
+    char          *name;
+    char          wrkSpcName [64];
+    WorkSpaceList *wlist;
+    int           mask, num;
 
     mask = 0;
     while (*res != '\0') {
@@ -934,13 +1051,13 @@ char *res;
 	    break;
 	}
 	num  = 0;
-	for (bl = Scr->workSpaceMgr.buttonList; bl != NULL; bl = bl->next) {
-	    if (strcmp (wrkSpcName, bl->label) == 0) break;
+	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    if (strcmp (wrkSpcName, wlist->label) == 0) break;
 	    num++;
 	}
-	if (bl != NULL) mask |= (1 << num);
+	if (wlist != NULL) mask |= (1 << num);
 	else {
-	    twmrc_error_prefix();
+	    twmrc_error_prefix ();
 	    fprintf (stderr, "unknown workspace : %s\n", wrkSpcName);
 	}
     }
@@ -950,39 +1067,721 @@ char *res;
 AddToClientsList (workspace, client)
 char *workspace, *client;
 {
-    ButtonList *blist;
-    name_list  *nl;
+    WorkSpaceList *wlist;
+    name_list     *nl;
 
     if (strcmp (workspace, "all") == 0) {
-	blist = Scr->workSpaceMgr.buttonList;
-	while (blist != NULL) {
-	    AddToList (&blist->clientlist, client, "");
-	    blist = blist->next;
+	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    AddToList (&wlist->clientlist, client, "");
 	}
-	
 	return;
     }
 
-    blist = Scr->workSpaceMgr.buttonList;
-    while (blist != NULL) {
-	if (strcmp (blist->label, workspace) == 0) break;
-	blist = blist->next;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (strcmp (wlist->label, workspace) == 0) break;
     }
-    if (blist == NULL) return;
-    AddToList (&blist->clientlist, client, "");    
+    if (wlist == NULL) return;
+    AddToList (&wlist->clientlist, client, "");    
 }
 
 MakeListFromMask (mask, list)
 int  mask;
 char *list;
 {
-    ButtonList *bl;
+    WorkSpaceList *wlist;
     int        num;
 
     num = 0;
-    for (bl = Scr->workSpaceMgr.buttonList; bl != NULL; bl = bl->next) {
-	if (mask & (1 << num)) strcat (list, bl->label);
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (mask & (1 << num)) strcat (list, wlist->label);
 	num++;
     }
-}   
+}
+
+WMapToggleState () {
+    WorkSpaceList *wlist;
+
+    if (Scr->workSpaceMgr.workspaceWindow.state == BUTTONSSTATE) {
+	WMapSetMapState ();
+    }
+    else {
+	WMapSetButtonsState ();
+    }
+}
+
+WMapSetMapState () {
+    WorkSpaceList *wlist;
+
+    if (Scr->workSpaceMgr.workspaceWindow.state == MAPSTATE) return;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	XUnmapWindow (dpy, wlist->buttonw);
+	XMapWindow   (dpy, wlist->mapSubwindow.w);
+    }
+    Scr->workSpaceMgr.workspaceWindow.state	= MAPSTATE;
+}
+
+WMapSetButtonsState () {
+    WorkSpaceList *wlist;
+
+    if (Scr->workSpaceMgr.workspaceWindow.state == BUTTONSSTATE) return;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	XUnmapWindow (dpy, wlist->mapSubwindow.w);
+	XMapWindow   (dpy, wlist->buttonw);
+    }
+    Scr->workSpaceMgr.workspaceWindow.state	= BUTTONSSTATE;
+}
+
+WMapAddWindow (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+
+    if (strcmp (win->name, Scr->workSpaceMgr.workspaceWindow.name) == 0) return;
+    if (strcmp (win->name, Scr->workSpaceMgr.occupyWindow.name) == 0) return;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (OCCUPY (win, wlist)) WMapAddToList (win, wlist);
+    }
+}
+
+WMapDestroyWindow (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (OCCUPY (win, wlist)) WMapRemoveFromList (win, wlist);
+    }
+}
+
+WMapMapWindow (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+    WinList wl;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (wl->twm_win == win) {
+		XMapWindow (dpy, wl->w);
+		WMapRedrawName (wl);
+		break;
+	    }
+	}
+    }
+}
+
+WMapSetupWindow (win, x, y, w, h)
+TwmWindow *win;
+int x, y, w, h;
+{
+    WorkSpaceList *wlist;
+    WinList	wl;
+    TwmWindow	*tw;
+    int		wwidth, wheight, i, j;
+    float	wf, hf;
+
+    if (win->iconmgr) return;
+    if (strcmp (win->name, Scr->workSpaceMgr.workspaceWindow.name) == 0) {
+	Scr->workSpaceMgr.workspaceWindow.x = x;
+	Scr->workSpaceMgr.workspaceWindow.y = y;
+	if (w == -1) return;
+	ResizeWorkSpaceManager (w, h);
+	return;
+    }
+    if (strcmp (win->name, Scr->workSpaceMgr.occupyWindow.name) == 0) {
+	Scr->workSpaceMgr.occupyWindow.x = x;
+	Scr->workSpaceMgr.occupyWindow.y = y;
+	if (w == -1) return;
+	ResizeOccupyWindow (w, h);
+	return;
+    }
+    wf = (float) (Scr->workSpaceMgr.workspaceWindow.wwidth  - 2) / (float) Scr->MyDisplayWidth;
+    hf = (float) (Scr->workSpaceMgr.workspaceWindow.wheight - 2) / (float) Scr->MyDisplayHeight;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (win == wl->twm_win) {
+		wl->x      = (int) (x * wf);
+		wl->y      = (int) (y * hf);
+		if (w == -1) {
+		    XMoveWindow (dpy, wl->w, wl->x, wl->y);
+		}
+		else {
+		    wl->width  = (unsigned int) (w * wf);
+		    wl->height = (unsigned int) (h * hf);
+		    XMoveResizeWindow (dpy, wl->w, wl->x, wl->y, wl->width, wl->height);
+		}
+		break;
+	    }
+	}
+    }
+}
+
+WMapIconify (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+    WinList    wl;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (win == wl->twm_win) {
+		XUnmapWindow (dpy, wl->w);
+		break;
+	    }
+	}
+    }
+}
+
+WMapDeIconify (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+    WinList    wl;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (win == wl->twm_win) {
+		if (Scr->NoRaiseDeicon)
+		    XMapWindow (dpy, wl->w);
+		else
+		    XMapRaised (dpy, wl->w);
+		WMapRedrawName (wl);
+		break;
+	    }
+	}
+    }
+}
+
+WMapRaiseLower (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+    WinList    wl;
+    XWindowChanges xwc;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (win == wl->twm_win) {
+		xwc.stack_mode = Opposite;
+		XConfigureWindow (dpy, wl->w, CWStackMode, &xwc);
+		WMapRedrawName (wl);
+		break;
+	    }
+	}
+    }
+}
+
+WMapRaise (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+    WinList    wl;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (win == wl->twm_win) {
+		XRaiseWindow (dpy, wl->w);
+		WMapRedrawName (wl);
+		break;
+	    }
+	}
+    }
+}
+
+WMapLower (win)
+TwmWindow *win;
+{
+    WorkSpaceList *wlist;
+    WinList    wl;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    if (win == wl->twm_win) {
+		XLowerWindow (dpy, wl->w);
+		break;
+	    }
+	}
+    }
+}
+
+WMgrHandleKeyReleaseEvent (event)
+XEvent *event;
+{
+    WorkSpaceList	*wlist;
+    int			len, i, lname;
+    char		key [16], k;
+    char		name [128];
+    char		*keyname;
+    KeySym		keysym;
+
+    keysym  = XLookupKeysym   (event, 0);
+    keyname = XKeysymToString (keysym);
+    if ((strcmp (keyname, "Control_R") == 0) || (strcmp (keyname, "Control_L") == 0)) {
+	WMapToggleState ();
+	return;
+    }
+}
+
+WMgrHandleKeyPressEvent (event)
+XEvent *event;
+{
+    WorkSpaceList	*wlist;
+    int			len, i, lname;
+    char		key [16], k;
+    char		name [128];
+    char		*keyname;
+    KeySym		keysym;
+
+    keysym  = XLookupKeysym   (event, 0);
+    keyname = XKeysymToString (keysym);
+    if ((strcmp (keyname, "Control_R") == 0) || (strcmp (keyname, "Control_L") == 0)) {
+	WMapToggleState ();
+	return;
+    }
+    if (Scr->workSpaceMgr.workspaceWindow.state == MAPSTATE) return;
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (wlist->buttonw == event->xkey.subwindow) break;
+    }
+    if (wlist == NULL) return;
+
+    strcpy (name, wlist->label);
+    lname = strlen (name);
+    len   = XLookupString (&(event->xkey), key, 16, NULL, NULL);
+    for (i = 0; i < len; i++) {
+        k = key [i];
+	if (isprint (k)) {
+	    name [lname++] = k;
+	}
+	else
+	if ((k == 127) || (k == 8)) {
+	    if (lname != 0) lname--;
+	}
+	else
+	    break;
+    }
+    name [lname] = '\0';
+    wlist->label = realloc (wlist->label, (strlen (name) + 1));
+    strcpy (wlist->label, name);
+    if (wlist == Scr->workSpaceMgr.activeWSPC)
+	PaintButton (WSPCWINDOW, wlist->buttonw, wlist->label, wlist->cp,  on);
+    else
+	PaintButton (WSPCWINDOW, wlist->buttonw, wlist->label, wlist->cp, off);
+}
+
+WMgrHandleButtonEvent (event)
+XEvent *event;
+{
+    WorkSpaceWindow	*mw;
+    WorkSpaceList	*wlist, *oldwlist, *newwlist;
+    WinList		wl, newwl;
+    TwmWindow		*win;
+    int			occupation;
+    unsigned int	W0, H0;
+    int			found, cont;
+    XEvent		ev;
+    Window		w, sw, parent;
+    int			X0, Y0, X1, Y1, XW, YW;
+    Position		newX, newY;
+    Window		junkW;
+    int			junk;
+    unsigned int	button;
+
+    parent = event->xbutton.window;
+    sw     = event->xbutton.subwindow;
+    mw     = &Scr->workSpaceMgr.workspaceWindow;
+    button = event->xbutton.button;
+
+    if (Scr->workSpaceMgr.workspaceWindow.state == BUTTONSSTATE) {
+	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    if (wlist->buttonw == parent) break;
+	}
+	if (wlist == NULL) return;
+	GotoWorkSpace (wlist);
+	return;
+    }
+
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if (wlist->mapSubwindow.w == parent) break;
+    }
+    if (wlist == NULL) return;
+    if (sw == NULL) {
+	GotoWorkSpace (wlist);
+	return;
+    }
+    oldwlist = wlist;
+
+    if (XFindContext (dpy, sw, MapWListContext, (caddr_t *) &wl) == XCNOENT) return;
+    win = wl->twm_win;
+
+    switch (button) {
+	case 1 :
+	    XUnmapWindow (dpy, sw);
+
+	case 2 :
+	    XGetGeometry (dpy, sw, &junkW, &X0, &Y0, &W0, &H0, &junk, &junk);
+	    X1 = X0 + oldwlist->mapSubwindow.x + 1;
+	    Y1 = Y0 + oldwlist->mapSubwindow.y + 1;
+	    w = XCreateSimpleWindow (dpy, mw->w, X1, Y1, W0, H0, 1, Scr->Black, Scr->White);
+	    XMapWindow (dpy, w);
+	    break;
+
+	case 3 :
+	    occupation = win->occupation & ~(1 << oldwlist->number);
+	    ChangeOccupation (win, occupation);
+	    return;
+	default :
+	    return;
+    }
+    XW = event->xbutton.x_root - X1;
+    YW = event->xbutton.y_root - Y1;
+    XGrabPointer (dpy, w, True, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, GrabModeAsync,
+                        GrabModeAsync, mw->w, Scr->MoveCursor, CurrentTime);
+
+    cont = TRUE;
+    XMaskEvent (dpy, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, &ev);
+    while (cont) {
+	switch (ev.xany.type) {
+	    case ButtonRelease :
+		cont = FALSE;
+		break;
+	    case MotionNotify :
+        	newX = ev.xbutton.x_root - XW;
+        	newY = ev.xbutton.y_root - YW;
+		XMoveWindow (dpy, w, newX, newY);
+		XMaskEvent (dpy, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, &ev);
+		break;
+	    case ButtonPress :
+		cont = FALSE;
+		newX = X1;
+		newY = Y1;
+		break;
+	}
+    }
+    ev.xbutton.subwindow = NULL;
+    ev.xbutton.window = parent;
+    XPutBackEvent   (dpy, &ev);
+    XUngrabPointer  (dpy, CurrentTime);
+
+    if ((ev.xbutton.time - event->xbutton.time) < 250) {
+	float wf, hf;
+
+	XMapWindow (dpy, sw);
+	XDestroyWindow (dpy, w);
+	GotoWorkSpace (wlist);
+	wf = (float) Scr->MyDisplayWidth  / (float) (Scr->workSpaceMgr.workspaceWindow.wwidth  - 2);
+	hf = (float) Scr->MyDisplayHeight / (float) (Scr->workSpaceMgr.workspaceWindow.wheight - 2);
+
+	newX = (int) ((float) event->xbutton.x * wf);
+	newY = (int) ((float) event->xbutton.y * hf);
+	XWarpPointer (dpy, None, Scr->Root, 0, 0, 0, 0, newX, newY);
+	return;
+    }
+
+    newX = ev.xbutton.x_root - Scr->workSpaceMgr.workspaceWindow.x;
+    newY = ev.xbutton.y_root - Scr->workSpaceMgr.workspaceWindow.y;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	if ((newX >= wlist->mapSubwindow.x) && (newX < wlist->mapSubwindow.x + mw->wwidth) &&
+	    (newY >= wlist->mapSubwindow.y) && (newY < wlist->mapSubwindow.y + mw->wheight)) {
+	    break;
+	}
+    }
+    newwlist = wlist;
+    switch (button) {
+	case 1 :
+	    if ((newwlist == NULL) || (newwlist == oldwlist) || OCCUPY (wl->twm_win, newwlist)) {
+		XMapWindow (dpy, sw);
+	    }
+	    else {
+		occupation = (win->occupation | (1 << newwlist->number)) & ~(1 << oldwlist->number);
+		ChangeOccupation (win, occupation);
+	    }
+	    break;
+
+	case 2 :
+	    if ((newwlist == NULL) || (newwlist == oldwlist) || OCCUPY (wl->twm_win, newwlist)) {
+		break;
+	    }
+	    else {
+		occupation = win->occupation | (1 << newwlist->number);
+		ChangeOccupation (win, occupation);
+	    }
+	    break;
+
+	default :
+	    return;
+    }
+    XDestroyWindow (dpy, w);
+}
+
+WMapRedrawName (wl)
+WinList   wl;
+{
+    MyFont    font;
+    int       strhei, strwid, x, y;
+    char      *label;
+
+    label  = wl->twm_win->icon_name;
+    font   = Scr->workSpaceMgr.workspaceWindow.windowFont;
+    strhei = font.font->max_bounds.ascent + font.font->max_bounds.descent;
+    if (strhei > wl->height) return;
+
+    strwid = XTextWidth (font.font, label, strlen (label));
+    x = (wl->width  - strwid) / 2;
+    if (x < 1) x = 1;
+    y = ((wl->height + strhei) / 2) - font.font->max_bounds.descent;
+
+    FBF (wl->cp.fore, wl->cp.back, font.font->fid);
+    XDrawString (dpy, wl->w, Scr->NormalGC, x, y, label, strlen (label));
+}
+
+static void WMapAddToList (win, wlist)
+TwmWindow     *win;
+WorkSpaceList *wlist;
+{
+    WinList wl;
+    float   wf, hf;
+    ColorPair cp;
+    XSetWindowAttributes attr;
+
+    cp.back = Scr->workSpaceMgr.workspaceWindow.windowcp.back;
+    GetColorFromList (Scr->workSpaceMgr.workspaceWindow.windowBackgroundL,
+			win->full_name, &win->class, &cp.back);
+
+    cp.fore = Scr->workSpaceMgr.workspaceWindow.windowcp.fore;
+    GetColorFromList (Scr->workSpaceMgr.workspaceWindow.windowForegroundL,
+		      win->full_name, &win->class, &cp.fore);
+
+    wf = (float) (Scr->workSpaceMgr.workspaceWindow.wwidth  - 2) / (float) Scr->MyDisplayWidth;
+    hf = (float) (Scr->workSpaceMgr.workspaceWindow.wheight - 2) / (float) Scr->MyDisplayHeight;
+    wl = (WinList) malloc (sizeof (struct winList));
+    wl->x      = (int) (win->frame_x * wf);
+    wl->y      = (int) (win->frame_y * hf);
+    wl->width  = (unsigned int) (win->frame_width  * wf);
+    wl->height = (unsigned int) (win->frame_height * hf);
+    wl->w = XCreateSimpleWindow (dpy, wlist->mapSubwindow.w, wl->x, wl->y, wl->width, wl->height,
+					     1, Scr->Black, cp.back);
+    attr.cursor = handCursor;
+    XChangeWindowAttributes (dpy, wl->w, CWCursor, &attr);
+    XSelectInput (dpy, wl->w, ExposureMask);
+    XSaveContext (dpy, wl->w, TwmContext,      (caddr_t) Scr->workSpaceMgr.workspaceWindow.twm_win);
+    XSaveContext (dpy, wl->w, ScreenContext,   (caddr_t) Scr);
+    XSaveContext (dpy, wl->w, MapWListContext, (caddr_t) wl);
+    wl->twm_win = win;
+    wl->cp      = cp;
+    wl->next    = wlist->mapSubwindow.wl;
+    wlist->mapSubwindow.wl = wl;
+    if (win->mapped) XMapWindow (dpy, wl->w);
+}
+
+static void WMapRemoveFromList (win, wlist)
+TwmWindow *win;
+WorkSpaceList *wlist;
+{
+    WinList wl, wl1;
+
+    wl = wlist->mapSubwindow.wl;
+    if (wl == NULL) return;
+    if (win == wl->twm_win) {
+	wlist->mapSubwindow.wl = wl->next;
+	XDeleteContext (dpy, wl->w, TwmContext);
+	XDeleteContext (dpy, wl->w, ScreenContext);
+	XDeleteContext (dpy, wl->w, MapWListContext);
+	XDestroyWindow (dpy, wl->w);
+	free (wl);
+	return;
+    }
+    wl1 = wl;
+    wl  = wl->next;
+    while (wl != NULL) {
+	if (win == wl->twm_win) {
+	    wl1->next = wl->next;
+	    XDeleteContext (dpy, wl->w, TwmContext);
+	    XDeleteContext (dpy, wl->w, ScreenContext);
+	    XDeleteContext (dpy, wl->w, MapWListContext);
+	    XDestroyWindow (dpy, wl->w);
+	    free (wl);
+	    break;
+	}
+	wl1 = wl;
+	wl  = wl->next;
+    }
+}
+
+ResizeWorkSpaceManager (w, h)
+int w, h;
+{
+    int           bwidth, bheight;
+    int		  wwidth, wheight;
+    int           hspace, vspace;
+    int           lines, columns;
+    WorkSpaceList *wlist;
+    TwmWindow	  *tmp_win;
+    WinList	  wl;
+    int           i, j;
+    static int    oldw = 0;
+    static int    oldh = 0;
+    float	  wf, hf;
+
+    if ((w == oldw) && (h == oldh)) return;
+    oldw = w;
+    oldh = h;
+
+    hspace  = Scr->workSpaceMgr.workspaceWindow.hspace;
+    vspace  = Scr->workSpaceMgr.workspaceWindow.vspace;
+    lines   = Scr->workSpaceMgr.workspaceWindow.lines;
+    columns = Scr->workSpaceMgr.workspaceWindow.columns;
+    bwidth  = (w - ((columns + 1) * hspace)) / columns;
+    bheight = (h - ((lines   + 1) * vspace)) / lines;
+    wwidth  = w / Scr->workSpaceMgr.workspaceWindow.columns;
+    wheight = h / Scr->workSpaceMgr.workspaceWindow.lines;
+    wf = (float) (wwidth  - 2) / (float) Scr->MyDisplayWidth;
+    hf = (float) (wheight - 2) / (float) Scr->MyDisplayHeight;
+
+    i = 0;
+    j = 0;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	XMoveResizeWindow (dpy, wlist->buttonw, i * (bwidth  + hspace) + hspace,
+				j * (bheight + vspace) + vspace, bwidth, bheight);
+	wlist->mapSubwindow.x = i * wwidth;
+	wlist->mapSubwindow.y = j * wheight;
+	XMoveResizeWindow (dpy, wlist->mapSubwindow.w, wlist->mapSubwindow.x,
+				wlist->mapSubwindow.y, wwidth - 2, wheight - 2);
+	for (wl = wlist->mapSubwindow.wl; wl != NULL; wl = wl->next) {
+	    tmp_win    = wl->twm_win;
+	    wl->x      = (int) (tmp_win->frame_x * wf);
+	    wl->y      = (int) (tmp_win->frame_y * hf);
+	    wl->width  = (unsigned int) (tmp_win->frame_width  * wf);
+	    wl->height = (unsigned int) (tmp_win->frame_height * hf);
+	    XMoveResizeWindow (dpy, wl->w, wl->x, wl->y, wl->width, wl->height);
+	}
+	i++;
+	if (i == columns) {i = 0; j++;};
+    }
+    Scr->workSpaceMgr.workspaceWindow.bwidth    = bwidth;
+    Scr->workSpaceMgr.workspaceWindow.bheight   = bheight;
+    Scr->workSpaceMgr.workspaceWindow.width     = w;
+    Scr->workSpaceMgr.workspaceWindow.height    = h;
+    Scr->workSpaceMgr.workspaceWindow.wwidth	= wwidth;
+    Scr->workSpaceMgr.workspaceWindow.wheight	= wheight;
+    PaintWorkSpaceManager ();
+}
+
+ResizeOccupyWindow (w, h)
+int w, h;
+{
+    int           bwidth, bheight, owidth, oheight;
+    int           hspace, vspace;
+    int           lines, columns;
+    WorkSpaceList *wlist;
+    int           i, j, x, y;
+    static int    oldw = 0;
+    static int    oldh = 0;
+
+    if ((w == oldw) && (h == oldh)) return;
+    oldw = w;
+    oldh = h;
+
+    hspace  = Scr->workSpaceMgr.occupyWindow.hspace;
+    vspace  = Scr->workSpaceMgr.occupyWindow.vspace;
+    lines   = Scr->workSpaceMgr.occupyWindow.lines;
+    columns = Scr->workSpaceMgr.occupyWindow.columns;
+    bwidth  = (w - ((columns + 1) * hspace)) / columns;
+    bheight = (h - ((lines   + 4) * vspace)) / (lines + 1);
+    owidth  = (w - (4 * hspace)) / 3;
+    oheight = bheight;
+
+    i = 0;
+    j = 0;
+    for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	XMoveResizeWindow (dpy, wlist->obuttonw, i * (bwidth  + hspace) + hspace,
+				j * (bheight + vspace) + vspace, bwidth, bheight);
+	i++;
+	if (i == columns) {i = 0; j++;}
+    }
+    x = hspace;
+    y = ((bheight + vspace) * lines) + ( 2 * vspace);
+    XMoveResizeWindow (dpy, Scr->workSpaceMgr.occupyWindow.OK, x, y, owidth, oheight);
+    x += owidth + hspace;
+    XMoveResizeWindow (dpy, Scr->workSpaceMgr.occupyWindow.cancel, x, y, owidth, oheight);
+    x += owidth + hspace;
+    XMoveResizeWindow (dpy, Scr->workSpaceMgr.occupyWindow.allworkspc, x, y, owidth, oheight);
+    Scr->workSpaceMgr.occupyWindow.width      = w;
+    Scr->workSpaceMgr.occupyWindow.height     = h;
+    Scr->workSpaceMgr.occupyWindow.bwidth     = bwidth;
+    Scr->workSpaceMgr.occupyWindow.bheight    = bheight;
+    Scr->workSpaceMgr.occupyWindow.owidth     = owidth;
+    Scr->workSpaceMgr.occupyWindow.oheight    = oheight;
+    PaintOccupyWindow ();
+}
+
+WMapCreateCurrentBackGround (border, background, foreground, pixmap)
+char *border, *background, *foreground, *pixmap;
+{
+    Pixmap       pix;
+    unsigned int width, height, depth;
+    XGCValues	 gcvalues;
+
+    Scr->workSpaceMgr.workspaceWindow.curBorderColor = Scr->Black;
+    Scr->workSpaceMgr.workspaceWindow.curColors.back = Scr->White;
+    Scr->workSpaceMgr.workspaceWindow.curColors.fore = Scr->Black;
+    Scr->workSpaceMgr.workspaceWindow.curPixmap      = None;
+
+    if (border == NULL) return;
+    GetColor (Scr->Monochrome, &(Scr->workSpaceMgr.workspaceWindow.curBorderColor), border);
+
+    if (background == NULL) return;
+    GetColor (Scr->Monochrome, &(Scr->workSpaceMgr.workspaceWindow.curColors.back), background);
+
+    if (foreground == NULL) return;
+    GetColor (Scr->Monochrome, &(Scr->workSpaceMgr.workspaceWindow.curColors.fore), foreground);
+
+    if (pixmap == NULL) return;
+    if ((pix = FindBitmap (pixmap, &width, &height)) == None) return;
+
+    depth = (unsigned int) DefaultDepth (dpy, Scr->screen);
+    Scr->workSpaceMgr.workspaceWindow.curPixmap = XCreatePixmap (dpy, Scr->Root, width, height, depth);
+    gcvalues.background = Scr->workSpaceMgr.workspaceWindow.curColors.back;
+    gcvalues.foreground = Scr->workSpaceMgr.workspaceWindow.curColors.fore;
+    XChangeGC  (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
+    XCopyPlane (dpy, pix, Scr->workSpaceMgr.workspaceWindow.curPixmap, rootGC, 0, 0,
+			width, height, 0, 0, (unsigned long) 1);
+    XFreePixmap (dpy, pix);
+}
+
+WMapCreateDefaultBackGround (border, background, foreground, pixmap)
+char *border, *background, *foreground, *pixmap;
+{
+    Pixmap       pix;
+    unsigned int width, height, depth;
+    XGCValues	 gcvalues;
+
+    Scr->workSpaceMgr.workspaceWindow.defBorderColor = Scr->Black;
+    Scr->workSpaceMgr.workspaceWindow.defColors.back = Scr->White;
+    Scr->workSpaceMgr.workspaceWindow.defColors.fore = Scr->Black;
+    Scr->workSpaceMgr.workspaceWindow.defPixmap      = None;
+
+    if (border == NULL) return;
+    GetColor (Scr->Monochrome, &(Scr->workSpaceMgr.workspaceWindow.defBorderColor), border);
+
+    if (background == NULL) return;
+    GetColor (Scr->Monochrome, &(Scr->workSpaceMgr.workspaceWindow.defColors.back), background);
+
+    if (foreground == NULL) return;
+    GetColor (Scr->Monochrome, &(Scr->workSpaceMgr.workspaceWindow.defColors.fore), foreground);
+
+    if (pixmap == NULL) return;
+    if ((pix = FindBitmap (pixmap, &width, &height)) == None) return;
+
+    depth = (unsigned int) DefaultDepth (dpy, Scr->screen);
+    Scr->workSpaceMgr.workspaceWindow.defPixmap = XCreatePixmap (dpy, Scr->Root, width, height, depth);
+    gcvalues.background = Scr->workSpaceMgr.workspaceWindow.defColors.back;
+    gcvalues.foreground = Scr->workSpaceMgr.workspaceWindow.defColors.fore;
+    XChangeGC  (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
+    XCopyPlane (dpy, pix, Scr->workSpaceMgr.workspaceWindow.defPixmap, rootGC, 0, 0,
+			width, height, 0, 0, (unsigned long) 1);
+    XFreePixmap (dpy, pix);
+}
+
+
 

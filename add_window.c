@@ -70,6 +70,7 @@ static int PlaceY = 50;
 static void CreateWindowTitlebarButtons();
 
 char NoName[] = "Untitled"; /* name if no name is specified */
+int  resizeWhenAdd;
 
 
 /************************************************************************
@@ -219,9 +220,9 @@ IconMgr *iconp;
 	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
 
-    tmp_win->auto_raise = (short)(int) LookInList(Scr->AutoRaise, 
-						  tmp_win->full_name,
-					    &tmp_win->class);
+    tmp_win->auto_raise = Scr->AutoRaiseDefault ||
+      (short)(int) LookInList(Scr->AutoRaise, tmp_win->full_name,
+			      &tmp_win->class);
     if (tmp_win->auto_raise) Scr->NumAutoRaises++;
     tmp_win->iconify_by_unmapping = Scr->IconifyByUnmapping;
     if (Scr->IconifyByUnmapping)
@@ -548,7 +549,9 @@ IconMgr *iconp;
 
 		    if (lastx != AddingX || lasty != AddingY)
 		    {
+			resizeWhenAdd = TRUE;
 			DoResize(AddingX, AddingY, tmp_win);
+			resizeWhenAdd = FALSE;
 
 			lastx = AddingX;
 			lasty = AddingY;
@@ -844,7 +847,7 @@ IconMgr *iconp;
      */
     if (RootFunction)
 	ReGrab();
-
+    WMapAddWindow (tmp_win);
     return (tmp_win);
 }
 

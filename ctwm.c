@@ -216,10 +216,8 @@ main(argc, argv, environ)
 
     /* Set up the per-screen global information. */
 
-    NumScreens = 1;
-/*
     NumScreens = ScreenCount(dpy);
-*/
+
     if (MultiScreen)
     {
 	firstscrn = 0;
@@ -390,7 +388,6 @@ main(argc, argv, environ)
 	Scr->tbpm.question = None;
 	Scr->tbpm.menu = None;
 	Scr->tbpm.delete = None;
-
 	InitVariables();
 	InitMenus();
 	InitWorkSpaceManager ();
@@ -419,7 +416,7 @@ main(argc, argv, environ)
 	AllocateOthersIconManagers ();
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
-	Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.buttonList;
+	Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
 	if (!Scr->NoIconManagers)
 	    Scr->iconmgr->twm_win->icon = TRUE;
 
@@ -467,11 +464,11 @@ main(argc, argv, environ)
 		XMapWindow(dpy, Scr->iconmgr->twm_win->frame);
 	    }
 	}
-	if (workSpaceManagerActive)
+	if (Scr->ShowWorkspaceManager && Scr->workSpaceManagerActive)
 	{
-	    SetMapStateProp (Scr->workSpaceMgr.twm_win, NormalState);
-	    XMapWindow (dpy, Scr->workSpaceMgr.w);
-	    XMapWindow (dpy, Scr->workSpaceMgr.twm_win->frame);
+	    SetMapStateProp (Scr->workSpaceMgr.workspaceWindow.twm_win, NormalState);
+	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w);
+	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.twm_win->frame);
 	}
 	
 	attributes.border_pixel = Scr->DefaultC.fore;
@@ -573,6 +570,7 @@ InitVariables()
     NewFontCursor(&Scr->SelectCursor, "dot");
     NewFontCursor(&Scr->DestroyCursor, "pirate");
 
+    Scr->workSpaceManagerActive = FALSE;
     Scr->Ring = NULL;
     Scr->RingLeader = NULL;
 
@@ -622,6 +620,7 @@ InitVariables()
     Scr->DecorateTransients = FALSE;
     Scr->IconifyByUnmapping = FALSE;
     Scr->ShowIconManager = FALSE;
+    Scr->ShowWorkspaceManager = FALSE;
     Scr->IconManagerDontShow =FALSE;
     Scr->BackingStore = TRUE;
     Scr->SaveUnder = TRUE;
@@ -674,6 +673,7 @@ CreateFonts ()
     GetFont(&Scr->SizeFont);
     GetFont(&Scr->IconManagerFont);
     GetFont(&Scr->DefaultFont);
+    GetFont(&Scr->workSpaceMgr.workspaceWindow.windowFont);
     Scr->HaveFonts = TRUE;
 }
 

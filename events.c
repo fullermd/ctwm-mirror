@@ -43,6 +43,7 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <sys/time.h>
 #include "twm.h"
 #include <X11/Xatom.h>
 #include "add_window.h"
@@ -159,6 +160,7 @@ InitEvents()
     EventHandler[ClientMessage] = HandleClientMessage;
     EventHandler[PropertyNotify] = HandlePropertyNotify;
     EventHandler[KeyPress] = HandleKeyPress;
+    EventHandler[KeyRelease] = HandleKeyRelease;
     EventHandler[ColormapNotify] = HandleColormapNotify;
     EventHandler[VisibilityNotify] = HandleVisibilityNotify;
     if (HasShape)
@@ -554,6 +556,20 @@ HandleVisibilityNotify()
 /***********************************************************************
  *
  *  Procedure:
+ *	HandleKeyRelease - key release event handler
+ *
+ ***********************************************************************
+ */
+
+void
+HandleKeyRelease()
+{
+    if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win)
+	WMgrHandleKeyReleaseEvent (&Event);
+}
+/***********************************************************************
+ *
+ *  Procedure:
  *	HandleKeyPress - key press event handler
  *
  ***********************************************************************
@@ -663,8 +679,8 @@ HandleKeyPress()
      */
     if (Tmp_win)
     {
-	if (Tmp_win == Scr->workSpaceMgr.twm_win) {
-	    ChangeLabel (&Event);
+	if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) {
+	    WMgrHandleKeyPressEvent (&Event);
 	    return;
 	}
         if (Event.xany.window == Tmp_win->icon_w ||
@@ -1140,13 +1156,13 @@ HandleExpose()
 	    }
 	}
 
-	if (Tmp_win == Scr->workSpaceMgr.twm_win) {
-	    PaintWorkSpaceManager ();
+	if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) {
+	    WMgrHandleExposeEvent (&Event);
 	    flush_expose (Event.xany.window);
 	    return;
 	}
 	else if (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
-	    PaintOccupyWindow (Tmp_win);
+	    PaintOccupyWindow ();
 	    flush_expose (Event.xany.window);
 	    return;
 	} else 	if (Tmp_win->list) {
@@ -1273,6 +1289,7 @@ HandleDestroyNotify()
      *     10. titlebuttons
      *     11. window ring
      */
+    WMapDestroyWindow (Tmp_win);
     if (Tmp_win->gray) XFreePixmap (dpy, Tmp_win->gray);
 
     XDestroyWindow(dpy, Tmp_win->frame);
@@ -1375,6 +1392,7 @@ HandleMapRequest()
 		XMapWindow(dpy, Tmp_win->frame);
 		SetMapStateProp(Tmp_win, NormalState);
 		SetRaiseWindow (Tmp_win);
+		Tmp_win->mapped = TRUE;
 		break;
 
 	    case InactiveState:
@@ -1400,6 +1418,7 @@ HandleMapRequest()
 	Tmp_win->mapped = TRUE;
       }
     }
+    if (Tmp_win->mapped) WMapMapWindow (Tmp_win);
 }
 
 
@@ -1778,7 +1797,8 @@ HandleButtonPress()
     if (ActiveMenu != NULL)
 	PopDownMenu();
 
-    XSync(dpy, 0);			/* XXX - remove? */
+    XSync(dpy, 0);
+			/* XXX - remove? */
 
     if (ButtonPressed != -1 && !InfoLines) /* want menus if we have info box */
     {
@@ -1874,14 +1894,8 @@ HandleButtonPress()
 	}
 	else if (Event.xany.window == Tmp_win->w) 
 	{
-	    if ((Tmp_win == Scr->workSpaceMgr.twm_win) ||
-		 (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win)) {
-		Context = C_WINDOW;
-	    }
-	    else {
-		printf("ERROR! ERROR! ERROR! YOU SHOULD NOT BE HERE!!!\n");
-		Context = C_WINDOW;
-	    }
+	    printf("ERROR! ERROR! ERROR! YOU SHOULD NOT BE HERE!!!\n");
+	    Context = C_WINDOW;
 	}
 	else if (Event.xany.window == Tmp_win->icon_w)
 	{
@@ -1905,6 +1919,10 @@ HandleButtonPress()
 	      Context = C_WINDOW;
 	    }
             else Context = C_FRAME;
+	}
+	else if ((Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) ||
+		 (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win)) {
+	    Context = C_WINDOW;
 	}
 	else if (Tmp_win->list) {
 	    if ((Event.xany.window == Tmp_win->list->icon) ||
@@ -1988,13 +2006,13 @@ HandleButtonPress()
 	    Action, Event.xany.window, Tmp_win, &Event, Context, FALSE);
     }
   }
-    else if (Tmp_win == Scr->workSpaceMgr.twm_win) /* Baaad */
+    else if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) /* Baaad */
     {
-	ChangeWorkSpace (Event.xbutton.subwindow);
+	WMgrHandleButtonEvent (&Event);
     }
     else if (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win)
     {
-	EndOccupy (Event.xbutton.subwindow);
+	OccupyHandleButtonEvent (&Event);
     }
     else if (Scr->DefaultFunction.func != NULL)
     {
@@ -2076,6 +2094,7 @@ HandleEnterNotify()
     XEnterWindowEvent *ewp = &Event.xcrossing;
     HENScanArgs scanArgs;
     XEvent dummy;
+    extern int RaiseDelay;
     
     /*
      * Save the id of the window entered.  This will be used to remove
@@ -2120,6 +2139,76 @@ HandleEnterNotify()
 	    return;
 	}
 
+	/* Handle RaiseDelay, if any.....
+	 */
+	if (RaiseDelay > 0) {
+	    if (Tmp_win && Tmp_win->auto_raise
+		&& (!Tmp_win->list || Tmp_win->list->w != ewp->window)) {
+		ColormapWindow *cwin;
+		static struct timeval timeout = {0,12500};
+
+		if (XFindContext(dpy, Tmp_win->w, ColormapContext,
+				 (caddr_t *)&cwin) == XCNOENT) {
+		    cwin = (ColormapWindow *)NULL;
+		}
+
+		if ((ewp->detail != NotifyInferior
+		     || Tmp_win->frame == ewp->window)
+		     && (!cwin || cwin->visibility != VisibilityUnobscured)) {
+		    int x, y, px, py, d, i;
+		    Window w;
+
+		    XQueryPointer(dpy, Scr->Root, &w, &w, &px, &py,
+				  &d, &d, (unsigned int *)&d);
+
+		    /* The granularity of RaiseDelay is about 25 ms.
+		     * The timeout variable is set to 12.5 ms since we
+		     * pass this way twice each time a twm window is
+		     * entered.
+		     */
+		    for (i = 25; i < RaiseDelay; i += 25) {
+			select(0, 0, 0, 0, &timeout);
+			/* Did we leave this window already? */
+			scanArgs.w = ewp->window;
+			scanArgs.leaves = scanArgs.enters = False;
+			(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner,
+					     (char *) &scanArgs);
+			if (scanArgs.leaves && !scanArgs.inferior) return;
+
+			XQueryPointer(dpy, Scr->Root, &w, &w, &x, &y,
+				      &d, &d, (unsigned int *)&d);
+
+			/* Has the pointer moved?  If so reset the loop cnt.
+			 * We want the pointer to be still for RaiseDelay
+			 * milliseconds before terminating the loop
+			 */
+			if (x != px || y != py) {
+			    i = 0; px = x; py = y;
+			}
+		    }
+		}
+	    }
+
+	    /*
+	     * Scan for Leave and Enter Notify events to see if we can avoid some
+	     * unnecessary processing.
+	     */
+	    scanArgs.w = ewp->window;
+	    scanArgs.leaves = scanArgs.enters = False;
+	    (void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *) &scanArgs);
+
+	    /*
+	     * if entering root window, restore twm default colormap so that 
+	     * titlebars are legible
+	     */
+	    if (ewp->window == Scr->Root) {
+		if (!scanArgs.leaves && !scanArgs.enters)
+		    InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
+		return;
+	    }
+	}
+	/* End of RaiseDelay modification. */
+  
 	/*
 	 * if we have an event for a specific one of our windows
 	 */

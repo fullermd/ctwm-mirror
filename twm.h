@@ -44,7 +44,9 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
-#include <X11/Xfuncs.h>
+#ifndef X11R4
+#    include <X11/Xfuncs.h>
+#endif
 
 #if defined(XPM)
 #   include "util.h"
@@ -305,7 +307,9 @@ typedef struct TwmWindow
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
 
-#include <X11/Xosdefs.h>
+#ifndef X11R4
+#    include <X11/Xosdefs.h>
+#endif
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
 #else

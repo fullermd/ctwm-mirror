@@ -78,7 +78,7 @@ void CreateIconManagers()
     char str1[100];
     Pixel background;
     char *icon_name;
-    ButtonList *bl;
+    WorkSpaceList *wlist;
 
     if (Scr->NoIconManagers)
 	return;
@@ -89,7 +89,7 @@ void CreateIconManagers()
 	    (char *)siconify_bits, siconify_width, siconify_height, 1, 0, 1);
     }
 
-    bl = Scr->workSpaceMgr.buttonList;
+    wlist = Scr->workSpaceMgr.workSpaceList;
     for (q = Scr->iconmgr; q != NULL; q = q->nextv) {
       for (p = q; p != NULL; p = p->next)
       {
@@ -101,7 +101,7 @@ void CreateIconManagers()
 	      (2 * Scr->BorderWidth) + JunkX;
 
 	if (mask & YNegative)
-	    JunkY = Scr->MyDisplayHeight, p->height - 
+	    JunkY = Scr->MyDisplayHeight - p->height - 
 	      (2 * Scr->BorderWidth) + JunkY;
 
 	background = Scr->IconManagerC.back;
@@ -121,15 +121,15 @@ void CreateIconManagers()
 
 	XSetStandardProperties(dpy, p->w, str, icon_name, None, NULL, 0, NULL);
 
-	Scr->workSpaceMgr.activeWSPC = bl;
+	Scr->workSpaceMgr.activeWSPC = wlist;
 	p->twm_win = AddWindow(p->w, TRUE, p);
 	SetMapStateProp (p->twm_win, WithdrawnState);
       }
-      if (bl != NULL) bl = bl->next;
+      if (wlist != NULL) wlist = wlist->next;
     }
-    Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.buttonList;
-    if (workSpaceManagerActive)
-	Scr->workSpaceMgr.buttonList->iconmgr = Scr->iconmgr;
+    Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
+    if (Scr->workSpaceManagerActive)
+	Scr->workSpaceMgr.workSpaceList->iconmgr = Scr->iconmgr;
 /*
     for (q = Scr->iconmgr; q != NULL; q = q->nextv) {
       for (p = q; p != NULL; p = p->next) {
@@ -425,7 +425,8 @@ WList *AddIconManager(tmp_win)
     IconMgr *ip;
 
     if (tmp_win->iconmgr || tmp_win->transient || Scr->NoIconManagers ||
-	tmp_win->w == Scr->workSpaceMgr.w || tmp_win->w == Scr->workSpaceMgr.occupyWindow.w)
+	tmp_win->w == Scr->workSpaceMgr.workspaceWindow.w ||
+	tmp_win->w == Scr->workSpaceMgr.occupyWindow.w)
 	return NULL;
 
     if (LookInList(Scr->IconMgrNoShow, tmp_win->full_name, &tmp_win->class))
@@ -435,8 +436,8 @@ WList *AddIconManager(tmp_win)
 	return NULL;
     if ((ip = (IconMgr *)LookInList(Scr->IconMgrs, tmp_win->full_name,
 	    &tmp_win->class)) == NULL)
-	if (workSpaceManagerActive)
-	    ip = Scr->workSpaceMgr.buttonList->iconmgr;
+	if (Scr->workSpaceManagerActive)
+	    ip = Scr->workSpaceMgr.workSpaceList->iconmgr;
 	else
 	    ip = Scr->iconmgr;
 

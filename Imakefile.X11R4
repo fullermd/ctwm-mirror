@@ -1,12 +1,7 @@
-XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
-XCOMM
-XCOMM Here is an Imakefile for twm.  It depends on having TWMDIR defined
-XCOMM in Imake.tmpl.  I like to use Imakefiles for everything, and I am sure
-XCOMM other people do also, so perhaps you could do us all a favor and
-XCOMM distribute this one.
-XCOMM
-
 #define XPM
+
+#define NullParameter
+#define InstallNonExecFile InstallNonExec
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
@@ -15,10 +10,10 @@ XCOMM
 
 #ifdef XPM
 LOCAL_LIBRARIES = $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEFINES = $(SIGNAL_DEFINES) -DXPM
+        DEFINES = $(SIGNAL_DEFINES) -DX11R4 -DXPM
 #else
 LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEFINES = $(SIGNAL_DEFINES)
+        DEFINES = $(SIGNAL_DEFINES) -DX11R4
 #endif
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \

@@ -64,6 +64,7 @@ extern void HandleConfigureRequest();
 extern void HandleClientMessage();
 extern void HandlePropertyNotify();
 extern void HandleKeyPress();
+extern void HandleKeyRelease();
 extern void HandleColormapNotify();
 extern void HandleVisibilityNotify();
 extern void HandleUnknown();

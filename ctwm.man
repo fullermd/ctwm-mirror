@@ -26,8 +26,8 @@ twm (Tab Window Manager) from the MIT X11 distribution slightly modified
 to accomodate the use of several virtual screens (workspaces). It is 
 heavily inspired from the Hewlett-Packard vuewm window manager.
 .PP
-.PP
 .SH OPTIONS
+.PP
 \fICtwm\fP accepts all the \fITwm\fP command line options.
 .PP
 .SH CUSTOMIZATION
@@ -52,7 +52,88 @@ Same as \fItwm\fP, except for the user customization is read from :
 .PP
 All the variables of \fItwm\fP, plus some :
 .PP
-.IP "\fBWorkSpaceManagerGeometry\fP \fIstring\fP [ \fIcolumns\fP ]" 8
+
+.IP "\fBAutoRaise\fP [{ \fIwin-list\fP }]" 4
+This variable specifies a list of windows
+(all windows if the list is defaulted)
+to be automatically
+raised whenever the pointer has come to rest in a window for the amount of
+time specified by the \fBRaiseDelay\fP variable.
+This action can be interactively
+enabled or disabled on individual windows using the function \fBf.autoraise\fP.
+
+.IP "\fBMapWindowBackground\fP \fBcolor\fP [{ \fBwin-list\fP }]" 4
+This variable specifies the background colors to use for small windows in the 
+workspace map window and may only be specified inside of a Color or Monochrome
+list. The  optional \fBwin-list\fP is a list of window names and colors so
+that per-window colors may be  specified.
+
+.IP "\fBMapWindowCurrentWorkSpace\fP { \fBborder_color\fP \fBbackground\fP \fBforeground\fP \fBbitmap\fP }" 4
+Specify the appearence of the map window corresponding to the current workspace.
+
+.IP "\fBMapWindowDefaultWorkSpace\fP { \fBborder_color\fP \fBbackground\fP \fBforeground\fP \fBbitmap\fP }" 4
+Specify the appearence of the map window corresponding to the workspaces different
+from the current workspace if no root background infos have been given to ctwm in
+the WorkSpace command. Not used in others cases.
+
+.IP "\fBMapWindowForeground\fP \fBcolor\fP [{ \fBwin-list\fP }]" 4
+This variable specifies the foreground colors to use for small windows in the 
+workspace map window and may only be specified inside of a Color or Monochrome
+list. The  optional \fBwin-list\fP is a list of window names and colors so
+that per-window colors may be specified.
+
+.IP "\fBOccupy\fP { \fIoccupy-list\fP }" 4
+This variable specifies which window occupy which workspace at startup.
+.IP
+Where \fIoccupy-list\fP is a list entries of the form :
+.EX
+	[Window]   win-name { wpsc1 wspc2 ... }
+or	Workspace  wspc-name {win1 win2 ... }
+.EE
+Example :
+.EX
+Occupy {
+               "xload"   {"all"}
+    Window     "xterm"   {"here" "there" "elsewhere"}
+               "xv"      {"images"}
+    WorkSpace  "images"  {"xloadimage"}
+}
+.EE
+
+.IP "\fBOccupyAll\fP { \fIwindow-list\fP }" 4
+.PP
+This variable specifies a list of windows that will occupy all workspaces at startup.
+.IP
+Where \fIwindow-list\fP is a list of window names.
+.IP
+Example :
+.EX
+OccupyAll
+{
+    "xload"
+    "xbiff"
+    "xconsole"
+}
+.EE
+
+.IP "\fBOpaqueResize\fP" 4
+Just for fun. The opaque version of resize. Extremely resource intensive,
+but beautiful with fast server/client/network.
+
+.IP "\fBRaiseDelay\fP \fImilliseconds\fP" 4
+For windows that are to be automatically raised when the pointer enters
+(see the \fBAutoRaise\fP variable and the \fIf.autoraise\fP function)
+this variable specifies the length of time the pointer should rest in
+the window before it is raised.  The default is 0 milliseconds.
+
+.IP "\fBShowWorkSpaceManager\fP" 4
+This variable specifies that the WorkSpaceManager should be visible.
+
+.IP "\fBStartInMapState\fP" 4
+This variable specifies that the WorkSpaceManager should be started
+in its map form when created.
+
+.IP "\fBWorkSpaceManagerGeometry\fP \fIstring\fP [ \fIcolumns\fP ]" 4
 This variable specifies the geometry of the workspace manager window. The 
 \fIstring\fP argument is standard geometry specification that indicates 
 the initial full size of the workspace manager. The \fIcolumns\fP argument
@@ -60,7 +141,7 @@ indicates the number of columns to use for the workspace manager window.
 .EX
 \fBWorkSpaceManagerGeometry\fP        "360x60+60-0" 4
 .EE
-.IP "\fBWorkSpaces\fP { \fIworkspace-list\fP }" 8
+.IP "\fBWorkSpaces\fP { \fIworkspace-list\fP }" 4
 This variable specifies a list of workspaces that are created at startup.
 Where \fIworkspace-list\fP is :
 .EX
@@ -68,20 +149,20 @@ name [{bg-button [fg-button] [bg-root] [fg-root] [bitmap-root]}]
 .EE
 .IP
 With :
-.RS 12
-.TP 12
+.RS 8
+.TP 4
 .B "bg-button:"
 background color of the corresponding button in the workspace manager.
-.TP 12
+.TP 8
 .B "fg-button:"
 foreground color of the corresponding button in the workspace manager.
-.TP 12
+.TP 8
 .B "bg-root:"
 background color of the corresponding root screen.
-.TP 12
+.TP 8
 .B "fg-root:"
 foreground color of the corresponding root screen.
-.TP 12
+.TP 8
 .B "bitmap-root:"
 bitmap to display on the corresponding root screen.
 .RE
@@ -104,43 +185,7 @@ WorkSpaces
 .IP
 The maximum number of workspaces is 32.
 
-
-
-.IP "\fBOccupyAll\fP { \fIwindow-list\fP }" 8
-This variable specifies a list of windows that will occupy all workspaces at startup.
-.IP
-Where \fIwindow-list\fP is a list of window names.
-.IP
-Example :
-.EX
-OccupyAll
-{
-    "xload"
-    "xbiff"
-    "xconsole"
-}
-.EE
-.IP "\fBOccupy\fP { \fIoccupy-list\fP }" 8
-This variable specifies which window occupy which workspace at startup.
-.IP
-Where \fIoccupy-list\fP is a list entries of the form :
-.EX
-	[Window]   win-name { wpsc1 wspc2 ... }
-or	Workspace  wspc-name {win1 win2 ... }
-.EE
-Example :
-.EX
-Occupy {
-               "xload"   {"all"}
-    Window     "xterm"   {"here" "there" "elsewhere"}
-               "xv"      {"images"}
-    WorkSpace  "images"  {"xloadimage"}
-}
-.EE
-.IP "\fBOpaqueResize\fP" 8
-Just for fun. The opaque version of resize. Extremely resource intensive,
-but beautiful with fast server/client/network.
-.IP "\fBXPMIconDirectory\fP \fIpath\fP " 8
+.IP "\fBXPMIconDirectory\fP \fIpath\fP " 4
 Ctwm handles colored, shaped icons in XPM format [from Arnaud LE HORS]. This
 variable specifies the path where ctwm looks for to find the files containing
 these icons. The Icons command had been a little modified, the two formats of
@@ -154,18 +199,41 @@ Icons
     "xterm"  "@term.xpm"
 }
 .EE
+
+
 .SH FUNCTIONS
 .PP
-All the functions of \fItwm\fP, plus 3 :
+All the functions of \fItwm\fP, plus some :
+
 .PP
-.IP "\fBf.occupy\fP" 8
+
+.IP "\fBf.gotoworkspace\fP \fBworkspace_name\fP" 4
+This function warps you to the workspace whose name is \fBworkspace_name\fP
+
+.IP "\fBf.hideworkspacemgr\fP" 4
+Unmap the WorkSpace manager.
+
+.IP "\fBf.occupy\fP" 4
 This function pops up a window for the user to choose which workspaces a window
 belongs to.
-.IP "\fBf.occupyall\fP" 8
+
+.IP "\fBf.occupyall\fP" 4
 This function makes the specified window occupy all the workspaces.
-.IP "\fBf.gotoworkspace\fP \fBworkspace_name\fP" 8
-This function warps you to the workspace whose name is \fBworkspace_name\fP
+
+.IP "\fBf.setbuttonsstate\fP" 4
+Set the WorkSpace manager in button state.
+
+.IP "\fBf.setmapstate\fP" 4
+Set the WorkSpace manager in map state.
+
+.IP "\fBf.showworkspacemgr\fP" 4
+Map the WorkSpace manager.
+
+.IP "\fBf.togglestate\fP" 4
+Toggle the state of the WorkSpace manager.
+
 .PP
+
 .SH FILES
 .PP
 .nf

@@ -95,7 +95,8 @@ extern int yylineno;
 %token <num> MOVE RESIZE WAIT SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON 
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD 
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
-%token <num> NO_STACKMODE WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY OCCUPYALL OCCUPYLIST
+%token <num> NO_STACKMODE WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
+%token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
 %token <ptr> STRING
 
 %type <ptr> string
@@ -129,13 +130,19 @@ stmt		: error
 						}
 		| WORKSPCMGR_GEOMETRY string number	{ if (Scr->FirstTime)
 						  {
-						    Scr->workSpaceMgr.geometry= $2;
-						    Scr->workSpaceMgr.columns=$3;
+						    Scr->workSpaceMgr.workspaceWindow.geometry= $2;
+						    Scr->workSpaceMgr.workspaceWindow.columns=$3;
 						  }
 						}
 		| WORKSPCMGR_GEOMETRY string	{ if (Scr->FirstTime)
-						    Scr->workSpaceMgr.geometry = $2;
+						    Scr->workSpaceMgr.workspaceWindow.geometry = $2;
 						}
+		| MAPWINDOWCURRENTWORKSPACE
+		  curwork
+
+		| MAPWINDOWDEFAULTWORKSPACE
+		  defwork
+
 		| ZOOM number		{ if (Scr->FirstTime)
 					  {
 						Scr->DoZoom = TRUE;
@@ -227,6 +234,7 @@ stmt		: error
 		  win_list
 		| AUTO_RAISE		{ list = &Scr->AutoRaise; }
 		  win_list
+		| AUTO_RAISE		{ Scr->AutoRaiseDefault = TRUE; }
 		| MENU string LP string COLON string RP	{
 					root = GetRoot($2, $4, $6); }
 		  menu			{ root->real_menu = TRUE;}
@@ -571,6 +579,34 @@ workapp_entry	: string		{
 		}
 		| string string string string string	{
 			AddWorkSpace (curWorkSpc, $1, $2, $3, $4, $5);
+		}
+		;
+
+curwork		: LB string RB {
+		    WMapCreateCurrentBackGround ($2, NULL, NULL, NULL);
+		}
+		| LB string string RB {
+		    WMapCreateCurrentBackGround ($2, $3, NULL, NULL);
+		}
+		| LB string string string RB {
+		    WMapCreateCurrentBackGround ($2, $3, $4, NULL);
+		}
+		| LB string string string string RB {
+		    WMapCreateCurrentBackGround ($2, $3, $4, $5);
+		}
+		;
+
+defwork		: LB string RB {
+		    WMapCreateDefaultBackGround ($2, NULL, NULL, NULL);
+		}
+		| LB string string RB {
+		    WMapCreateDefaultBackGround ($2, $3, NULL, NULL);
+		}
+		| LB string string string RB {
+		    WMapCreateDefaultBackGround ($2, $3, $4, NULL);
+		}
+		| LB string string string string RB {
+		    WMapCreateDefaultBackGround ($2, $3, $4, $5);
 		}
 		;
 

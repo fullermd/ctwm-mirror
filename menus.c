@@ -1425,6 +1425,30 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	HideIconManager ();
 	break;
 
+    case F_SHOWWORKMGR:
+	if (! Scr->workSpaceManagerActive) break;
+	DeIconify (Scr->workSpaceMgr.workspaceWindow.twm_win);
+	XRaiseWindow(dpy, Scr->workSpaceMgr.workspaceWindow.twm_win->frame);
+	break;
+
+    case F_HIDEWORKMGR:
+	if (! Scr->workSpaceManagerActive) break;
+	Iconify (Scr->workSpaceMgr.workspaceWindow.twm_win, eventp->xbutton.x_root - 5,
+		     eventp->xbutton.y_root - 5);
+	break;
+
+    case F_TOGGLESTATE :
+	WMapToggleState ();
+	break;
+
+    case F_SETBUTTONSTATE :
+	WMapSetButtonsState ();
+	break;
+
+    case F_SETMAPSTATE :
+	WMapSetMapState ();
+	break;
+
     case F_SORTICONMGR:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
@@ -1819,8 +1843,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		    }
 		    CurrentDragX = xl;
 		    CurrentDragY = yt;
-		    if (Scr->OpaqueMove)
+		    if (Scr->OpaqueMove) {
 			XMoveWindow(dpy, DragWindow, xl, yt);
+			WMapSetupWindow (tmp_win, xl, yt, -1, -1);
+		    }
 		    else
 			MoveOutline(eventp->xmotion.root, xl, yt, w, h,
 			    tmp_win->frame_bw, 
@@ -1859,8 +1885,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 		CurrentDragX = xl;
 		CurrentDragY = yt;
-		if (Scr->OpaqueMove)
+		if (Scr->OpaqueMove) {
 		    XMoveWindow(dpy, DragWindow, xl, yt);
+		    WMapSetupWindow (tmp_win, xl, yt, -1, -1);
+		}
 		else
 		    MoveOutline(eventp->xmotion.root, xl, yt, w, h,
 			tmp_win->frame_bw,
@@ -1924,8 +1952,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    XWindowChanges xwc;
 
 	    xwc.stack_mode = Opposite;
-	    if (w != tmp_win->icon_w)
+	    if (w != tmp_win->icon_w) {
 	      w = tmp_win->frame;
+	      WMapRaiseLower (tmp_win);
+	    }
 	    XConfigureWindow (dpy, w, CWStackMode, &xwc);
 	}
 	break;
@@ -1937,9 +1967,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	/* check to make sure raise is not from the WindowFunction */
 	if (w == tmp_win->icon_w && Context != C_ROOT) 
 	    XRaiseWindow(dpy, tmp_win->icon_w);
-	else
+	else {
 	    XRaiseWindow(dpy, tmp_win->frame);
-
+	    WMapRaise (tmp_win);
+	}
 	break;
 
     case F_LOWER:
@@ -1948,9 +1979,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	if (w == tmp_win->icon_w)
 	    XLowerWindow(dpy, tmp_win->icon_w);
-	else
+	else {
 	    XLowerWindow(dpy, tmp_win->frame);
-
+	    WMapLower (tmp_win);
+	}
 	break;
 
     case F_FOCUS:
@@ -2512,9 +2544,10 @@ TwmWindow *tmp_win;
 	      if (t->list) XUnmapWindow(dpy, t->list->icon);
 	      t->icon = FALSE;
 	      t->icon_on = FALSE;
+	      WMapDeIconify (t);
 	    }
 	}
-    
+    WMapDeIconify (tmp_win);
     XSync (dpy, 0);
 }
 
@@ -2582,6 +2615,7 @@ int def_x, def_y;
 	    if (t->list) XMapWindow(dpy, t->list->icon);
 	    t->icon = TRUE;
 	    t->icon_on = FALSE;
+	    WMapIconify (t);
 	  }
       } 
     
@@ -2611,6 +2645,7 @@ int def_x, def_y;
 	tmp_win->icon_on = TRUE;
     else
 	tmp_win->icon_on = FALSE;
+    WMapIconify (tmp_win);
     XSync (dpy, 0);
 }
 
@@ -2930,15 +2965,13 @@ void WarpToWindow (t)
 	x = t->frame_width / 2;
 	y = t->frame_height / 2;
     }
-    if (!OCCUPY (t, Scr->workSpaceMgr.activeWSPC)) {
-	ButtonList *blist;
+    if (! OCCUPY (t, Scr->workSpaceMgr.activeWSPC)) {
+	WorkSpaceList *wlist;
 
-	blist = Scr->workSpaceMgr.buttonList;
-	while (blist != NULL) {
-	    if (OCCUPY (t, blist)) break;
-	    blist = blist->next;
+	for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
+	    if (OCCUPY (t, wlist)) break;
 	}
-	if (blist != NULL) GotoWorkSpace (blist);
+	if (wlist != NULL) GotoWorkSpace (wlist);
     }
     XWarpPointer (dpy, None, t->frame, 0, 0, 0, 0, x, y);
 }

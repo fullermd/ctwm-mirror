@@ -72,6 +72,8 @@ extern int mods;
 
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
 
+int RaiseDelay = 0;			/* msec, for AutoRaise */
+
 static int twmFileInput(), twmStringListInput();
 void twmUnput();
 int (*twmInputFunc)();
@@ -317,6 +319,8 @@ typedef struct _TwmKeyword {
 #define kw0_NoRaiseOnWarp		24
 #define kw0_WarpUnmapped		25
 #define kw0_OpaqueResize		26
+#define kw0_ShowWorkspaceManager	27
+#define kw0_StartInMapState		28
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -338,6 +342,7 @@ typedef struct _TwmKeyword {
 #define kwn_BorderWidth			7
 #define kwn_IconBorderWidth		8
 #define kwn_TitleButtonBorderWidth	9
+#define kwn_RaiseDelay			10
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -350,6 +355,8 @@ typedef struct _TwmKeyword {
 #define kwcl_IconBorderColor		9
 #define kwcl_IconManagerForeground	10
 #define kwcl_IconManagerBackground	11
+#define kwcl_MapWindowBackground	12
+#define kwcl_MapWindowForeground	13
 
 #define kwc_DefaultForeground		1
 #define kwc_DefaultBackground		2
@@ -416,6 +423,7 @@ static TwmKeyword keytable[] = {
     { "f.gotoworkspace",	FSKEYWORD, F_GOTOWORKSPACE },
     { "f.hbzoom",		FKEYWORD, F_BOTTOMZOOM },
     { "f.hideiconmgr",		FKEYWORD, F_HIDELIST },
+    { "f.hideworkspacemgr",	FKEYWORD, F_HIDEWORKMGR },
     { "f.horizoom",		FKEYWORD, F_HORIZOOM },
     { "f.htzoom",		FKEYWORD, F_TOPZOOM },
     { "f.hzoom",		FKEYWORD, F_HORIZOOM },
@@ -440,10 +448,14 @@ static TwmKeyword keytable[] = {
     { "f.righticonmgr",		FKEYWORD, F_RIGHTICONMGR },
     { "f.rightzoom",		FKEYWORD, F_RIGHTZOOM },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
+    { "f.setbuttonsstate",	FKEYWORD, F_SETBUTTONSTATE },
+    { "f.setmapstate",		FKEYWORD, F_SETMAPSTATE },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
+    { "f.showworkspacemgr",	FKEYWORD, F_SHOWWORKMGR },
     { "f.sorticonmgr",		FKEYWORD, F_SORTICONMGR },
     { "f.source",		FSKEYWORD, F_BEEP },  /* XXX - don't work */
     { "f.title",		FKEYWORD, F_TITLE },
+    { "f.togglestate",		FKEYWORD, F_TOGGLESTATE },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
     { "f.twmrc",		FKEYWORD, F_RESTART },
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
@@ -488,6 +500,10 @@ static TwmKeyword keytable[] = {
     { "lock",			LOCK, 0 },
     { "m",			META, 0 },
     { "maketitle",		MAKE_TITLE, 0 },
+    { "mapwindowbackground",	CLKEYWORD, kwcl_MapWindowBackground },
+    { "mapwindowcurrentworkspace", MAPWINDOWCURRENTWORKSPACE, 0},
+    { "mapwindowdefaultworkspace", MAPWINDOWDEFAULTWORKSPACE, 0},
+    { "mapwindowforeground",	CLKEYWORD, kwcl_MapWindowForeground },
     { "maxwindowsize",		SKEYWORD, kws_MaxWindowSize },
     { "menu",			MENU, 0 },
     { "menubackground",		CKEYWORD, kwc_MenuBackground },
@@ -525,6 +541,7 @@ static TwmKeyword keytable[] = {
     { "opaqueresize",		KEYWORD, kw0_OpaqueResize },
     { "pixmaps",		PIXMAPS, 0 },
     { "r",			ROOT, 0 },
+    { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
     { "randomplacement",	KEYWORD, kw0_RandomPlacement },
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
@@ -537,10 +554,12 @@ static TwmKeyword keytable[] = {
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
+    { "showworkspacemanager",	KEYWORD, kw0_ShowWorkspaceManager },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
     { "south",			DKEYWORD, D_SOUTH },
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
+    { "startinmapstate",	KEYWORD, kw0_StartInMapState },
     { "t",			TITLE, 0 },
     { "title",			TITLE, 0 },
     { "titlebackground",	CLKEYWORD, kwcl_TitleBackground },
@@ -695,6 +714,14 @@ int do_single_keyword (keyword)
 	Scr->ShowIconManager = TRUE;
 	return 1;
 
+      case kw0_ShowWorkspaceManager:
+	Scr->ShowWorkspaceManager = TRUE;
+	return 1;
+
+      case kw0_StartInMapState:
+	Scr->workSpaceMgr.workspaceWindow.state = MAPSTATE;
+	return 1;
+
       case kw0_NoCaseSensitive:
 	Scr->CaseSensitive = FALSE;
 	return 1;
@@ -825,6 +852,10 @@ int do_number_keyword (keyword, num)
 	if (Scr->FirstTime) Scr->TBInfo.border = num;
 	return 1;
 
+      case kwn_RaiseDelay:
+	RaiseDelay = num;
+	return 1;
+
     }
 
     return 0;
@@ -879,6 +910,14 @@ name_list **do_colorlist_keyword (keyword, colormode, s)
       case kwcl_IconManagerBackground:
 	GetColor (colormode, &Scr->IconManagerC.back, s);
 	return &Scr->IconManagerBL;
+
+      case kwcl_MapWindowBackground:
+	GetColor (colormode, &Scr->workSpaceMgr.workspaceWindow.windowcp.back, s);
+	return &Scr->workSpaceMgr.workspaceWindow.windowBackgroundL;
+
+      case kwcl_MapWindowForeground:
+	GetColor (colormode, &Scr->workSpaceMgr.workspaceWindow.windowcp.fore, s);
+	return &Scr->workSpaceMgr.workspaceWindow.windowForegroundL;
     }
     return NULL;
 }
@@ -1023,6 +1062,12 @@ void assign_var_savecolor()
       break;
     case kwcl_IconManagerBackground:
       put_pixel_on_root(Scr->IconManagerC.back);
+      break;
+    case kwcl_MapWindowForeground:
+      put_pixel_on_root(Scr->workSpaceMgr.workspaceWindow.windowcp.fore);
+      break;
+    case kwcl_MapWindowBackground:
+      put_pixel_on_root(Scr->workSpaceMgr.workspaceWindow.windowcp.back);
       break;
     }
     cp = cp->next;

@@ -7,28 +7,28 @@
     1 - Correction of a few bugs
 
     2 - Add the OpaqueResize flag : similar to OpaqueMove, but redraw the window
-        you are resizing at each motion event. Extremely resource demanding, but
-        beautiful with fast server/client/network.
+	you are resizing at each motion event. Extremely resource consuming, but
+	beautiful with fast server/client/network.
 
-    3 - Now if you don't specify any background/foreground/pixmap indication
-        for the root window, ctwm leave it alone so you can have your own root
+    3 - Now if you don't specify any background/foreground/pixmap indication for
+	the  root window,  ctwm leave it  alone so you  can have  your own  root
         background pixmap.
 
-    4 - You can now specify on the command line a list of workspaces in which
-        a new client opens. The syntaxe is :
+    4 - You can now specify  on the command line a list of workspaces in which a
+        new client opens. The syntaxe is :
 
           whatever_client -xrm 'ctwm.workspace: name1 name2 ... namen'
    or     whatever_client -xrm 'ctwm.workspace: all'
 
-   where 'name1', 'name2', ..., 'namen' are names of workspaces
-    and 'all' refers to all workspaces.
+   where 'name1', 'name2', ..., 'namen' are names of workspaces and 'all' refers
+to all workspaces.
 
     example : 
 
-         xload -xrm 'ctwm.workspace : all'
+	xload -xrm 'ctwm.workspace : all'
 
-    5 - Add the OccupyAll command in .ctwmrc, you can now specify at startup
-        a list of windows that occupy all the workspaces.
+    5 - Add the  OccupyAll command in  .ctwmrc, you can now specify at startup a
+	list of windows that occupy all the workspaces.
 
     example :
 
@@ -38,8 +38,8 @@ OccupyAll {
     "xbiff"
 }
 
-    6 - Add the f.gotoworkspace function. It goes the workspace specified by
-        its name.
+    6 - Add the f.gotoworkspace function. It goes the workspace specified by its
+	name.
 
     example :
 
@@ -50,14 +50,13 @@ OccupyAll {
     -------------------------------
 
 
-    1 - you can now directly edit workspace names in their buttons.
-only printable characters, delete and backspace keys are honored.
+    1 - you  can  now  directly  edit  workspace names  in their  buttons.  only
+	printable characters, delete and backspace keys are honored.
 
-    2 - Ctwm now handle shaped colored icons in XPM format. This added
-	the variable XPMIconDirectory, and slightly modified the syntax
-	of the Icons command. The XPM icon file names should be prefixed
-	by the character '@' to distinguished them from the ordinary
-	bitmap files.
+    2 - Ctwm  now handle  shaped colored  icons in  XPM  format. This  added the
+	variable XPMIconDirectory, and slightly modified the syntax of the Icons
+	command. The XPM icon file names should be prefixed by the character '@'
+	to distinguished them from the ordinary bitmap files.
 
 Example :
 
@@ -93,7 +92,7 @@ Icons {
 
     1 - Many bugs fixed :
 
-	- Partial geometry in the WorkSpaceManagerGeometry statement no longer
+	- Partial geometry in the  WorkSpaceManagerGeometry  statement no longer
 	  cause ctwm to core dump.
 
 	- The occupy window name now is "Occupy Window" instead of "Occupy WIndow"
@@ -101,8 +100,8 @@ Icons {
 
 	- Several types problems that make good compilers to issue warnings.
 
-	- The icons of the WorkSpaceManager and Occupy Window windows now 
-	  behave correctly with ButtonPress.
+	- The  icons of the WorkSpaceManager and Occupy Window windows now behave
+	  correctly with ButtonPress.
 
 	- UnknownIcon can now have Xpm icons specified.
 
@@ -124,5 +123,77 @@ Occupy {
 }
 
 
+    Changes from version 1.3 to 2.0
+    -------------------------------
+
+    1 - A few bugs fixed :
+
+	- Resize at window creation with button2 works.
+
+	- Some others i don't remember.
+
+    2 - Better  support of  monochrome  displays  :  video inverse instead of 3d
+	buttons.
+
+    3 - WorkSpaceManager  and  Occupy Window are now resizable.  Don't forget to
+	verify you have a powerful server before resizing the  workspace manager
+	with OpaqueResize set.
+
+    4 - X11R4 support with Imakefile.X11R4 (i didn't try so tell me).
+
+    5 - The  visibility  of the workspace  manager  is now  consistant  with the
+	visibility of the icon managers. This mean that by default the workspace
+	manager is  *NOT*  visible at startup.  Use the  ShowWorkSpaceManager to
+	make it visible at startup.
+
+    6 - Two new functions :  f.showworkspacemgr and f.hideworkspacemgr have been
+	added. They do what you imagine.
+
+    7 - And now, the cherry on the cake. The workspace manager has now 2 states,
+	the button state (the usual one) and the map state (the new one). In the
+	map state  the buttons  are replaced  by windows displaying  a synthetic
+	view of the  corresponding workspaces.  All the non-iconified windows of
+	the workspace are shown as small windows with the  icon name  written in
+	it.  It looks like  the virtual screen of  [t]vtwm, but, of course, much
+	nicer.
+
+	In this state, you can modify directly the occupation of your windows by
+	manipulating these little windows.
+
+	   - Button1 move a window from a workspace to another.
+	   - Button2 copy a window from a workspace to another.
+	   - Button3 remove a window from a workspace.
+
+	Clicking in the  "root" of these windows warps you  to the corresponding
+	workspace.  Clicking and releasing Button1 or Button2 quickly in a small
+	window  go to the corresponding  workspace and warps  the pointer to the
+	corresponding window.
+
+	The Control-Key  (Press and Release)  in workspace  manager toggles  the
+	buttons and map state.
+
+	Four variables and Three functions manipulates this :
+
+	    - StartInMapState : The map state is selected at startup, default is
+	      buttons state.
+
+	    - MapWindowCurrentWorkSpace : The aspect of the current workspace in
+	      the map window.
+
+	    - MapWindowDefaultWorkSpace :  Specify the aspect of the non-current
+	      workspaces in the map window.
+
+	    - MapWindowBackground :
+	    - MapWindowForeground :  Specify the aspect of the small  windows in
+	      the map window on a per-client basis.
+
+	    - f.setbuttonsstate : You can guess.
+
+	    - f.setmapstate : You can guess.
+
+	    - f.togglestate : You can guess.
 
 
+    8 - AutoRaise with RaiseDelay. Thanks to Johan Vromans (jv@mh.nl) who gave me
+	this patch.  I think  Warren Jessop  (whj@cs.washington.edu) wrote it for
+	twm.

@@ -92,6 +92,11 @@ extern void TwmOutput();
 #define F_HIDELIST		45
 #define F_OCCUPY		46
 #define F_OCCUPYALL		47
+#define F_SHOWWORKMGR		48
+#define F_HIDEWORKMGR		49
+#define F_SETBUTTONSTATE	50
+#define F_SETMAPSTATE		51
+#define F_TOGGLESTATE		52
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */

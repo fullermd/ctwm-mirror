@@ -141,7 +141,7 @@ Bool fromtitlebar;
     unsigned int junkbw, junkDepth;
 
     ResizeWindow = tmp_win->frame;
-    if (! Scr->OpaqueResize) XGrabServer(dpy);
+    if (! Scr->OpaqueResize || resizeWhenAdd) XGrabServer(dpy);
     XGrabPointer(dpy, Scr->Root, True,
         ButtonPressMask | ButtonReleaseMask |
 	ButtonMotionMask | PointerMotionHintMask,
@@ -172,7 +172,7 @@ Bool fromtitlebar;
     last_height = 0;
     DisplaySize(tmp_win, origWidth, origHeight);
 
-    if (! Scr->OpaqueResize)
+    if (! Scr->OpaqueResize || resizeWhenAdd)
         MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
 		 dragy - tmp_win->frame_bw, dragWidth + 2 * tmp_win->frame_bw,
 		 dragHeight + 2 * tmp_win->frame_bw,
@@ -479,7 +479,7 @@ TwmWindow *tmp_win;
             dragx = origx + origWidth - dragWidth;
         if (clampTop)
             dragy = origy + origHeight - dragHeight;
-	if (Scr->OpaqueResize)
+	if (Scr->OpaqueResize && ! resizeWhenAdd)
 	    SetupWindow (tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
 		 dragWidth, dragHeight, -1);
 	else
@@ -935,6 +935,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (HasShape && reShape) {
 	SetFrameShape (tmp_win);
     }
+    WMapSetupWindow (tmp_win, x, y, w, h - tmp_win->title_height);
 
     if (sendEvent)
     {

@@ -40,6 +40,7 @@
 #define _ADD_WINDOW_
 
 extern char NoName[];
+extern int  resizeWhenAdd;
 
 extern TwmWindow *AddWindow();
 extern int MappedNotOverride();

@@ -149,7 +149,8 @@ typedef struct ScreenInfo
     Cursor SelectCursor;	/* dot cursor for f.move, etc. from menus */
     Cursor DestroyCursor;		/* skull and cross bones, f.destroy */
 
-    WorkMgr   workSpaceMgr;	/* C.L. */
+    WorkSpaceMgr   workSpaceMgr;	/* C.L. */
+    int	      workSpaceManagerActive;
     name_list *OccupyAll;	/* list of window names occupying all workspaces at startup */
 
     name_list *BorderColorL;
@@ -212,6 +213,7 @@ typedef struct ScreenInfo
     int TitlePadding;		/* distance between items in titlebar */
     int ButtonIndent;		/* amount to shrink buttons on each side */
     int NumAutoRaises;		/* number of autoraise windows on screen */
+    short AutoRaiseDefault;	/* AutoRaise all windows if true */
     short NoDefaults;		/* do not add in default UI stuff */
     short UsePPosition;		/* what do with PPosition, see values below */
     short AutoRelativeResize;	/* start resize relative to position in quad */
@@ -230,6 +232,7 @@ typedef struct ScreenInfo
     short DecorateTransients;	/* put title bars on transients */
     short IconifyByUnmapping;	/* simply unmap windows when iconifying */
     short ShowIconManager;	/* display the window list */
+    short ShowWorkspaceManager;	/* display the workspace manager */
     short IconManagerDontShow;	/* show nothing in the icon manager */
     short BackingStore;		/* use backing store for menus */
     short SaveUnder;		/* use save under's for menus */
