@@ -1,6 +1,6 @@
 #
 # $XConsortium: system.twmrc,v 1.8 91/04/23 21:10:58 gildea Exp $
-# 
+#
 # Default twm configuration file; needs to be kept small to conserve string
 # space in systems whose compilers don't handle medium-sized strings.
 #
@@ -13,12 +13,12 @@
 NoGrabServer
 RestartPreviousState
 DecorateTransients
-TitleFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
-ResizeFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
-MenuFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
-IconFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
-IconManagerFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*"
-ShowWorkSpaceManager			# start with workspcace manager up
+TitleFont	"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+ResizeFont	"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuFont	"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+IconFont	"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconManagerFont	"-adobe-helvetica-bold-r-normal--*-100-*-*-*"
+ShowWorkSpaceManager			# start with workspace manager up
 UseThreeDMenus
 UseThreeDTitles
 UseThreeDIconManagers
@@ -26,7 +26,7 @@ UseThreeDBorders
 UseThreeDWMap
 SunkFocusWindowTitle
 
-workspacemanagergeometry        "360x60+60-0" 4
+WorkSpaceManagerGeometry        "360x60+60-0" 4
 WorkSpaces {
     "One"   {"#686B9F" "white" "DeepSkyBlue3" "white" "xpm:background8.xpm"}
     "Two"   {"#619AAE" "white" "firebrick" "white" "plaid"}
@@ -95,7 +95,7 @@ Function "move-or-iconify" { f.move f.deltastop f.iconify }
 # Set some useful bindings.  Sort of uwm-ish, sort of simple-button-ish
 #
 Button1 =	: root		: f.menu "defops"
-Button2 =       : root		: f.menu "windowops"
+Button2 =	: root		: f.menu "windowops"
 
 Button1 = m	: window|icon	: f.function "move-or-lower"
 Button2 = m	: window|icon	: f.iconify
@@ -110,9 +110,9 @@ Button2 =	: icon		: f.iconify
 Button1 =	: iconmgr	: f.iconify
 Button2 =	: iconmgr	: f.iconify
 
-Button1 =       : frame         : f.resize
-Button1 = m     : frame         : f.move
-Button2 =       : frame         : f.raiselower
+Button1 =	: frame		: f.resize
+Button1 = m	: frame		: f.move
+Button2 =	: frame		: f.raiselower
 #
 # And a menus with the usual things
 #
