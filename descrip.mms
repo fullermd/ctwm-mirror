@@ -22,7 +22,7 @@ GOAL=
 
 #------------------------- End of customization -----------------------------
 
-MORE_CFLAGS = /DEBUG/DEFINE=(VMS,XPM,C_ALLOCA,""emacs"",BLOCK_INPUT,EXIT_ENDSESSION=$(EXIT_ENDSESSION)''extra_defs')
+MORE_CFLAGS = /DEBUG/DEFINE=(VMS,XPM,X11R6,C_ALLOCA,""emacs"",BLOCK_INPUT,EXIT_ENDSESSION=$(EXIT_ENDSESSION)''extra_defs')
 
 LD = link
 #LDFLAGS = /DEBUG
