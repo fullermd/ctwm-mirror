@@ -1,0 +1,156 @@
+.de EX		\"Begin example
+.ne 5
+.if n .sp 1
+.if t .sp .5
+.nf
+.in +.5i
+..
+.de EE
+.fi
+.in -.5i
+.if n .sp 1
+.if t .sp .5
+..
+.ta .3i .6i .9i 1.2i 1.5i 1.8i
+.TH CTWM 1 "Release 5" "X Version 11"
+.SH NAME
+ctwm - Claude's twm for the X Window System
+.SH SYNTAX
+.PP
+\fBctwm \fP[-display \fIdpy\fP] [-s] [-f \fIinitfile\fP] [-v]
+.PP
+.SH DESCRIPTION
+.PP
+\fICtwm\fP is a window manager for the X Window System. It is actually
+twm (Tab Window Manager) from the MIT X11 distribution slightly modified
+to accomodate the use of several virtual screens (workspaces). It is 
+heavily inspired from the Hewlett-Packard vuewm window manager.
+.PP
+.PP
+.SH OPTIONS
+\fICtwm\fP accepts all the \fITwm\fP command line options.
+.PP
+.SH CUSTOMIZATION
+.PP
+Same as \fItwm\fP, except for the user customization is read from :
+.TP 8
+.B "/usr/lib/X11/twm/system.ctwmrc"
+.PP
+   or
+.PP 
+.B "$HOME/.ctwmrc.\fIscreennumber\fP"
+.PP
+   or
+.PP 
+.B "$HOME/.ctwmrc"
+.PP
+   or if nothing of these exists :
+.PP 
+.B "$HOME/.twmrc"
+.PP
+.SH VARIABLES
+.PP
+All the variables of \fItwm\fP, plus 4 :
+.PP
+.IP "\fBWorkManagerGeometry\fP \fIstring\fP [ \fIcolumns\fP ]" 8
+This variable specifies the geometry of the workspace manager window. The 
+\fIstring\fP argument is standard geometry specification that indicates 
+the initial full size of the workspace manager. The \fIcolumns\fP argument
+indicates the number of columns to use for the workspace manager window.
+.EE
+workspacemanagergeometry        "360x60+60-0" 4
+
+.IP "\fBWorkSpaces\fP { \fIworkspace-list\fP }" 16
+.PP
+This variable specifies a list of workspace that are created at startup.
+.PP
+Where \fIworkspace-list\fP is :
+.PP
+name [{bg-button [fg-button] [bg-root] [fg-root] [bitmap-root]}]
+.PP
+With :
+.TP 12
+.PP
+\fBbg-button\fP   : background color of the corresponding button in the workspace manager.
+.TP 12
+.PP
+\fBfg-button\fP   : foreground color of the corresponding button in the workspace manager.
+.TP 12
+.PP
+\fBbg-root\fP     : background color of the corresponding root screen.
+.TP 12
+.PP
+\fBfg-root\fP     : fackground color of the corresponding root screen.
+.TP 12
+.PP
+\fBbitmap-root\fP : bitmap to display on the corresponding root screen.
+.PP
+Example :
+.PP
+WorkSpaces
+{
+    "One"   {"#686B9F" "white" "DeepSkyBlue3" "white" "xlogo16"}
+    "Two"   {"#619AAE" "white" "firebrick"}
+    "Three" {"#727786" "white" "brown"}
+    "Four"  {"#8C5b7A" "white" "MidnightBlue"}
+
+    "Five"  {"#727786" "white" "DeepSkyBlue3" "white" "plaid"}
+    "Six"   {"#619AAE" "white" "DeepSkyBlue3" "white" "letters"}
+    "Seven" {"#8C5b7A" "white" "chartreuse4"}
+    "Eight" {"#686B9F" "white" "MidnightBlue"}
+}
+.PP
+The maximum number of workspaces is 32.
+.PP
+.IP "\fBOccupyAll\fP { window-list }" 16
+.PP
+This variable specifies a list of windows that will occupy all workspaces at startup.
+.PP
+Where \fIworkspace-list\fP is a list of window names.
+.PP
+Example :
+.PP
+OccupyAll
+{
+    "xload"
+    "xbiff"
+    "xconsole"
+}
+.PP
+.IP "\fBOpaqueResize\fP
+.PP
+Just for fun. The opaque version of resize. Extremely resource demanding,
+but beautiful with fast server/client/network.
+.PP
+.SH FUNCTIONS
+.PP
+All the functions of \fItwm\fP, plus 3 :
+.PP
+.IP "\fBf.occupy\fP" 8
+This function pops up a window for the user to choose which workspaces a window
+belongs to.
+.IP "\fBf.occupyall\fP" 8
+This function makes the specified window to occupy all the workspaces.
+.IP "\fBf.gotoworkspace\fP \fBworkspace_name\fP" 8
+This function warps you to the workspace whose name is \fBworkspace_name\fP
+.PP
+.SH FILES
+.PP
+.nf
+ $HOME/.ctwmrc.<screen number>
+ $HOME/.ctwmrc
+ /usr/lib/X11/twm/system.ctwmrc
+ $HOME/.twmrc
+
+.SH "SEE ALSO"
+.PP
+X(1), Xserver(1), xdm(1), xrdb(1) twm (1)
+.SH COPYRIGHT
+Portions copyright 1988 Evans & Sutherland Computer Corporation; portions
+copyright 1989 Hewlett-Packard Company and the Massachusetts Institute of
+Technology,  See \fIX(1)\fP for a full statement of rights and permissions.
+.SH AUTHORS
+Tom LaStrange, Solbourne Computer; Jim Fulton, MIT X Consortium;
+Steve Pitschke, Stardent Computer; Keith Packard, MIT X Consortium;
+Dave Sternlicht, MIT X Consortium; Dave Payne, Apple Computer.
+Claude Lecommandeur, Swiss Polytechnical Institute of Lausanne (lecom@sic.epfl.ch).

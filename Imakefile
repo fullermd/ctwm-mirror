@@ -1,0 +1,54 @@
+XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
+XCOMM
+XCOMM Here is an Imakefile for twm.  It depends on having TWMDIR defined
+XCOMM in Imake.tmpl.  I like to use Imakefiles for everything, and I am sure
+XCOMM other people do also, so perhaps you could do us all a favor and
+XCOMM distribute this one.
+XCOMM
+
+         YFLAGS = -d
+        DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
+LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
+       LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
+        DEFINES = $(SIGNAL_DEFINES)
+
+           SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
+		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
+		cursor.c icons.c workmgr.c
+
+           OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
+		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
+		cursor.o icons.o workmgr.o
+
+AllTarget(ctwm)
+
+SpecialObjectRule(parse.o,NullParameter,'-DSYSTEM_INIT_FILE="'$(TWMDIR)'/system.ctwmrc"')
+#if !HasPutenv
+SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
+#endif
+
+depend:: lex.c gram.c deftwmrc.c 
+
+ComplexProgramTarget(ctwm)
+InstallNonExecFile(system.twmrc,$(TWMDIR))
+
+gram.h gram.c: gram.y
+	yacc $(YFLAGS) gram.y
+	$(MV) y.tab.c gram.c
+	$(MV) y.tab.h gram.h
+
+clean::
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c 
+
+deftwmrc.c:  system.twmrc
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically from the default' >>$@
+	echo ' * twm bindings file system.twmrc by the twm Imakefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *defTwmrc[] = {' >>$@
+	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' \
+		system.twmrc >>$@
+	echo '    (char *) 0 };' >>$@
+

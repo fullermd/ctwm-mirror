@@ -1,0 +1,31 @@
+
+                                   CTWM
+                                   ----
+
+
+    CTWM is not yet another window manager for X/Window, it is just a
+little variation of twm.
+
+    It adds the hability to use and manage up to 32 virtual screens. You
+shift from one to another by clicking on a button in a panel.
+    You can custom each screens by choosing different colors and bitmaps
+for the buttons and background root windows.
+
+    The sources files are just the twm ones plus two : workmgr.[ch]
+workmgr.[ch] were built from scratch, but the twm ones are slightly modified.
+I tried to minimize the modifications, and it is even possible (but not
+sure) that certain future twm patches could be applied to ctwm sources
+files. But don't count on this.
+
+    I certainly introduced many bugs (Oh! so many) with these modifications.
+So, be tolerant.
+
+    If you are happy with ctwm, or find severe bugs, send me a note to :
+
+            lecom@sic.epfl.ch
+
+
+    Installation :
+
+funny prompt> xmkmf
+funny prompt> make

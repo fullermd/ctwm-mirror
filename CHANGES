@@ -1,0 +1,50 @@
+
+
+    Changes from version 1.0 to 1.1
+
+
+    1 - Correction of a few bugs
+
+    2 - Add the OpaqueResize flag : similar to OpaqueMove, but redraw the window
+        you are resizing at each motion event. Extremely resource demanding, but
+        beautiful with fast server/client/network.
+
+    3 - Now if you don't specify any background/foreground/pixmap indication
+        for the root window, ctwm leave it alone so you can have your own root
+        background pixmap.
+
+    4 - You can now specify on the command line a list of workspaces in which
+        a new client opens. The syntaxe is :
+
+          whatever_client -xrm 'ctwm.workspace: name1 name2 ... namen'
+   or     whatever_client -xrm 'ctwm.workspace: all'
+
+   where 'name1', 'name2', ..., 'namen' are names of workspaces
+    and 'all' refers to all workspaces.
+
+    example : 
+
+         xload -xrm 'ctwm.workspace : all'
+
+    5 - Add the OccupyAll command in .ctwmrc, you can now specify at startup
+        a list of windows that occupy all the workspaces.
+
+    example :
+
+OccupyAll {
+    "xload"
+    "xconsole"
+    "xbiff"
+}
+
+    6 - Add the f.gotoworkspace function. It goes the workspace specified by
+        its name.
+
+    example :
+
+"F1"      =    : root           : f.gotoworkspace "cognac"
+
+
+
+
+
