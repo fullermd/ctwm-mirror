@@ -164,6 +164,10 @@ extern int set_sound_host();
  ***********************************************************************
  */
 
+#ifdef YYDEBUG
+int yydebug = 1;
+#endif
+
 static int doparse (ifunc, srctypename, srcname)
     int (*ifunc)();
     char *srctypename;
