@@ -144,7 +144,7 @@ int GoThroughM4 = True;
 #endif
 Window ResizeWindow;		/* the window we are resizing */
 
-int cfgchk        = 0;
+int  cfgchk       = 0;
 int  captive      = FALSE;
 char *captivename = NULL;
 
