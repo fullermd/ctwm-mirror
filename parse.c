@@ -459,6 +459,18 @@ static int twmFileInput()
 static int m4twmFileInput()
 {
     int line;
+    extern char *keepM4_filename;
+    static FILE *cp = NULL;
+
+    if ( cp == NULL && keepM4_filename ) {
+      cp = fopen (keepM4_filename,"w"); 
+      if ( cp == NULL ) {
+	fprintf (stderr,
+		 "%s:  unable to create m4 output %s, ignoring\n",
+		 ProgramName, keepM4_filename);
+	keepM4_filename = NULL;
+      }
+    }
 
     if (overflowlen){
 	return((int) overflowbuff[--overflowlen]);
@@ -466,7 +478,11 @@ static int m4twmFileInput()
 
     while (ptr == len) {
 	nextline:
-	if (fgets(buff, BUF_LEN, twmrc) == NULL) return(0);
+	if (fgets(buff, BUF_LEN, twmrc) == NULL) {
+	  if ( cp ) fclose (cp);
+	  return(0);
+	}
+	if ( cp ) fputs (buff, cp);
 
 	if (sscanf(buff, "#line %d", &line)) {
 	    twmrc_lineno = line - 1;
@@ -614,6 +630,7 @@ typedef struct _TwmKeyword {
 #define kw0_AutoFocusToTransients       60 /* kai */
 #define kw0_PackNewWindows		61
 #define kw0_IgnoreCaseInMenuSelection	62
+#define kw0_SloppyFocus                 63
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -780,6 +797,7 @@ static TwmKeyword keytable[] = {
     { "f.exec",			FSKEYWORD, F_EXEC },
     { "f.file",			FSKEYWORD, F_FILE },
     { "f.fill",			FSKEYWORD, F_FILL },
+    { "f.fittocontent",		FKEYWORD, F_FITTOCONTENT },
     { "f.focus",		FKEYWORD, F_FOCUS },
     { "f.forcemove",		FKEYWORD, F_FORCEMOVE },
     { "f.forwiconmgr",		FKEYWORD, F_FORWICONMGR },
@@ -898,6 +916,7 @@ static TwmKeyword keytable[] = {
     { "iconmanagers",		ICONMGRS, 0 },
     { "iconmanagershadowdepth",	NKEYWORD, kwn_IconManagerShadowDepth },
     { "iconmanagershow",	ICONMGR_SHOW, 0 },
+    { "iconmenudontshow",	ICONMENU_DONTSHOW, 0 },
     { "iconmgr",		ICONMGR, 0 },
     { "iconregion",		ICON_REGION, 0 },
     { "iconregionalignement",	SKEYWORD, kws_IconRegionAlignement },
@@ -905,6 +924,7 @@ static TwmKeyword keytable[] = {
     { "icons",			ICONS, 0 },
     { "ignorecaseinmenuselection",	KEYWORD, kw0_IgnoreCaseInMenuSelection },
     { "ignorelockmodifier",	KEYWORD, kw0_IgnoreLockModifier },
+    { "ignoremodifier",		IGNOREMODIFIER, 0 },
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
     { "l",			LOCK, 0 },
     { "left",			JKEYWORD, J_LEFT },
@@ -989,6 +1009,7 @@ static TwmKeyword keytable[] = {
     { "shortallwindowsmenus",	KEYWORD, kw0_ShortAllWindowsMenus },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
     { "showworkspacemanager",	KEYWORD, kw0_ShowWorkspaceManager },
+    { "sloppyfocus",            KEYWORD, kw0_SloppyFocus },
     { "smarticonify",		KEYWORD, kw0_SmartIconify },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
 #ifdef SOUNDS
@@ -1033,7 +1054,9 @@ static TwmKeyword keytable[] = {
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
     { "west",			DKEYWORD, D_WEST },
     { "window",			WINDOW, 0 },
+    { "windowbox",		WINDOW_BOX, 0 },
     { "windowfunction",		WINDOW_FUNCTION, 0 },
+    { "windowgeometries",	WINDOW_GEOMETRIES, 0 },
     { "windowregion",		WINDOW_REGION, 0 },
     { "windowring",		WINDOW_RING, 0 },
     { "windowringexclude",      WINDOW_RING_EXCLUDE, 0},
@@ -1323,6 +1346,10 @@ int do_single_keyword (keyword)
 
       case kw0_IgnoreCaseInMenuSelection:
 	Scr->IgnoreCaseInMenuSelection = TRUE;
+	return 1;
+
+      case kw0_SloppyFocus:
+	Scr->SloppyFocus = TRUE;
 	return 1;
 
     }

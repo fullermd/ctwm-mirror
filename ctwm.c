@@ -139,6 +139,7 @@ Display *dpy;			/* which display are we talking to */
 #ifdef USEM4
 char *display_name = NULL;      /* JMO 2/13/90 for m4 */
 int KeepTmpFile = False;        /* JMO 3/28/90 for m4 */
+char *keepM4_filename = NULL;	/* Keep M4 output here */
 int GoThroughM4 = True;
 #endif
 Window ResizeWindow;		/* the window we are resizing */
@@ -264,8 +265,8 @@ main(argc, argv, environ)
     int  screenmasked;
     static int rootx = 100;
     static int rooty = 100;
-    static unsigned int rootw = 800;
-    static unsigned int rooth = 500;
+    static unsigned int rootw = 1024;
+    static unsigned int rooth = 768;
     Window capwin = (Window) 0;
     IconRegion *ir;
 
@@ -355,11 +356,13 @@ main(argc, argv, environ)
 	      case 'k':				/* -keep m4 tmp file */
 		KeepTmpFile = True;
 		continue;
+	      case 'K':				/* -keep m4 output */
+		if (++i >= argc) goto usage;
+		keepM4_filename = argv[i];
+		continue;
 #endif
 	      case 'n':				/* -don't preprocess through m4 */
-#ifdef USEM4
 		if (!strcmp(argv[i],"-name")) {
-#endif
 		    if (++i >= argc) goto usage;
 		    captivename = argv[i];
 		    continue;
@@ -383,7 +386,7 @@ main(argc, argv, environ)
       usage:
 	fprintf (stderr, "usage: %s [-display dpy] [-version] [-info]", ProgramName);
 #ifdef USEM4
-	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-n] [-name name]\n");
+	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-K file] [-n] [-name name]\n");
 #else
 	fprintf (stderr, " [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-name name] \n");
 #endif
@@ -594,6 +597,7 @@ main(argc, argv, environ)
 	Scr->ImageCache = NULL;
 	Scr->HighlightPixmapName = NULL;
 	Scr->Workspaces = (MenuRoot*) 0;
+	Scr->IconMenuDontShow = NULL;
 
 
 	/* remember to put an initialization in InitVariables also
@@ -780,6 +784,7 @@ main(argc, argv, environ)
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
 	MakeWorkspacesMenu ();
+	createWindowBoxes ();
 
 	XQueryTree(dpy, Scr->Root, &root, &parent, &children, &nchildren);
 	/*
@@ -954,6 +959,8 @@ InitVariables()
     FreeList(&Scr->DontSetInactive);
     FreeList(&Scr->AutoSqueeze);
     FreeList(&Scr->StartSqueezed);
+    FreeList(&Scr->IconMenuDontShow);
+
 
     NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
     NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
@@ -1022,6 +1029,7 @@ InitVariables()
     Scr->StayUpMenus = FALSE;
     Scr->WarpToDefaultMenuEntry = FALSE;
     Scr->ClickToFocus = FALSE;
+    Scr->SloppyFocus = FALSE;
     Scr->NoIconTitlebar = FALSE;
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;
@@ -1105,6 +1113,7 @@ InitVariables()
     Scr->RaiseOnClick = False;
     Scr->RaiseOnClickButton = 1;
     Scr->IgnoreLockModifier = False;
+    Scr->IgnoreModifier = 0;
     Scr->IgnoreCaseInMenuSelection = False;
     Scr->PackNewWindows = False;
 
@@ -1207,6 +1216,12 @@ RestoreWithdrawnLocation (tmp)
 	if (bw != tmp->old_bw) {
 	    xwc.border_width = tmp->old_bw;
 	    mask |= CWBorderWidth;
+	}
+
+	if (tmp->winbox && tmp->winbox->twmwin) {
+	  GetGravityOffsets (tmp->winbox->twmwin, &gravx, &gravy);
+	  xwc.x -= gravx * tmp->winbox->twmwin->frame_bw3D;
+	  xwc.y -= gravy * tmp->winbox->twmwin->frame_bw3D;
 	}
 
 	XConfigureWindow (dpy, tmp->w, mask, &xwc);

@@ -294,6 +294,15 @@ typedef struct WindowEntry {
     short 		used;
 } WindowEntry;
 
+typedef struct _WindowBox {
+    struct _WindowBox	*next;
+    char		*name;
+    char		*geometry;
+    name_list           *winlist;
+    Window		window;
+    struct TwmWindow	*twmwin;
+} WindowBox;
+
 /* for each window that is on the display, one of these structures
  * is allocated and linked into a list 
  */
@@ -393,6 +402,8 @@ typedef struct TwmWindow
     Image *HiliteImage;                /* focus highlight window background */
     Image *LoliteImage;                /* focus lowlight window background */
     WindowRegion *wr;
+    WindowBox *winbox;
+    Bool iswinbox;
     struct {
 	int x, y;
 	int width, height;
@@ -447,6 +458,7 @@ typedef struct TWMWinConfigEntry
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
 
+#define TBPM_3DCROSS ":xpm:cross"
 #define TBPM_3DICONIFY ":xpm:iconify"
 #define TBPM_3DSUNKEN_RESIZE ":xpm:sunkresize"
 #define TBPM_3DBOX ":xpm:box"

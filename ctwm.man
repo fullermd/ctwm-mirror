@@ -12,12 +12,12 @@
 .if t .sp .5
 ..
 .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH CTWM 1 "Version 3.5.2"
+.TH CTWM 1 "Version 3.6"
 .SH NAME
 ctwm - Tab Window Manager for the X Window System
 .SH SYNTAX
 .PP
-\fIctwm \fP[-display \fIdpy\fP] [-s] [-f \fIinitfile\fP] [-v] [-n] [-k] [-w [win-id]]
+\fIctwm \fP[-display \fIdpy\fP] [-s] [-f \fIinitfile\fP] [-v] [-n] [-k] [-K m4file] [-w [win-id]]
 .PP
 .SH DESCRIPTION
 .PP
@@ -108,9 +108,14 @@ This option indicates that \fIctwm\fP should not filter the startup file
 through m4. Available only if \fIctwm\fP is compiled with the USEM4 flag.
 .TP 8
 .B \-k
+This option indicates that \fIctwm\fP should keep the definitions it
+prepends to your startup file when filtering through m4 in /tmp.
+Available only if \fIctwm\fP is compiled with the USEM4 flag.
+
+.B \-K \fIm4file\fP
 This option indicates that \fIctwm\fP should keep the result of filtering
-your startup file through m4 in /tmp. Available only if \fIctwm\fP is compiled
-with the USEM4 flag.
+your startup file through m4 in the named file.
+Available only if \fIctwm\fP is compiled with the USEM4 flag.
 
 .TP 8
 .B \-version
@@ -779,6 +784,9 @@ This variable specifies a list of windows that should appear in the icon
 manager.  When used in conjunction with the \fBIconManagerDontShow\fP
 variable, only the windows in this list will be shown in the icon manager.
 
+.IP "\fBIconMenuDontShow\fP { \fIwin-list\fP }" 8
+Don't show the name of these windows in the TwmIcons menu.
+
 .IP "\fBIconRegion\fP \fIgeomstring\fP \fIvgrav hgrav gridwidth gridheight\fP [\fIiconjust\fP]" 8
 [\fIiconregjust\fP] [\fIiconregalign\fP] [{ \fIwin-list\fP }]
 .IP "" 8
@@ -837,6 +845,15 @@ the case of this first letter.
 .IP "\fBIgnoreLockModifier\fP" 8
 If present, all bindings (buttons and keys) will ignore the LockMask. Useful if you
 often use caps lock, and don't want to define twice all your bindings.
+
+.IP "\fBIgnoreModifier\fP" 8
+All bindings (buttons and keys) will ignore the modifiers
+you specified. It is useful when you use caps locks or 
+num locks. You don't need IgnoreLockModifier any more with this option.
+
+.EX 0
+IgnoreModifier { lock m2 }
+.EE
 
 .IP "\fBInterpolateMenuColors\fP" 8
 This variable indicates that menu entry colors should be interpolated between
@@ -1204,6 +1221,9 @@ This variable indicates that the icon manager window should be displayed when
 .IP "\fBShowWorkSpaceManager\fP" 8
 This variable specifies that the WorkSpaceManager should be visible.
 
+.IP "\fBSloppyFocus\fP" 8
+Use sloppy focus.
+
 .IP "\fBSortIconManager\fP" 8
 This variable indicates that entries in the icon manager should be 
 sorted alphabetically rather than by simply appending new windows to 
@@ -1379,6 +1399,26 @@ Tells \fIctwm\fP to use 3D for the small windows in the workspace map.
 This variable indicates that the pointer should be warped into windows when
 they are deiconified.  If the optional \fIwin-list\fP is given, the pointer
 will only be warped when those windows are deiconified.
+
+.IP "\fBWindowBox\fP [{ \fIwin-list\fP }]" 8
+creates a new window called a box, where
+all the client windows that match the windows list are opened in,
+instead of the roor window. This is useful to group small windows
+in the same box (xload for instance)
+.EX
+WindowBox "xloadbox" "320x100+0-0" {
+    "xload"
+}
+.EE
+
+.IP "\fBWindowGeometries\fP [{ \fIwin-list\fP }]" 8
+Used to give a default geometry to some clients :
+.EX
+WindowGeometries {
+    "Mozilla*"       "1000x800+10+10"
+    "jpilot*"        "800x600-0-0"
+}
+.EE
 
 .IP "\fBWindowRing\fP [{ \fIwin-list\fP }]" 8
 This variable specifies a list of windows along which the \fBf.warpring\fP 
@@ -1781,6 +1821,10 @@ name.
 Where string is either : "right", "left", "top" or "bottom".
 The current window is resized in the specified direction until it
 reaches an obstacle (either another window, or the screen border).
+
+.IP "\fBf.fittocontent\fI" 8
+Can be used only with window boxes. The result is to have the box have the
+minimal size that contains all its children windows.
 
 .IP "\fBf.focus\fP" 8
 This function toggles the keyboard focus of the server to the

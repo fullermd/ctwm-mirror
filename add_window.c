@@ -84,6 +84,7 @@
 #include <X11/Xatom.h>
 #endif
 #include "add_window.h"
+#include "windowbox.h"
 #include "util.h"
 #include "resize.h"
 #include "parse.h"
@@ -180,6 +181,11 @@ GetGravityOffsets (tmp, xp, yp)
  *  Inputs:
  *	w	- the window id of the window to add
  *	iconm	- flag to tell if this is an icon manager window
+ *		0 --> normal window.
+ *		1 --> icon manager.
+ *		2 --> window box;
+ *		else --> iconmgr;
+ *
  *	iconp	- pointer to icon manager struct
  *
  ***********************************************************************
@@ -227,6 +233,8 @@ IconMgr *iconp;
     XRectangle ink_rect;
     XRectangle logical_rect;
 #endif
+    WindowBox *winbox;
+    int iswinbox;
 
 #ifdef DEBUG
     fprintf(stderr, "AddWindow: w = 0x%x\n", w);
@@ -242,10 +250,17 @@ IconMgr *iconp;
 		 ProgramName, w);
 	return NULL;
     }
+    switch (iconm) {
+	case  0 : iswinbox = 0; break;
+	case  1 : iswinbox = 0; break;
+	case  2 : iswinbox = 1; iconm = 0; break;
+	default : iswinbox = 0; iconm = 1; break;
+    }
     tmp_win->w = w;
     tmp_win->zoomed = ZOOM_NONE;
     tmp_win->iconmgr = iconm;
     tmp_win->iconmgrp = iconp;
+    tmp_win->iswinbox = iswinbox;
     tmp_win->cmaps.number_cwins = 0;
     tmp_win->savegeometry.width = -1;
 
@@ -565,7 +580,21 @@ IconMgr *iconp;
     tmp_win->frame_height = tmp_win->attr.height + 2 * tmp_win->frame_bw3D +
 			    tmp_win->title_height;
     ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
+    winbox = findWindowBox (tmp_win);
     if (PlaceWindowInRegion (tmp_win, &(tmp_win->attr.x), &(tmp_win->attr.y))) {
+	ask_user = False;
+    }
+    if (LookInList (Scr->WindowGeometries, tmp_win->full_name, &tmp_win->class)) {
+        char *geom;
+	int mask;
+	geom = LookInList (Scr->WindowGeometries, tmp_win->full_name, &tmp_win->class);
+	mask= XParseGeometry (geom, &tmp_win->attr.x, &tmp_win->attr.y,
+			      (unsigned int*) &tmp_win->attr.width,
+			      (unsigned int*) &tmp_win->attr.height);
+
+	if (mask & XNegative) tmp_win->attr.x += Scr->MyDisplayWidth  - tmp_win->attr.width;
+	if (mask & YNegative) tmp_win->attr.y += Scr->MyDisplayHeight - tmp_win->attr.height;
+        random_placed = True;
 	ask_user = False;
     }
     /*
@@ -640,11 +669,11 @@ IconMgr *iconp;
 		/* 
 		 * this will cause a warp to the indicated root
 		 */
-		stat = XGrabPointer(dpy, Scr->Root, False,
+		stat = XGrabPointer(dpy, winbox ? winbox->window : Scr->Root, False,
 		    ButtonPressMask | ButtonReleaseMask |
 		    PointerMotionMask | PointerMotionHintMask,
 		    GrabModeAsync, GrabModeAsync,
-		    Scr->Root, UpperLeftCursor, CurrentTime);
+		    winbox ? winbox->window : Scr->Root, UpperLeftCursor, CurrentTime);
 
 		if (stat == GrabSuccess)
 		    break;
@@ -686,11 +715,17 @@ IconMgr *iconp;
 			      tmp_win->name, namelen);
 #endif	    
 
+	    if (winbox) {
+		XTranslateCoordinates (dpy, Scr->Root, winbox->window,
+			AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
+		ConstrainedToWinBox (tmp_win, AddingX, AddingY, &AddingX, &AddingY);
+	    }
+
 	    AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
 	    AddingH = tmp_win->attr.height + tmp_win->title_height +
 				bw2 + 2 * tmp_win->frame_bw3D;
-
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+		MoveOutline(winbox ? winbox->window : Scr->Root,
+			AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
 #ifdef I18N
@@ -741,14 +776,17 @@ IconMgr *iconp;
 		  AddingX = event.xbutton.x_root;
 		  AddingY = event.xbutton.y_root;
 
+		  if (winbox) {
+		    XTranslateCoordinates (dpy, Scr->Root, winbox->window,
+		    AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
+		  }
 		  TryToGrid (tmp_win, &AddingX, &AddingY);
 		  if (Scr->PackNewWindows) TryToPack (tmp_win, &AddingX, &AddingY);
 
 		  /* DontMoveOff prohibits user form off-screen placement */
 		  if (Scr->DontMoveOff)	
                   {
-                      ConstrainByBorders (&AddingX, AddingW,
-                                          &AddingY, AddingH);
+                      ConstrainByBorders (tmp_win, &AddingX, AddingW, &AddingY, AddingH);
                   }
 		  break;
 		}
@@ -760,14 +798,18 @@ IconMgr *iconp;
 		XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
 		    &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
 
+		if (winbox) {
+		    XTranslateCoordinates (dpy, Scr->Root, winbox->window,
+			AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
+		}
 		TryToGrid (tmp_win, &AddingX, &AddingY);
 		if (Scr->PackNewWindows) TryToPack (tmp_win, &AddingX, &AddingY);
 		if (Scr->DontMoveOff)
 		{
-		    ConstrainByBorders (&AddingX, AddingW,
-                                        &AddingY, AddingH);
+		    ConstrainByBorders (tmp_win, &AddingX, AddingW, &AddingY, AddingH);
 		}
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+		MoveOutline(winbox ? winbox->window : Scr->Root,
+			AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
 		DisplayPosition (tmp_win, AddingX, AddingY);
@@ -857,6 +899,10 @@ IconMgr *iconp;
 		     */
 		    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
 			&JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
+		    if (winbox) {
+			XTranslateCoordinates (dpy, Scr->Root, winbox->window,
+			    AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
+		    }
 
 		    if (lastx != AddingX || lasty != AddingY)
 		    {
@@ -893,7 +939,7 @@ IconMgr *iconp;
 		XMaskEvent(dpy, ButtonReleaseMask, &event);
 	    }
 	  }
-	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+	    MoveOutline(winbox ? winbox->window : Scr->Root, 0, 0, 0, 0, 0, 0);
 	    XUnmapWindow(dpy, Scr->SizeWindow);
 	    UninstallRootColormap();
 	    XUngrabPointer(dpy, CurrentTime);
@@ -910,6 +956,11 @@ IconMgr *iconp;
     } else {				/* put it where asked, mod title bar */
 	/* if the gravity is towards the top, move it by the title height */
 	if (gravy < 0) tmp_win->attr.y -= gravy * tmp_win->title_height;
+	if (winbox) {
+	  XTranslateCoordinates (dpy, Scr->Root, winbox->window,
+                       tmp_win->attr.x,  tmp_win->attr.y,
+		      &tmp_win->attr.x, &tmp_win->attr.y, &JunkChild);
+	}
     }
 
 #ifdef DEBUG
@@ -1037,7 +1088,7 @@ IconMgr *iconp;
 
     ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
     if (random_placed)
-        ConstrainByBorders (&tmp_win->frame_x, tmp_win->frame_width,
+        ConstrainByBorders (tmp_win, &tmp_win->frame_x, tmp_win->frame_width,
                             &tmp_win->frame_y, tmp_win->frame_height);
 
     valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask | CWBackPixel;
@@ -1058,7 +1109,7 @@ IconMgr *iconp;
 	valuemask |= CWWinGravity;
     }
 
-    tmp_win->frame = XCreateWindow (dpy, Scr->Root, tmp_win->frame_x,
+    tmp_win->frame = XCreateWindow (dpy, winbox ? winbox->window : Scr->Root, tmp_win->frame_x,
 				    tmp_win->frame_y, 
 				    (unsigned int) tmp_win->frame_width,
 				    (unsigned int) tmp_win->frame_height,
@@ -1307,46 +1358,47 @@ AddDefaultBindings ()
  */
 
 #define AltMask (Alt1Mask | Alt2Mask | Alt3Mask | Alt4Mask | Alt5Mask)
+#define grabbutton(button, modifier, window, pointer_mode) \
+	XGrabButton (dpy, button, modifier, window,  \
+		True, ButtonPressMask | ButtonReleaseMask, \
+		pointer_mode, GrabModeAsync, None,  \
+		Scr->FrameCursor);
 
 void
 GrabButtons(tmp_win)
 TwmWindow *tmp_win;
 {
     FuncButton *tmp;
+    int i;
+    unsigned int ModifierMask[8] = { ShiftMask, ControlMask, LockMask,
+				     Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask,
+				     Mod5Mask };
 
     for (tmp = Scr->FuncButtonRoot.next; tmp != NULL; tmp = tmp->next) {
 	if ((tmp->cont != C_WINDOW) || (tmp->func == 0)) continue;
-	XGrabButton (dpy, tmp->num, tmp->mods, tmp_win->frame, 
-		    True, ButtonPressMask | ButtonReleaseMask,
-		    GrabModeAsync, GrabModeAsync, None, 
-		    Scr->FrameCursor);
+	grabbutton (tmp->num, tmp->mods, tmp_win->frame, GrabModeAsync);
 	    
 	if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask)) {
-	    XGrabButton (dpy, tmp->num, tmp->mods | LockMask, tmp_win->frame, 
-		    True, ButtonPressMask | ButtonReleaseMask,
-		    GrabModeAsync, GrabModeAsync, None, 
-		    Scr->FrameCursor);
+	    grabbutton (tmp->num, tmp->mods | LockMask, tmp_win->frame, GrabModeAsync);
+	}
+	for (i = 0 ; i < 8 ; i++) {
+	    if ((Scr->IgnoreModifier & ModifierMask [i]) && !(tmp->mods & ModifierMask [i]))
+		grabbutton (tmp->num, tmp->mods | ModifierMask [i],
+			  tmp_win->frame, GrabModeAsync);
 	}
     }
     if (Scr->ClickToFocus) {
-	XGrabButton (dpy, AnyButton, None, tmp_win->w, 
-		    True, ButtonPressMask | ButtonReleaseMask,
-		    GrabModeSync, GrabModeAsync, None, 
-		    Scr->FrameCursor);
-	XGrabButton (dpy, AnyButton, LockMask, tmp_win->w, 
-		    True, ButtonPressMask | ButtonReleaseMask,
-		    GrabModeSync, GrabModeAsync, None, 
-		    Scr->FrameCursor);
+	grabbutton (AnyButton, None, tmp_win->w, GrabModeSync);
+	for (i = 0 ; i < 8 ; i++) {
+	    grabbutton (AnyButton, ModifierMask [i], tmp_win->w, GrabModeSync);
+	}
     } else
     if (Scr->RaiseOnClick) {
-	XGrabButton (dpy, Scr->RaiseOnClickButton, None, tmp_win->w, 
-		    True, ButtonPressMask | ButtonReleaseMask,
-		    GrabModeSync, GrabModeAsync, None, 
-		    Scr->FrameCursor);
-	XGrabButton (dpy, Scr->RaiseOnClickButton, LockMask, tmp_win->w, 
-		    True, ButtonPressMask | ButtonReleaseMask,
-		    GrabModeSync, GrabModeAsync, None, 
-		    Scr->FrameCursor);
+	grabbutton (Scr->RaiseOnClickButton, None, tmp_win->w, GrabModeSync);
+	for (i = 0 ; i < 8 ; i++) {
+	    grabbutton (Scr->RaiseOnClickButton,
+			ModifierMask [i], tmp_win->w, GrabModeSync);
+	}
     }
 }
 
@@ -1362,6 +1414,11 @@ TwmWindow *tmp_win;
  */
 
 #define MAX_KEYCODE 256
+#define grabkey(funckey, modifier, window) \
+	XGrabKey(dpy, funckey->keycode, funckey->mods | modifier, window, True, \
+		GrabModeAsync, GrabModeAsync);
+#define ungrabkey(funckey, modifier, window) \
+	XUngrabKey (dpy, funckey->keycode, funckey->mods | modifier, window);
 
 void
 GrabKeys(tmp_win)
@@ -1369,6 +1426,10 @@ TwmWindow *tmp_win;
 {
     FuncKey *tmp;
     IconMgr *p;
+    int i;
+    unsigned int ModifierMask[8] = { ShiftMask, ControlMask, LockMask,
+				     Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask,
+				     Mod5Mask };
 
     for (tmp = Scr->FuncKeyRoot.next; tmp != NULL; tmp = tmp->next)
     {
@@ -1376,50 +1437,69 @@ TwmWindow *tmp_win;
 	{
 	case C_WINDOW:
 	    if (tmp->mods & AltMask) break;
-	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
-		GrabModeAsync, GrabModeAsync);
-	    if (!Scr->IgnoreLockModifier || (tmp->mods & LockMask)) break;
-	    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->w, True,
-		GrabModeAsync, GrabModeAsync);
+	    grabkey (tmp, 0, tmp_win->w);
+	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
+	        grabkey (tmp, LockMask, tmp_win->w);
+	    for (i = 0 ; i < 8 ; i++) {
+		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
+		    !(tmp->mods & ModifierMask [i]))
+		  grabkey (tmp, ModifierMask [i], tmp_win->w);
+	    }
 	    break;
 
 	case C_ICON:
 	    if (!tmp_win->icon || tmp_win->icon->w) break;
-	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
-		    GrabModeAsync, GrabModeAsync);
-	    if (!Scr->IgnoreLockModifier || (tmp->mods & LockMask)) break;
-	    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->icon->w, True,
-		    GrabModeAsync, GrabModeAsync);
+	    grabkey (tmp, 0, tmp_win->icon->w);
+	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
+		grabkey (tmp, LockMask, tmp_win->icon->w);
+	    for (i = 0 ; i < 8 ; i++) {
+		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
+		    !(tmp->mods & ModifierMask [i]))
+		    grabkey (tmp, ModifierMask [i], tmp_win->icon->w);
+	    }
 	    break;
 
 	case C_TITLE:
 	    if (!tmp_win->title_w) break;
-	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
-		    GrabModeAsync, GrabModeAsync);
-	    if (!Scr->IgnoreLockModifier || (tmp->mods & LockMask)) break;
-	    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->title_w, True,
-		    GrabModeAsync, GrabModeAsync);
+	    grabkey (tmp, 0, tmp_win->title_w);
+	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
+		grabkey (tmp, LockMask, tmp_win->title_w);
+	    for (i = 0 ; i < 8 ; i++) {
+		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
+		    !(tmp->mods & ModifierMask [i]))
+		    grabkey (tmp, ModifierMask [i], tmp_win->title_w);
+	    }
 	    break;
 
 	case C_NAME:
-	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
-		GrabModeAsync, GrabModeAsync);
-	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->w, True,
-			GrabModeAsync, GrabModeAsync);
+	    grabkey (tmp, 0, tmp_win->w);
+	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask)) {
+		grabkey (tmp, LockMask, tmp_win->w);
+	    }
+	    for (i = 0 ; i < 8 ; i++) {
+		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
+		    !(tmp->mods & ModifierMask [i]))
+		    grabkey (tmp, ModifierMask [i], tmp_win->w);
+	    }
 	    if (tmp_win->icon && tmp_win->icon->w) {
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
-		    GrabModeAsync, GrabModeAsync);
+		grabkey (tmp, 0, tmp_win->icon->w);
 		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->icon->w,
-			True, GrabModeAsync, GrabModeAsync);
+		    grabkey (tmp, LockMask, tmp_win->icon->w);
+		for (i = 0 ; i < 8 ; i++) {
+		    if ((Scr->IgnoreModifier & ModifierMask [i]) &&
+			!(tmp->mods & ModifierMask [i]))
+			grabkey (tmp, ModifierMask [i], tmp_win->icon->w);
+		}
 	    }
 	    if (tmp_win->title_w) {
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
-		    GrabModeAsync, GrabModeAsync);
+		grabkey (tmp, 0, tmp_win->title_w);
 		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		    XGrabKey(dpy, tmp->keycode, tmp->mods | LockMask, tmp_win->title_w,
-			True, GrabModeAsync, GrabModeAsync);
+		    grabkey (tmp, LockMask, tmp_win->title_w);
+		for (i = 0 ; i < 8 ; i++) {
+		    if ((Scr->IgnoreModifier & ModifierMask [i]) &&
+			!(tmp->mods & ModifierMask [i]))
+			grabkey (tmp, ModifierMask [i], tmp_win->title_w);
+		}
 	    }
 	    break;
 	/*
@@ -1434,11 +1514,15 @@ TwmWindow *tmp_win;
     {
 	if (tmp->cont == C_ICONMGR && !Scr->NoIconManagers)
 	{
-	    for (p = Scr->iconmgr; p != NULL; p = p->next)
-	    {
-		XUngrabKey(dpy, tmp->keycode, tmp->mods, p->twm_win->w);
+	    for (p = Scr->iconmgr; p != NULL; p = p->next) {
+		ungrabkey (tmp, 0, p->twm_win->w);
 		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		    XUngrabKey(dpy, tmp->keycode, tmp->mods | LockMask, p->twm_win->w);
+		    ungrabkey (tmp, LockMask, p->twm_win->w);
+		for (i = 0 ; i < 8 ; i++) {
+		    if ((Scr->IgnoreModifier & ModifierMask [i]) &&
+			!(tmp->mods & ModifierMask [i]))
+			ungrabkey (tmp, ModifierMask [i], p->twm_win->w);
+		}
 	    }
 	}
     }

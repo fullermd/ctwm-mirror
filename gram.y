@@ -70,6 +70,7 @@
 #include "twm.h"
 #include "menus.h"
 #include "icons.h"
+#include "windowbox.h"
 #include "add_window.h"
 #include "list.h"
 #include "util.h"
@@ -140,7 +141,8 @@ extern yylex();
 %token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
 %token <num> UNMAPBYMOVINGFARAWAY OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
 %token <num> DONTSETINACTIVE CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
-%token <num> AUTOSQUEEZE STARTSQUEEZED DONT_SAVE AUTO_LOWER
+%token <num> AUTOSQUEEZE STARTSQUEEZED DONT_SAVE AUTO_LOWER ICONMENU_DONTSHOW WINDOW_BOX
+%token <num> IGNOREMODIFIER WINDOW_GEOMETRIES
 %token <ptr> STRING
 
 %type <ptr> string
@@ -192,6 +194,11 @@ stmt		: error
 
 		| WINDOW_REGION string DKEYWORD DKEYWORD {
 		      list = AddWindowRegion ($2, $3, $4);
+		  }
+		  win_list
+
+		| WINDOW_BOX string string {
+		      list = addWindowBox ($2, $3);
 		  }
 		  win_list
 
@@ -284,7 +291,10 @@ stmt		: error
 		  win_list
 		| WORKSPACES {}
 		  workspc_list
+		| IGNOREMODIFIER {} LB keys  { Scr->IgnoreModifier = mods; mods = 0; } RB
 		| OCCUPYALL		{ list = &Scr->OccupyAll; }
+		  win_list
+		| ICONMENU_DONTSHOW	{ list = &Scr->IconMenuDontShow; }
 		  win_list
 		| OCCUPYLIST {}
 		  occupy_list
@@ -414,6 +424,9 @@ stmt		: error
 		                              Scr->WindowRingAll = TRUE;
 		                          list = &Scr->WindowRingExcludeL; }
                   win_list
+
+		| WINDOW_GEOMETRIES 	 {  }
+		  wingeom_list
 
 noarg		: KEYWORD		{ if (!do_single_keyword ($1)) {
 					    twmrc_error_prefix();
@@ -662,6 +675,17 @@ win_color_entry	: string string		{ if (Scr->FirstTime &&
 					      color == Scr->Monochrome)
 					    AddToList(list, $1, $2); }
 		;
+
+wingeom_list	: LB wingeom_entries RB {}
+		;
+
+wingeom_entries	: /* Empty */
+		| wingeom_entries wingeom_entry
+		;
+
+wingeom_entry	: string string	{ AddToList (&Scr->WindowGeometries, $1, $2) }
+
+
 
 squeeze		: SQUEEZE_TITLE { 
 				    if (HasShape) Scr->SqueezeTitle = TRUE;

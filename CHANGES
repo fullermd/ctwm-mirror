@@ -1067,8 +1067,8 @@ TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
 	I am getting old(er), I prefer a bare desktop.
 
 
-    Changes from version 3.5.2 to 3.5.3
-    -----------------------------------
+    Changes from version 3.5.2 to 3.6
+    ---------------------------------
 
     1 - Fix line numbers for errors when using m4 preprocessor. Send thanks
 	to Josh Wilmes <josh@hitchhiker.org>.
@@ -1089,3 +1089,43 @@ TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
 	nonnegative integer as argument) you can declare a border "off limits" for
 	f.move etc.. These borders act the same way as the real borders of the
 	screen when moving windows; you can use f.forcemove to override them. 
+
+    5 - Sloppy Focus added with keyword "SloppyFocus" in configuration file
+	(DINH V. Hoa <dinh@enserb.fr>).
+
+    6 - the keyword "ClickToFocus" has been correctly implemented
+	(DINH V. Hoa <dinh@enserb.fr>).
+
+    7 - the keyword "IgnoreModifier" has been added,
+	to use this feature, you have to add a line
+	"IgnoreModifier { lock m2 }" in the configuration file.
+	All bindings (buttons and keys) will ignore the modifiers
+	you specified. It is useful when you use caps locks or 
+	num locks. You don't need IgnoreLockModifier any more with this option.
+	(DINH V. Hoa <dinh@enserb.fr>).
+
+    8 - New keyword : WindowBox : creates a new window called a box, where
+        all the client windows that match the windows list are opened in,
+	instead of the roor window. This is useful to group small windows
+	in the same box (xload for instance) :
+
+WindowBox "xloadbox" "320x100+0-0" {
+    "xload"
+}
+
+    9 - New function : f.fittocontent. Can be used only with window boxes.
+	The result is to have the box have the minimal size that contains
+	all its children windows.
+
+   10 - New keyword : WindowGeometries. Used to give a default geometry to some
+	clients :
+
+WindowGeometries {
+    "Mozilla*"       "1000x800+10+10"
+    "jpilot*"        "800x600-0-0"
+}
+
+   11 - New keyword : IconMenuDontShow. Don't show the name of these windows
+	in the TwmIcons menu.
+
+    And, as usual, a few bug fixes here and there.

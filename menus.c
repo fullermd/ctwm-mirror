@@ -112,10 +112,10 @@
 #include <X11/SM/SMlib.h>
 #endif
 
-#if defined(MACH) || defined(sony_news) || defined(NeXT)
+#if defined(MACH) || defined(__MACH__) || defined(sony_news) || defined(NeXT)
 #define lrand48 random
 #endif
-#ifdef VMS
+#if defined(VMS) || defined(__DARWIN__)
 #define lrand48 rand
 #endif
 
@@ -533,27 +533,25 @@ int exposure;
     if (mi->func != F_TITLE) {
 	int x, y;
 
+	gc = Scr->NormalGC;
 	if (mi->state) {
 	    Draw3DBorder (mr->w, Scr->MenuShadowDepth, y_offset,
 			mr->width - 2 * Scr->MenuShadowDepth, Scr->EntryHeight, 1, 
 			mi->highlight, off, True, False);
 #ifdef I18N
 	    FB(mi->highlight.fore, mi->highlight.back);
-	    XmbDrawImageString(dpy, mr->w, Scr->MenuFont.font_set,
-			       Scr->NormalGC,
-			       mi->x + Scr->MenuShadowDepth,
-			       text_y, mi->item, mi->strlen);
+	    XmbDrawImageString(dpy, mr->w, Scr->MenuFont.font_set, gc,
+		mi->x + Scr->MenuShadowDepth, text_y, mi->item, mi->strlen);
 #else	    
 	    FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
-	    XDrawImageString(dpy, mr->w, Scr->NormalGC,
+	    XDrawImageString(dpy, mr->w, gc,
 		mi->x + Scr->MenuShadowDepth, text_y, mi->item, mi->strlen);
-#endif	    
-	    gc = Scr->NormalGC;
+#endif
 	}
 	else {
 	    if (mi->user_colors || !exposure) {
-		XSetForeground (dpy, Scr->NormalGC, mi->normal.back);
-		XFillRectangle (dpy, mr->w, Scr->NormalGC,
+		XSetForeground (dpy, gc, mi->normal.back);
+		XFillRectangle (dpy, mr->w, gc,
 			Scr->MenuShadowDepth, y_offset,
 			mr->width - 2 * Scr->MenuShadowDepth, Scr->EntryHeight);
 #ifdef I18N
@@ -561,7 +559,6 @@ int exposure;
 #else		
 		FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
 #endif		
-		gc = Scr->NormalGC;
 	    }
 	    else {
 		gc = Scr->MenuGC;
@@ -1423,7 +1420,10 @@ Bool PopUpMenu (menu, x, y, center)
     int xl, yt;
     int (*compar)() = (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
     Bool clipped;
-
+#ifdef CLAUDE
+    char tmpname3 [256], tmpname4 [256];
+    int hasmoz = 0;
+#endif
     if (!menu) return False;
 
     InstallRootColormap();
@@ -1486,6 +1486,9 @@ Bool PopUpMenu (menu, x, y, center)
             tmp_win != NULL;
             tmp_win = tmp_win->next)
         {
+	    char *tmpname1, *tmpname2;
+	    if (LookInList (Scr->IconMenuDontShow, tmp_win->full_name, &tmp_win->class)) continue;
+
 	    if (tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) continue;
 	    if (Scr->ShortAllWindowsMenus &&
 		tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) continue;
@@ -1494,10 +1497,41 @@ Bool PopUpMenu (menu, x, y, center)
 	    if (!all && ! OCCUPY (tmp_win, wlist)) continue;
 	    if (icons && !tmp_win->isicon) continue;
             tmp_win2 = tmp_win;
-            for (i=0;i<WindowNameCount;i++)
-            {
-                if ((*compar)(tmp_win2->name,WindowNames[i]->name) < 0)
-                {
+
+            for (i=0;i<WindowNameCount;i++) {
+		tmpname1 = tmp_win2->name;
+		tmpname2 = WindowNames[i]->name;
+#ifdef CLAUDE
+		char *moz;
+
+		if (strlen (tmpname1) == 1) tmpname1 = " No title";
+		if (strlen (tmpname2) == 1) tmpname2 = " No title";
+
+		if (strncmp (tmpname1, "Netscape: ", 10) == 0) tmpname1 += 9;
+		if (strncmp (tmpname2, "Netscape: ", 10) == 0) tmpname2 += 9;
+
+       		if (moz = strstr (tmpname1, " - Mozilla")) *moz = '\0';
+		if (moz = strstr (tmpname2, " - Mozilla")) *moz = '\0';
+
+       		if (moz = strstr (tmpname1, " - Konqueror")) *moz = '\0';
+		if (moz = strstr (tmpname2, " - Konqueror")) *moz = '\0';
+
+                if (!strncasecmp (tmp_win2->class.res_class, "mozilla", 7)) {
+		  tmpname3 [0] = ' '; tmpname3 [1] = '\0';
+		  strcat (tmpname3, tmpname1);
+		} else {
+		  strcpy (tmpname3, tmpname1);
+		}
+                if (!strncasecmp (WindowNames[i]->class.res_class, "mozilla", 7)) {
+		  tmpname4 [0] = ' '; tmpname4 [1] = '\0';
+		  strcat (tmpname4, tmpname2);
+		} else {
+		  strcpy (tmpname4, tmpname2);
+		}
+                if ((*compar)(tmpname3,tmpname4) < 0) {
+#else
+                if ((*compar)(tmpname1,tmpname2) < 0) {
+#endif
                     tmp_win3 = tmp_win2;
                     tmp_win2 = WindowNames[i];
                     WindowNames[i] = tmp_win3;
@@ -1509,15 +1543,23 @@ Bool PopUpMenu (menu, x, y, center)
 	func = (all || CurrentSelectedWorkspace) ? F_WINWARP : F_POPUP;
         for (i=0; i<WindowNameCount; i++)
         {
-	    char *name;
-	    name = WindowNames[i]->name;
+	    char *tmpname;
+	    tmpname = WindowNames[i]->name;
 #ifdef CLAUDE
-	    if ((strlen (name) > 11) &&
-		(strncmp (name, "Netscape: ", 10) == 0)) {
-		name += 10;
-	    }    
+	    if (!strncasecmp (WindowNames[i]->class.res_class, "mozilla", 7) ||
+		!strncasecmp (WindowNames[i]->class.res_class, "netscape", 8) ||
+		!strncasecmp (WindowNames[i]->class.res_class, "konqueror", 9)) {
+	      hasmoz = 1;
+	    }
+	    if (hasmoz && strncasecmp (WindowNames[i]->class.res_class, "mozilla", 7) &&
+		          strncasecmp (WindowNames[i]->class.res_class, "netscape", 9) &&
+		          strncasecmp (WindowNames[i]->class.res_class, "konqueror", 9)) {
+	      menu->last->separated = 1;
+	      hasmoz = 0;
+	    }
+	    if (strncmp (tmpname, "Netscape: ", 10) == 0) tmpname += 9;
 #endif
-            AddToMenu(menu, name, (char *)WindowNames[i],
+            AddToMenu(menu, tmpname, (char *)WindowNames[i],
                       NULL, func,NULL,NULL);
         }
         free(WindowNames);
@@ -2059,6 +2101,15 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     case F_MOVEMENU:
 	break;
 
+    case F_FITTOCONTENT :
+	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+	if (!tmp_win->iswinbox) {
+	    XBell (dpy, 0);
+	    break;
+	}
+	fittocontent (tmp_win);
+	break;
+
     case F_VANISH:
 	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
 
@@ -2408,6 +2459,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	Cursor	cursor;
 	CaptiveCTWM cctwm0, cctwm;
 
+	if (DeferExecution(context, func, Scr->MoveCursor)) return TRUE;
+
+	if (tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win ||
+	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win || tmp_win->iswinbox) {
+	    XBell (dpy, 0);
+	    break;
+	}
 	cctwm0 = GetCaptiveCTWMUnderPointer ();
 	cursor = MakeStringCursor (cctwm0.name);
 	free (cctwm0.name);
@@ -2480,6 +2538,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	else
 	    Scr->OpaqueMove = FALSE;
 
+	if (tmp_win->winbox) {
+	    XTranslateCoordinates (dpy, Scr->Root, tmp_win->winbox->window,
+		eventp->xbutton.x_root, eventp->xbutton.y_root,
+		&(eventp->xbutton.x_root), &(eventp->xbutton.y_root), &JunkChild);
+	}
 	rootw = eventp->xbutton.root;
 	MoveFunction = func;
 
@@ -2504,7 +2567,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    ButtonPressMask | ButtonReleaseMask |
 	    ButtonMotionMask | PointerMotionMask, /* PointerMotionHintMask */
 	    GrabModeAsync, GrabModeAsync,
-	    Scr->Root, Scr->MoveCursor, CurrentTime);
+	    tmp_win->winbox ? tmp_win->winbox->window : Scr->Root,
+		Scr->MoveCursor, CurrentTime);
 
 	if (context == C_ICON && tmp_win->icon && tmp_win->icon->w)
 	{
@@ -2703,7 +2767,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		&JunkX, &JunkY, &JunkMask);
 
 	    if (captive) FixRootEvent (eventp);
-
+	    if (tmp_win->winbox) {
+		XTranslateCoordinates (dpy, Scr->Root, tmp_win->winbox->window,
+		    eventp->xmotion.x_root, eventp->xmotion.y_root,
+		    &(eventp->xmotion.x_root), &(eventp->xmotion.y_root), &JunkChild);
+	    }
 	    if (DragWindow == None &&
 		abs(eventp->xmotion.x_root - origX) < Scr->MoveDelta &&
 	        abs(eventp->xmotion.y_root - origY) < Scr->MoveDelta)
@@ -2762,12 +2830,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 		    if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		    {
-                        ConstrainByBorders (&xl, w, &yt, h);
+                        ConstrainByBorders (tmp_win, &xl, w, &yt, h);
 		    }
 		    CurrentDragX = xl;
 		    CurrentDragY = yt;
 		    if (Scr->OpaqueMove) {
 			if (MoveFunction == F_MOVEPUSH && !moving_icon)
+
 			    SetupWindow (tmp_win, xl, yt,
 				tmp_win->frame_width, tmp_win->frame_height, -1);
 			else 
@@ -2805,7 +2874,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 		if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		{
-                    ConstrainByBorders (&xl, w, &yt, h);
+                    ConstrainByBorders (tmp_win, &xl, w, &yt, h);
 		}
 
 		CurrentDragX = xl;
@@ -2953,7 +3022,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	if (tmp_win->iconmgr ||
 	    tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win ||
-	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
+	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win || tmp_win->iswinbox) {
 	    XBell(dpy, 0);
 	    break;
 	}
@@ -2976,7 +3045,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    break;
 	}
 	if (tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win ||
-	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
+	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win || tmp_win->iswinbox) {
 	    XBell (dpy, 0);
 	    break;
 	}
@@ -3002,7 +3071,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    break;
 	}
 	if (tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win ||
-	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
+	    tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win || tmp_win->iswinbox) {
 	    XBell (dpy, 0);
 	    break;
 	}
@@ -3557,7 +3626,10 @@ Execute(s)
 	if (captive) {
 	    name = (char*) malloc (21 + strlen (captivename) + 1);
 	    sprintf (name, "-xrm 'ctwm.redirect:%s'", captivename);
-	} else name = "";
+	} else {
+	    name = (char*) malloc (1);
+	    *name = '\0';
+	}
 	len = strlen (s) - strlen ("$redirect") + strlen (name);
 	news = (char*) malloc (len + 1);
 	*subs = '\0';
@@ -4545,7 +4617,7 @@ XEvent *eventp;
         	newY = ev.xbutton.y_root - YW;
 		if (Scr->DontMoveOff)
                 {
-                    ConstrainByBorders (&newX, ActiveMenu->width,
+                    ConstrainByBorders1 (&newX, ActiveMenu->width,
                                         &newY, ActiveMenu->height);
 		}
 		XMoveWindow (dpy, ActiveMenu->w, newX, newY);
@@ -4921,6 +4993,7 @@ int *x, *y;
     newy = *y;
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 	if (t == tmp_win) continue;
+	if (t->winbox != tmp_win->winbox) continue;
 	if (!OCCUPY (t, Scr->workSpaceMgr.activeWSPC)) continue;
 	if (!t->mapped) continue;
 
@@ -4965,6 +5038,7 @@ int x, y, dir;
 
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 	if (t == tmp_win) continue;
+	if (t->winbox != tmp_win->winbox) continue;
 	if (!OCCUPY (t, Scr->workSpaceMgr.activeWSPC)) continue;
 	if (!t->mapped) continue;
 
@@ -5010,7 +5084,8 @@ int x, y, dir;
 	if (move) {
 	    TryToPush (t, newx, newy, ndir);
 	    TryToPack (t, &newx, &newy);
-            ConstrainByBorders (&newx, t->frame_width  + 2 * t->frame_bw,
+            ConstrainByBorders (tmp_win,
+				&newx, t->frame_width  + 2 * t->frame_bw,
                                 &newy, t->frame_height + 2 * t->frame_bw);
 	    SetupWindow (t, newx, newy, t->frame_width, t->frame_height, -1);
 	}

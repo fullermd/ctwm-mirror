@@ -171,6 +171,7 @@ static Image  *Create3DZoomImage ();
 static Image  *Create3DBarImage ();
 static Image  *Create3DVertBarImage ();
 static Image  *Create3DResizeAnimation ();
+static Image  *Create3DCrossImage ();
 static Image  *Create3DIconifyImage ();
 static Image  *Create3DSunkenResizeImage ();
 static Image  *Create3DBoxImage ();
@@ -1528,9 +1529,8 @@ ColorPair *cp;
 void GetFont(font)
 MyFont *font;
 {
-    char *deffontname = "fixed";
-
 #ifdef I18N
+    char *deffontname = "fixed,*";
     char **missing_charset_list_return;
     int missing_charset_count_return;
     char *def_string_return;
@@ -1542,12 +1542,16 @@ MyFont *font;
     int descent;
     XFontStruct *xf;
     int fnum;
-    
+    char *basename2;
+
     if (font->font_set != NULL){
 	XFreeFontSet(dpy, font->font_set);
     }
 
-    if( (font->font_set = XCreateFontSet(dpy, font->basename,
+    basename2 = (char *)malloc(strlen(font->basename) + 3);
+    if (basename2) sprintf(basename2, "%s,*", font->basename);
+    else basename2 = font->basename;
+    if( (font->font_set = XCreateFontSet(dpy, basename2,
 				    &missing_charset_list_return,
 				    &missing_charset_count_return,
 				    &def_string_return)) == NULL) {
@@ -1564,6 +1568,7 @@ MyFont *font;
 	    exit(1);
 	}
     }
+    if (basename2 != font->basename) free(basename2);
     font_extents = XExtentsOfFontSet(font->font_set);
 
     fnum = XFontsOfFontSet(font->font_set, &xfonts, &font_names);
@@ -1578,6 +1583,8 @@ MyFont *font;
     font->ascent = ascent;
     font->descent = descent;
 #else
+    char *deffontname = "fixed";
+
     if (font->font != NULL){
 	XFreeFont(dpy, font->font);
     }
@@ -1626,6 +1633,7 @@ Bool focus;
 	    }
 	}
     }
+
     if (focus) {
 	hil = False;
 	if (tmp_win->lolite_wl) XUnmapWindow (dpy, tmp_win->lolite_wl);
@@ -1663,6 +1671,19 @@ Bool focus;
     tmp_win->hasfocusvisible = focus;
 }
 
+static void move_to_head (t)
+TwmWindow *t;
+{
+    if (t == NULL) return;
+    if (t->prev) t->prev->next = t->next;
+    if (t->next) t->next->prev = t->prev;
+
+    t->next = Scr->TwmRoot.next;
+    if (Scr->TwmRoot.next != NULL) Scr->TwmRoot.next->prev = t;
+    t->prev = &Scr->TwmRoot;
+    Scr->TwmRoot.next = t;
+}
+ 
 /*
  * SetFocus - separate routine to set focus to make things more understandable
  * and easier to debug
@@ -1672,6 +1693,10 @@ void SetFocus (tmp_win, time)
     Time	time;
 {
     Window w = (tmp_win ? tmp_win->w : PointerRoot);
+    int f_iconmgr = 0;
+
+    if (Scr->Focus && (Scr->Focus->iconmgr)) f_iconmgr = 1;
+    if (Scr->SloppyFocus && (w == PointerRoot) && (!f_iconmgr)) return;
 
     XSetInputFocus (dpy, w, RevertToPointerRoot, time);
     if (Scr->Focus == tmp_win) return;
@@ -1689,6 +1714,7 @@ void SetFocus (tmp_win, time)
 	SetFocusVisualAttributes (tmp_win, True);
     }
     Scr->Focus = tmp_win;
+    move_to_head (tmp_win);
 }
 
 #
@@ -1871,6 +1897,41 @@ static Pixmap CreateDotPixmap (widthp, heightp)
 	XFreeGC (dpy, gc);
     }
     return Scr->tbpm.delete;
+}
+
+static Image *Create3DCrossImage (cp)
+ColorPair cp;
+{
+    Image *image;
+    int     h;
+    int point;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+    point = 5;
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    if (! image) return (None);
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    if (image->pixmap == None) return (None);
+
+    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+
+    FB (cp.shadd, cp.shadc);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point-1, h-point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, point, h-point-1, h-point);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point-1, h-point, h-point-1);
+
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point-1, h-point-1, point);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, h-point-1, h-point-1, point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point, h-point, point);
+
+    image->mask   = None;
+    image->width  = h;
+    image->height = h;
+    image->next   = None;
+
+    return (image);
 }
 
 static Image *Create3DIconifyImage (cp)
@@ -3127,6 +3188,7 @@ ColorPair cp;
 	    { TBPM_3DZOOM,	Create3DZoomImage },
 	    { TBPM_3DBAR,	Create3DBarImage },
 	    { TBPM_3DVBAR,	Create3DVertBarImage },
+	    { TBPM_3DCROSS,     Create3DCrossImage },
 	    { TBPM_3DICONIFY,   Create3DIconifyImage },
 	    { TBPM_3DSUNKEN_RESIZE,     Create3DSunkenResizeImage },
 	    { TBPM_3DBOX,       Create3DBoxImage }
@@ -3932,7 +3994,7 @@ int size2;
     }
 }
 
-void ConstrainByBorders (left, width, top, height)
+void ConstrainByBorders1 (left, width, top, height)
 int *left;
 int width;
 int *top;
@@ -3942,4 +4004,23 @@ int height;
     ConstrainLeftTop     (left, Scr->BorderLeft);
     ConstrainRightBottom (top, height, Scr->BorderBottom, Scr->MyDisplayHeight);
     ConstrainLeftTop     (top, Scr->BorderTop);
+}
+
+void ConstrainByBorders (twmwin, left, width, top, height)
+TwmWindow *twmwin;
+int *left;
+int width;
+int *top;
+int height;
+{
+    if (twmwin->winbox) {
+	XWindowAttributes attr;
+	XGetWindowAttributes (dpy, twmwin->winbox->window, &attr);
+	ConstrainRightBottom (left, width, 0, attr.width);
+	ConstrainLeftTop     (left, 0);
+	ConstrainRightBottom (top, height, 0, attr.height);
+	ConstrainLeftTop     (top, 0);
+    } else {
+	ConstrainByBorders1 (left, width, top, height);
+    }
 }

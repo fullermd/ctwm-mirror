@@ -270,11 +270,13 @@ typedef struct ScreenInfo
     name_list *WindowRingExcludeL;      /* windows excluded from ring */
     name_list *WarpCursorL;	/* windows to warp cursor to on deiconify */
     name_list *DontSave;
+    name_list *WindowGeometries;
 
     name_list *OpaqueMoveList;
     name_list *NoOpaqueMoveList;
     name_list *OpaqueResizeList;
     name_list *NoOpaqueResizeList;
+    name_list *IconMenuDontShow;
 
     GC NormalGC;		/* normal GC for everything */
     GC MenuGC;			/* gc for menus */
@@ -295,6 +297,7 @@ typedef struct ScreenInfo
     struct IconRegion *FirstRegion;	/* pointer to icon regions */
     struct IconRegion *LastRegion;	/* pointer to the last icon region */
     struct WindowRegion *FirstWindowRegion;	/* pointer to window regions */
+    WindowBox *FirstWindowBox;	/* pointer to window boxes list */
     char *IconDirectory;	/* icon directory to search */
     char *PixmapDirectory;	/* Pixmap directory to search */
     int SizeStringOffset;	/* x offset in size window for drawing */
@@ -365,6 +368,7 @@ typedef struct ScreenInfo
     short StayUpMenus;		/* stay up menus */
     short WarpToDefaultMenuEntry; /* warp cursor to default menu entry, if any  */
     short ClickToFocus;		/* click to focus */
+    short SloppyFocus;		/* "sloppy" focus */
     short NoIconManagers;	/* Don't create any icon managers */
     short ClientBorderWidth;	/* respect client window border width */
     short SqueezeTitle;		/* make title as small as possible */
@@ -380,6 +384,7 @@ typedef struct ScreenInfo
     short RaiseOnClick;		/* Raise a window when clieked into */
     short RaiseOnClickButton;		/* Raise a window when clieked into */
     short IgnoreLockModifier;	/* Should we ignore the lock modifier */
+    unsigned int IgnoreModifier;
     short IgnoreCaseInMenuSelection;	/* Should we ignore case in menu selection */
 
     FuncKey FuncKeyRoot;

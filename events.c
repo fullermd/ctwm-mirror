@@ -194,6 +194,21 @@ static void dumpevent ();
 #   define FDSET fd_set*
 #endif
 
+unsigned int set_mask_ignore (modifier)
+unsigned int modifier;
+{
+    int i;
+    unsigned int ModifierMask[8] = { ShiftMask, ControlMask, LockMask,
+				     Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask,
+				     Mod5Mask };
+
+    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
+    for (i = 0 ; i < 8 ; i++) {
+	if (Scr->IgnoreModifier & ModifierMask [i]) modifier &= ~ModifierMask [i];
+    }
+    return modifier;
+}
+
 void AutoRaiseWindow (tmp)
     TwmWindow *tmp;
 {
@@ -1086,7 +1101,7 @@ HandleKeyPress()
 	    item = startitem->next;
 	    if (item == (MenuItem*) 0) item = ActiveMenu->first;
 	    modifier = (Event.xkey.state & mods_used);
-	    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
+	    modifier = set_mask_ignore (modifier);
 
 	    while (item != startitem) {
 		match  = False;
@@ -1216,7 +1231,7 @@ HandleKeyPress()
     }
 
     modifier = (Event.xkey.state | AlternateKeymap) & mods_used;
-    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
+    modifier = set_mask_ignore (modifier);
     if (AlternateKeymap) {
 	XUngrabPointer  (dpy, CurrentTime);
 	XUngrabKeyboard (dpy, CurrentTime);
@@ -1630,6 +1645,7 @@ HandlePropertyNotify()
 
 	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced && Tmp_win->wmhints &&
 	    (Tmp_win->wmhints->flags & IconPixmapHint)) {
+	    int x;
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
 			       &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon->width, 
 			       (unsigned int *)&Tmp_win->icon->height, &JunkBW,
@@ -1641,18 +1657,22 @@ HandlePropertyNotify()
 				Tmp_win->icon->height, Scr->d_depth);
 
 	    FB(Tmp_win->icon->iconc.fore, Tmp_win->icon->iconc.back);
+
 	    if (JunkDepth == Scr->d_depth)
-		XCopyArea  (dpy, Tmp_win->wmhints->icon_pixmap, pm,
-			Scr->NormalGC,
+		XCopyArea  (dpy, Tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
 			0,0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0);
 	    else
-		XCopyPlane(dpy, Tmp_win->wmhints->icon_pixmap, pm,
-			Scr->NormalGC,
+		XCopyPlane(dpy, Tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
 			0,0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0, 1 );
 
 	    if (Tmp_win->icon->image) {
-		if (Tmp_win->icon->image->pixmap) XFreePixmap (dpy, Tmp_win->icon->image->pixmap);
+		if (Tmp_win->icon->image->pixmap)
+		    XFreePixmap (dpy, Tmp_win->icon->image->pixmap);
 		Tmp_win->icon->image->pixmap = pm;
+		Tmp_win->icon->image->width  = Tmp_win->icon->width;
+		Tmp_win->icon->image->height = Tmp_win->icon->height;
+		Tmp_win->icon->image->mask   = None;
+		Tmp_win->icon->image->next   = None;
 	    }
 
 	    valuemask = CWBackPixmap;
@@ -1661,8 +1681,9 @@ HandlePropertyNotify()
 	    if (Tmp_win->icon->bm_w)
 		XDestroyWindow(dpy, Tmp_win->icon->bm_w);
 
+	    x = GetIconOffset (Tmp_win->icon);
 	    Tmp_win->icon->bm_w =
-	      XCreateWindow (dpy, Tmp_win->icon->w, 0, 0,
+	      XCreateWindow (dpy, Tmp_win->icon->w, x, 0,
 			     (unsigned int) Tmp_win->icon->width,
 			     (unsigned int) Tmp_win->icon->height,
 			     (unsigned int) 0, Scr->d_depth,
@@ -1672,17 +1693,20 @@ HandlePropertyNotify()
 	    if (! (Tmp_win->wmhints->flags & IconMaskHint)) {
 		XRectangle rect;
 
-		rect.x      = GetIconOffset (Tmp_win->icon);
+		rect.x      = x;
 		rect.y      = 0;
 		rect.width  = Tmp_win->icon->width;
 		rect.height = Tmp_win->icon->height;
 		XShapeCombineRectangles (dpy, Tmp_win->icon->w, ShapeBounding, 0,
 					0, &rect, 1, ShapeUnion, 0);
 	    }
+	    XMapSubwindows (dpy, Tmp_win->icon->w);
 	    RedoIconName();
 	}
 	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced && Tmp_win->wmhints &&
 	    (Tmp_win->wmhints->flags & IconMaskHint)) {
+	    int x;
+	    Pixmap mask;
 	    GC gc;
 
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_mask, &JunkRoot,
@@ -1692,16 +1716,19 @@ HandlePropertyNotify()
 	    }
 	    if (JunkDepth != 1) return;
 
-	    pm = XCreatePixmap (dpy, Scr->Root, JunkWidth, JunkHeight, 1);
-	    if (!pm) return;
-	    gc = XCreateGC (dpy, pm, 0, NULL);
+	    mask = XCreatePixmap (dpy, Scr->Root, JunkWidth, JunkHeight, 1);
+	    if (!mask) return;
+	    gc = XCreateGC (dpy, mask, 0, NULL);
 	    if (!gc) return;
-	    XCopyArea (dpy, Tmp_win->wmhints->icon_mask, pm, gc,
+	    XCopyArea (dpy, Tmp_win->wmhints->icon_mask, mask, gc,
 		       0, 0, JunkWidth, JunkHeight, 0, 0);
 	    XFreeGC (dpy, gc);
+	    x = GetIconOffset (Tmp_win->icon);
+	    XShapeCombineMask (dpy, Tmp_win->icon->bm_w, ShapeBounding, 0, 0, mask, ShapeSet);
+	    XShapeCombineMask (dpy, Tmp_win->icon->w,    ShapeBounding, x, 0, mask, ShapeSet);
 	    if (Tmp_win->icon->image) {
 		if (Tmp_win->icon->image->mask) XFreePixmap (dpy, Tmp_win->icon->image->mask);
-		Tmp_win->icon->image->mask = pm;
+		Tmp_win->icon->image->mask = mask;
 		RedoIconName ();
 	    }
 	}
@@ -2252,6 +2279,9 @@ HandleDestroyNotify()
     remove_window_from_ring (Tmp_win);				/* 11 */
 
     free((char *)Tmp_win);
+
+    if (Scr->ClickToFocus || Scr->SloppyFocus)
+	set_last_window (Scr->workSpaceMgr.activeWSPC);
 }
 
 
@@ -2537,6 +2567,11 @@ HandleMotionNotify()
 	  WindowMoved = TRUE;
 
 	XFindContext(dpy, ResizeWindow, TwmContext, (XPointer *)&Tmp_win);
+	if (Tmp_win && Tmp_win->winbox) {
+	    XTranslateCoordinates (dpy, Scr->Root, Tmp_win->winbox->window,
+		Event.xmotion.x_root, Event.xmotion.y_root,
+		&(Event.xmotion.x_root), &(Event.xmotion.y_root), &JunkChild);
+	}
 	DoResize(Event.xmotion.x_root, Event.xmotion.y_root, Tmp_win);
     }
     else
@@ -2572,6 +2607,11 @@ HandleButtonRelease()
 	MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
 
 	XFindContext(dpy, DragWindow, TwmContext, (XPointer *)&Tmp_win);
+	if (Tmp_win->winbox) {
+	    XTranslateCoordinates (dpy, Scr->Root, Tmp_win->winbox->window,
+		Event.xbutton.x_root, Event.xbutton.y_root,
+		&(Event.xbutton.x_root), &(Event.xbutton.y_root), &JunkChild);
+	}
 	if (DragWindow == Tmp_win->frame)
 	{
 	    xl = Event.xbutton.x_root - DragX - Tmp_win->frame_bw;
@@ -2612,12 +2652,13 @@ HandleButtonRelease()
 	    DragWindow == Tmp_win->frame) TryToPack (Tmp_win, &xl, &yt);
 	if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 	{
-            ConstrainByBorders (&xl, w, &yt, h);
+            ConstrainByBorders (Tmp_win, &xl, w, &yt, h);
 	}
 
 	CurrentDragX = xl;
 	CurrentDragY = yt;
 	if (DragWindow == Tmp_win->frame)
+
 	  SetupWindow (Tmp_win, xl, yt,
 		       Tmp_win->frame_width, Tmp_win->frame_height, -1);
 	else
@@ -2874,7 +2915,7 @@ HandleButtonPress()
     if ((ActiveMenu != NULL) && (ActiveMenu->pinned)) {
 	if (Event.xbutton.window == ActiveMenu->w) {
 	    modifier = (Event.xbutton.state & mods_used);
-	    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
+	    modifier = set_mask_ignore (modifier);
 	    if ((ActiveItem && (ActiveItem->func == F_TITLE)) || (modifier == 8)) {
 		MoveMenu (&Event);
 		/*ButtonPressed = -1;*/
@@ -3006,12 +3047,22 @@ HandleButtonPress()
              * it came from the application window.
 	     */
 	    if (Event.xbutton.subwindow == Tmp_win->w) {
+	      XTranslateCoordinates (dpy, Event.xany.window, Tmp_win->w,
+			Event.xbutton.x, Event.xbutton.y,
+			&Event.xbutton.x, &Event.xbutton.y, &JunkChild);
 	      Event.xbutton.window = Tmp_win->w;
-              Event.xbutton.x -= Tmp_win->frame_bw3D;
-              Event.xbutton.y -= (Tmp_win->title_height + Tmp_win->frame_bw3D);
-/*****
-              Event.xbutton.x -= Tmp_win->frame_bw;
-*****/
+
+	      if (Tmp_win->iswinbox && JunkChild) {
+		    XTranslateCoordinates (dpy, Tmp_win->w, JunkChild,
+			Event.xbutton.x, Event.xbutton.y,
+			&JunkX, &JunkY, &JunkChild);
+		    if (JunkChild && XFindContext (dpy, JunkChild, TwmContext,
+			    (XPointer*) &Tmp_win) != XCNOENT) {
+			Event.xany.window = JunkChild;
+			Event.xbutton.x   = JunkX;
+			Event.xbutton.y   = JunkY;
+		    }
+	      }
 	      Context = C_WINDOW;
 	    }
 	    else
@@ -3048,6 +3099,7 @@ HandleButtonPress()
     {
 	if (Event.xany.window == Scr->Root)
 	{
+	    Window win;
 	    /* if the window was the Root, we don't know for sure it
 	     * it was the root.  We must check to see if it happened to be
 	     * inside of a client that was getting button press events.
@@ -3057,6 +3109,17 @@ HandleButtonPress()
 		Event.xbutton.y, 
 		&JunkX, &JunkY, &Event.xany.window);
 
+	    if (Event.xany.window != 0 &&
+		(XFindContext(dpy, Event.xany.window, TwmContext,
+			      (XPointer *)&Tmp_win) != XCNOENT)) {
+		if (Tmp_win->iswinbox) {
+		    XTranslateCoordinates (dpy, Scr->Root, Event.xany.window,
+			JunkX, JunkY,  &JunkX, &JunkY, &win);
+		    XTranslateCoordinates (dpy, Event.xany.window, win,
+			JunkX, JunkY,  &JunkX, &JunkY, &win);
+		    if (win != 0) Event.xany.window = win;
+		}
+	    }
 	    if (Event.xany.window == 0 ||
 		(XFindContext(dpy, Event.xany.window, TwmContext,
 			      (XPointer *)&Tmp_win) == XCNOENT))
@@ -3065,7 +3128,6 @@ HandleButtonPress()
 		XBell(dpy, 0);
 		return;
 	    }
-
 	    XTranslateCoordinates(dpy, Scr->Root, Event.xany.window,
 		Event.xbutton.x, 
 		Event.xbutton.y, 
@@ -3098,7 +3160,7 @@ HandleButtonPress()
      * menu
      */
     modifier = (Event.xbutton.state | AlternateKeymap) & mods_used;
-    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
+    modifier = set_mask_ignore (modifier);
     if (AlternateKeymap) {
 	XUngrabPointer  (dpy, CurrentTime);
 	XUngrabKeyboard (dpy, CurrentTime);

@@ -36,6 +36,7 @@
 #include "add_window.h"
 #include "events.h"
 #include "gram.h"
+#include "clicktofocus.h"
 #ifdef VMS
 #include <ctype.h>
 #include <string.h>
@@ -174,7 +175,7 @@ void CreateWorkSpaceManager () {
     _XA_WM_WORKSPACESLIST   = XInternAtom (dpy, "WM_WORKSPACESLIST",   False);
     _OL_WIN_ATTR            = XInternAtom (dpy, "_OL_WIN_ATTR",        False);
 
-    NewFontCursor (&handCursor, "hand2");
+    NewFontCursor (&handCursor, "top_left_arrow");
 
     Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
     CreateWorkSpaceManagerWindow ();
@@ -497,6 +498,7 @@ WorkSpaceList *wlist;
 			   (Window) 0, (TwmWindow*) 0, &event, C_ROOT, FALSE);
     }
     XSync (dpy, 0);
+    if (Scr->ClickToFocus || Scr->SloppyFocus) set_last_window (newscr);
     MaybeAnimate = True;
 }
 
@@ -589,7 +591,6 @@ char *name, *background, *foreground, *backback, *backfore, *backpix;
     Scr->workSpaceManagerActive = 1;
 }
 
-static XrmDatabase db;
 static XrmOptionDescRec table [] = {
     {"-xrm",		NULL,		XrmoptionResArg, (XPointer) NULL},
 };
@@ -615,11 +616,13 @@ int occupation_hint; /* <== [ Matthew McNeill Feb 1997 ] == */
     WorkSpaceList	*wlist;
     XWindowAttributes   winattrs;
     unsigned long	eventMask;
+    XrmDatabase         db = NULL;
 
     if (! Scr->workSpaceManagerActive) {
 	twm_win->occupation = 1;
 	return;
     }
+    /*twm_win->occupation = twm_win->iswinbox ? fullOccupation : 0;*/
     twm_win->occupation = 0;
 
     for (wlist = Scr->workSpaceMgr.workSpaceList; wlist != NULL; wlist = wlist->next) {
@@ -641,7 +644,6 @@ int occupation_hint; /* <== [ Matthew McNeill Feb 1997 ] == */
 	}
 	XrmDestroyDatabase (db);
 	XFreeStringList (cliargv);
-	db = NULL;
     }
 
     if (RestartPreviousState) {
@@ -731,11 +733,15 @@ Window window;
     char		*atomname;
     Window		newroot;
     XWindowAttributes	wa;
+    XrmDatabase         db = NULL;
 
     if (DontRedirect (window)) return (False);
     if (!XGetCommand (dpy, window, &cliargv, &cliargc)) return (False);
     XrmParseCommand (&db, table, 1, "ctwm", &cliargc, cliargv);
-
+    if (db == NULL) {
+        if (cliargv) XFreeStringList (cliargv);
+	return False;
+    }
     ret = False;
     status = XrmGetResource (db, "ctwm.redirect", "Ctwm.Redirect", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
@@ -773,7 +779,6 @@ Window window;
     }
     XrmDestroyDatabase (db);
     XFreeStringList (cliargv);
-    db = NULL;
     return (ret);
 }
 

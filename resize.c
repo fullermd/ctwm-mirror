@@ -179,7 +179,7 @@ Bool fromtitlebar, from3dborder;
 			ButtonMotionMask | PointerMotionHintMask;
     XGrabPointer(dpy, Scr->Root, True, resizeGrabMask,
         GrabModeAsync, GrabModeAsync,
-        Scr->Root, cursor, CurrentTime);
+        tmp_win->winbox ? tmp_win->winbox->window : Scr->Root, cursor, CurrentTime);
 
     XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
         &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
@@ -1119,6 +1119,8 @@ int flag;
     int basex, basey;
     int border_x, border_y;
     int frame_bw_times_2;
+    int  zwidth = Scr->MyDisplayWidth;
+    int zheight = Scr->MyDisplayHeight;
 
 	XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
 	        &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
@@ -1130,6 +1132,17 @@ int flag;
         border_x = Scr->BorderLeft + Scr->BorderRight;
         border_y = Scr->BorderTop + Scr->BorderBottom;
 
+	if (tmp_win->winbox) {
+	    XWindowAttributes winattrs;
+	    if (XGetWindowAttributes(dpy, tmp_win->winbox->window, &winattrs)) {
+		zwidth   = winattrs.width;
+		zheight  = winattrs.height;
+	    }
+	    basex    = 0;
+	    basey    = 0;
+            border_x = 0;
+            border_y = 0;
+	}
         if (tmp_win->zoomed == flag)
         {
             dragHeight = tmp_win->save_frame_height;
@@ -1159,42 +1172,42 @@ int flag;
         case ZOOM_NONE:
             break;
         case F_ZOOM:
-            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
+            dragHeight = zheight - border_y - frame_bw_times_2;
             dragy=basey;
             break;
         case F_HORIZOOM:
             dragx = basex;
-            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
+            dragWidth = zwidth - border_x - frame_bw_times_2;
             break;
         case F_FULLZOOM:
             dragx = basex;
             dragy = basey;
-            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
+            dragHeight = zheight - border_y - frame_bw_times_2;
+            dragWidth = zwidth - border_x - frame_bw_times_2;
             break;
         case F_LEFTZOOM:
             dragx = basex;
             dragy = basey;
-            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
-            dragWidth = (Scr->MyDisplayWidth - border_x)/2 - frame_bw_times_2;
+            dragHeight = zheight - border_y - frame_bw_times_2;
+            dragWidth = (zwidth - border_x)/2 - frame_bw_times_2;
             break;
         case F_RIGHTZOOM:
-            dragx = basex + (Scr->MyDisplayWidth - border_x)/2;
+            dragx = basex + (zwidth - border_x)/2;
             dragy = basey;
-            dragHeight = Scr->MyDisplayHeight - border_y - frame_bw_times_2;
-            dragWidth = (Scr->MyDisplayWidth - border_x)/2 - frame_bw_times_2;
+            dragHeight = zheight - border_y - frame_bw_times_2;
+            dragWidth = (zwidth - border_x)/2 - frame_bw_times_2;
             break;
         case F_TOPZOOM:
             dragx = basex;
             dragy = basey;
-            dragHeight = (Scr->MyDisplayHeight - border_y)/2 - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
+            dragHeight = (zheight - border_y)/2 - frame_bw_times_2;
+            dragWidth = zwidth - border_x - frame_bw_times_2;
             break;
         case F_BOTTOMZOOM:
             dragx = basex;
-            dragy = basey + (Scr->MyDisplayHeight - border_y)/2;
-            dragHeight = (Scr->MyDisplayHeight - border_y)/2 - frame_bw_times_2;
-            dragWidth = Scr->MyDisplayWidth - border_x - frame_bw_times_2;
+            dragy = basey + (zheight - border_y)/2;
+            dragHeight = (zheight - border_y)/2 - frame_bw_times_2;
+            dragWidth = zwidth - border_x - frame_bw_times_2;
             break;
          }
       }
