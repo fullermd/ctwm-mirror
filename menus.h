@@ -70,6 +70,11 @@
 #define TWM_WORKSPACES	"TwmWorkspaces"	/* for f.menu "TwmWorkspaces" */
 #define TWM_ALLWINDOWS	"TwmAllWindows"	/* for f.menu "TwmAllWindows" */
 
+/*******************************************************************/
+/* Added by Dan Lilliehorn (dl@dl.nu) 2000-02-29                   */
+#define TWM_KEYS        "TwmKeys"       /* for f.menu "TwmKeys"    */
+#define TWM_VISIBLE     "TwmVisible"    /* for f.menu "TwmVisible" */
+
 #define MAX_FILE_SIZE 4096	/* max chars to read from file for cut */
 
 typedef struct MenuItem

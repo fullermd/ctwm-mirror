@@ -114,7 +114,7 @@ void CreateIconManagers()
     char str1[100];
     Pixel background;
     char *icon_name;
-    WorkSpaceList *wlist;
+    WorkSpace    *ws;
     XWMHints	  wmhints;
     XSizeHints	  sizehints;
     int		  gravity;
@@ -130,7 +130,7 @@ void CreateIconManagers()
 	    (char *)siconify_bits, siconify_width, siconify_height, 1, 0, 1);
     }
 
-    wlist = Scr->workSpaceMgr.workSpaceList;
+    ws = Scr->workSpaceMgr.workSpaceList;
     for (q = Scr->iconmgr; q != NULL; q = q->nextv) {
       for (p = q; p != NULL; p = p->next)
       {
@@ -149,13 +149,13 @@ void CreateIconManagers()
 		(Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth);
 
 	if (mask & XNegative) {
-	    JunkX += Scr->MyDisplayWidth - p->width - 2 * bw;
+	    JunkX += Scr->rootw - p->width - 2 * bw;
 	    gravity = (mask & YNegative) ? SouthEastGravity : NorthEastGravity;
 	} else {
 	    gravity = (mask & YNegative) ? SouthWestGravity : NorthWestGravity;
 	}
 	if (mask & YNegative)
-	    JunkY += Scr->MyDisplayHeight - p->height - 2 * bw;
+	    JunkY += Scr->rooth - p->height - 2 * bw;
 
 	background = Scr->IconManagerC.back;
 	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
@@ -169,12 +169,13 @@ void CreateIconManagers()
 
 	XSetStandardProperties(dpy, p->w, str, icon_name, None, NULL, 0, NULL);
 
-	Scr->workSpaceMgr.activeWSPC = wlist;
+	//Scr->workSpaceMgr.activeWSPC = ws;
 	wmhints.initial_state = NormalState;
 	wmhints.input         = True;
 	wmhints.flags         = InputHint | StateHint;
 	XSetWMHints (dpy, p->w, &wmhints);
 	p->twm_win = AddWindow(p->w, TRUE, p);
+	p->twm_win->occupation = 1 << ws->number;
 
 	sizehints.flags       = PWinGravity;
 	sizehints.win_gravity = gravity;
@@ -194,9 +195,11 @@ void CreateIconManagers()
 	    p->twm_win->isicon = TRUE;
 	}
       }
-      if (wlist != NULL) wlist = wlist->next;
+      if (ws != NULL) ws = ws->next;
     }
-    Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
+    for (p = Scr->iconmgr; p != NULL; p = p->next) {
+      p->twm_win->vs = Scr->vScreenList;
+    }
     if (Scr->workSpaceManagerActive)
 	Scr->workSpaceMgr.workSpaceList->iconmgr = Scr->iconmgr;
 
@@ -575,8 +578,8 @@ WList *AddIconManager(tmp_win)
     IconMgr *ip;
 
     if (tmp_win->iconmgr || tmp_win->transient || Scr->NoIconManagers ||
-	tmp_win->w == Scr->workSpaceMgr.workspaceWindow.w ||
-	tmp_win->w == Scr->workSpaceMgr.occupyWindow.w)
+	tmp_win->wspmgr ||
+	tmp_win->w == Scr->workSpaceMgr.occupyWindow->w)
 	return NULL;
 
     if (LookInList(Scr->IconMgrNoShow, tmp_win->full_name, &tmp_win->class))
@@ -594,7 +597,10 @@ WList *AddIconManager(tmp_win)
   tmp = NULL;
   old = tmp_win->list;
   while (ip != NULL) {
-    if ((tmp_win->occupation & ip->twm_win->occupation) == 0) {ip = ip->nextv; continue;}
+    if ((tmp_win->occupation & ip->twm_win->occupation) == 0) {
+      ip = ip->nextv;
+      continue;
+    }
     tmp = (WList *) malloc(sizeof(WList));
     tmp->iconmgr = ip;
     tmp->next = NULL;
@@ -646,8 +652,7 @@ WList *AddIconManager(tmp_win)
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
     attributes.background_pixel = tmp->cp.back;
     attributes.border_pixel = Scr->Black;
-    attributes.event_mask = (ButtonReleaseMask| ButtonPressMask |
-			     ExposureMask);
+    attributes.event_mask = (ButtonReleaseMask| ButtonPressMask | ExposureMask);
     attributes.cursor = Scr->ButtonCursor;
     offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
     tmp->icon = XCreateWindow (dpy, tmp->w, offs + 3,
@@ -672,7 +677,7 @@ WList *AddIconManager(tmp_win)
 
     if (!ip->twm_win->isicon)
     {
-	if (OCCUPY (ip->twm_win, Scr->workSpaceMgr.activeWSPC)) {
+	if (visible (ip->twm_win)) {
 	    SetMapStateProp (ip->twm_win, NormalState);
 	    XMapWindow (dpy, ip->w);
 	    XMapWindow (dpy, ip->twm_win->frame);
@@ -685,11 +690,11 @@ WList *AddIconManager(tmp_win)
   }
     if (tmp == NULL) return NULL;
     tmp_win->list = tmp;
-    if (! OCCUPY (tmp->iconmgr->twm_win, Scr->workSpaceMgr.activeWSPC)) {
+    if (! visible (tmp->iconmgr->twm_win)) {
 	old = tmp;
 	tmp = tmp->nextv;
 	while (tmp != NULL) {
-	    if (OCCUPY (tmp->iconmgr->twm_win, Scr->workSpaceMgr.activeWSPC)) break;
+	    if (visible (tmp->iconmgr->twm_win)) break;
 	    old = tmp;
 	    tmp = tmp->nextv;
 	}

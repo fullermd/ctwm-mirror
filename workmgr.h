@@ -39,6 +39,7 @@ void InitWorkSpaceManager ();
 int ConfigureWorkSpaceManager ();
 void CreateWorkSpaceManager ();
 void GotoWorkSpaceByName ();
+void GotoWorkSpaceByNumber ();
 void GotoPrevWorkSpace ();
 void GotoNextWorkSpace ();
 void GotoRightWorkSpace ();
@@ -92,10 +93,15 @@ Bool RedirectToCaptive ();
 void SetPropsIfCaptiveCtwm ();
 Window CaptiveCtwmRootWindow ();
 
-typedef struct WorkSpaceList WorkSpaceList;
+#ifdef GNOME
+/* 6/19/1999 nhd for GNOME compliance */
+void InitGnome ();
+void GnomeAddClientWindow ();
+void GnomeDeleteClientWindow ();
+#endif /* GNOME */
 
 typedef struct winList {
-    WorkSpaceList	*wlist;
+    struct WorkSpace	*wlist;
     Window		w;
     int			x, y;
     int			width, height;
@@ -105,94 +111,100 @@ typedef struct winList {
     struct winList	*next;
 } *WinList;
 
-typedef struct mapSubwindow {
-    Window		w;
-    Window		blanket;
-    int			x, y;
-    WinList		wl;
-} MapSubwindow;
-
-typedef struct WorkSpaceWindow {
-    Window		w;
-    TwmWindow		*twm_win;
-    char		*geometry;
-    int			x, y;
-    char		*name;
-    char		*icon_name;
-    int			state;
-    int			lines, columns;
-    int			noshowoccupyall;
-
-    int			width, height;
-    int			bwidth, bheight;
-    int			hspace, vspace;
-    ColorPair		cp;
-    MyFont		buttonFont;
-    short		buttonStyle;
-
-    int			wwidth, wheight;
-    name_list		*windowBackgroundL;
-    name_list		*windowForegroundL;
-    ColorPair		windowcp;
-    MyFont		windowFont;
-    Bool		windowcpgiven;
-
-    ColorPair		curColors;
-    Image		*curImage;
-    unsigned long	curBorderColor;
-    Bool		curPaint;
-
-    ColorPair		defColors;
-    Image		*defImage;
-    unsigned long	defBorderColor;
-} WorkSpaceWindow;
-
-typedef struct OccupyWindow {
-    Window		w;
-    TwmWindow		*twm_win;
-    char		*geometry;
-    Window		OK, cancel, allworkspc;
-    int			x, y;
-    int			width, height;
-    char		*name;
-    char		*icon_name;
-    int			lines, columns;
-    int			hspace, vspace;
-    int			bwidth, bheight;
-    int			owidth, oheight;
-    ColorPair		cp;
-    MyFont		font;
-    int			tmpOccupation;
-} OccupyWindow;
-
-struct WorkSpaceList {
-    Window		buttonw;
-    Window		obuttonw;
-    int			number;
-    char		*name;
-    char		*label;
-    ColorPair		cp;
-    IconMgr		*iconmgr;
-    ColorPair		backcp;
-    Image		*image;
-    name_list		*clientlist;
-    MapSubwindow	mapSubwindow;
-    struct WindowRegion *FirstWindowRegion;
-    struct WorkSpaceList *next;
-};
-
 typedef struct WorkSpaceMgr {
-    WorkSpaceList	*workSpaceList;
-    WorkSpaceList	*activeWSPC;
-    WorkSpaceWindow	workspaceWindow;
-    OccupyWindow	occupyWindow;
-    int			visibility;
-    int			count;
+    struct WorkSpace	   *workSpaceList;
+    struct WorkSpaceWindow *workSpaceWindowList;
+    struct OccupyWindow    *occupyWindow;
+    MyFont     	    buttonFont;
+    MyFont     	    windowFont;
+    ColorPair  	    windowcp;
+    Bool       	    windowcpgiven;
+    ColorPair       cp;
+    int		    count;
+    char	    *geometry;
+    int		    lines, columns;
+    int		    noshowoccupyall;
+    int             initialstate;
+    short      	    buttonStyle;
+    name_list	    *windowBackgroundL;
+    name_list	    *windowForegroundL;
 } WorkSpaceMgr;
 
+typedef struct WorkSpace {
+  int	              number;
+  char	              *name;
+  char	              *label;
+  Image	              *image;
+  name_list           *clientlist;
+  IconMgr             *iconmgr;
+  ColorPair           cp;
+  ColorPair           backcp;
+  struct WindowRegion *FirstWindowRegion;
+  struct WorkSpace *next;
+} WorkSpace;
+
+typedef struct MapSubwindow {
+  Window  w;
+  Window  blanket;
+  int     x, y;
+  WinList wl;
+} MapSubwindow;
+
+typedef struct ButtonSubwindow {
+  Window w;
+} ButtonSubwindow;
+
+typedef struct WorkSpaceWindow {
+  virtualScreen   *vs;
+  Window	  w;
+  TwmWindow       *twm_win;
+  MapSubwindow    **mswl;
+  ButtonSubwindow **bswl;
+  WorkSpace       *currentwspc;
+
+  int	       	x, y;
+  char		*name;
+  char		*icon_name;
+  int	       	state;
+
+  int	       	width, height;
+  int	       	bwidth, bheight;
+  int	       	hspace, vspace;
+  int	       	wwidth, wheight;
+  
+  ColorPair    	curColors;
+  Image		*curImage;
+  unsigned long	curBorderColor;
+  Bool		curPaint;
+
+  ColorPair    	defColors;
+  Image		*defImage;
+  unsigned long	defBorderColor;
+  struct WorkSpaceWindow *next;
+} WorkSpaceWindow;
+
+typedef struct OccupyWindow  {
+  Window       	w;
+  TwmWindow    	*twm_win;
+  char		*geometry;
+  Window       	*obuttonw;
+  Window       	OK, cancel, allworkspc;
+  int	       	x, y;
+  int	       	width, height;
+  char		*name;
+  char		*icon_name;
+  int	       	lines, columns;
+  int	       	hspace, vspace;
+  int	       	bwidth, bheight;
+  int	       	owidth, oheight;
+  ColorPair    	cp;
+  MyFont       	font;
+  int	       	tmpOccupation;
+} OccupyWindow;
+
 typedef struct CaptiveCTWM {
-    Window	root;
-    String	name;
+  Window	root;
+  String	name;
 } CaptiveCTWM;
 
 CaptiveCTWM GetCaptiveCTWMUnderPointer ();

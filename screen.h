@@ -69,7 +69,14 @@
 #include "list.h"
 #include "menus.h"
 #include "iconmgr.h"
+#include "vscreen.h"
 #include "workmgr.h"
+
+#define ICONIFY_NORMAL  0
+#define ICONIFY_MOSAIC  1
+#define ICONIFY_ZOOMIN  2
+#define ICONIFY_ZOOMOUT 3
+#define ICONIFY_SWEEP   4
 
 typedef struct _StdCmap {
     struct _StdCmap *next;		/* next link in chain */
@@ -95,16 +102,24 @@ typedef struct ScreenInfo
     int d_depth;		/* copy of DefaultDepth(dpy, screen) */
     Visual *d_visual;		/* copy of DefaultVisual(dpy, screen) */
     int Monochrome;		/* is the display monochrome ? */
-    int MyDisplayX;		/* The x coordinate of the root window if captive */
-    int MyDisplayY;		/* The y coordinate of the root window if captive */
-    int MyDisplayWidth;		/* my copy of DisplayWidth(dpy, screen) */
-    int MyDisplayHeight;	/* my copy of DisplayHeight(dpy, screen) */
+    int rootx;		        /* The x coordinate of the root window */
+    int rooty;		        /* The y coordinate of the root window */
+    int rootw;		        /* my copy of DisplayWidth(dpy, screen) */
+    int rooth;	                /* my copy of DisplayHeight(dpy, screen) */
+
+    int crootx;		        /* The x coordinate of the captive root window if any */
+    int crooty;		        /* The y coordinate of the captive root window if any */
+    int crootw;		        /* my copy of DisplayWidth(dpy, screen) */
+    int crooth;	                /* my copy of DisplayHeight(dpy, screen) */
+
     int MaxWindowWidth;		/* largest window to allow */
     int MaxWindowHeight;	/* ditto */
 
     TwmWindow TwmRoot;		/* the head of the twm window list */
 
     Window Root;		/* the root window */
+    Window RealRoot;		/* the actual root window */
+    Window CaptiveRoot;		/* the captive root window */
     Window SizeWindow;		/* the resize dimensions window */
     Window InfoWindow;		/* the information window */
     Window WindowMask;		/* the window masking the screen at startup */
@@ -129,6 +144,11 @@ typedef struct ScreenInfo
     MenuRoot *Icons;		/* the TwmIcons menu */
     MenuRoot *Workspaces;	/* the TwmWorkspaces menu */
     MenuRoot *AllWindows;	/* the TwmAllWindows menu */
+
+  /******************************************************/
+  /* Added by Dan Lilliehorn (dl@dl.nu) 2000-02-29)     */
+    MenuRoot *Keys;             /* the TwmKeys menu     */
+    MenuRoot *Visible;          /* thw TwmVisible menu  */
 
     TwmWindow *Ring;		/* one of the windows in window ring */
     TwmWindow *RingLeader;	/* current window in ring */
@@ -184,7 +204,7 @@ typedef struct ScreenInfo
     short IconRegionJustification;	/* J_LEFT, J_CENTER J_RIGHT or J_BORDER */
     short IconRegionAlignement;	/* J_TOP, J_CENTER, J_BOTTOM or J_BORDER */
     short TitleJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
-    short SmartIconify;
+    short IconifyStyle;         /* ICONIFY_* */
     int   MaxIconTitleWidth;	/* */
 
     Cursor TitleCursor;		/* title bar cursor */
@@ -202,11 +222,17 @@ typedef struct ScreenInfo
 
     WorkSpaceMgr workSpaceMgr;
     short	workSpaceManagerActive;
+
+    virtualScreen *vScreenList;
+    virtualScreen *currentvs;
+    name_list     *VirtualScreens;
+
     name_list	*OccupyAll;	/* list of window names occupying all workspaces at startup */
     name_list	*UnmapByMovingFarAway;
     name_list	*DontSetInactive;
     name_list	*AutoSqueeze;
     name_list	*StartSqueezed;
+    name_list	*AlwaysSqueezeToGravity;
     short 	use3Dmenus;
     short 	use3Dtitles;
     short 	use3Diconmanagers;

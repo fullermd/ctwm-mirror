@@ -63,12 +63,12 @@ void createWindowBoxes () {
 
 	mask = XParseGeometry (winbox->geometry, &x, &y, &w, &h);
 	if (mask & XNegative) {
-	    x += Scr->MyDisplayWidth  - w;
+	    x += Scr->rootw  - w;
 	    gravity = (mask & YNegative) ? SouthEastGravity : NorthEastGravity;
 	} else {
 	    gravity = (mask & YNegative) ? SouthWestGravity : NorthWestGravity;
 	}
-	if (mask & YNegative) y += Scr->MyDisplayHeight - h;
+	if (mask & YNegative) y += Scr->rooth - h;
 
 	win = XCreateSimpleWindow (dpy, Scr->Root, x, y, w, h, 0, Scr->Black, Scr->White);
 	/*printf ("createWindowBoxes : name = %s, win = 0x%x, x = %d, y = %d, w = %d, h = %d\n",
@@ -107,7 +107,7 @@ TwmWindow *twmwin;
     if (!Scr->FirstWindowBox) return ((WindowBox*)0);
     for (winbox = Scr->FirstWindowBox; winbox; winbox = winbox->next) {
 	if (LookInList (winbox->winlist, twmwin->full_name, &twmwin->class)) {
-	    if (VISIBLE (winbox->twmwin)) {
+	    if (visible (winbox->twmwin)) {
 		twmwin->winbox = winbox;
 		return (winbox);
 	    }
@@ -135,8 +135,8 @@ TwmWindow *twmwin;
 {
     TwmWindow	*t;
     int minx, miny, maxx, maxy, x, y, w, h;
-    minx = Scr->MyDisplayWidth;
-    miny = Scr->MyDisplayHeight;
+    minx = Scr->rootw;
+    miny = Scr->rooth;
     maxx = 0;
     maxy = 0;
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {

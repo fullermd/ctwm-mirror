@@ -1,81 +1,111 @@
-
-typedef union 
+typedef union
 {
     int num;
-    char *ptr;
+    unsigned char *ptr;
 } YYSTYPE;
+#define	LB	257
+#define	RB	258
+#define	LP	259
+#define	RP	260
+#define	MENUS	261
+#define	MENU	262
+#define	BUTTON	263
+#define	DEFAULT_FUNCTION	264
+#define	PLUS	265
+#define	MINUS	266
+#define	ALL	267
+#define	OR	268
+#define	CURSORS	269
+#define	PIXMAPS	270
+#define	ICONS	271
+#define	COLOR	272
+#define	SAVECOLOR	273
+#define	MONOCHROME	274
+#define	FUNCTION	275
+#define	ICONMGR_SHOW	276
+#define	ICONMGR	277
+#define	ALTER	278
+#define	WINDOW_FUNCTION	279
+#define	ZOOM	280
+#define	ICONMGRS	281
+#define	ICONMGR_GEOMETRY	282
+#define	ICONMGR_NOSHOW	283
+#define	MAKE_TITLE	284
+#define	ICONIFY_BY_UNMAPPING	285
+#define	DONT_ICONIFY_BY_UNMAPPING	286
+#define	NO_BORDER	287
+#define	NO_ICON_TITLE	288
+#define	NO_TITLE	289
+#define	AUTO_RAISE	290
+#define	NO_HILITE	291
+#define	ICON_REGION	292
+#define	WINDOW_REGION	293
+#define	META	294
+#define	SHIFT	295
+#define	LOCK	296
+#define	CONTROL	297
+#define	WINDOW	298
+#define	TITLE	299
+#define	ICON	300
+#define	ROOT	301
+#define	FRAME	302
+#define	COLON	303
+#define	EQUALS	304
+#define	SQUEEZE_TITLE	305
+#define	DONT_SQUEEZE_TITLE	306
+#define	START_ICONIFIED	307
+#define	NO_TITLE_HILITE	308
+#define	TITLE_HILITE	309
+#define	MOVE	310
+#define	RESIZE	311
+#define	WAITC	312
+#define	SELECT	313
+#define	KILL	314
+#define	LEFT_TITLEBUTTON	315
+#define	RIGHT_TITLEBUTTON	316
+#define	NUMBER	317
+#define	KEYWORD	318
+#define	NKEYWORD	319
+#define	CKEYWORD	320
+#define	CLKEYWORD	321
+#define	FKEYWORD	322
+#define	FSKEYWORD	323
+#define	SKEYWORD	324
+#define	DKEYWORD	325
+#define	JKEYWORD	326
+#define	WINDOW_RING	327
+#define	WINDOW_RING_EXCLUDE	328
+#define	WARP_CURSOR	329
+#define	ERRORTOKEN	330
+#define	NO_STACKMODE	331
+#define	ALWAYS_ON_TOP	332
+#define	WORKSPACE	333
+#define	WORKSPACES	334
+#define	WORKSPCMGR_GEOMETRY	335
+#define	OCCUPYALL	336
+#define	OCCUPYLIST	337
+#define	MAPWINDOWCURRENTWORKSPACE	338
+#define	MAPWINDOWDEFAULTWORKSPACE	339
+#define	UNMAPBYMOVINGFARAWAY	340
+#define	OPAQUEMOVE	341
+#define	NOOPAQUEMOVE	342
+#define	OPAQUERESIZE	343
+#define	NOOPAQUERESIZE	344
+#define	DONTSETINACTIVE	345
+#define	CHANGE_WORKSPACE_FUNCTION	346
+#define	DEICONIFY_FUNCTION	347
+#define	ICONIFY_FUNCTION	348
+#define	AUTOSQUEEZE	349
+#define	STARTSQUEEZED	350
+#define	DONT_SAVE	351
+#define	AUTO_LOWER	352
+#define	ICONMENU_DONTSHOW	353
+#define	WINDOW_BOX	354
+#define	IGNOREMODIFIER	355
+#define	WINDOW_GEOMETRIES	356
+#define	ALWAYSSQUEEZETOGRAVITY	357
+#define	VIRTUAL_SCREENS	358
+#define	STRING	359
+
+
 extern YYSTYPE yylval;
-# define LB 257
-# define RB 258
-# define LP 259
-# define RP 260
-# define MENUS 261
-# define MENU 262
-# define BUTTON 263
-# define DEFAULT_FUNCTION 264
-# define PLUS 265
-# define MINUS 266
-# define ALL 267
-# define OR 268
-# define CURSORS 269
-# define PIXMAPS 270
-# define ICONS 271
-# define COLOR 272
-# define SAVECOLOR 273
-# define MONOCHROME 274
-# define FUNCTION 275
-# define ICONMGR_SHOW 276
-# define ICONMGR 277
-# define WINDOW_FUNCTION 278
-# define ZOOM 279
-# define ICONMGRS 280
-# define ICONMGR_GEOMETRY 281
-# define ICONMGR_NOSHOW 282
-# define MAKE_TITLE 283
-# define ICONIFY_BY_UNMAPPING 284
-# define DONT_ICONIFY_BY_UNMAPPING 285
-# define NO_TITLE 286
-# define AUTO_RAISE 287
-# define NO_HILITE 288
-# define ICON_REGION 289
-# define META 290
-# define SHIFT 291
-# define LOCK 292
-# define CONTROL 293
-# define WINDOW 294
-# define TITLE 295
-# define ICON 296
-# define ROOT 297
-# define FRAME 298
-# define COLON 299
-# define EQUALS 300
-# define SQUEEZE_TITLE 301
-# define DONT_SQUEEZE_TITLE 302
-# define START_ICONIFIED 303
-# define NO_TITLE_HILITE 304
-# define TITLE_HILITE 305
-# define MOVE 306
-# define RESIZE 307
-# define WAIT 308
-# define SELECT 309
-# define KILL 310
-# define LEFT_TITLEBUTTON 311
-# define RIGHT_TITLEBUTTON 312
-# define NUMBER 313
-# define KEYWORD 314
-# define NKEYWORD 315
-# define CKEYWORD 316
-# define CLKEYWORD 317
-# define FKEYWORD 318
-# define FSKEYWORD 319
-# define SKEYWORD 320
-# define DKEYWORD 321
-# define JKEYWORD 322
-# define WINDOW_RING 323
-# define WARP_CURSOR 324
-# define ERRORTOKEN 325
-# define NO_STACKMODE 326
-# define WORKSPACES 327
-# define WORKSPCMGR_GEOMETRY 328
-# define OCCUPYALL 329
-# define STRING 330

@@ -606,7 +606,6 @@ typedef struct _TwmKeyword {
 #define kw0_Use3DBorders		36
 #define kw0_SunkFocusWindowTitle	37
 #define kw0_BeNiceToColormap		38
-#define kw0_SmartIconify		39
 #define kw0_WarpRingOnScreen		40
 #define kw0_NoIconManagerFocus		41
 #define kw0_StayUpMenus			42
@@ -652,6 +651,7 @@ typedef struct _TwmKeyword {
 #endif
 #define kws_WMgrButtonStyle		17
 #define kws_WorkSpaceFont               18
+#define kws_IconifyStyle                19
 
 #define kwn_ConstrainedMoveTime		1
 #define kwn_MoveDelta			2
@@ -724,6 +724,7 @@ static TwmKeyword keytable[] = {
     { "alter",			ALTER, 0 },
     { "alwaysontop",		ALWAYS_ON_TOP, 0 },
     { "alwaysshowwindowwhenmovingfromworkspacemanager", KEYWORD, kw0_ShowWinWhenMovingInWmgr },
+    { "alwayssqueezetogravity",	ALWAYSSQUEEZETOGRAVITY, 0 },
     { "animationspeed",		NKEYWORD, kwn_AnimationSpeed },
     { "autofocustotransients",  KEYWORD, kw0_AutoFocusToTransients }, /* kai */
     { "autolower",		AUTO_LOWER, 0 },
@@ -859,6 +860,7 @@ static TwmKeyword keytable[] = {
     { "f.separator",		FKEYWORD, F_SEPARATOR },
     { "f.setbuttonsstate",	FKEYWORD, F_SETBUTTONSTATE },
     { "f.setmapstate",		FKEYWORD, F_SETMAPSTATE },
+    { "f.showbackground",      	FKEYWORD, F_SHOWBGRD },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
     { "f.showworkspacemgr",	FKEYWORD, F_SHOWWORKMGR },
     { "f.slowdownanimation",	FKEYWORD, F_SLOWDOWNANIMATION },
@@ -906,6 +908,7 @@ static TwmKeyword keytable[] = {
     { "iconforeground",		CLKEYWORD, kwcl_IconForeground },
     { "iconifybyunmapping",	ICONIFY_BY_UNMAPPING, 0 },
     { "iconifyfunction",	ICONIFY_FUNCTION, 0 },
+    { "iconifystyle",		SKEYWORD, kws_IconifyStyle },
     { "iconjustification",	SKEYWORD, kws_IconJustification },
     { "iconmanagerbackground",	CLKEYWORD, kwcl_IconManagerBackground },
     { "iconmanagerdontshow",	ICONMGR_NOSHOW, 0 },
@@ -1010,7 +1013,6 @@ static TwmKeyword keytable[] = {
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
     { "showworkspacemanager",	KEYWORD, kw0_ShowWorkspaceManager },
     { "sloppyfocus",            KEYWORD, kw0_SloppyFocus },
-    { "smarticonify",		KEYWORD, kw0_SmartIconify },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
 #ifdef SOUNDS
     { "soundhost",		SKEYWORD, kws_SoundHost },
@@ -1046,6 +1048,7 @@ static TwmKeyword keytable[] = {
     { "usethreedmenus",		KEYWORD, kw0_Use3DMenus },
     { "usethreedtitles",	KEYWORD, kw0_Use3DTitles },
     { "usethreedwmap",		KEYWORD, kw0_Use3DWMap },
+    { "virtualscreens",         VIRTUAL_SCREENS, 0 },
     { "w",			WINDOW, 0 },
     { "wait",			WAITC, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
@@ -1196,11 +1199,11 @@ int do_single_keyword (keyword)
 	return 1;
 
       case kw0_StartInMapState:
-	Scr->workSpaceMgr.workspaceWindow.state = MAPSTATE;
+	Scr->workSpaceMgr.initialstate = MAPSTATE;
 	return 1;
 
       case kw0_NoShowOccupyAll:
-	Scr->workSpaceMgr.workspaceWindow.noshowoccupyall = TRUE;
+	Scr->workSpaceMgr.noshowoccupyall = TRUE;
 	return 1;
 
       case kw0_AutoOccupy:
@@ -1245,10 +1248,6 @@ int do_single_keyword (keyword)
 
       case kw0_BeNiceToColormap:
 	Scr->BeNiceToColormap = TRUE;
-	return 1;
-
-      case kw0_SmartIconify:
-	Scr->SmartIconify = TRUE;
 	return 1;
 
       case kw0_BorderResizeCursors:
@@ -1401,7 +1400,7 @@ int do_string_keyword (keyword, s)
 	return 1;
 
       case kws_WorkSpaceFont:
-	if (!Scr->HaveFonts) Scr->workSpaceMgr.workspaceWindow.windowFont.basename = s;
+	if (!Scr->HaveFonts) Scr->workSpaceMgr.windowFont.basename = s;
 	return 1;
 
       case kws_TitleFont:
@@ -1425,7 +1424,7 @@ int do_string_keyword (keyword, s)
 	return 1;
 
       case kws_WorkSpaceFont:
-	if (!Scr->HaveFonts) Scr->workSpaceMgr.workspaceWindow.windowFont.name = s;
+	if (!Scr->HaveFonts) Scr->workSpaceMgr.windowFont.name = s;
 	return 1;
 
       case kws_TitleFont:
@@ -1534,9 +1533,25 @@ int do_string_keyword (keyword, s)
  		fprintf (stderr,
  			 "ignoring invalid WMgrButtonStyle argument \"%s\"\n", s);
  	    } else {
- 		Scr->workSpaceMgr.workspaceWindow.buttonStyle = style;
+ 		Scr->workSpaceMgr.buttonStyle = style;
  	    }
  	    return 1;
+	}
+
+      case kws_IconifyStyle:
+	{
+	  if (strlen (s) == 0) {
+	    twmrc_error_prefix();
+	    fprintf (stderr, "ignoring invalid IconifyStyle argument \"%s\"\n", s);
+	  }
+	  if (strcmp (s,  "default") == 0) Scr->IconifyStyle = ICONIFY_NORMAL;
+	  XmuCopyISOLatin1Lowered (s, s);
+	  if (strcmp (s,  "normal") == 0) Scr->IconifyStyle = ICONIFY_NORMAL;
+	  if (strcmp (s,  "mosaic") == 0) Scr->IconifyStyle = ICONIFY_MOSAIC;
+	  if (strcmp (s,  "zoomin") == 0) Scr->IconifyStyle = ICONIFY_ZOOMIN;
+	  if (strcmp (s, "zoomout") == 0) Scr->IconifyStyle = ICONIFY_ZOOMOUT;
+	  if (strcmp (s,   "sweep") == 0) Scr->IconifyStyle = ICONIFY_SWEEP;
+	  return 1;
 	}
     }
     return 0;
@@ -1775,14 +1790,14 @@ name_list **do_colorlist_keyword (keyword, colormode, s)
 	return &Scr->IconManagerBL;
 
       case kwcl_MapWindowBackground:
-	GetColor (colormode, &Scr->workSpaceMgr.workspaceWindow.windowcp.back, s);
-	Scr->workSpaceMgr.workspaceWindow.windowcpgiven = True;
-	return &Scr->workSpaceMgr.workspaceWindow.windowBackgroundL;
+	GetColor (colormode, &Scr->workSpaceMgr.windowcp.back, s);
+	Scr->workSpaceMgr.windowcpgiven = True;
+	return &Scr->workSpaceMgr.windowBackgroundL;
 
       case kwcl_MapWindowForeground:
-	GetColor (colormode, &Scr->workSpaceMgr.workspaceWindow.windowcp.fore, s);
-	Scr->workSpaceMgr.workspaceWindow.windowcpgiven = True;
-	return &Scr->workSpaceMgr.workspaceWindow.windowForegroundL;
+	GetColor (colormode, &Scr->workSpaceMgr.windowcp.fore, s);
+	Scr->workSpaceMgr.windowcpgiven = True;
+	return &Scr->workSpaceMgr.windowForegroundL;
     }
     return NULL;
 }
@@ -1931,10 +1946,10 @@ void assign_var_savecolor()
       put_pixel_on_root(Scr->IconManagerC.back);
       break;
     case kwcl_MapWindowForeground:
-      put_pixel_on_root(Scr->workSpaceMgr.workspaceWindow.windowcp.fore);
+      put_pixel_on_root(Scr->workSpaceMgr.windowcp.fore);
       break;
     case kwcl_MapWindowBackground:
-      put_pixel_on_root(Scr->workSpaceMgr.workspaceWindow.windowcp.back);
+      put_pixel_on_root(Scr->workSpaceMgr.windowcp.back);
       break;
     }
     cp = cp->next;
@@ -2237,6 +2252,9 @@ char *host;
         }
 #ifdef XPM
 	fputs(MkDef("XPM", "Yes"), tmpf);
+#endif
+#ifdef JPEG
+	fputs(MkDef("JPEG", "Yes"), tmpf);
 #endif
 	if (captive && captivename) {
             fputs (MkDef ("TWM_CAPTIVE", "Yes"), tmpf);

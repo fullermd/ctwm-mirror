@@ -147,6 +147,7 @@ XEvent ButtonEvent;		/* button press event */
 XEvent Event;			/* the current event */
 TwmWindow *Tmp_win;		/* the current twm window */
 
+extern Window captiveroot;
 Window DragWindow;		/* variables used in moving windows */
 int origDragX;
 int origDragY;
@@ -179,8 +180,17 @@ extern int ShapeEventBase, ShapeErrorBase;
 
 extern Window lowerontop;
 
+#ifdef GNOME
+#  include "gnomewindefs.h"
+  extern Atom _XA_WIN_WORKSPACE;
+  extern Atom _XA_WIN_STATE;
+#endif /* GNOME */
+
 extern Atom _XA_WM_OCCUPATION;
 extern Atom _XA_WM_CURRENTWORKSPACE;
+
+int GnomeProxyButtonPress = -1;
+
 /*#define TRACE_FOCUS*/
 /*#define TRACE*/
 
@@ -399,25 +409,25 @@ XEvent *e;
     switch (e->type) {
       case KeyPress:
       case KeyRelease:
-	  e->xkey.x_root -= Scr->MyDisplayX;
-	  e->xkey.y_root -= Scr->MyDisplayY;
+	  e->xkey.x_root -= Scr->rootx;
+	  e->xkey.y_root -= Scr->rooty;
 	  e->xkey.root    = Scr->Root;
 	  break;
       case ButtonPress:
       case ButtonRelease:
-	  e->xbutton.x_root -= Scr->MyDisplayX;
-	  e->xbutton.y_root -= Scr->MyDisplayY;
+	  e->xbutton.x_root -= Scr->rootx;
+	  e->xbutton.y_root -= Scr->rooty;
 	  e->xbutton.root    = Scr->Root;
 	  break;
       case MotionNotify:
-	  e->xmotion.x_root -= Scr->MyDisplayX;
-	  e->xmotion.y_root -= Scr->MyDisplayY;
+	  e->xmotion.x_root -= Scr->rootx;
+	  e->xmotion.y_root -= Scr->rooty;
 	  e->xmotion.root    = Scr->Root;
 	  break;
       case EnterNotify:
       case LeaveNotify:
-	  e->xcrossing.x_root -= Scr->MyDisplayX;
-	  e->xcrossing.y_root -= Scr->MyDisplayY;
+	  e->xcrossing.x_root -= Scr->rootx;
+	  e->xcrossing.y_root -= Scr->rooty;
 	  e->xcrossing.root    = Scr->Root;
 	  break;
       default:
@@ -449,7 +459,7 @@ Bool DispatchEvent2 ()
     }
 
     if (!Scr) return False;
-    if (captive) FixRootEvent (&Event);
+    if (Scr->Root != Scr->RealRoot) FixRootEvent (&Event);
 
 #ifdef SOUNDS
     play_sound(Event.type);
@@ -483,24 +493,21 @@ Bool DispatchEvent ()
     if (XFindContext (dpy, w, ScreenContext, (XPointer *)&Scr) == XCNOENT) {
 	Scr = FindScreenInfo (WindowOfEvent (&Event));
     }
-
     if (!Scr) return False;
 
     if (captive) {
-        if ((Event.type == ConfigureNotify) &&
-	    (Event.xconfigure.window == Scr->Root)) {
-	    ConfigureRootWindow (&Event);
-	    return (True);
-	}
-	FixRootEvent (&Event);
+      if ((Event.type == ConfigureNotify) && (Event.xconfigure.window == Scr->CaptiveRoot)) {
+	ConfigureRootWindow (&Event);
+	return (False);
+      }
     }
+    if (Scr->Root != Scr->RealRoot) FixRootEvent (&Event);
     if (Event.type>= 0 && Event.type < MAX_X_EVENT) {
 #ifdef SOUNDS
         play_sound(Event.type);
 #endif
 	(*EventHandler[Event.type])();
     }
-
     return True;
 }
 
@@ -999,8 +1006,8 @@ HandleVisibilityNotify()
 void
 HandleKeyRelease()
 {
-    if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win)
-	WMgrHandleKeyReleaseEvent (&Event);
+  if (Tmp_win == Scr->currentvs->wsw->twm_win)
+    WMgrHandleKeyReleaseEvent (Scr->currentvs, &Event);
 }
 /***********************************************************************
  *
@@ -1152,7 +1159,7 @@ HandleKeyPress()
 			if (ActiveMenu == Scr->Workspaces) {
 			    PopDownMenu();
 			    XUngrabPointer  (dpy, CurrentTime);
-			    GotoWorkSpaceByName (item->action + 8);
+			    GotoWorkSpaceByName (Scr->currentvs, item->action + 8);
 			}
 			else {
 			    ExecuteFunction (item->func, item->action,
@@ -1228,6 +1235,8 @@ HandleKeyPress()
 	    Context = C_ICONMGR;
 	if (Tmp_win->list && Event.xany.window == Tmp_win->list->icon)
 	    Context = C_ICONMGR;
+	if (Tmp_win->wspmgr)
+	    Context = C_WORKSPACE;
     }
 
     modifier = (Event.xkey.state | AlternateKeymap) & mods_used;
@@ -1323,10 +1332,10 @@ HandleKeyPress()
      */
     if (Tmp_win)
     {
-	if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) {
-	    WMgrHandleKeyPressEvent (&Event);
-	    return;
-	}
+        if (Tmp_win == Scr->currentvs->wsw->twm_win) {
+	  WMgrHandleKeyPressEvent (Scr->currentvs, &Event);
+	  return;
+        }
         if (Tmp_win->icon && ((Event.xany.window == Tmp_win->icon->w) ||
 	    (Event.xany.window == Tmp_win->frame) ||
 	    (Event.xany.window == Tmp_win->title_w) ||
@@ -1428,6 +1437,8 @@ HandlePropertyNotify()
     XRectangle logical_rect;
 #endif    
 
+    unsigned char *gwkspc;
+
     /* watch for standard colormap changes */
     if (Event.xproperty.window == Scr->Root) {
 	XStandardColormap *maps = NULL;
@@ -1440,7 +1451,7 @@ HandlePropertyNotify()
 				0L, 200L, False, XA_STRING, &actual, &actual_format,
 				&nitems, &bytesafter, (unsigned char **) &prop) == Success) {
 			if (nitems == 0) return;
-			GotoWorkSpaceByName (prop);
+			GotoWorkSpaceByName (Scr->vScreenList, prop);
 			XFree ((char*) prop);
 		    }
 		    return;
@@ -1483,6 +1494,12 @@ HandlePropertyNotify()
 	  return;
 	if (!prop) prop = NoName;
 #endif /* NO_LOCALE */
+#ifdef CLAUDE
+	if (strstr (prop, " - Mozilla")) {
+	  char *moz = strstr (prop, " - Mozilla");
+	  *moz = '\0';
+	}
+#endif
 	free_window_names (Tmp_win, True, True, False);
 
 	Tmp_win->full_name = prop;
@@ -1563,12 +1580,9 @@ HandlePropertyNotify()
 	if (!prop) prop = NoName;
 #endif /* NO_LOCALE */
 #ifdef CLAUDE
-	if ((strlen (prop) > 11) && (strncmp (prop, "Netscape: ", 10) == 0)) {
-	    char *tmp;
-
-	    tmp = strdup (prop + 10);
-	    XFree ((char*) prop);
-	    prop = tmp;
+	if (strstr (prop, " - Mozilla")) {
+	  char *moz = strstr (prop, " - Mozilla");
+	  *moz = '\0';
 	}
 #endif
 	icon_change = strcmp (Tmp_win->icon_name, prop);
@@ -1753,6 +1767,14 @@ HandlePropertyNotify()
 	      actual == None) return;
 	  ChangeOccupation (Tmp_win, GetMaskFromProperty (prop, nitems));
 	}
+#ifdef GNOME
+	else if (Event.xproperty.atom == _XA_WIN_WORKSPACE){
+	  if(XGetWindowProperty(dpy, Tmp_win->w, Event.xproperty.atom, 0L, 32, False,
+				XA_CARDINAL, &actual, &actual_format, &nitems, &bytesafter,
+				&gwkspc) != Success || actual == None) return;
+	  ChangeOccupation (Tmp_win, 1 << (int)(*gwkspc));
+	}
+#endif /* GNOME */
 	break;
     }
 }
@@ -1789,20 +1811,20 @@ static void RedoIcon()
 	    RedoIconName ();
 	    return;
 	}
-	if (Tmp_win->icon_on && (OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC))) {
+	if (Tmp_win->icon_on && visible (Tmp_win)) {
 	    IconDown (Tmp_win);
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
 	    Tmp_win->icon = icon;
 	    IconUp (Tmp_win);
 	    XMapRaised (dpy, Tmp_win->icon->w);
-	}
+        }
 	else {
 	    Tmp_win->icon = icon;
 	}
 	RedoIconName ();
     }
     else {
-	if (Tmp_win->icon_on && (OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC))) {
+	if (Tmp_win->icon_on && visible (Tmp_win)) {
 	    IconDown (Tmp_win);
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
 	    CreateIconWindow (Tmp_win, -100, -100);
@@ -1916,8 +1938,7 @@ RedoIconName()
     }
     if (Scr->SchrinkIconTitles &&
 	Tmp_win->icon->title_schrinked &&
-	Tmp_win->icon_on &&
-	(OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC))) {
+	Tmp_win->icon_on && (visible (Tmp_win))) {
 	IconDown (Tmp_win);
 	IconUp (Tmp_win);
     }
@@ -1942,25 +1963,67 @@ wmapupd:
 void
 HandleClientMessage()
 {
-    if (Event.xclient.message_type == _XA_WM_CHANGE_STATE)
-    {
-	if (Tmp_win != NULL)
-	{
-	    if (Event.xclient.data.l[0] == IconicState && !Tmp_win->isicon)
-	    {
+    TwmWindow *twm_win;
+    int i;
+	
+    if (Event.xclient.message_type == _XA_WM_CHANGE_STATE) {
+        if (Tmp_win != NULL) {
+	    if (Event.xclient.data.l[0] == IconicState && !Tmp_win->isicon) {
 		XEvent button;
+		XQueryPointer (dpy, Scr->Root, &JunkRoot, &JunkChild,
+			       &(button.xmotion.x_root),
+			       &(button.xmotion.y_root),
+			       &JunkX, &JunkY, &JunkMask);
 
-		XQueryPointer( dpy, Scr->Root, &JunkRoot, &JunkChild,
-			      &(button.xmotion.x_root),
-			      &(button.xmotion.y_root),
-			      &JunkX, &JunkY, &JunkMask);
-
-		ExecuteFunction(F_ICONIFY, NULLSTR, Event.xany.window,
-		    Tmp_win, &button, FRAME, FALSE);
-		XUngrabPointer(dpy, CurrentTime);
+		ExecuteFunction (F_ICONIFY, NULLSTR, Event.xany.window,
+				 Tmp_win, &button, FRAME, FALSE);
+		XUngrabPointer (dpy, CurrentTime);
 	    }
 	}
+ 	return;
     }
+#ifdef GNOME
+    /* 6/19/1999 nhd for GNOME compliance */	
+    if (Event.xclient.message_type == _XA_WIN_WORKSPACE) {
+      GotoWorkSpaceByNumber (Event.xclient.data.l[0]);
+      return;
+    }
+    if (Event.xclient.message_type == _XA_WIN_STATE) {
+      unsigned long new_stuff = (unsigned long) Event.xclient.data.l [1];
+      unsigned long old_stuff = (unsigned long) Event.xclient.data.l [0];
+      Window          tmp_win = Event.xclient.window;
+      for (twm_win = (Scr->TwmRoot).next; twm_win != NULL; twm_win = twm_win->next)
+	if (twm_win->w == tmp_win) break;
+      if (twm_win == NULL) return;
+      for (i = 1; i < (1 << 10); i <<= 1){
+	switch (old_stuff & i) {
+	  case WIN_STATE_STICKY: /* sticky */
+	    if (new_stuff & i) OccupyAll (twm_win);
+	    else ChangeOccupation (twm_win, (1<<(Scr->currentvs->wsw->currentwspc->number)));
+	    break;
+	  case WIN_STATE_MINIMIZED: /* minimized - reserved */
+	    break;
+	  case WIN_STATE_MAXIMIZED_VERT: /* window in maximized V state */
+	    break;
+	  case WIN_STATE_MAXIMIZED_HORIZ: /* maximized horizontally */
+	    break;
+	  case WIN_STATE_HIDDEN: /* hidden - what does this mean?? */
+	    break;
+	  case WIN_STATE_SHADED: /* shaded (squeezed) */
+	    Squeeze (twm_win);
+	    break;
+	  case WIN_STATE_HID_WORKSPACE: /* not on this workspace */
+	    break;
+	  case WIN_STATE_HID_TRANSIENT: /* owner of transient hidden ? */
+	    break;
+	  case WIN_STATE_FIXED_POSITION: /* position fixed, don't move */
+	    break;
+	  case WIN_STATE_ARRANGE_IGNORE: /* ignore when auto-arranging */
+	    break;
+	}
+      }
+    }
+#endif /* GNOME */
 }
 
 
@@ -1979,6 +2042,7 @@ void
 HandleExpose()
 {
     MenuRoot *tmp;
+    virtualScreen *vs;
 
     if (XFindContext(dpy, Event.xany.window, MenuContext, (XPointer *)&tmp) == 0)
     {
@@ -2054,12 +2118,14 @@ HandleExpose()
                 }
             }
 	}
-	if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) {
-	    WMgrHandleExposeEvent (&Event);
+	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	  if (Tmp_win == vs->wsw->twm_win) {
+	    WMgrHandleExposeEvent (vs, &Event);
 	    flush_expose (Event.xany.window);
 	    return;
+	  }
 	}
-	else if (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win) {
+	if (Tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win) {
 	    PaintOccupyWindow ();
 	    flush_expose (Event.xany.window);
 	    return;
@@ -2122,7 +2188,7 @@ HandleExpose()
 		flush_expose (Event.xany.window);
 		return;
 	    }
-	} 
+	}
     }
 }
 
@@ -2171,7 +2237,6 @@ void
 HandleDestroyNotify()
 {
     int i;
-
     /*
      * Warning, this is also called by HandleUnmapNotify; if it ever needs to
      * look at the event, HandleUnmapNotify will have to mash the UnmapNotify
@@ -2182,6 +2247,9 @@ HandleDestroyNotify()
 	return;
 
     RemoveWindowFromRegion (Tmp_win);
+#ifdef GNOME
+    GnomeDeleteClientWindow (Tmp_win); /* Fix the gnome client list */
+#endif /* GNOME */
     if (Tmp_win == Scr->Focus)
     {
 	Scr->Focus = (TwmWindow*) NULL;
@@ -2281,7 +2349,7 @@ HandleDestroyNotify()
     free((char *)Tmp_win);
 
     if (Scr->ClickToFocus || Scr->SloppyFocus)
-	set_last_window (Scr->workSpaceMgr.activeWSPC);
+	set_last_window (Scr->currentvs->wsw->currentwspc);
 }
 
 
@@ -2323,8 +2391,10 @@ HandleMapRequest()
     {
 	/* Add decorations. */
 	Tmp_win = AddWindow(Event.xany.window, FALSE, (IconMgr *) NULL);
-	if (Tmp_win == NULL)
-	    return;
+	if (Tmp_win == NULL) return;
+#ifdef GNOME
+	GnomeAddClientWindow (Tmp_win); /* add the new window to the gnome client list */
+#endif /* GNOME */
     }
     else
     {
@@ -2380,8 +2450,7 @@ HandleMapRequest()
 	    case InactiveState:
 		Tmp_win->mapped = TRUE;
 		if (Tmp_win->UnmapByMovingFarAway) {
-		    XMoveWindow (dpy, Tmp_win->frame, Scr->MyDisplayWidth  + 1,
-						      Scr->MyDisplayHeight + 1);
+		    XMoveWindow (dpy, Tmp_win->frame, Scr->rootw + 1, Scr->rooth + 1);
 		    XMapWindow  (dpy, Tmp_win->w);
 		    XMapWindow  (dpy, Tmp_win->frame);
 		}
@@ -2559,7 +2628,7 @@ HandleMotionNotify()
 	    &(Event.xmotion.x), &(Event.xmotion.y),
 	    &JunkMask);
 
-	if (captive) FixRootEvent (&Event);
+	if (Scr->Root != Scr->RealRoot) FixRootEvent (&Event);
 	/* Set WindowMoved appropriately so that f.deltastop will
 	   work with resize as well as move. */
 	if (abs (Event.xmotion.x - ResizeOrigX) >= Scr->MoveDelta
@@ -2595,6 +2664,12 @@ HandleButtonRelease()
     int xl, yt, w, h;
     unsigned mask;
 
+#ifdef GNOME
+    if (GnomeProxyButtonPress == Event.xbutton.button) {
+      GnomeProxyButtonPress = -1;
+      XSendEvent (dpy, Scr->currentvs->wsw->w, False, SubstructureNotifyMask, &Event);
+    }
+#endif /* GNOME */
     if (InfoLines) 		/* delete info box on 2nd button release  */
       if (Context == C_IDENTIFY) {
 	XUnmapWindow(dpy, Scr->InfoWindow);
@@ -2862,6 +2937,8 @@ HandleButtonPress()
     int func;
     Window w;
 
+    GnomeProxyButtonPress = -1;
+
     /* pop down the menu, if any */
 
     if (XFindContext (dpy, Event.xbutton.window, MenuContext, (XPointer *) &mr) != XCSUCCESS) {
@@ -3076,8 +3153,8 @@ HandleButtonPress()
 		Tmp_win->wmhints &&
 		Tmp_win->wmhints->input) SetFocus (Tmp_win, CurrentTime);
 	}
-	else if ((Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) ||
-		 (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win)) {
+	else if (Tmp_win->wspmgr ||
+		 (Tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    Context = C_WINDOW;
 	}
 	else if (Tmp_win->list) {
@@ -3192,11 +3269,13 @@ HandleButtonPress()
 		}
 	}
     }
-    else if (Tmp_win == Scr->workSpaceMgr.workspaceWindow.twm_win) /* Baaad */
-    {
-	WMgrHandleButtonEvent (&Event);
+    else {
+	if (Tmp_win == Scr->currentvs->wsw->twm_win) {
+	  WMgrHandleButtonEvent (Scr->currentvs, &Event);
+	  return;
+	}
     }
-    else if (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win)
+    if (Tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)
     {
 	OccupyHandleButtonEvent (&Event);
     }
@@ -3214,6 +3293,16 @@ HandleButtonPress()
 	       Event.xany.window, Tmp_win, &Event, Context, FALSE);
 	}
     }
+#ifdef GNOME1 /* Makes DeferExecution (in menus.c) fail. TODO. */
+    else {
+        /* GNOME: Pass on the event to any applications listening for root window clicks */
+        GnomeProxyButtonPress = Event.xbutton.button;
+	ButtonPressed = -1;
+	XUngrabPointer (dpy, CurrentTime);
+	XSendEvent (dpy, Scr->currentvs->wsw->twm_win->w, False,
+		    SubstructureNotifyMask, &Event);
+    }
+#endif /* GNOME1 */
 }
 
 
@@ -3281,6 +3370,7 @@ HandleEnterNotify()
     HENScanArgs scanArgs;
     XEvent dummy;
     extern int RaiseDelay;
+    virtualScreen *vs;
 
     /*
      * if we aren't in the middle of menu processing
@@ -3317,6 +3407,19 @@ HandleEnterNotify()
 		SetFocus ((TwmWindow *) NULL, Event.xcrossing.time);
 	    }
 	    return;
+	}
+	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	  if (ewp->window == vs->window) {
+	    Scr->Root  = vs->window;
+	    Scr->rootx = Scr->crootx + vs->x;
+	    Scr->rooty = Scr->crooty + vs->y;
+	    Scr->rootw = vs->w;
+	    Scr->rooth = vs->h;
+	    Scr->currentvs = vs;
+	    /*fprintf (stderr, "entering new vs : 0x%x, 0x%x, %d, %d, %d, %d\n",
+	      vs, Scr->Root, vs->x, vs->y, vs->w, vs->h);*/
+	    return;
+	  }
 	}
 
 	/* Handle RaiseDelay, if any.....
@@ -4190,25 +4293,40 @@ UninstallRootColormap()
 ConfigureRootWindow (ev)
 XEvent *ev;
 {
-    Window root, child;
-    int    x, y;
-    unsigned int w, h, bw, d;
+    Window       root, child;
+    int          x, y;
+    unsigned int w, h, bw, d, oldw, oldh;
 
-    XGetGeometry (dpy, Scr->Root, &root, &x, &y, &w, &h, &bw, &d);
-    XTranslateCoordinates (dpy, Scr->Root, root, 0, 0, &Scr->MyDisplayX,
-				&Scr->MyDisplayY, &child);
+    XGetGeometry (dpy, Scr->CaptiveRoot, &root, &x, &y, &w, &h, &bw, &d);
+    XTranslateCoordinates (dpy, Scr->CaptiveRoot, root, 0, 0, &Scr->crootx, &Scr->crooty, &child);
 
-    Scr->MyDisplayWidth  = ev->xconfigure.width;
-    Scr->MyDisplayHeight = ev->xconfigure.height;
+    oldw = Scr->crootw;
+    oldh = Scr->crooth;
+    Scr->crootw = ev->xconfigure.width;
+    Scr->crooth = ev->xconfigure.height;
+    /*
+    fprintf (stderr, "ConfigureRootWindow: cx = %d, cy = %d, cw = %d, ch = %d\n",
+	     Scr->crootx, Scr->crooty, Scr->crootw, Scr->crooth);
+    */
+    if (Scr->currentvs) {
+      Scr->rootx = Scr->crootx + Scr->currentvs->x;
+      Scr->rooty = Scr->crooty + Scr->currentvs->y;
+    }
+    Scr->rootw = Scr->crootw;
+    Scr->rooth = Scr->crooth;
+
+    if (captive && ((Scr->crootw != oldw) || (Scr->crooth != oldh))) {
+      twmrc_error_prefix ();
+      fprintf (stderr, "You cannot change root window geometry with virtual screens active,\n");
+      fprintf (stderr, "from now on, the ctwm behaviour is unpredictable.\n");
+    }
 }
 
-#ifdef TRACE
 static void dumpevent (e)
     XEvent *e;
 {
-    char *name = NULL;
+    char *name = "Unknown event";
 
-    if (! tracefile) return;
     switch (e->type) {
       case KeyPress:  name = "KeyPress"; break;
       case KeyRelease:  name = "KeyRelease"; break;
@@ -4244,11 +4362,5 @@ static void dumpevent (e)
       case ClientMessage:  name = "ClientMessage"; break;
       case MappingNotify:  name = "MappingNotify"; break;
     }
-
-    if (name) {
-	fprintf (tracefile, "event:  %s, %d remaining\n", name, QLength(dpy));
-    } else {
-	fprintf (tracefile, "unknown event %d, %d remaining\n", e->type, QLength(dpy));
-    }
+    fprintf (stderr, "event:  %s in window 0x%x\n", name, e->xany.window);
 }
-#endif /* TRACE */

@@ -122,7 +122,7 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 
 #define NULLSTR ((char *) NULL)
 
-#define MAX_BUTTONS	5	/* max mouse buttons supported */
+#define MAX_BUTTONS	6	/* max mouse buttons supported */
 
 /* info stings defines */
 #define INFO_LINES 30
@@ -145,7 +145,8 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 #define C_NAME		6
 #define C_IDENTIFY      7
 #define C_ALTERNATE     8
-#define NUM_CONTEXTS	9
+#define C_WORKSPACE	9
+#define NUM_CONTEXTS	10
 
 #define C_WINDOW_BIT	(1 << C_WINDOW)
 #define C_TITLE_BIT	(1 << C_TITLE)
@@ -155,9 +156,11 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 #define C_ICONMGR_BIT	(1 << C_ICONMGR)
 #define C_NAME_BIT	(1 << C_NAME)
 #define C_ALTER_BIT	(1 << C_ALTERNATE)
+#define C_WORKSPACE_BIT	(1 << C_WORKSPACE)
 
 #define C_ALL_BITS	(C_WINDOW_BIT | C_TITLE_BIT | C_ICON_BIT |\
-			 C_ROOT_BIT | C_FRAME_BIT | C_ICONMGR_BIT)
+			 C_ROOT_BIT | C_FRAME_BIT | C_ICONMGR_BIT |\
+			 C_WORKSPACE_BIT)
 
 /* modifiers for button presses */
 #define MOD_SIZE	((ShiftMask | ControlMask | Mod1Mask \
@@ -371,6 +374,7 @@ typedef struct TwmWindow
     short ontoppriority;	/* how much on top should that be */
     short iconify_by_unmapping;	/* unmap window to iconify it */
     short iconmgr;		/* this is an icon manager window */
+    short wspmgr;		/* this is a workspace manager manager window */
     short transient;		/* this is a transient window */
     Window transientfor;	/* window contained in XA_XM_TRANSIENT_FOR */
     short titlehighlight;	/* should I highlight the title bar */
@@ -396,6 +400,7 @@ typedef struct TwmWindow
     short UnmapByMovingFarAway;
     short AutoSqueeze;
     short StartSqueezed;
+    short AlwaysSqueezeToGravity;
     short DontSetInactive;
     Bool hasfocusvisible;	/* The window has visivle focus*/
     int  occupation;
@@ -408,6 +413,9 @@ typedef struct TwmWindow
 	int x, y;
 	int width, height;
     } savegeometry;
+    struct virtualScreen *vs;
+    struct virtualScreen *oldvs;
+    struct virtualScreen *savevs;
 
 #ifdef X11R6
     Bool nameChanged;	/* did WM_NAME ever change? */
@@ -513,6 +521,7 @@ extern XContext MenuContext;
 extern XContext IconManagerContext;
 extern XContext ScreenContext;
 extern XContext ColormapContext;
+extern XContext VirtScreenContext;
 
 extern char *Home;
 extern int HomeLen;

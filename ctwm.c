@@ -189,11 +189,13 @@ XContext MenuContext;		/* context for all menu windows */
 XContext IconManagerContext;	/* context for all window list windows */
 XContext ScreenContext;		/* context to get screen data */
 XContext ColormapContext;	/* context for colormap operations */
+XContext VirtScreenContext;	/* context for virtual screen */
 
 XClassHint NoClass;		/* for applications with no class */
 
 XGCValues Gcv;
 
+Window captiveroot;
 char *Home;			/* the HOME environment variable */
 int HomeLen;			/* length of Home */
 int ParseError;			/* error parsing the .twmrc file */
@@ -248,7 +250,7 @@ main(argc, argv, environ)
     char **environ;
 #endif
 {
-    Window root, parent, *children;
+    Window croot, parent, *children;
     unsigned int nchildren;
     int i, j;
     char *display_name = NULL;
@@ -263,10 +265,12 @@ main(argc, argv, environ)
 #endif
     char *welcomefile;
     int  screenmasked;
-    static int rootx = 100;
-    static int rooty = 100;
-    static unsigned int rootw = 1024;
-    static unsigned int rooth = 768;
+    static int crootx = 100;
+    static int crooty = 100;
+    static unsigned int crootw = 1280;
+    static unsigned int crooth =  768;
+    //    static unsigned int crootw = 2880;
+    //    static unsigned int crooth = 1200;
     Window capwin = (Window) 0;
     IconRegion *ir;
 
@@ -456,6 +460,7 @@ main(argc, argv, environ)
     IconManagerContext = XUniqueContext();
     ScreenContext = XUniqueContext();
     ColormapContext = XUniqueContext();
+    VirtScreenContext = XUniqueContext();
 
     InternUsefulAtoms ();
 
@@ -489,40 +494,39 @@ main(argc, argv, environ)
     FirstScreen = TRUE;
     for (scrnum = firstscrn ; scrnum <= lastscrn; scrnum++)
     {
+        unsigned long attrmask;
 	if (captive) {
 	    XWindowAttributes wa;
 	    if (capwin && XGetWindowAttributes (dpy, capwin, &wa)) {
 		Window junk;
-
-		root  = capwin;
-		rootw = wa.width;
-		rooth = wa.height;
-		XTranslateCoordinates (dpy, capwin, wa.root, 0, 0, &rootx, &rooty, &junk);
+		croot  = capwin;
+		crootw = wa.width;
+		crooth = wa.height;
+		XTranslateCoordinates (dpy, capwin, wa.root, 0, 0, &crootx, &crooty, &junk);
 	    }
 	    else {
-		root = CreateRootWindow (rootx, rooty, rootw, rooth);
+		croot = CreateRootWindow (crootx, crooty, crootw, crooth);
 	    }
+	    captiveroot = croot;
 	}
 	else {
-	    root = RootWindow (dpy, scrnum);
+	    croot  = RootWindow (dpy, scrnum);
+	    crootx = 0;
+	    crooty = 0;
+	    crootw = DisplayWidth  (dpy, scrnum);;
+	    crooth = DisplayHeight (dpy, scrnum);;
 	}
 
         /* Make sure property priority colors is empty */
-        XChangeProperty (dpy, root, _XA_MIT_PRIORITY_COLORS,
+        XChangeProperty (dpy, croot, _XA_MIT_PRIORITY_COLORS,
 			 XA_CARDINAL, 32, PropModeReplace, NULL, 0);
 	XSync(dpy, 0); /* Flush possible previous errors */
 	RedirectError = FALSE;
 	XSetErrorHandler(CatchRedirectError);
-	if (captive) 
-	    XSelectInput(dpy, root,
-		ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
-		SubstructureRedirectMask | KeyPressMask |
-		ButtonPressMask | ButtonReleaseMask | StructureNotifyMask);
-	else
-	    XSelectInput(dpy, root,
-		ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
-		SubstructureRedirectMask | KeyPressMask |
-		ButtonPressMask | ButtonReleaseMask);
+	attrmask = ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
+	  SubstructureRedirectMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask;
+	if (captive) attrmask |= StructureNotifyMask;
+	XSelectInput (dpy, croot, attrmask);
 	XSync(dpy, 0);
 	XSetErrorHandler(TwmErrorHandler);
 
@@ -542,9 +546,9 @@ main(argc, argv, environ)
 	/* Note:  ScreenInfo struct is calloc'ed to initialize to zero. */
 	Scr = ScreenList[scrnum] = 
 	    (ScreenInfo *) calloc(1, sizeof(ScreenInfo));
-  	if (Scr == NULL)
-  	{
-  	    fprintf (stderr, "%s: unable to allocate memory for ScreenInfo structure for screen %d.\n",
+  	if (Scr == NULL) {
+  	    fprintf (stderr,
+		     "%s: unable to allocate memory for ScreenInfo structure for screen %d.\n",
   		     ProgramName, scrnum);
   	    continue;
   	}
@@ -568,6 +572,7 @@ main(argc, argv, environ)
 	Scr->DontSetInactive = NULL;
 	Scr->AutoSqueeze = NULL;
 	Scr->StartSqueezed = NULL;
+	Scr->AlwaysSqueezeToGravity = NULL;
 	Scr->MakeTitle = NULL;
 	Scr->AutoRaise = NULL;
 	Scr->AutoLower = NULL;
@@ -598,7 +603,8 @@ main(argc, argv, environ)
 	Scr->HighlightPixmapName = NULL;
 	Scr->Workspaces = (MenuRoot*) 0;
 	Scr->IconMenuDontShow = NULL;
-
+	Scr->VirtualScreens = NULL;
+	Scr->CaptiveRoot = captiveroot;
 
 	/* remember to put an initialization in InitVariables also
 	 */
@@ -606,58 +612,51 @@ main(argc, argv, environ)
 	Scr->screen = scrnum;
 	Scr->d_depth = DefaultDepth(dpy, scrnum);
 	Scr->d_visual = DefaultVisual(dpy, scrnum);
-	Scr->Root = root;
+	Scr->RealRoot = RootWindow (dpy, scrnum);
+	Scr->Root = croot;
 	XSaveContext (dpy, Scr->Root, ScreenContext, (XPointer) Scr);
+
 	if (captive) {
 	    AddToCaptiveList ();
 	    if (captivename) {
-		XSetStandardProperties (dpy, root, captivename, captivename,
-				None, NULL, 0, NULL);
+		XSetStandardProperties (dpy, croot, captivename, captivename, None, NULL, 0, NULL);
 	    }
 	} else {
 	    captivename = "Root";
 	}
 	Scr->TwmRoot.cmaps.number_cwins = 1;
-	Scr->TwmRoot.cmaps.cwins =
-		(ColormapWindow **) malloc(sizeof(ColormapWindow *));
-	Scr->TwmRoot.cmaps.cwins[0] =
-		CreateColormapWindow(Scr->Root, True, False);
+	Scr->TwmRoot.cmaps.cwins = (ColormapWindow **) malloc(sizeof(ColormapWindow *));
+	Scr->TwmRoot.cmaps.cwins[0] = CreateColormapWindow(Scr->Root, True, False);
 	Scr->TwmRoot.cmaps.cwins[0]->visibility = VisibilityPartiallyObscured;
 
 	Scr->cmapInfo.cmaps = NULL;
-	Scr->cmapInfo.maxCmaps =
-		MaxCmapsOfScreen(ScreenOfDisplay(dpy, Scr->screen));
+	Scr->cmapInfo.maxCmaps = MaxCmapsOfScreen(ScreenOfDisplay(dpy, Scr->screen));
 	Scr->cmapInfo.root_pushes = 0;
 	InstallWindowColormaps(0, &Scr->TwmRoot);
 
-	Scr->StdCmapInfo.head = Scr->StdCmapInfo.tail = 
-	  Scr->StdCmapInfo.mru = NULL;
+	Scr->StdCmapInfo.head = Scr->StdCmapInfo.tail =  Scr->StdCmapInfo.mru = NULL;
 	Scr->StdCmapInfo.mruindex = 0;
 	LocateStandardColormaps();
 
-	Scr->TBInfo.nleft = Scr->TBInfo.nright = 0;
-	Scr->TBInfo.head = NULL;
-	Scr->TBInfo.border = -100; /* trick to have different default value if ThreeDTitles
-					is set or not */
-	Scr->TBInfo.width = 0;
-	Scr->TBInfo.leftx = 0;
+	Scr->TBInfo.nleft  = Scr->TBInfo.nright = 0;
+	Scr->TBInfo.head   = NULL;
+	Scr->TBInfo.border = -100; /* trick to have different default value if ThreeDTitles */
+	Scr->TBInfo.width  = 0;	   /* is set or not */
+	Scr->TBInfo.leftx  = 0;
 	Scr->TBInfo.titlex = 0;
 
-	if (captive) {
-	    Scr->MyDisplayX      = rootx;
-	    Scr->MyDisplayY      = rooty;
-	    Scr->MyDisplayWidth  = rootw;
-	    Scr->MyDisplayHeight = rooth;
-	}
-	else {
-	    Scr->MyDisplayX      = 0;
-	    Scr->MyDisplayY      = 0;
-	    Scr->MyDisplayWidth  = DisplayWidth(dpy, scrnum);
-	    Scr->MyDisplayHeight = DisplayHeight(dpy, scrnum);
-	}
+	Scr->rootx  = crootx;
+	Scr->rooty  = crooty;
+ 	Scr->rootw  = crootw;
+	Scr->rooth  = crooth;
 
-	Scr->MaxWindowWidth = 32767 - Scr->MyDisplayWidth;
-	Scr->MaxWindowHeight = 32767 - Scr->MyDisplayHeight;
+	Scr->crootx = crootx;
+	Scr->crooty = crooty;
+	Scr->crootw = crootw;
+	Scr->crooth = crooth;
+
+	Scr->MaxWindowWidth  = 32767 - Scr->rootw;
+	Scr->MaxWindowHeight = 32767 - Scr->rooth;
 
 	Scr->XORvalue = (((unsigned long) 1) << Scr->d_depth) - 1;
 
@@ -724,6 +723,7 @@ main(argc, argv, environ)
 	    Scr->FocusRoot  = FALSE;
 	    Scr->TitleFocus = FALSE;
 	}
+	InitVirtualScreens (Scr);
 	ConfigureWorkSpaceManager ();
 
 	if (Scr->use3Dtitles) {
@@ -785,8 +785,11 @@ main(argc, argv, environ)
 	CreateWorkSpaceManager ();
 	MakeWorkspacesMenu ();
 	createWindowBoxes ();
+#ifdef GNOME
+	InitGnome ();
+#endif /* GNOME */
 
-	XQueryTree(dpy, Scr->Root, &root, &parent, &children, &nchildren);
+	XQueryTree(dpy, Scr->Root, &croot, &parent, &children, &nchildren);
 	/*
 	 * weed out icon windows
 	 */
@@ -821,14 +824,17 @@ main(argc, argv, environ)
 	}
 	if (Scr->ShowWorkspaceManager && Scr->workSpaceManagerActive)
 	{
+	    virtualScreen *vs;
 	    if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
-	    SetMapStateProp (Scr->workSpaceMgr.workspaceWindow.twm_win, NormalState);
-	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.twm_win->frame);
-	    if (Scr->workSpaceMgr.workspaceWindow.twm_win->StartSqueezed)
-		Squeeze (Scr->workSpaceMgr.workspaceWindow.twm_win);
-	    else
-		XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w);
-	    Scr->workSpaceMgr.workspaceWindow.twm_win->mapped = TRUE;
+	    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+		SetMapStateProp (vs->wsw->twm_win, NormalState);
+		XMapWindow (dpy, vs->wsw->twm_win->frame);
+		if (vs->wsw->twm_win->StartSqueezed)
+		  Squeeze (vs->wsw->twm_win);
+		else
+		  XMapWindow (dpy, vs->wsw->w);
+		vs->wsw->twm_win->mapped = TRUE;
+	    }
 	}
 	
 	if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->DefaultC);
@@ -862,8 +868,8 @@ main(argc, argv, environ)
 	{
 	    int sx, sy;
 	    if (Scr->CenterFeedbackWindow) {
-		sx = (Scr->MyDisplayWidth  / 2) - (Scr->SizeStringWidth / 2);
-		sy = (Scr->MyDisplayHeight / 2) - ((Scr->SizeFont.height + SIZE_VINDENT*2) / 2);
+		sx = (Scr->rootw / 2) - (Scr->SizeStringWidth / 2);
+		sy = (Scr->rooth / 2) - ((Scr->SizeFont.height + SIZE_VINDENT*2) / 2);
 		attributes.save_under = True;
 		valuemask |= CWSaveUnder;
 	    } else {
@@ -879,8 +885,8 @@ main(argc, argv, environ)
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 	}
-	Scr->ShapeWindow = XCreateSimpleWindow (dpy, Scr->Root, 0, 0, Scr->MyDisplayWidth,
-				Scr->MyDisplayHeight, 0, 0, 0);
+	Scr->ShapeWindow = XCreateSimpleWindow (dpy, Scr->Root, 0, 0,
+						Scr->rootw, Scr->rooth, 0, 0, 0);
 
 	XUngrabServer(dpy);
 	if (ShowWelcomeWindow) UnmaskScreen ();
@@ -959,8 +965,9 @@ InitVariables()
     FreeList(&Scr->DontSetInactive);
     FreeList(&Scr->AutoSqueeze);
     FreeList(&Scr->StartSqueezed);
+    FreeList(&Scr->AlwaysSqueezeToGravity);
     FreeList(&Scr->IconMenuDontShow);
-
+    FreeList(&Scr->VirtualScreens);
 
     NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
     NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
@@ -1094,8 +1101,8 @@ InitVariables()
     Scr->IconRegionJustification = J_CENTER;
     Scr->IconRegionAlignement = J_CENTER;
     Scr->TitleJustification = J_LEFT;
-    Scr->SmartIconify = FALSE;
-    Scr->MaxIconTitleWidth = Scr->MyDisplayWidth;
+    Scr->IconifyStyle = ICONIFY_NORMAL;
+    Scr->MaxIconTitleWidth = Scr->rootw;
     Scr->ReallyMoveInWorkspaceManager = FALSE;
     Scr->ShowWinWhenMovingInWmgr = FALSE;
     Scr->ReverseCurrentWorkspace = FALSE;
@@ -1169,7 +1176,7 @@ CreateFonts ()
     GetFont(&Scr->SizeFont);
     GetFont(&Scr->IconManagerFont);
     GetFont(&Scr->DefaultFont);
-    GetFont(&Scr->workSpaceMgr.workspaceWindow.windowFont);
+    GetFont(&Scr->workSpaceMgr.windowFont);
     Scr->HaveFonts = TRUE;
 }
 
@@ -1181,7 +1188,7 @@ RestoreWithdrawnLocation (tmp)
     unsigned int bw, mask;
     XWindowChanges xwc;
 
-    if (tmp->UnmapByMovingFarAway && !VISIBLE(tmp)) {
+    if (tmp->UnmapByMovingFarAway && !visible(tmp)) {
 	XMoveWindow (dpy, tmp->frame, tmp->frame_x, tmp->frame_y);
     }
     if (tmp->squeezed) Squeeze (tmp);
@@ -1218,12 +1225,18 @@ RestoreWithdrawnLocation (tmp)
 	    mask |= CWBorderWidth;
 	}
 
-	if (tmp->winbox && tmp->winbox->twmwin) {
-	  GetGravityOffsets (tmp->winbox->twmwin, &gravx, &gravy);
-	  xwc.x -= gravx * tmp->winbox->twmwin->frame_bw3D;
-	  xwc.y -= gravy * tmp->winbox->twmwin->frame_bw3D;
+	if (tmp->vs) {
+	  xwc.x += tmp->vs->x;
+	  xwc.y += tmp->vs->y;
 	}
 
+	if (tmp->winbox && tmp->winbox->twmwin && tmp->frame) {
+	  int xbox, ybox;
+	  if (XGetGeometry (dpy, tmp->frame, &JunkRoot, &xbox, &ybox, 
+			    &JunkWidth, &JunkHeight, &bw, &JunkDepth)) {
+	    XReparentWindow  (dpy, tmp->frame, Scr->Root, xbox, ybox);
+	  }
+	}
 	XConfigureWindow (dpy, tmp->w, mask, &xwc);
 
 	if (tmp->wmhints && (tmp->wmhints->flags & IconWindowHint)) {
@@ -1449,6 +1462,7 @@ unsigned int	width, height;
     _XA_WM_CTWM_ROOT = XInternAtom (dpy, "WM_CTWM_ROOT", False);
     XChangeProperty (dpy, ret, _XA_WM_CTWM_ROOT, XA_WINDOW, 32, 
 		     PropModeReplace, (unsigned char *) &ret, 4);
+    XSelectInput (dpy, ret, StructureNotifyMask);
     XMapWindow (dpy, ret);
     return (ret);
 }

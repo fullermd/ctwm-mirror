@@ -30,8 +30,8 @@ twm (Tab Window Manager) from the MIT X11 distribution slightly modified
 to accommodate the use of several virtual screens (workspaces). It is
 heavily inspired from the Hewlett-Packard vuewm window manager. In addition,
 \fIctwm\fP can use coloured, shaped icons and background root pixmaps in XPM
-format [from Arnaud Le Hors],any format understood by the imconv package
-[from the San Diego Supercomputer Center] and xwd files. \fBCtwm\fP can be
+format [from Arnaud Le Hors], any format understood by the imconv package
+[from the San Diego Supercomputer Center], xwd and jpeg files. \fBCtwm\fP can be
 compiled to use both, either or none of the above icon/pixmap formats.
 .PP
 This program is usually started by the user's session manager or
@@ -273,14 +273,20 @@ point number.
 Your visual class.  Will return one of \fBStaticGray\fP, \fBGrayScale\fP,
 \fBStaticColor\fP, \fBPseudoColor\fP, \fBTrueColor\fP, \fBDirectColor\fP,
 or, if it cannot determine what you have, \fBNonStandard\fP.
+
 .TP 24
 .B "COLOR"
 This will be either 'Yes' or 'No'.  This is just a wrapper around the above
 definition.  Returns 'Yes' on \fB*Color\fP, and 'No' on \fBStaticGray\fP
 and \fBGrayScale\fP.
+
 .TP 24
 .B "XPM"
 Is defined only if \fIctwm\fP was compiled with XPM.
+
+.TP 24
+.B "JPEG"
+Is defined only if \fIctwm\fP was compiled with JPEG.
 
 .TP 24
 .B "TWM_CAPTIVE"
@@ -359,6 +365,12 @@ if it crosses the current active workspace. If
 \fBAlwaysShowWindowWhenMovingFromWorkspaceManager\fP is present, the actual
 window is always visible during the move, regardless of whether it crosses
 the current workspace or not. The Shift key toggles this behaviour.
+
+.IP "\fBAlwaysSqueezeToGravity\fP { \fIwin-list\fP }" 8
+This variable instructs \fIctwm\fP to obey window gravity when
+squeezing the named windows even when the windows have titlebars.
+Normally, \fIctwm\fP will always squeeze a window that has a titlebar
+toward the north.
 
 .IP "\fBAnimationSpeed\fP \fIspeed\fP" 8
 The \fIspeed\fP argument is a non-negative integer. It determines the number of
@@ -701,6 +713,11 @@ If the optional \fIwin-list\fP is provided, only those windows will be
 iconified by simply unmapping.  Windows that have both this and the
 \fBIconManagerDontShow\fP options set may not be accessible if no binding
 to the \fITwmWindows\fP menu is set in the user's startup file.
+
+.IP "\fBIconifyStyle\fP \fIstring\fP" 8
+Where string is either \fB"normal"\fP, \fB"mosaic"\fP, \fB"zoomin"\fP, \fB"zoomout"\fP
+or \fB"sweep"\fP. Tells \fIctwm\fP to use some fancy graphical effects when iconifying
+windows.
 
 .IP "\fBIconJustification\fP \fIstring\fP" 8
 Where string is either \fB"left"\fP, \fB"center"\fP or \fB"right"\fP.
@@ -1121,9 +1138,9 @@ The default for \fITitleHighlight\fP is to use an even stipple pattern.
 .IP "\fBPixmapDirectory\fP \fIpath\fP " 8
 This variable specifies the path where \fIctwm\fP looks to find non-X11 bitmap
 files.  Whenever you want to use a image file that is not an X11 bitmap,
-specify : xpm:filename (for xpm files) or xwd:filename for xwd files,
-or im:filename (for other files supported by the imconv package), or
-|command for an on the file generated xwd file. Use the % character
+specify : xpm:filename, for xpm files), xwd:filename for xwd files,
+im:filename, for other files supported by the imconv package, jpeg:file
+for jpeg file, or '|command' for an on the file generated xwd file. Use the % character
 to specify an animation. \fIpath\fP can be a colon separated list of directories.
 Example :
 .EX
@@ -1135,7 +1152,7 @@ Icons
 }
 .EE
 N.B This is only valid if your version of \fIctwm\fP has been compiled with the
-XPM and IMCONV options.
+right extention (XPM, JPEG or IMCONV options).
 
 .IP "\fBRaiseDelay\fP \fImilliseconds\fP" 8
 For windows that are to be automatically raised when the pointer enters
@@ -1271,7 +1288,7 @@ resource.
 This variable specifies that the WorkSpaceManager should be started
 in its map form when created.
 
-.IP "\fBStartSqueezed\fP" { \fIwin-list\fP }" 8
+.IP "\fBStartSqueezed\fP { \fIwin-list\fP }" 8
 These windows will first show up squeezed (see f.squeeze).
 
 .IP "\fBStayUpMenus\fP" 8
@@ -1395,6 +1412,24 @@ animation for buttons : %xpm:resize, %xpm:menu-up, %xpm:menu-down,
 .IP "\fBUseThreeDWMap\fP" 8
 Tells \fIctwm\fP to use 3D for the small windows in the workspace map.
 
+.IP "\fBVirtualScreens\fP { \fIgeometries-list\fP }" 8
+.IP
+This variable specifies a list of geometries for virtual screens. Virtual screens
+are designed to be used when you have several physical screens bound together
+with the Xinerama X extension.
+.IP
+\fIgeometries-list\fP is a list of valid geometry strings, that correspond to
+your actual physical screens.
+.IP
+Example :
+.EX
+VirtualScreens
+{
+    "1280x1024+0+0"
+    "1600x1200+1280+0"
+}
+.EE
+
 .IP "\fBWarpCursor\fP [{ \fIwin-list\fP }]" 8
 This variable indicates that the pointer should be warped into windows when
 they are deiconified.  If the optional \fIwin-list\fP is given, the pointer
@@ -1488,14 +1523,15 @@ foreground color of the corresponding root screen.
 .TP 8
 .B "pixmap-root:"
 pixmap to display on the corresponding root screen, either the name of
-a bitmap, xpm:xpmfile, xwd:xwdfile, im:imfile or |command_that generate_xwd.
+a bitmap, xpm:xpmfile, xwd:xwdfile, jpeg:jpgfile, im:imfile or |command_that
+generate_xwd.
 .RE
 .IP
 Example :
 .EX
 WorkSpaces
 {
-  "One"   {"#686B9F" "white" "DeepSkyBlue3" "white" "xlogo16"}
+  "One"   {"#686B9F" "white" "DeepSkyBlue3" "white" "jpeg:shark.jpg"}
   "Two"   {"#619AAE" "white" "firebrick"}
   "Three" {"#727786" "white" "MidnightBlue" "white" "xpm:ball%.xpm"}
   "Four"  {"#727786" "white" "white" "white" "|(giftoppm | pnmtoxwd) < 2010.gif"}
@@ -1622,6 +1658,7 @@ Similarly, the \fIcontext\fP is any combination of
 \fBicon\fP,
 \fBroot\fP,
 \fBframe\fP,
+\fBworkspace\fP,
 \fBiconmgr\fP, their first letters (\fBiconmgr\fP abbreviation is \fBm\fP),
 or \fBall\fP,
 separated by a vertical bar.  The \fIfunction\fP is any of the \fBf.\fP 
@@ -2091,6 +2128,11 @@ See the variable \fBSortIconManager\fP.
 .\"This
 .\"function is intended to be used only to re-build pull-down menus.  None
 .\"of the \fIctwm\fP variables are changed.
+
+.IP "\fBf.showbackground\fP" 8
+This function unmaps all windows in the current workspace. This is a toggle
+function, if all windows are unmapped, they are all remapped. Better bind this
+function in the root context.
 
 .IP "\fBf.showworkspacemgr\fP" 8
 Map the WorkSpace manager.

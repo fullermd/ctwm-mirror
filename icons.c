@@ -403,11 +403,9 @@ char *ijust, *just, *align;
 
     mask = XParseGeometry(geom, &ir->x, &ir->y, (unsigned int *)&ir->w, (unsigned int *)&ir->h);
 
-    if (mask & XNegative)
-	ir->x += Scr->MyDisplayWidth - ir->w;
+    if (mask & XNegative) ir->x += Scr->rootw - ir->w;
+    if (mask & YNegative) ir->y += Scr->rooth - ir->h;
 
-    if (mask & YNegative)
-	ir->y += Scr->MyDisplayHeight - ir->h;
     ir->entries = (IconEntry *)malloc(sizeof(IconEntry));
     ir->entries->next = 0;
     ir->entries->x = ir->x;
@@ -788,22 +786,21 @@ int def_x, def_y;
     }
     else
     {
-      if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC))
+      if (visible (tmp_win))
 	PlaceIcon(tmp_win, def_x, def_y, &final_x, &final_y);
     }
 
-  if (OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC) ||
+  if (visible (tmp_win) ||
       (tmp_win->wmhints && tmp_win->wmhints->flags & IconPositionHint)) {
-    if (final_x > Scr->MyDisplayWidth)
-	final_x = Scr->MyDisplayWidth - icon->w_width -
-	    (2 * Scr->IconBorderWidth);
+    if (final_x > Scr->rootw)
+	final_x = Scr->rootw - icon->w_width - (2 * Scr->IconBorderWidth);
     if (Scr->SchrinkIconTitles && icon->bm_w) {
 	if (final_x + (icon->w_width - icon->width) < 0) final_x = 0;
     } else {
 	if (final_x < 0) final_x = 0;
     }
-    if (final_y > Scr->MyDisplayHeight)
-	final_y = Scr->MyDisplayHeight - icon->height -
+    if (final_y > Scr->rooth)
+	final_y = Scr->rooth - icon->height -
 	    Scr->IconFont.height - 6 - (2 * Scr->IconBorderWidth);
     if (final_y < 0) final_y = 0;
 

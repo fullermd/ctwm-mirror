@@ -4,7 +4,7 @@
 #include "util.h"
 #include "screen.h"
 
-TwmWindow * get_last_window(WorkSpaceList * current)
+TwmWindow * get_last_window(WorkSpace *current)
 {
     TwmWindow		*t;
     TwmWindow  * first = NULL;
@@ -21,7 +21,7 @@ TwmWindow * get_last_window(WorkSpaceList * current)
     return first;
 }
 
-void set_last_window(WorkSpaceList * current)
+void set_last_window(WorkSpace * current)
 {
   TwmWindow * t;
 

@@ -67,7 +67,7 @@ int	scrnum;
     int			count;
     int			i, l;
 
-    _XA_WM_WORKSPACESLIST = XInternAtom (dpy, "WM_WORKSPACESLIST", True);
+    _XA_WM_WORKSPACESLIST = XInternAtom (dpy, "_WIN_WORKSPACE_NAMES", True);
 
     if (XGetWindowProperty (dpy, RootWindow (dpy, scrnum), _XA_WM_WORKSPACESLIST, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,

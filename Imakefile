@@ -10,7 +10,9 @@ XCOMM
 #undef  IMCONV
 #undef  USE_SOUND
 #define XPM
+#define JPEG
 #define USEM4
+#define GNOME
 #undef X11R6
 #undef I18N
 
@@ -24,6 +26,19 @@ XCOMM
 
      XPMDEFINES = -DXPM
          XPMLIB = $(XPMLIBDIR) -lXpm
+#else
+         XPMLIB = 
+      XPMLIBDIR = 
+      XPMINCDIR = 
+     XPMDEFINES = 
+#endif
+
+#ifdef JPEG
+     JPEGLIBDIR = 
+     JPEGINCDIR = 
+
+    JPEGDEFINES = -DJPEG
+        JPEGLIB = $(JPEGLIBDIR) -ljpeg
 #else
          XPMLIB = 
       XPMLIBDIR = 
@@ -53,6 +68,12 @@ XCOMM
    M4INCDIR = 
   M4DEFINES = 
       M4LIB = 
+#endif
+
+#ifdef GNOME
+  GNOMEDEFINES = -DGNOME
+#else
+  GNOMEDEFINES = 
 #endif
 
 #ifdef USE_SOUND
@@ -89,19 +110,19 @@ XCOMM
     CDEBUGFLAGS = -g
 #endif
 
-LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)
-        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(X11R6DEFS) $(SOUND_DEFS)  $(I18N_DEFS)
- EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(SOUND_INCLUDES)
+LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)
+        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(GNOMEDEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(JPEGDEFINES) $(X11R6DEFS) $(SOUND_DEFS)  $(I18N_DEFS)
+ EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(JPEGINCDIR) $(SOUND_INCLUDES)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
-		cursor.c icons.c workmgr.c windowbox.c clicktofocus.c \
-		${SESSIONSRC} ${SOUNDSRC}
+		cursor.c icons.c workmgr.c windowbox.c clicktofocus.c vscreen.c \
+		gnome.c ${SESSIONSRC} ${SOUNDSRC}
 
            OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
-		cursor.o icons.o workmgr.o windowbox.o clicktofocus.o \
-		${SESSIONOBJ} ${SOUNDOBJ}
+		cursor.o icons.o workmgr.o windowbox.o clicktofocus.o vscreen.o \
+		gnome.o ${SESSIONOBJ} ${SOUNDOBJ}
 
   PIXMAPFILES =	xpm/IslandD.xpm        xpm/mail1.xpm          xpm/xgopher.xpm \
 		xpm/IslandW.xpm        xpm/nothing.xpm        xpm/xgrab.xpm \
@@ -146,7 +167,7 @@ NormalLibraryTarget(ctwm, libctwm.o)
 ComplexProgramTarget(ctwm)
 InstallNonExecFile(system.ctwmrc,$(TWMDIR))
 #ifdef XPM
-install:: xpm
+install::
 	MakeDir($(DESTDIR)$(TWMDIR)/images)
 	@case '${MFLAGS}' in *[i]*) set +e;; esac; \
 	for i in xpm/?* ; do \

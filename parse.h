@@ -159,6 +159,7 @@ extern void TwmOutput();
 #define F_RING			85
 #define F_AUTOLOWER		86
 #define F_FITTOCONTENT		87
+#define F_SHOWBGRD		88
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */

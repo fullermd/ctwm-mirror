@@ -133,6 +133,21 @@
 #endif
 #endif
 
+#ifdef JPEG
+# include <setjmp.h>
+# include <jpeglib.h>
+# include <jerror.h>
+  static Image *LoadJpegImage ();
+  static Image *GetJpegImage  ();
+
+  struct jpeg_error {
+    struct jpeg_error_mgr pub;
+    sigjmp_buf setjmp_buffer;
+  };
+
+  typedef struct jpeg_error *jerr_ptr;
+#endif /* JPEG */
+
 #ifdef IMCONV
 #   include "im.h"
 #   include "sdsc.h"
@@ -351,7 +366,7 @@ Zoom(wf, wt)
     long z;
     int j;
 
-    if (Scr->SmartIconify || !Scr->DoZoom || Scr->ZoomCount < 1) return;
+    if ((Scr->IconifyStyle != ICONIFY_NORMAL) || !Scr->DoZoom || Scr->ZoomCount < 1) return;
 
     if (wf == None || wt == None) return;
 
@@ -873,8 +888,8 @@ char *file;
     attributes.cursor		 = waitcursor;
     attributes.background_pixel	 = Scr->Black;
     Scr->WindowMask = XCreateWindow (dpy, Scr->Root, 0, 0,
-			(unsigned int) Scr->MyDisplayWidth,
-			(unsigned int) Scr->MyDisplayHeight,
+			(unsigned int) Scr->rootw,
+			(unsigned int) Scr->rooth,
 			(unsigned int) 0,
 			CopyFromParent, (unsigned int) CopyFromParent,
 			(Visual *) CopyFromParent, valuemask,
@@ -917,8 +932,8 @@ char *file;
     else XInstallColormap (dpy, Scr->WelcomeCmap);
 
     Scr->WelcomeGC = XCreateGC (dpy, Scr->WindowMask, 0, NULL);
-    x = (Scr->MyDisplayWidth  -  Scr->WelcomeImage->width) / 2;
-    y = (Scr->MyDisplayHeight - Scr->WelcomeImage->height) / 2;
+    x = (Scr->rootw  -  Scr->WelcomeImage->width) / 2;
+    y = (Scr->rooth - Scr->WelcomeImage->height) / 2;
 
     XSetWindowBackground (dpy, Scr->WindowMask, black.pixel);
     XClearWindow (dpy, Scr->WindowMask);
@@ -1303,7 +1318,7 @@ void Animate () {
 	if ((scr = ScreenList [scrnum]) == NULL) continue;
 
 	for (t = scr->TwmRoot.next; t != NULL; t = t->next) {
-	    if (! OCCUPY (t, scr->workSpaceMgr.activeWSPC)) continue;
+	    if (! visible (t)) continue;
 	    if (t->icon_on && t->icon && t->icon->bm_w && t->icon->image &&
 		t->icon->image->next) {
 		AnimateIcons (scr, t->icon);
@@ -2709,9 +2724,10 @@ int		type;
 
 void PaintAllDecoration () {
     TwmWindow *tmp_win;
+    virtualScreen *vs;
 
     for (tmp_win = Scr->TwmRoot.next; tmp_win != NULL; tmp_win = tmp_win->next) {
-	if (! OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC)) continue;
+	if (! visible (tmp_win)) continue;
 	if (tmp_win->mapped == TRUE) {
 	    if (tmp_win->frame_bw3D)
 		if (tmp_win->highlight && tmp_win == Scr->Focus)
@@ -2731,7 +2747,9 @@ void PaintAllDecoration () {
 	    PaintIcon (tmp_win);
 	}
     }
-    PaintWorkSpaceManager ();
+    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+      PaintWorkSpaceManager (vs);
+    }
 }
 
 void PaintBorders (tmp_win, focus)
@@ -3155,6 +3173,16 @@ ColorPair cp;
     }
     else
 #endif
+#ifdef JPEG
+    if (strncmp (name, "jpeg:", 5) == 0) {
+	if ((image = (Image*) LookInNameList (*list, name)) == None) {
+	    if ((image = GetJpegImage (&name [5])) != None) {
+		AddToList (list, name, (char*) image);
+	    }
+	}
+    }
+    else
+#endif
 #ifdef IMCONV
     if (strncmp (name, "im:", 3) == 0) {
 	if ((image = (Image*) LookInNameList (*list, name)) == None) {
@@ -3489,8 +3517,8 @@ file_opened:
             imagedata [i] = (unsigned char) colors [imagedata [i]].pixel;
 	}
     }
-    if (w > Scr->MyDisplayWidth)  w = Scr->MyDisplayWidth;
-    if (h > Scr->MyDisplayHeight) h = Scr->MyDisplayHeight;
+    if (w > Scr->rootw)  w = Scr->rootw;
+    if (h > Scr->rooth) h = Scr->rooth;
 
     ret = (Image*) malloc (sizeof (struct _Image));
     if (! ret) {
@@ -3510,17 +3538,17 @@ file_opened:
 	gcvalues.background = cp.back;
 	XChangeGC (dpy, gc, GCForeground | GCBackground, &gcvalues);
     }
-    if ((w > (Scr->MyDisplayWidth / 2)) || (h > (Scr->MyDisplayHeight / 2))) {
+    if ((w > (Scr->rootw / 2)) || (h > (Scr->rooth / 2))) {
 	int x, y;
 
-	pixret = XCreatePixmap (dpy, Scr->Root, Scr->MyDisplayWidth,
-				Scr->MyDisplayHeight, Scr->d_depth);
-	x = (Scr->MyDisplayWidth  - w) / 2;
-	y = (Scr->MyDisplayHeight - h) / 2;
-	XFillRectangle (dpy, pixret, gc, 0, 0, Scr->MyDisplayWidth, Scr->MyDisplayHeight);
+	pixret = XCreatePixmap (dpy, Scr->Root, Scr->rootw,
+				Scr->rooth, Scr->d_depth);
+	x = (Scr->rootw  - w) / 2;
+	y = (Scr->rooth - h) / 2;
+	XFillRectangle (dpy, pixret, gc, 0, 0, Scr->rootw, Scr->rooth);
 	XPutImage (dpy, pixret, gc, image, 0, 0, x, y, w, h);
-	ret->width  = Scr->MyDisplayWidth;
-	ret->height = Scr->MyDisplayHeight;
+	ret->width  = Scr->rootw;
+	ret->height = Scr->rooth;
     }
     else {
 	pixret = XCreatePixmap (dpy, Scr->Root, w, h, depth);
@@ -3788,19 +3816,19 @@ int	*width, *height;
     }
 
     image  = XCreateImage  (dpy, visual, depth, ZPixmap, 0, (char*) imagedata, w, h, 8, 0);
-    if (w > Scr->MyDisplayWidth)  w = Scr->MyDisplayWidth;
-    if (h > Scr->MyDisplayHeight) h = Scr->MyDisplayHeight;
+    if (w > Scr->rootw)  w = Scr->rootw;
+    if (h > Scr->rooth) h = Scr->rooth;
 
-    if ((w > (Scr->MyDisplayWidth / 2)) || (h > (Scr->MyDisplayHeight / 2))) {
+    if ((w > (Scr->rootw / 2)) || (h > (Scr->rooth / 2))) {
 	int x, y;
 
-	pixret = XCreatePixmap (dpy, Scr->Root, Scr->MyDisplayWidth, Scr->MyDisplayHeight, depth);
-	x = (Scr->MyDisplayWidth  - w) / 2;
-	y = (Scr->MyDisplayHeight - h) / 2;
-	XFillRectangle (dpy, pixret, gc, 0, 0, Scr->MyDisplayWidth, Scr->MyDisplayHeight);
+	pixret = XCreatePixmap (dpy, Scr->Root, Scr->rootw, Scr->rooth, depth);
+	x = (Scr->rootw  - w) / 2;
+	y = (Scr->rooth - h) / 2;
+	XFillRectangle (dpy, pixret, gc, 0, 0, Scr->rootw, Scr->rooth);
 	XPutImage (dpy, pixret, gc, image, 0, 0, x, y, w, h);
-	ret->width  = Scr->MyDisplayWidth;
-	ret->height = Scr->MyDisplayHeight;
+	ret->width  = Scr->rootw;
+	ret->height = Scr->rooth;
     }
     else {
 	pixret = XCreatePixmap (dpy, Scr->Root, w, h, depth);
@@ -4000,9 +4028,9 @@ int width;
 int *top;
 int height;
 {
-    ConstrainRightBottom (left, width, Scr->BorderRight, Scr->MyDisplayWidth);
+    ConstrainRightBottom (left, width, Scr->BorderRight, Scr->rootw);
     ConstrainLeftTop     (left, Scr->BorderLeft);
-    ConstrainRightBottom (top, height, Scr->BorderBottom, Scr->MyDisplayHeight);
+    ConstrainRightBottom (top, height, Scr->BorderBottom, Scr->rooth);
     ConstrainLeftTop     (top, Scr->BorderTop);
 }
 
@@ -4024,3 +4052,174 @@ int height;
 	ConstrainByBorders1 (left, width, top, height);
     }
 }
+
+#ifdef JPEG
+
+unsigned short int *buffer_16bpp;
+long *buffer_32bpp;
+
+static void convert_for_16 (int w, int x, int y, int r, int g, int b) {
+  buffer_16bpp [y * w + x] = ((r >> 3) << 11) + ((g >> 2) << 5) + (b >> 3);
+}
+
+static void convert_for_32 (int w, int x, int y, int r, int g, int b) {
+  buffer_32bpp [y * w + x] = ((r << 16) + (g << 8) + b) & 0xFFFFFFFF; 
+}
+
+static void jpeg_error_exit (j_common_ptr cinfo) {
+  jerr_ptr errmgr = (jerr_ptr) cinfo->err;
+  cinfo->err->output_message (cinfo);
+  siglongjmp (errmgr->setjmp_buffer, 1);
+  return;
+}
+
+static Image *GetJpegImage (name)
+char *name;
+{
+    Image *image, *r, *s;
+    char  path [128];
+    char  pref [128], *perc;
+    int   i;
+
+    if (! strchr (name, '%')) return (LoadJpegImage (name));
+    s = image = None;
+    strcpy (pref, name);
+    perc  = strchr (pref, '%');
+    *perc = '\0';
+    reportfilenotfound = 0;
+    for (i = 1;; i++) {
+	sprintf (path, "%s%d%s", pref, i, perc + 1);
+	r = LoadJpegImage (path);
+	if (r == None) break;
+	r->next   = None;
+	if (image == None) s = image = r;
+	else {
+	    s->next = r;
+	    s = r;
+	}
+    }
+    reportfilenotfound = 1;
+    if (s != None) s->next = image;
+    if (image == None) {
+	fprintf (stderr, "Cannot open any %s jpeg file\n", name);
+    }
+    return (image);
+}
+
+static Image *LoadJpegImage (name)
+char *name;
+{
+  char   *fullname;
+  XImage *ximage;
+  FILE   *infile;
+  Image  *image;
+  Pixmap pixret;
+  void   (*store_data) ();
+  struct jpeg_decompress_struct cinfo;
+  struct jpeg_error jerr;
+  JSAMPARRAY buffer;
+  int width, height;
+  int row_stride;
+  int g, i, a;
+  int bpix;
+  GC  gc;
+  XGCValues   gcvalues;
+
+  fullname = ExpandPixmapPath (name);
+  if (! fullname) return (None);
+
+  image = (Image*) malloc (sizeof (struct _Image));
+  if (image == None) return (None);
+
+  if ((infile = fopen (fullname, "rb")) == NULL) {
+    if (!reportfilenotfound) fprintf (stderr, "unable to locate %s\n", fullname);
+    fflush (stdout);
+    return None;
+  }
+  cinfo.err = jpeg_std_error (&jerr.pub);
+  jerr.pub.error_exit = jpeg_error_exit;
+
+  if (sigsetjmp(jerr.setjmp_buffer, 1)) {
+    jpeg_destroy_decompress (&cinfo);
+    fclose (infile);
+    return None;
+  }
+  jpeg_create_decompress (&cinfo);
+  jpeg_stdio_src (&cinfo, infile);
+  jpeg_read_header (&cinfo, FALSE);
+  cinfo.do_fancy_upsampling = FALSE;
+  cinfo.do_block_smoothing = FALSE;
+  jpeg_start_decompress (&cinfo);
+  width  = cinfo.output_width;
+  height = cinfo.output_height;
+
+  if (Scr->d_depth == 16) {
+    store_data = &convert_for_16;
+    buffer_16bpp = (unsigned short int *) malloc ((width) * (height) * 2);
+    ximage = XCreateImage (dpy, CopyFromParent, Scr->d_depth, ZPixmap, 0,
+			   (char *) buffer_16bpp, width, height, 16, width * 2);
+  } else {
+    if (Scr->d_depth == 24) {
+      store_data = &convert_for_32;
+      buffer_32bpp = malloc (width * height * 4);
+      ximage = XCreateImage (dpy, CopyFromParent, Scr->d_depth, ZPixmap, 0,
+			     (char *) buffer_32bpp, width, height, 32, width * 4);
+    } else
+    if (Scr->d_depth == 32) {
+      store_data = &convert_for_32;
+      buffer_32bpp = malloc (width * height * 4);
+      ximage = XCreateImage (dpy, CopyFromParent, Scr->d_depth, ZPixmap, 0,
+			     (char *) buffer_32bpp, width, height, 32, width * 4);
+    } else {
+      fprintf (stderr, "Image %s unsupported depth : %d\n", name, Scr->d_depth);
+      return None;
+    }
+  }
+  if (ximage == None) {
+    fprintf (stderr, "cannot create image for %s\n", name);
+  }
+  g = 0;
+  row_stride = cinfo.output_width * cinfo.output_components;
+  buffer = (*cinfo.mem->alloc_sarray)
+    ((j_common_ptr) & cinfo, JPOOL_IMAGE, row_stride, 1);
+
+  bpix = cinfo.output_components;
+  while (cinfo.output_scanline < cinfo.output_height) {
+    jpeg_read_scanlines (&cinfo, buffer, 1);
+    a = 0;
+    for (i = 0; i < bpix * cinfo.output_width; i += bpix) {
+      (*store_data) (width, a, g, buffer[0][i],  buffer[0][i + 1], buffer[0][i + 2]);
+      a++;
+    }
+    g++;
+  }
+  jpeg_finish_decompress (&cinfo);
+  jpeg_destroy_decompress (&cinfo);
+  fclose (infile);
+
+  gc = DefaultGC (dpy, Scr->screen);
+  if ((width > (Scr->rootw / 2)) || (height > (Scr->rooth / 2))) {
+    int x, y;
+
+    pixret = XCreatePixmap (dpy, Scr->Root, Scr->rootw, Scr->rooth, Scr->d_depth);
+    x = (Scr->rootw  -  width) / 2;
+    y = (Scr->rooth  - height) / 2;
+    XFillRectangle (dpy, pixret, gc, 0, 0, Scr->rootw, Scr->rooth);
+    XPutImage (dpy, pixret, gc, ximage, 0, 0, x, y, width, height);
+    image->width  = Scr->rootw;
+    image->height = Scr->rooth;
+  } else {
+    pixret = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
+    XPutImage (dpy, pixret, gc, ximage, 0, 0, 0, 0, width, height);
+    image->width  = width;
+    image->height = height;
+  }
+  XDestroyImage (ximage);
+  image->pixmap = pixret;
+  image->mask   = None;
+  image->next   = None;
+
+  return image;
+}
+
+#endif /* JPEG */

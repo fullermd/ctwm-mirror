@@ -142,7 +142,7 @@ extern yylex();
 %token <num> UNMAPBYMOVINGFARAWAY OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
 %token <num> DONTSETINACTIVE CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
 %token <num> AUTOSQUEEZE STARTSQUEEZED DONT_SAVE AUTO_LOWER ICONMENU_DONTSHOW WINDOW_BOX
-%token <num> IGNOREMODIFIER WINDOW_GEOMETRIES
+%token <num> IGNOREMODIFIER WINDOW_GEOMETRIES ALWAYSSQUEEZETOGRAVITY VIRTUAL_SCREENS
 %token <ptr> STRING
 
 %type <ptr> string
@@ -213,12 +213,12 @@ stmt		: error
 						}
 		| WORKSPCMGR_GEOMETRY string number	{ if (Scr->FirstTime)
 				{
-				    Scr->workSpaceMgr.workspaceWindow.geometry= (char*)$2;
-				    Scr->workSpaceMgr.workspaceWindow.columns=$3;
+				    Scr->workSpaceMgr.geometry= (char*)$2;
+				    Scr->workSpaceMgr.columns=$3;
 				}
 						}
 		| WORKSPCMGR_GEOMETRY string	{ if (Scr->FirstTime)
-				    Scr->workSpaceMgr.workspaceWindow.geometry = (char*)$2;
+				    Scr->workSpaceMgr.geometry = (char*)$2;
 						}
 		| MAPWINDOWCURRENTWORKSPACE {}
 		  curwork
@@ -303,6 +303,8 @@ stmt		: error
 		| AUTOSQUEEZE		{ list = &Scr->AutoSqueeze; }
 		  win_list
 		| STARTSQUEEZED		{ list = &Scr->StartSqueezed; }
+		  win_list
+		| ALWAYSSQUEEZETOGRAVITY { list = &Scr->AlwaysSqueezeToGravity; }
 		  win_list
 		| DONTSETINACTIVE	{ list = &Scr->DontSetInactive; }
 		  win_list
@@ -419,7 +421,6 @@ stmt		: error
 		| WINDOW_RING		{ list = &Scr->WindowRingL; }
 		  win_list
 		| WINDOW_RING           { Scr->WindowRingAll = TRUE; }
-		;
 		| WINDOW_RING_EXCLUDE    { if (!Scr->WindowRingL)
 		                              Scr->WindowRingAll = TRUE;
 		                          list = &Scr->WindowRingExcludeL; }
@@ -427,6 +428,10 @@ stmt		: error
 
 		| WINDOW_GEOMETRIES 	 {  }
 		  wingeom_list
+		  ;
+
+		| VIRTUAL_SCREENS      	{ }
+		  geom_list
 
 noarg		: KEYWORD		{ if (!do_single_keyword ($1)) {
 					    twmrc_error_prefix();
@@ -514,6 +519,7 @@ context		: WINDOW		{ cont |= C_WINDOW_BIT; }
 		| ICON			{ cont |= C_ICON_BIT; }
 		| ROOT			{ cont |= C_ROOT_BIT; }
 		| FRAME			{ cont |= C_FRAME_BIT; }
+		| WORKSPACE		{ cont |= C_WORKSPACE_BIT; }
 		| ICONMGR		{ cont |= C_ICONMGR_BIT; }
 		| META			{ cont |= C_ICONMGR_BIT; }
 		| ALTER                 { cont |= C_ALTER_BIT; }
@@ -530,6 +536,7 @@ contextkey	: WINDOW		{ cont |= C_WINDOW_BIT; }
 		| ICON			{ cont |= C_ICON_BIT; }
 		| ROOT			{ cont |= C_ROOT_BIT; }
 		| FRAME			{ cont |= C_FRAME_BIT; }
+		| WORKSPACE		{ cont |= C_WORKSPACE_BIT; }
 		| ICONMGR		{ cont |= C_ICONMGR_BIT; }
 		| META			{ cont |= C_ICONMGR_BIT; }
 		| ALL			{ cont |= C_ALL_BITS; }
@@ -683,9 +690,16 @@ wingeom_entries	: /* Empty */
 		| wingeom_entries wingeom_entry
 		;
 
-wingeom_entry	: string string	{ AddToList (&Scr->WindowGeometries, $1, $2) }
+wingeom_entry	: string string	{ AddToList (&Scr->WindowGeometries, $1, $2); }
+                ;
 
+geom_list	: LB geom_entries RB {}
+		;
 
+geom_entries	: /* Empty */
+		| geom_entries geom_entry
+		;
+geom_entry	: string { AddToList (&Scr->VirtualScreens, $1, "") }
 
 squeeze		: SQUEEZE_TITLE { 
 				    if (HasShape) Scr->SqueezeTitle = TRUE;
@@ -834,6 +848,7 @@ occupy_workspc_entries	:   /* Empty */
 occupy_workspc_entry	: string {
 				AddToClientsList ($1, client);
 			  }
+                          ;
 
 occupy_window_list	: LB occupy_window_entries RB {}
 			;
@@ -962,6 +977,8 @@ string		: STRING		{ ptr = (char *)malloc(strlen((char*)$1)+1);
 					  RemoveDQuote(ptr);
 					  $$ = (unsigned char*)ptr;
 					}
+                ;
+
 number		: NUMBER		{ $$ = $1; }
 		;
 

@@ -197,6 +197,7 @@ Window w;
 int iconm;
 IconMgr *iconp;
 {
+    virtualScreen *vs;
     TwmWindow *tmp_win;			/* new twm window structure */
     int stat;
     XEvent event;
@@ -235,6 +236,8 @@ IconMgr *iconp;
 #endif
     WindowBox *winbox;
     int iswinbox;
+    int iswman = 0;
+    Window vroot;
 
 #ifdef DEBUG
     fprintf(stderr, "AddWindow: w = 0x%x\n", w);
@@ -253,14 +256,17 @@ IconMgr *iconp;
     switch (iconm) {
 	case  0 : iswinbox = 0; break;
 	case  1 : iswinbox = 0; break;
-	case  2 : iswinbox = 1; iconm = 0; break;
-	default : iswinbox = 0; iconm = 1; break;
+	case  2 : iswinbox = 1; iconm  = 0; break;
+	case  3 : iswman   = 1; iconm  = 0; break;
+	default : iswinbox = 0; iswman = 0; iconm = 1; break;
     }
     tmp_win->w = w;
     tmp_win->zoomed = ZOOM_NONE;
     tmp_win->iconmgr = iconm;
     tmp_win->iconmgrp = iconp;
+    tmp_win->wspmgr = iswman;
     tmp_win->iswinbox = iswinbox;
+    tmp_win->vs = NULL;
     tmp_win->cmaps.number_cwins = 0;
     tmp_win->savegeometry.width = -1;
 
@@ -365,6 +371,12 @@ IconMgr *iconp;
     	tmp_win->class.res_class = NoName;
 
     tmp_win->full_name = tmp_win->name;
+#ifdef CLAUDE
+    if (strstr (tmp_win->name, " - Mozilla")) {
+      char *moz = strstr (tmp_win->name, " - Mozilla");
+      *moz = '\0';
+    }
+#endif
     namelen = strlen (tmp_win->name);
 
     tmp_win->highlight = Scr->Highlight && 
@@ -423,6 +435,11 @@ IconMgr *iconp;
     else
 	tmp_win->StartSqueezed = False;
 
+    if (LookInList (Scr->AlwaysSqueezeToGravity, tmp_win->full_name, &tmp_win->class))
+	tmp_win->AlwaysSqueezeToGravity= True;
+    else
+	tmp_win->AlwaysSqueezeToGravity = False;
+
     if (tmp_win->transient || tmp_win->group) {
 	TwmWindow *t;
 	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
@@ -431,7 +448,7 @@ IconMgr *iconp;
 	}
 	if (t) tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
     }
-    if ((Scr->WindowRingAll &&
+    if ((Scr->WindowRingAll && !iswman &&
 	!LookInList(Scr->WindowRingExcludeL, tmp_win->full_name, &tmp_win->class)) ||
 	LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
 	if (Scr->Ring) {
@@ -568,12 +585,9 @@ IconMgr *iconp;
 #ifdef X11R6
     if (restoredFromPrevSession) {
       SetupOccupation (tmp_win, saved_occupation);
-    } else {
-      SetupOccupation (tmp_win, 0);
-    }
-#else
-      SetupOccupation (tmp_win, 0);
+    } else
 #endif      
+      SetupOccupation (tmp_win, 0);
     /*=================================================================*/
 
     tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;
@@ -592,11 +606,21 @@ IconMgr *iconp;
 			      (unsigned int*) &tmp_win->attr.width,
 			      (unsigned int*) &tmp_win->attr.height);
 
-	if (mask & XNegative) tmp_win->attr.x += Scr->MyDisplayWidth  - tmp_win->attr.width;
-	if (mask & YNegative) tmp_win->attr.y += Scr->MyDisplayHeight - tmp_win->attr.height;
+	if (mask & XNegative) tmp_win->attr.x += Scr->rootw - tmp_win->attr.width;
+	if (mask & YNegative) tmp_win->attr.y += Scr->rooth - tmp_win->attr.height;
         random_placed = True;
 	ask_user = False;
     }
+
+    if (XFindContext (dpy, w, VirtScreenContext, (XPointer *)&vs) == XCSUCCESS)
+      vroot = vs->window;
+    else
+    if (tmp_win->vs)
+      vroot = tmp_win->vs->window;
+    else
+      vroot = Scr->Root;
+    if (winbox) vroot = winbox->window;
+
     /*
      * do any prompting for position
      */
@@ -609,11 +633,11 @@ IconMgr *iconp;
       if ((Scr->RandomPlacement == RP_ALL) ||
           ((Scr->RandomPlacement == RP_UNMAPPED) &&
 	   ((tmp_win->wmhints && (tmp_win->wmhints->initial_state == IconicState)) ||
-	    (! OCCUPY (tmp_win, Scr->workSpaceMgr.activeWSPC))))) { /* just stick it somewhere */
-	if ((PlaceX + tmp_win->attr.width) > Scr->MyDisplayWidth)
-	    PlaceX = 50;
-	if ((PlaceY + tmp_win->attr.height) > Scr->MyDisplayHeight)
-	    PlaceY = 50;
+	    (! visible (tmp_win))))) { /* just stick it somewhere */
+
+	/* TODO : We should try to fit in the smallest vscreen. */
+	if ((PlaceX + tmp_win->attr.width)  > Scr->rootw) PlaceX = 50;
+	if ((PlaceY + tmp_win->attr.height) > Scr->rooth) PlaceY = 50;
 
 	tmp_win->attr.x = PlaceX;
 	tmp_win->attr.y = PlaceY;
@@ -651,15 +675,17 @@ IconMgr *iconp;
 		if (firsttime) {
 		    if (JunkRoot != Scr->Root) {
 			register int scrnum;
-
 			for (scrnum = 0; scrnum < NumScreens; scrnum++) {
 			    if (JunkRoot == RootWindow (dpy, scrnum)) break;
 			}
-
 			if (scrnum != NumScreens) PreviousScreen = scrnum;
+		    }
+		    if (Scr->currentvs) {
+		      vroot = Scr->currentvs->window;
 		    }
 		    firsttime = False;
 		}
+		if (winbox) vroot = winbox->window;
 
 		/*
 		 * wait for buttons to come up; yuck
@@ -669,14 +695,12 @@ IconMgr *iconp;
 		/* 
 		 * this will cause a warp to the indicated root
 		 */
-		stat = XGrabPointer(dpy, winbox ? winbox->window : Scr->Root, False,
+		stat = XGrabPointer(dpy, vroot, False,
 		    ButtonPressMask | ButtonReleaseMask |
 		    PointerMotionMask | PointerMotionHintMask,
 		    GrabModeAsync, GrabModeAsync,
-		    winbox ? winbox->window : Scr->Root, UpperLeftCursor, CurrentTime);
-
-		if (stat == GrabSuccess)
-		    break;
+		    vroot, UpperLeftCursor, CurrentTime);
+		if (stat == GrabSuccess) break;
 	    }
 
 #ifdef I18N
@@ -715,18 +739,13 @@ IconMgr *iconp;
 			      tmp_win->name, namelen);
 #endif	    
 
-	    if (winbox) {
-		XTranslateCoordinates (dpy, Scr->Root, winbox->window,
-			AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
-		ConstrainedToWinBox (tmp_win, AddingX, AddingY, &AddingX, &AddingY);
-	    }
+	    if (winbox) ConstrainedToWinBox (tmp_win, AddingX, AddingY, &AddingX, &AddingY);
 
 	    AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
 	    AddingH = tmp_win->attr.height + tmp_win->title_height +
 				bw2 + 2 * tmp_win->frame_bw3D;
-		MoveOutline(winbox ? winbox->window : Scr->Root,
-			AddingX, AddingY, AddingW, AddingH,
-			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+	    MoveOutline(vroot,AddingX, AddingY, AddingW, AddingH,
+			tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
 #ifdef I18N
 	    XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
@@ -769,17 +788,11 @@ IconMgr *iconp;
 			if (event.type == ButtonPress)
 			    break;
 		}
-		event.xbutton.x_root -= Scr->MyDisplayX;
-		event.xbutton.y_root -= Scr->MyDisplayY;
-		
+		if (Scr->Root != Scr->RealRoot) FixRootEvent (&event);
 		if (event.type == ButtonPress) {
 		  AddingX = event.xbutton.x_root;
 		  AddingY = event.xbutton.y_root;
 
-		  if (winbox) {
-		    XTranslateCoordinates (dpy, Scr->Root, winbox->window,
-		    AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
-		  }
 		  TryToGrid (tmp_win, &AddingX, &AddingY);
 		  if (Scr->PackNewWindows) TryToPack (tmp_win, &AddingX, &AddingY);
 
@@ -795,21 +808,16 @@ IconMgr *iconp;
 		    continue;
 		}
 
-		XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
+		XQueryPointer(dpy, vroot, &JunkRoot, &JunkChild,
 		    &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
 
-		if (winbox) {
-		    XTranslateCoordinates (dpy, Scr->Root, winbox->window,
-			AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
-		}
 		TryToGrid (tmp_win, &AddingX, &AddingY);
 		if (Scr->PackNewWindows) TryToPack (tmp_win, &AddingX, &AddingY);
 		if (Scr->DontMoveOff)
 		{
 		    ConstrainByBorders (tmp_win, &AddingX, AddingW, &AddingY, AddingH);
 		}
-		MoveOutline(winbox ? winbox->window : Scr->Root,
-			AddingX, AddingY, AddingW, AddingH,
+		MoveOutline(vroot, AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
 		DisplayPosition (tmp_win, AddingX, AddingY);
@@ -853,14 +861,14 @@ IconMgr *iconp;
 #undef HALF_AVE_CURSOR_SIZE
 		    dx += (tmp_win->frame_bw + 1);
 		    dy += (bw2 + tmp_win->title_height + 1);
-		    if (AddingX + dx >= Scr->MyDisplayWidth - Scr->BorderRight)
-		      dx = Scr->MyDisplayWidth - Scr->BorderRight - AddingX - 1;
-		    if (AddingY + dy >= Scr->MyDisplayHeight - Scr->BorderBottom)
-		      dy = Scr->MyDisplayHeight - Scr->BorderBottom - AddingY - 1;
+		    if (AddingX + dx >= Scr->rootw - Scr->BorderRight)
+		      dx = Scr->rootw - Scr->BorderRight - AddingX - 1;
+		    if (AddingY + dy >= Scr->rooth - Scr->BorderBottom)
+		      dy = Scr->rooth - Scr->BorderBottom - AddingY - 1;
 		    if (dx > 0 && dy > 0)
 		      XWarpPointer (dpy, None, None, 0, 0, 0, 0, dx, dy);
 		} else {
-		    XWarpPointer (dpy, None, Scr->Root, 0, 0, 0, 0,
+		    XWarpPointer (dpy, None, vroot, 0, 0, 0, 0,
 				  AddingX + AddingW/2, AddingY + AddingH/2);
 		}
 		AddStartResize(tmp_win, AddingX, AddingY, AddingW, AddingH);
@@ -879,8 +887,7 @@ IconMgr *iconp;
 			    if (event.type == ButtonRelease)
 				break;
 		    }
-		    event.xbutton.x_root -= Scr->MyDisplayX;
-		    event.xbutton.y_root -= Scr->MyDisplayY;
+		    if (Scr->Root != Scr->RealRoot) FixRootEvent (&event);
 
 		    if (event.type == ButtonRelease)
 		    {
@@ -897,12 +904,8 @@ IconMgr *iconp;
 		     * using multiple GXxor lines so that we don't need to 
 		     * grab the server.
 		     */
-		    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
-			&JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
-		    if (winbox) {
-			XTranslateCoordinates (dpy, Scr->Root, winbox->window,
-			    AddingX, AddingY, &AddingX, &AddingY, &JunkChild);
-		    }
+		    XQueryPointer(dpy, vroot, &JunkRoot, &JunkChild,
+				  &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
 
 		    if (lastx != AddingX || lasty != AddingY)
 		    {
@@ -918,8 +921,8 @@ IconMgr *iconp;
 	    } 
 	    else if (event.xbutton.button == Button3)
 	    {
-		int maxw = Scr->MyDisplayWidth  - Scr->BorderRight  - AddingX - bw2;
-		int maxh = Scr->MyDisplayHeight - Scr->BorderBottom - AddingY - bw2;
+		int maxw = Scr->rootw - Scr->BorderRight  - AddingX - bw2;
+		int maxh = Scr->rooth - Scr->BorderBottom - AddingY - bw2;
 
 		/*
 		 * Make window go to bottom of screen, and clip to right edge.
@@ -939,7 +942,7 @@ IconMgr *iconp;
 		XMaskEvent(dpy, ButtonReleaseMask, &event);
 	    }
 	  }
-	    MoveOutline(winbox ? winbox->window : Scr->Root, 0, 0, 0, 0, 0, 0);
+	    MoveOutline(vroot, 0, 0, 0, 0, 0, 0);
 	    XUnmapWindow(dpy, Scr->SizeWindow);
 	    UninstallRootColormap();
 	    XUngrabPointer(dpy, CurrentTime);
@@ -956,11 +959,6 @@ IconMgr *iconp;
     } else {				/* put it where asked, mod title bar */
 	/* if the gravity is towards the top, move it by the title height */
 	if (gravy < 0) tmp_win->attr.y -= gravy * tmp_win->title_height;
-	if (winbox) {
-	  XTranslateCoordinates (dpy, Scr->Root, winbox->window,
-                       tmp_win->attr.x,  tmp_win->attr.y,
-		      &tmp_win->attr.x, &tmp_win->attr.y, &JunkChild);
-	}
     }
 
 #ifdef DEBUG
@@ -979,16 +977,6 @@ IconMgr *iconp;
 
     tmp_win->title_width = tmp_win->attr.width;
 
-#ifdef I18N
-    XmbTextExtents(Scr->TitleBarFont.font_set, tmp_win->name, namelen,
-		   &ink_rect, &logical_rect);
-    
-    tmp_win->name_width = logical_rect.width;
-#else    
-    tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font, tmp_win->name,
-				     namelen);
-#endif    
-
 #ifndef NO_LOCALE
     tmp_win->icon_name = GetWMPropertyString(tmp_win->w, XA_WM_ICON_NAME);
 #else /* NO_LOCALE */
@@ -998,18 +986,20 @@ IconMgr *iconp;
 	tmp_win->icon_name = tmp_win->name;
 #endif /* NO_LOCALE */
 
-    if (tmp_win->icon_name == NULL)
-	tmp_win->icon_name = tmp_win->name;
+    if (tmp_win->icon_name == NULL) tmp_win->icon_name = tmp_win->name;
 #ifdef CLAUDE
-    else if ((strlen (tmp_win->icon_name) > 11) &&
-	    (strncmp (tmp_win->icon_name, "Netscape: ", 10) == 0)) {
-	char *tmp;
-
-	tmp = strdup (tmp_win->icon_name + 10);
-	XFree ((char*) tmp_win->icon_name);
-	tmp_win->icon_name = tmp;
+    if (strstr (tmp_win->icon_name, " - Mozilla")) {
+      char *moz = strstr (tmp_win->icon_name, " - Mozilla");
+      *moz = '\0';
     }
 #endif
+
+#ifdef I18N
+    XmbTextExtents (Scr->TitleBarFont.font_set, tmp_win->name, namelen, &ink_rect, &logical_rect);
+    tmp_win->name_width = logical_rect.width;
+#else    
+    tmp_win->name_width = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, namelen);
+#endif    
 
     if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
 
@@ -1109,8 +1099,14 @@ IconMgr *iconp;
 	valuemask |= CWWinGravity;
     }
 
-    tmp_win->frame = XCreateWindow (dpy, winbox ? winbox->window : Scr->Root, tmp_win->frame_x,
-				    tmp_win->frame_y, 
+    if ((tmp_win->frame_x > Scr->rootw) ||
+	(tmp_win->frame_y > Scr->rooth) ||
+	(tmp_win->frame_x + tmp_win->frame_width  < 0) ||
+	(tmp_win->frame_y + tmp_win->frame_height < 0)) {
+      tmp_win->frame_x = 0;
+      tmp_win->frame_y = 0;
+    }
+    tmp_win->frame = XCreateWindow (dpy, vroot, tmp_win->frame_x, tmp_win->frame_y, 
 				    (unsigned int) tmp_win->frame_width,
 				    (unsigned int) tmp_win->frame_height,
 				    (unsigned int) tmp_win->frame_bw,
@@ -1145,12 +1141,12 @@ IconMgr *iconp;
     if (tmp_win->highlight)
     {
 	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
-	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root, 
+	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, vroot, 
 		(char*)black_bits, gray_width, gray_height, 
 		tmp_win->border_tile.fore, tmp_win->border_tile.back,
 		Scr->d_depth);
 	else
-	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root, 
+	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, vroot, 
 		(char*)gray_bits, gray_width, gray_height, 
 		tmp_win->border_tile.fore, tmp_win->border_tile.back,
 		Scr->d_depth);
@@ -1202,11 +1198,10 @@ IconMgr *iconp;
 	tmp_win->wShaped = boundingShaped;
     }
 
-    if (!tmp_win->iconmgr &&
-	(tmp_win->w != Scr->workSpaceMgr.workspaceWindow.w) &&
-	(tmp_win->w != Scr->workSpaceMgr.occupyWindow.w))
+    if (!tmp_win->iconmgr &&! iswman &&
+	(tmp_win->w != Scr->workSpaceMgr.occupyWindow->w))
 	XAddToSaveSet(dpy, tmp_win->w);
-	
+
     XReparentWindow(dpy, tmp_win->w, tmp_win->frame, tmp_win->frame_bw3D,
 		tmp_win->title_height + tmp_win->frame_bw3D);
     /*
@@ -1279,9 +1274,8 @@ IconMgr *iconp;
     /* if we were in the middle of a menu activated function, regrab
      * the pointer 
      */
-    if (RootFunction)
-	ReGrab();
-    WMapAddWindow (tmp_win);
+    if (RootFunction) ReGrab();
+    if (!iswman) WMapAddWindow (tmp_win);
     SetPropsIfCaptiveCtwm (tmp_win);
     savegeometry (tmp_win);
     return (tmp_win);
@@ -1436,6 +1430,7 @@ TwmWindow *tmp_win;
 	switch (tmp->cont)
 	{
 	case C_WINDOW:
+	case C_WORKSPACE:
 	    if (tmp->mods & AltMask) break;
 	    grabkey (tmp, 0, tmp_win->w);
 	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
@@ -2155,9 +2150,9 @@ void GetWindowSizeHints (tmp)
 	int right =  tmp->attr.x + tmp->attr.width + 2 * tmp->old_bw;
 	int bottom = tmp->attr.y + tmp->attr.height + 2 * tmp->old_bw;
 	tmp->hints.win_gravity = 
-	  gravs[((Scr->MyDisplayHeight - bottom <
+	  gravs[((Scr->rooth - bottom <
 		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 2) |
-		((Scr->MyDisplayWidth - right   <
+		((Scr->rootw - right   <
 		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 1)];
 	tmp->hints.flags |= PWinGravity;
     }
@@ -2216,15 +2211,15 @@ int  grav1, grav2;
     mask = XParseGeometry (geom, &wr->x, &wr->y, (unsigned int*) &wr->w,
 						 (unsigned int*) &wr->h);
 
-    if (mask & XNegative) wr->x += Scr->MyDisplayWidth  - wr->w;
-    if (mask & YNegative) wr->y += Scr->MyDisplayHeight - wr->h;
+    if (mask & XNegative) wr->x += Scr->rootw - wr->w;
+    if (mask & YNegative) wr->y += Scr->rooth - wr->h;
 
     return (&(wr->clientlist));
 }
 
 void CreateWindowRegions () {
     WindowRegion  *wr, *wr1 = NULL, *wr2 = NULL;
-    WorkSpaceList *wl;
+    WorkSpace *wl;
 
     for (wl = Scr->workSpaceMgr.workSpaceList; wl != NULL; wl = wl->next) {
 	wl->FirstWindowRegion = NULL;
@@ -2254,8 +2249,8 @@ int       *final_x, *final_y;
 {
     WindowRegion  *wr;
     WindowEntry	  *we;
-    int		   w, h;
-    WorkSpaceList *wl;
+    int		  w, h;
+    WorkSpace     *wl;
 
     if (!Scr->FirstWindowRegion) return (False);
     for (wl = Scr->workSpaceMgr.workSpaceList; wl != NULL; wl = wl->next) {
@@ -2341,9 +2336,9 @@ int		w, h;
 }
 
 static WindowEntry *findWindowEntry (wl, tmp_win, wrp)
-WorkSpaceList	*wl;
-TwmWindow	*tmp_win;
-WindowRegion	**wrp;
+WorkSpace    *wl;
+TwmWindow    *tmp_win;
+WindowRegion **wrp;
 {
     WindowRegion *wr;
     WindowEntry	 *we;
@@ -2385,9 +2380,9 @@ WindowEntry	*old, *we;
 void RemoveWindowFromRegion (tmp_win)
 TwmWindow	*tmp_win;
 {
-    WindowEntry   *we, *wp, *wn;
-    WindowRegion  *wr;
-    WorkSpaceList *wl;
+    WindowEntry  *we, *wp, *wn;
+    WindowRegion *wr;
+    WorkSpace    *wl;
 
     if (!Scr->FirstWindowRegion) return;
     we = (WindowEntry*) 0;

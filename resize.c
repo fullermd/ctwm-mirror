@@ -168,7 +168,7 @@ XEvent *evp;
 TwmWindow *tmp_win;
 Bool fromtitlebar, from3dborder;
 {
-    Window      junkRoot;
+    Window      junkRoot, grabwin;
     unsigned int junkbw, junkDepth;
     Cursor	cursor;
 
@@ -177,9 +177,11 @@ Bool fromtitlebar, from3dborder;
     if (! Scr->OpaqueResize || resizeWhenAdd) XGrabServer(dpy);
     resizeGrabMask = ButtonPressMask | ButtonReleaseMask |
 			ButtonMotionMask | PointerMotionHintMask;
-    XGrabPointer(dpy, Scr->Root, True, resizeGrabMask,
-        GrabModeAsync, GrabModeAsync,
-        tmp_win->winbox ? tmp_win->winbox->window : Scr->Root, cursor, CurrentTime);
+
+    grabwin = Scr->Root;
+    if (tmp_win->winbox) grabwin = tmp_win->winbox->window;
+    XGrabPointer(dpy, grabwin, True, resizeGrabMask,
+        GrabModeAsync, GrabModeAsync, grabwin, cursor, CurrentTime);
 
     XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
         &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
@@ -906,10 +908,10 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	     x, y, w, h, bw);
 #endif
 
-    if (x >= Scr->MyDisplayWidth)
-      x = Scr->MyDisplayWidth - 16;	/* one "average" cursor width */
-    if (y >= Scr->MyDisplayHeight)
-      y = Scr->MyDisplayHeight - 16;	/* one "average" cursor width */
+    if (x >= Scr->rootw)
+      x = Scr->rootw - 16;	/* one "average" cursor width */
+    if (y >= Scr->rooth)
+      y = Scr->rooth - 16;	/* one "average" cursor width */
     if (bw < 0)
       bw = tmp_win->frame_bw;		/* -1 means current frame width */
 
@@ -991,9 +993,9 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     }
     tmp_win->frame_x = x;
     tmp_win->frame_y = y;
-    if (tmp_win->UnmapByMovingFarAway && !VISIBLE(tmp_win)) {
-	frame_wc.x = Scr->MyDisplayWidth  + 1;
-	frame_wc.y = Scr->MyDisplayHeight + 1;
+    if (tmp_win->UnmapByMovingFarAway && !visible(tmp_win)) {
+	frame_wc.x = Scr->rootw  + 1;
+	frame_wc.y = Scr->rooth + 1;
     } else {
 	frame_wc.x = tmp_win->frame_x;
 	frame_wc.y = tmp_win->frame_y;
@@ -1014,7 +1016,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     {
 	xwc.width = (tmp_win->name_x - tmp_win->highlightxl - 2);
         if (xwc.width <= 0) {
-            xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
+            xwc.x = Scr->rootw;	/* move offscreen */
             xwc.width = 1;
         } else {
             xwc.x = tmp_win->highlightxl;
@@ -1029,7 +1031,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	if (Scr->TBInfo.nright > 0) xwc.width -= 2 * Scr->TitlePadding;
 	if (Scr->use3Dtitles) xwc.width -= Scr->TitleButtonShadowDepth;
         if (xwc.width <= 0) {
-            xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
+            xwc.x = Scr->rootw;	/* move offscreen */
             xwc.width = 1;
         } else {
             xwc.x = tmp_win->highlightxr;
@@ -1043,7 +1045,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	xwc.width = (tmp_win->name_x - tmp_win->highlightxl);
 	if (Scr->use3Dtitles) xwc.width -= 4;
 	if (xwc.width <= 0) {
-	     xwc.x = Scr->MyDisplayWidth;        /* move offscreen */
+	     xwc.x = Scr->rootw;        /* move offscreen */
 	     xwc.width = 1;
 	} else {
 	     xwc.x = tmp_win->highlightxl;
@@ -1058,7 +1060,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
 	if (Scr->use3Dtitles) xwc.width -= 4;
 	if (xwc.width <= 0) {
-	     xwc.x = Scr->MyDisplayWidth;        /* move offscreen */
+	     xwc.x = Scr->rootw;        /* move offscreen */
 	     xwc.width = 1;
 	} else {
 	     xwc.x = tmp_win->highlightxr;
@@ -1119,8 +1121,8 @@ int flag;
     int basex, basey;
     int border_x, border_y;
     int frame_bw_times_2;
-    int  zwidth = Scr->MyDisplayWidth;
-    int zheight = Scr->MyDisplayHeight;
+    int  zwidth = Scr->rootw;
+    int zheight = Scr->rooth;
 
 	XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
 	        &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,

@@ -1129,3 +1129,59 @@ WindowGeometries {
 	in the TwmIcons menu.
 
     And, as usual, a few bug fixes here and there.
+
+
+    Changes from version 3.6 to 3.7
+    -------------------------------
+
+    1 - Workspace context (bkctwmws.patch)
+
+	Makes it possible to bind keys specific to the workspace manager
+	(by Björn Knutsson). Use the event context 'workspace' for this.
+
+    2 - New keyword : AlwaysSqueezeToGravity
+
+	If it is enabled, window squeezing always follows window gravity (instead
+	of northward when the window has a title).
+
+    3 - TwmKeys and TwmVisible menus (dlctwmmenu.patch) :
+
+	Adds TwmKeys (rootmenu listing all keybindings) and TWM Visible (rootmenu
+	showing only deiconified windows) (by Dan Lilliehorn).
+
+
+    4 - Preliminary GNOME compliance (see README.gnome and TODO.gnome)
+	(by Rudolph T. Maceyko).
+
+    5 - IconifyStyle : "normal" "mosaic" "zoomin" "zoomout" "sweep"
+
+	A few 'fancy' graphical effects when you iconify windows, just for fun.
+
+    6 - Jpeg images support : You can now use jpeg image files wherever you
+	can use images. Use the jpeg:imagename syntaxe.
+
+    7 - f.showbackground.
+
+	Since we can now use fancy jpeg image for root backgrounds, this function
+	unmaps all windows in the current workspace. This is a toggle function,
+	if all windows are unmapped, they are all remapped. Better bind this
+	function in the root context.
+
+    8 - Preliminary support for Xinerama extention. You can define 'virtual'
+	screens (it's better if they correspond to you actual screens). The
+	thing is that you can see several workspaces at the sams time, one per
+	virtual screen. Of course, you cannot view the same workspace (or the
+	same window) in 2 vscreens at the same time. The syntax is :
+
+VirtualScreens {
+    "1280x1024+0+0"
+    "1600x1200+1280+0"
+}
+
+	for 2 screens, the first one (on the left) is 1280x1024, the second one
+	(on the right) is 1600x1200.
+
+	This is preliminary, because this has not been extensively tested. I did
+	this because I have now 2 screens, but I was unable to get them working
+	properly, so I use only one.
+
