@@ -14,7 +14,7 @@ XCOMM
 #define JPEG
 #define USEM4
 #define GNOME
-#undef  X11R6
+#define X11R6
 #undef  I18N
 
 #ifdef DEBUGPARSER
