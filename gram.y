@@ -700,7 +700,7 @@ geom_list	: LB geom_entries RB {}
 geom_entries	: /* Empty */
 		| geom_entries geom_entry
 		;
-geom_entry	: string { AddToList (&Scr->VirtualScreens, $1, "") }
+geom_entry	: string { AddToList (&Scr->VirtualScreens, $1, ""); }
 
 squeeze		: SQUEEZE_TITLE { 
 				    if (HasShape) Scr->SqueezeTitle = TRUE;
