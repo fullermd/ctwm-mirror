@@ -1933,9 +1933,9 @@ void HandleClientMessage(void)
 {
     TwmWindow *twm_win;
     int i;
-	
+
     if (Event.xclient.message_type == _XA_WM_CHANGE_STATE) {
-        if (Tmp_win != NULL) {
+	if (Tmp_win != NULL) {
 	    if (Event.xclient.data.l[0] == IconicState && !Tmp_win->isicon) {
 		XEvent button;
 		XQueryPointer (dpy, Scr->Root, &JunkRoot, &JunkChild,
@@ -1948,18 +1948,21 @@ void HandleClientMessage(void)
 		XUngrabPointer (dpy, CurrentTime);
 	    }
 	}
- 	return;
+	return;
     }
 #ifdef GNOME
-    /* 6/19/1999 nhd for GNOME compliance */	
+    /* 6/19/1999 nhd for GNOME compliance */
     if (Event.xclient.message_type == _XA_WIN_WORKSPACE) {
-      GotoWorkSpaceByNumber (/* XXXXX */ NULL, Event.xclient.data.l[0]);
+      /* XXXXX
+	 supposedly works with a single screen, but is less certain with
+	 multiple screens */
+      GotoWorkSpaceByNumber (Scr->currentvs, Event.xclient.data.l[0]);
       return;
     }
     if (Event.xclient.message_type == _XA_WIN_STATE) {
       unsigned long new_stuff = (unsigned long) Event.xclient.data.l [1];
       unsigned long old_stuff = (unsigned long) Event.xclient.data.l [0];
-      Window          tmp_win = Event.xclient.window;
+      Window	      tmp_win = Event.xclient.window;
       for (twm_win = (Scr->TwmRoot).next; twm_win != NULL; twm_win = twm_win->next)
 	if (twm_win->w == tmp_win) break;
       if (twm_win == NULL) return;
