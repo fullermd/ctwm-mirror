@@ -35,6 +35,7 @@
  * 07-Jan-86 Thomas E. LaStrange	File created
  * 11-Nov-90 Dave Sternlicht            Adding SaveColors
  * 10-Oct-90 David M. Sternlicht        Storing saved colors on root
+ * 22-April-92 Claude Lecommandeur	modifications for ctwm.
  *
  ***********************************************************************/
 
@@ -54,6 +55,9 @@ static char *Action = "";
 static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
 static char *curWorkSpc;
+static char *client, *workspace;
+static int numworkspc = 0;
+static int workspcseen = 0;
 
 static MenuRoot *GetRoot();
 
@@ -91,7 +95,7 @@ extern int yylineno;
 %token <num> MOVE RESIZE WAIT SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON 
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD 
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
-%token <num> NO_STACKMODE WORKSPACES WORKSPCMGR_GEOMETRY OCCUPYALL
+%token <num> NO_STACKMODE WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY OCCUPYALL OCCUPYLIST
 %token <ptr> STRING
 
 %type <ptr> string
@@ -152,34 +156,48 @@ stmt		: error
 		| RIGHT_TITLEBUTTON string EQUALS action { 
 					  GotTitleButton ($2, $4, True);
 					}
-		| button string		{ root = GetRoot($2, NULLSTR, NULLSTR);
-					  Scr->Mouse[$1][C_ROOT][0].func = F_MENU;
-					  Scr->Mouse[$1][C_ROOT][0].menu = root;
-					}
-		| button action		{ Scr->Mouse[$1][C_ROOT][0].func = $2;
-					  if ($2 == F_MENU)
-					  {
-					    pull->prev = NULL;
-					    Scr->Mouse[$1][C_ROOT][0].menu = pull;
-					  }
-					  else
-					  {
-					    root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
-					    Scr->Mouse[$1][C_ROOT][0].item = 
-						AddToMenu(root,"x",Action,
-							  NULLSTR,$2,NULLSTR,NULLSTR);
-					  }
-					  Action = "";
-					  pull = NULL;
-					}
+		| button string		{
+		    root = GetRoot($2, NULLSTR, NULLSTR);
+			if (Scr->Mouse[$1][C_ROOT][0] == NULL)
+			Scr->Mouse[$1][C_ROOT][0] = (MouseButton*) malloc (sizeof (MouseButton));
+			Scr->Mouse[$1][C_ROOT][0]->func = F_MENU;
+			Scr->Mouse[$1][C_ROOT][0]->menu = root;
+		}
+		| button action		{
+			if (Scr->Mouse[$1][C_ROOT][0] == NULL)
+			Scr->Mouse[$1][C_ROOT][0] = (MouseButton*) malloc (sizeof (MouseButton));
+			Scr->Mouse[$1][C_ROOT][0]->func = $2;
+			if ($2 == F_MENU) {
+			    pull->prev = NULL;
+			    Scr->Mouse[$1][C_ROOT][0]->menu = pull;
+			}
+			else {
+			    root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
+			    Scr->Mouse[$1][C_ROOT][0]->item = 
+					AddToMenu(root,"x",Action,
+					NULLSTR,$2,NULLSTR,NULLSTR);
+			}
+			Action = "";
+			pull = NULL;
+		}
 		| string fullkey	{ GotKey($1, $2); }
 		| button full		{ GotButton($1, $2); }
+
 		| DONT_ICONIFY_BY_UNMAPPING { list = &Scr->DontIconify; }
 		  win_list
-		| WORKSPACES		{}
+		| WORKSPACES		{
+			if (workspcseen) {
+				twmrc_error_prefix();
+				fprintf (stderr, "only one workspaces allowed\n");
+				ParseError = 1;
+			}
+			workspcseen = 1;
+		  }
 		  workspc_list
 		| OCCUPYALL		{ list = &Scr->OccupyAll; }
 		  win_list
+		| OCCUPYLIST
+		  occupy_list
 		| ICONMGR_NOSHOW	{ list = &Scr->IconMgrNoShow; }
 		  win_list
 		| ICONMGR_NOSHOW	{ Scr->IconManagerDontShow = TRUE; }
@@ -520,7 +538,7 @@ workspc_list	: LB workspc_entries RB
 		;
 
 workspc_entries	: /* Empty */
-		| workspc_entries workspc_entry
+		| workspc_entries workspc_entry {numworkspc++;}
 		;
 
 workspc_entry	: string	{
@@ -532,7 +550,7 @@ workspc_entry	: string	{
 		workapp_list
 		;
 
-workapp_list : LB workapp_entries RB
+workapp_list	: LB workapp_entries RB
 		;
 
 workapp_entries	: /* Empty */
@@ -567,6 +585,43 @@ win_entry	: string		{ if (Scr->FirstTime)
 					    AddToList(list, $1, 0);
 					}
 		;
+
+occupy_list	: LB occupy_entries RB
+		;
+
+occupy_entries	:  /* Empty */
+		| occupy_entries occupy_entry
+		;
+
+occupy_entry	: string {client = $1;}
+		  occupy_workspc_list
+		| WINDOW    string {client = $2;}
+		  occupy_workspc_list
+		| WORKSPACE string {workspace = $2;}
+		  occupy_window_list
+		;
+
+occupy_workspc_list	: LB occupy_workspc_entries RB
+			;
+
+occupy_workspc_entries	:   /* Empty */
+			| occupy_workspc_entries occupy_workspc_entry
+			;
+
+occupy_workspc_entry	: string {
+				AddToClientsList ($1, client);
+			  }
+
+occupy_window_list	: LB occupy_window_entries RB
+			;
+
+occupy_window_entries	:   /* Empty */
+			| occupy_window_entries occupy_window_entry
+			;
+
+occupy_window_entry	: string {
+				AddToClientsList (workspace, $1);
+			  }
 
 icon_list	: LB icon_entries RB
 		;
@@ -803,19 +858,22 @@ int butt, func;
 	if ((cont & (1 << i)) == 0)
 	    continue;
 
-	Scr->Mouse[butt][i][mods].func = func;
+	if (Scr->Mouse[butt][i][mods] == NULL)
+	    Scr->Mouse[butt][i][mods] = (MouseButton*) malloc (sizeof (MouseButton));
+	Scr->Mouse[butt][i][mods]->func = func;
 	if (func == F_MENU)
 	{
 	    pull->prev = NULL;
-	    Scr->Mouse[butt][i][mods].menu = pull;
+	    Scr->Mouse[butt][i][mods]->menu = pull;
 	}
 	else
 	{
 	    root = GetRoot(TWM_ROOT, NULLSTR, NULLSTR);
-	    Scr->Mouse[butt][i][mods].item = AddToMenu(root,"x",Action,
+	    Scr->Mouse[butt][i][mods]->item = AddToMenu(root,"x",Action,
 		    NULLSTR, func, NULLSTR, NULLSTR);
 	}
     }
+
     Action = "";
     pull = NULL;
     cont = 0;

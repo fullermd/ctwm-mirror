@@ -119,8 +119,7 @@ InitMenus()
 	for (j = 0; j < NUM_CONTEXTS; j++)
 	    for (k = 0; k < MOD_SIZE; k++)
 	    {
-		Scr->Mouse[i][j][k].func = NULL;
-		Scr->Mouse[i][j][k].item = NULL;
+		Scr->Mouse[i][j][k] = NULL;
 	    }
 
     Scr->DefaultFunction.func = NULL;
@@ -184,7 +183,7 @@ Bool AddFuncKey (name, cont, mods, func, win_name, action)
 	if (tmp->keysym == keysym &&
 	    tmp->cont == cont &&
 	    tmp->mods == mods)
-	    break;
+	    return (True);
     }
 
     if (tmp == NULL)
@@ -1415,6 +1414,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     case F_SHOWLIST:
 	if (Scr->NoIconManagers)
 	    break;
+	if (Scr->iconmgr->count == 0) break;
 	DeIconify(Scr->iconmgr->twm_win);
 	XRaiseWindow(dpy, Scr->iconmgr->twm_win->frame);
 	break;

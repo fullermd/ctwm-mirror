@@ -885,13 +885,12 @@ MappedNotOverride(w)
 static void do_add_binding (button, context, modifier, func)
     int button, context, modifier;
     int func;
-{
-    MouseButton *mb = &Scr->Mouse[button][context][modifier];
+{ 
+    if (Scr->Mouse[button][context][modifier]) return;	/* already defined */
 
-    if (mb->func) return;		/* already defined */
-
-    mb->func = func;
-    mb->item = NULL;
+    Scr->Mouse[button][context][modifier] = (MouseButton*) malloc (sizeof (MouseButton));
+    Scr->Mouse[button][context][modifier]->func = func;
+    Scr->Mouse[button][context][modifier]->item = NULL;
 }
 
 AddDefaultBindings ()
@@ -938,7 +937,8 @@ TwmWindow *tmp_win;
     {
 	for (j = 0; j < MOD_SIZE; j++)
 	{
-	    if (Scr->Mouse[i][C_WINDOW][j].func != NULL)
+	    if ((Scr->Mouse[i][C_WINDOW][j] != NULL) &&
+	        (Scr->Mouse[i][C_WINDOW][j]->func != NULL))
 	    {
 	        /* twm used to do this grab on the application main window,
                  * tmp_win->w . This was not ICCCM complient and was changed.
@@ -963,6 +963,8 @@ TwmWindow *tmp_win;
  ***********************************************************************
  */
 
+#define MAX_KEYCODE 256
+
 void
 GrabKeys(tmp_win)
 TwmWindow *tmp_win;
@@ -983,6 +985,7 @@ TwmWindow *tmp_win;
 	    if (tmp_win->icon_w)
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
 		    GrabModeAsync, GrabModeAsync);
+	    break;
 
 	case C_TITLE:
 	    if (tmp_win->title_w)

@@ -87,3 +87,42 @@ Icons {
 	- A few minor bugs fixed.
 
 
+    Changes from version 1.2 to 1.3
+    -------------------------------
+
+
+    1 - Many bugs fixed :
+
+	- Partial geometry in the WorkSpaceManagerGeometry statement no longer
+	  cause ctwm to core dump.
+
+	- The occupy window name now is "Occupy Window" instead of "Occupy WIndow"
+	  a typo on the uppercase I in window.
+
+	- Several types problems that make good compilers to issue warnings.
+
+	- The icons of the WorkSpaceManager and Occupy Window windows now 
+	  behave correctly with ButtonPress.
+
+	- UnknownIcon can now have Xpm icons specified.
+
+	- f.showiconmgr no longer map empty icon managers.
+
+	- The ctwm process is smaller (even smaller than twm).
+
+
+    2 - Add the Occupy command in .ctwmrc, you can now specify at startup
+        which window occupy which workspace.
+
+    example :
+
+Occupy {
+              "xload"  {"all"}
+    Window    "xterm"  {"here" "there" "elsewhere"}
+              "xv"     {"images"}
+    WorkSpace "images" {"xloadimage"}
+}
+
+
+
+

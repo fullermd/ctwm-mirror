@@ -101,7 +101,7 @@ void CreateIconManagers()
 	      (2 * Scr->BorderWidth) + JunkX;
 
 	if (mask & YNegative)
-	    JunkY = Scr->MyDisplayHeight - p->height -
+	    JunkY = Scr->MyDisplayHeight, p->height - 
 	      (2 * Scr->BorderWidth) + JunkY;
 
 	background = Scr->IconManagerC.back;
@@ -130,12 +130,14 @@ void CreateIconManagers()
     Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.buttonList;
     if (workSpaceManagerActive)
 	Scr->workSpaceMgr.buttonList->iconmgr = Scr->iconmgr;
+/*
     for (q = Scr->iconmgr; q != NULL; q = q->nextv) {
       for (p = q; p != NULL; p = p->next) {
 	GrabButtons(p->twm_win);
 	GrabKeys(p->twm_win);
       }
     }
+*/
 }
 
 /***********************************************************************

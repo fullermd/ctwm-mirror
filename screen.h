@@ -78,6 +78,9 @@ typedef struct ScreenInfo
     name_list *Icons;		/* list of icon pixmaps */
     TitlebarPixmaps tbpm;	/* titlebar pixmaps */
     Pixmap UnknownPm;		/* the unknown icon pixmap */
+#ifdef XPM
+    XpmIcon *UnknownXpmIcon;
+#endif
     Pixmap siconifyPm;		/* the icon manager iconify pixmap */
     Pixmap pullPm;		/* pull right menu icon */
     int	pullW, pullH;		/* size of pull right menu icon */
@@ -91,7 +94,7 @@ typedef struct ScreenInfo
     TwmWindow *Ring;		/* one of the windows in window ring */
     TwmWindow *RingLeader;	/* current winodw in ring */
 
-    MouseButton Mouse[MAX_BUTTONS+1][NUM_CONTEXTS][MOD_SIZE];
+    MouseButton *Mouse[MAX_BUTTONS+1][NUM_CONTEXTS][MOD_SIZE];
     MouseButton DefaultFunction;
     MouseButton WindowFunction;
 

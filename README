@@ -15,7 +15,7 @@ bitmaps for the buttons and background root windows.
 workmgr.[ch]  were built from scratch,  but the twm ones are slightly
 modified.  I tried to  minimize  the  modifications,  and it is  even
 possible  (but not sure)  that certain  future twm  patches could  be
-applied to ctwm sources files. But don't count on this.
+applied to ctwm sources files. But don't rely on this.
 
     I certainly introduced many bugs with these modifications. So, be
 tolerant.

@@ -1,6 +1,8 @@
 #ifndef _WORKMGR_
 #define _WORKMGR_
 
+#define MAXWORKSPACE 32
+
 #ifdef ultrix
 #   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
 #endif
@@ -24,14 +26,15 @@ typedef struct OccupyWindow {
 } OccupyWindow;
 
 typedef struct ButtonList {
-    Window    w;
-    Window    ow;
-    int       number;
-    char      *label;
-    ColorPair cp;
-    IconMgr   *iconmgr;
-    ColorPair backcp;
-    Pixmap    backpix;
+    Window	w;
+    Window	ow;
+    int		number;
+    char	*label;
+    ColorPair	cp;
+    IconMgr	*iconmgr;
+    ColorPair	backcp;
+    Pixmap	backpix;
+    name_list	*clientlist;
     struct ButtonList *next;
 } ButtonList;
 

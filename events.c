@@ -1392,8 +1392,13 @@ HandleMapRequest()
     /* If no hints, or currently an icon, just "deiconify" */
     else
     {
+      if (OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC)) {
 	DeIconify(Tmp_win);
 	SetRaiseWindow (Tmp_win);
+      }
+      else {
+	Tmp_win->mapped = TRUE;
+      }
     }
 }
 
@@ -1867,15 +1872,16 @@ HandleButtonPress()
 	{
 	    Context = C_TITLE;
 	}
-	else if ((Tmp_win == Scr->workSpaceMgr.twm_win) ||
-		 (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win))
-	{
-	    Context = C_WINDOW;
-	}
 	else if (Event.xany.window == Tmp_win->w) 
 	{
-	    printf("ERROR! ERROR! ERROR! YOU SHOULD NOT BE HERE!!!\n");
-	    Context = C_WINDOW;
+	    if ((Tmp_win == Scr->workSpaceMgr.twm_win) ||
+		 (Tmp_win == Scr->workSpaceMgr.occupyWindow.twm_win)) {
+		Context = C_WINDOW;
+	    }
+	    else {
+		printf("ERROR! ERROR! ERROR! YOU SHOULD NOT BE HERE!!!\n");
+		Context = C_WINDOW;
+	    }
 	}
 	else if (Event.xany.window == Tmp_win->icon_w)
 	{
@@ -1964,22 +1970,24 @@ HandleButtonPress()
      */
     modifier = (Event.xbutton.state & mods_used);
 
-    if (Context == C_NO_CONTEXT)
+    if ((Context == C_NO_CONTEXT) || (Context == C_IDENTIFY))
 	return;
 
     RootFunction = NULL;
-    if (Scr->Mouse[Event.xbutton.button][Context][modifier].func == F_MENU)
+  if (Scr->Mouse[Event.xbutton.button][Context][modifier]) {
+    if (Scr->Mouse[Event.xbutton.button][Context][modifier]->func == F_MENU)
     {
-	do_menu (Scr->Mouse[Event.xbutton.button][Context][modifier].menu,
+	do_menu (Scr->Mouse[Event.xbutton.button][Context][modifier]->menu,
 		 (Window) None);
     }
-    else if (Scr->Mouse[Event.xbutton.button][Context][modifier].func != NULL)
+    else if (Scr->Mouse[Event.xbutton.button][Context][modifier]->func != NULL)
     {
-	Action = Scr->Mouse[Event.xbutton.button][Context][modifier].item ?
-	    Scr->Mouse[Event.xbutton.button][Context][modifier].item->action : NULL;
-	ExecuteFunction(Scr->Mouse[Event.xbutton.button][Context][modifier].func,
+	Action = Scr->Mouse[Event.xbutton.button][Context][modifier]->item ?
+	    Scr->Mouse[Event.xbutton.button][Context][modifier]->item->action : NULL;
+	ExecuteFunction(Scr->Mouse[Event.xbutton.button][Context][modifier]->func,
 	    Action, Event.xany.window, Tmp_win, &Event, Context, FALSE);
     }
+  }
     else if (Tmp_win == Scr->workSpaceMgr.twm_win) /* Baaad */
     {
 	ChangeWorkSpace (Event.xbutton.subwindow);

@@ -57,86 +57,103 @@ This variable specifies the geometry of the workspace manager window. The
 \fIstring\fP argument is standard geometry specification that indicates 
 the initial full size of the workspace manager. The \fIcolumns\fP argument
 indicates the number of columns to use for the workspace manager window.
+.EX
+\fBWorkSpaceManagerGeometry\fP        "360x60+60-0" 4
 .EE
-workspacemanagergeometry        "360x60+60-0" 4
-
-.IP "\fBWorkSpaces\fP { \fIworkspace-list\fP }" 16
-.PP
+.IP "\fBWorkSpaces\fP { \fIworkspace-list\fP }" 8
 This variable specifies a list of workspaces that are created at startup.
-.PP
 Where \fIworkspace-list\fP is :
-.PP
+.EX
 name [{bg-button [fg-button] [bg-root] [fg-root] [bitmap-root]}]
-.PP
+.EE
+.IP
 With :
+.RS 12
 .TP 12
-.PP
-\fBbg-button\fP   : background color of the corresponding button in the workspace manager.
+.B "bg-button:"
+background color of the corresponding button in the workspace manager.
 .TP 12
-.PP
-\fBfg-button\fP   : foreground color of the corresponding button in the workspace manager.
+.B "fg-button:"
+foreground color of the corresponding button in the workspace manager.
 .TP 12
-.PP
-\fBbg-root\fP     : background color of the corresponding root screen.
+.B "bg-root:"
+background color of the corresponding root screen.
 .TP 12
-.PP
-\fBfg-root\fP     : fackground color of the corresponding root screen.
+.B "fg-root:"
+foreground color of the corresponding root screen.
 .TP 12
-.PP
-\fBbitmap-root\fP : bitmap to display on the corresponding root screen.
-.PP
+.B "bitmap-root:"
+bitmap to display on the corresponding root screen.
+.RE
+.IP
 Example :
-.PP
+.EX
 WorkSpaces
 {
-    "One"   {"#686B9F" "white" "DeepSkyBlue3" "white" "xlogo16"}
-    "Two"   {"#619AAE" "white" "firebrick"}
-    "Three" {"#727786" "white" "brown"}
-    "Four"  {"#8C5b7A" "white" "MidnightBlue"}
+  "One"   {"#686B9F" "white" "DeepSkyBlue3" "white" "xlogo16"}
+  "Two"   {"#619AAE" "white" "firebrick"}
+  "Three" {"#727786" "white" "brown"}
+  "Four"  {"#8C5b7A" "white" "MidnightBlue"}
 
-    "Five"  {"#727786" "white" "DeepSkyBlue3" "white" "plaid"}
-    "Six"   {"#619AAE" "white" "DeepSkyBlue3" "white" "letters"}
-    "Seven" {"#8C5b7A" "white" "chartreuse4"}
-    "Eight" {"#686B9F" "white" "MidnightBlue"}
+  "Five"  {"#727786" "white" "DeepSkyBlue3" "white" "plaid"}
+  "Six"   {"#619AAE" "white" "DeepSkyBlue3" "white" "letters"}
+  "Seven" {"#8C5b7A" "white" "chartreuse4"}
+  "Eight" {"#686B9F" "white" "MidnightBlue"}
 }
-.PP
+.EE
+.IP
 The maximum number of workspaces is 32.
-.PP
-.IP "\fBOccupyAll\fP { \fIwindow-list\fP }" 16
-.PP
+
+
+
+.IP "\fBOccupyAll\fP { \fIwindow-list\fP }" 8
 This variable specifies a list of windows that will occupy all workspaces at startup.
-.PP
-Where \fIworkspace-list\fP is a list of window names.
-.PP
+.IP
+Where \fIwindow-list\fP is a list of window names.
+.IP
 Example :
-.PP
+.EX
 OccupyAll
 {
     "xload"
     "xbiff"
     "xconsole"
 }
-.PP
-.IP "\fBOpaqueResize\fP
-.PP
+.EE
+.IP "\fBOccupy\fP { \fIoccupy-list\fP }" 8
+This variable specifies which window occupy which workspace at startup.
+.IP
+Where \fIoccupy-list\fP is a list entries of the form :
+.EX
+	[Window]   win-name { wpsc1 wspc2 ... }
+or	Workspace  wspc-name {win1 win2 ... }
+.EE
+Example :
+.EX
+Occupy {
+               "xload"   {"all"}
+    Window     "xterm"   {"here" "there" "elsewhere"}
+               "xv"      {"images"}
+    WorkSpace  "images"  {"xloadimage"}
+}
+.EE
+.IP "\fBOpaqueResize\fP" 8
 Just for fun. The opaque version of resize. Extremely resource intensive,
 but beautiful with fast server/client/network.
-.PP
-.IP "\fBXPMIconDirectory\fP \fIpath\fP " 16
-.PP
+.IP "\fBXPMIconDirectory\fP \fIpath\fP " 8
 Ctwm handles colored, shaped icons in XPM format [from Arnaud LE HORS]. This
 variable specifies the path where ctwm looks for to find the files containing
 these icons. The Icons command had been a little modified, the two formats of
 icon files : XPM icon files must be prefixed by the character '@'.
 Example :
-.PP
+.EX
 XPMIconDirectory  "/usr/lib/X11/X11/XPM"
-.PP
-Icons {
+Icons
+{
     "Axe"    "@edit.xpm"
     "xterm"  "@term.xpm"
 }
-.PP
+.EE
 .SH FUNCTIONS
 .PP
 All the functions of \fItwm\fP, plus 3 :

@@ -292,6 +292,13 @@ void
 GetUnknownIcon(name)
 char *name;
 {
+#ifdef XPM
+    Scr->UnknownXpmIcon = None;
+    if (name [0] == '@') {
+	Scr->UnknownXpmIcon = GetXpmPixmap (&(name [1]));
+    }
+    else
+#endif
     if ((Scr->UnknownPm = GetBitmap(name)) != None)
     {
 	XGetGeometry(dpy, Scr->UnknownPm, &JunkRoot, &JunkX, &JunkY,

@@ -488,7 +488,17 @@ int def_x, def_y;
     }
 
     /* if we still don't have an icon, assign the UnknownIcon */
-
+#ifdef XPM
+    if (pm == None && Scr->UnknownXpmIcon != None)
+    {
+	xpmicon = Scr->UnknownXpmIcon;
+	pm = xpmicon->pixmap;
+	tmp_win->icon_width  = xpmicon->attributes.width;
+	tmp_win->icon_height = xpmicon->attributes.height;
+	tmp_win->xpmicon = xpmicon;
+    }
+    else
+#endif
     if (pm == None && Scr->UnknownPm != None)
     {
 	tmp_win->icon_width = Scr->UnknownWidth;
