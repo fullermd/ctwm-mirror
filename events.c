@@ -872,6 +872,7 @@ void HandleFocusOut(XFocusOutEvent *event)
 
     if (Tmp_win->iconmgr) return;
     if (Scr->Focus != Tmp_win) return;
+    if (Scr->SloppyFocus) return;
     if (Tmp_win->AutoSqueeze && !Tmp_win->squeezed) AutoSqueeze (Tmp_win);
     SetFocusVisualAttributes (Tmp_win, False);
     Scr->Focus= NULL;
