@@ -1126,6 +1126,8 @@ int parse_keyword (char *s, int *nump)
 
 int do_single_keyword (int keyword)
 {
+    virtualScreen *vs;
+
     switch (keyword) {
       case kw0_NoDefaults:
 	Scr->NoDefaults = TRUE;
@@ -1212,7 +1214,10 @@ int do_single_keyword (int keyword)
 	return 1;
 
       case kw0_StartInMapState:
-	Scr->workSpaceMgr.initialstate = MAPSTATE;
+	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	  vs->wsw->state = MAPSTATE;
+	}
+	Scr->workSpaceMgr.initialstate = MAPSTATE; /* redundant, really */
 	return 1;
 
       case kw0_NoShowOccupyAll:
