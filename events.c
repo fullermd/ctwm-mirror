@@ -4376,4 +4376,20 @@ static void dumpevent (e)
       case MappingNotify:  name = "MappingNotify"; break;
     }
     fprintf (tracefile, "event:  %s in window 0x%x\n", name, e->xany.window);
+    switch (e->type) {
+      case KeyPress:
+      case KeyRelease:
+	  fprintf (tracefile, "     :  +%d,+%d (+%d,+%d)  state=%d, keycode=%d\n",
+		   e->xkey.x, e->xkey.y,
+		   e->xkey.x_root, e->xkey.y_root,
+		   e->xkey.state, e->xkey.keycode);
+	  break;
+      case ButtonPress:
+      case ButtonRelease:
+	  fprintf (tracefile, "     :  +%d,+%d (+%d,+%d)  state=%d, button=%d\n",
+		   e->xbutton.x, e->xbutton.y,
+		   e->xbutton.x_root, e->xbutton.y_root,
+		   e->xbutton.state, e->xbutton.button);
+	  break;
+    }
 }
