@@ -416,7 +416,6 @@ main(argc, argv, environ)
 	AllocateOthersIconManagers ();
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
-	Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
 	if (!Scr->NoIconManagers)
 	    Scr->iconmgr->twm_win->icon = TRUE;
 
@@ -469,6 +468,7 @@ main(argc, argv, environ)
 	    SetMapStateProp (Scr->workSpaceMgr.workspaceWindow.twm_win, NormalState);
 	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.w);
 	    XMapWindow (dpy, Scr->workSpaceMgr.workspaceWindow.twm_win->frame);
+	    Scr->workSpaceMgr.workspaceWindow.twm_win->mapped = TRUE;
 	}
 	
 	attributes.border_pixel = Scr->DefaultC.fore;
@@ -825,7 +825,6 @@ Atom _XA_WM_PROTOCOLS;
 Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
-Atom _XA_WM_WORKSPACES;
 
 InternUsefulAtoms ()
 {
@@ -840,5 +839,4 @@ InternUsefulAtoms ()
     _XA_WM_TAKE_FOCUS = XInternAtom (dpy, "WM_TAKE_FOCUS", False);
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
-    _XA_WM_WORKSPACES = XInternAtom (dpy, "WM_WORKSPACES", False);
 }

@@ -82,6 +82,9 @@ typedef struct MenuRoot
     short pull;			/* is there a pull right entry ? */
     short entered;		/* EnterNotify following pop up */
     short real_menu;		/* this is a real menu */
+    short x, y;			/* position (for pinned menus) */
+    short pinned;		/* is this a pinned menu*/
+    struct MenuRoot *pmenu;	/* the associated pinned menu */
 } MenuRoot;
 
 #define NEVER_MAPPED	0	/* constants for mapped field of MenuRoot */

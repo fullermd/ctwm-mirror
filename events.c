@@ -102,6 +102,9 @@ void HandleCreateNotify();
 void HandleShapeNotify ();
 extern int ShapeEventBase, ShapeErrorBase;
 
+extern Atom _XA_WM_OCCUPATION;
+extern Atom _XA_WM_CURRENTWORKSPACE;
+
 void AutoRaiseWindow (tmp)
     TwmWindow *tmp;
 {
@@ -137,8 +140,8 @@ InitEvents()
     int i;
 
 
-    ResizeWindow = NULL;
-    DragWindow = NULL;
+    ResizeWindow = (Window) 0;
+    DragWindow = (Window) 0;
     enter_flag = FALSE;
     enter_win = raise_win = NULL;
 
@@ -771,6 +774,21 @@ HandlePropertyNotify()
 	XStandardColormap *maps = NULL;
 	int nmaps;
 
+	if (Event.xproperty.atom == _XA_WM_CURRENTWORKSPACE) {
+	    switch (Event.xproperty.state) {
+		case PropertyNewValue:
+		    if (XGetWindowProperty (dpy, Scr->Root, _XA_WM_CURRENTWORKSPACE,
+				0L, 200L, False, XA_STRING, &actual, &actual_format,
+				&nitems, &bytesafter, (unsigned char **) &prop) == Success) {
+			if (nitems == 0) return;
+			GotoWorkSpaceByName (prop);
+		    }
+		    return;
+
+		default:
+		    return;
+	    }
+	}
 	switch (Event.xproperty.state) {
 	  case PropertyNewValue:
 	    if (XGetRGBColormaps (dpy, Scr->Root, &maps, &nmaps, 
@@ -934,6 +952,12 @@ HandlePropertyNotify()
 	    XFreePixmap (dpy, pm);
 	    RedoIconName();
 	}
+	if (Tmp_win->icon_w && !Tmp_win->forced && Tmp_win->wmhints &&
+	    (Tmp_win->wmhints->flags & IconMaskHint)) {
+		XShapeCombineMask(dpy, Tmp_win->icon_bm_w, ShapeBounding,
+				  0, 0, Tmp_win->wmhints->icon_mask, ShapeSet);
+	}
+		    
 	break;
 
       case XA_WM_NORMAL_HINTS:
@@ -947,6 +971,12 @@ HandlePropertyNotify()
 	} else if (Event.xproperty.atom == _XA_WM_PROTOCOLS) {
 	    FetchWmProtocols (Tmp_win);
 	    break;
+	} else if (Event.xproperty.atom == _XA_WM_OCCUPATION) {
+	  if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L, MAX_NAME_LEN, False,
+				  XA_STRING, &actual, &actual_format, &nitems,
+				  &bytesafter, (unsigned char **) &prop) != Success ||
+	      actual == None) return;
+	  ChangeOccupation (Tmp_win, GetMaskFromNameList (Tmp_win, prop));
 	}
 	break;
     }
@@ -975,7 +1005,7 @@ RedoIconName()
 	    SortIconManager(Tmp_win->list->iconmgr);
     }
 
-    if (Tmp_win->icon_w == NULL)
+    if (Tmp_win->icon_w == (Window) 0)
 	return;
 
     if (Tmp_win->icon_not_ours)
@@ -1035,6 +1065,7 @@ RedoIconName()
     {
 	XClearArea(dpy, Tmp_win->icon_w, 0, 0, 0, 0, True);
     }
+    WMapUpdateIconName (Tmp_win);
 }
 
 
@@ -1371,6 +1402,8 @@ HandleMapRequest()
 	    (void) AddIconManager (Tmp_win);
     }
 
+    if (Tmp_win->iconmgr) return;
+
     /* If it's not merely iconified, and we have hints, use them. */
     if ((! Tmp_win->icon) &&
 	Tmp_win->wmhints && (Tmp_win->wmhints->flags & StateHint))
@@ -1504,6 +1537,9 @@ HandleUnmapNotify()
     if (Tmp_win == NULL || (!Tmp_win->mapped && !Tmp_win->icon))
 	return;
 
+/* work around what seems a bug in the sun server */
+    if (Tmp_win->mapped == FALSE) return;
+
     /*
      * The program may have unmapped the client window, from either
      * NormalState or IconicState.  Handle the transition to WithdrawnState.
@@ -1552,7 +1588,7 @@ HandleUnmapNotify()
 void
 HandleMotionNotify()
 {
-    if (ResizeWindow != NULL)
+    if (ResizeWindow != (Window) 0)
     {
 	XQueryPointer( dpy, Event.xany.window,
 	    &(Event.xmotion.root), &JunkChild,
@@ -1667,16 +1703,16 @@ HandleButtonRelease()
 			 ? Tmp_win : NULL);
 	}
 
-	DragWindow = NULL;
+	DragWindow = (Window) 0;
 	ConstMove = FALSE;
     }
 
-    if (ResizeWindow != NULL)
+    if (ResizeWindow != (Window) 0)
     {
 	EndResize();
     }
 
-    if (ActiveMenu != NULL && RootFunction == NULL)
+    if (ActiveMenu != NULL && RootFunction == 0)
     {
 	if (ActiveItem != NULL)
 	{
@@ -1705,12 +1741,13 @@ HandleButtonRelease()
 	    /* if we are not executing a defered command, then take down the
 	     * menu
 	     */
-	    if (RootFunction == NULL)
+	    if ((RootFunction == 0) && ActiveMenu && (!ActiveMenu->pinned))
 	    {
 		PopDownMenu();
 	    }
 	}
 	else
+	if (! ActiveMenu->pinned)
 	    PopDownMenu();
     }
 
@@ -1724,12 +1761,12 @@ HandleButtonRelease()
 	case Button5: mask &= ~Button5Mask; break;
     }
 
-    if (RootFunction != NULL ||
+    if (RootFunction != 0 ||
 	ResizeWindow != None ||
 	DragWindow != None)
 	ButtonPressed = -1;
 
-    if (RootFunction == NULL &&
+    if (RootFunction == 0 &&
 	(Event.xbutton.state & mask) == 0 &&
 	DragWindow == None &&
 	ResizeWindow == None)
@@ -1792,10 +1829,14 @@ HandleButtonPress()
 {
     unsigned int modifier;
     Cursor cur;
+    MenuRoot *mr;
 
     /* pop down the menu, if any */
-    if (ActiveMenu != NULL)
-	PopDownMenu();
+
+    if (XFindContext (dpy, Event.xbutton.window, MenuContext, (caddr_t*) &mr) != XCSUCCESS) {
+	mr = (MenuRoot*) 0;
+    }
+    if ((ActiveMenu != NULL) && (RootFunction != 0) && (mr != ActiveMenu)) PopDownMenu();
 
     XSync(dpy, 0);
 			/* XXX - remove? */
@@ -1835,6 +1876,18 @@ HandleButtonPress()
     else
 	ButtonPressed = Event.xbutton.button;
 
+    if ((ActiveMenu != NULL) && (ActiveMenu->pinned)) {
+	if (Event.xbutton.window == ActiveMenu->w) {
+	    modifier = (Event.xbutton.state & mods_used);
+	    if ((ActiveItem && (ActiveItem->func == F_TITLE)) || (modifier == 8)) {
+		MoveMenu (&Event);
+		/*ButtonPressed = -1;*/
+	    }
+	}
+	Context = C_ROOT;
+	return;
+    }
+
     if (ResizeWindow != None ||
 	DragWindow != None  ||
 	ActiveMenu != NULL)
@@ -1873,7 +1926,7 @@ HandleButtonPress()
 	Context = C_ROOT;
     if (Tmp_win)
     {
-	if (Tmp_win->list && RootFunction != NULL)
+	if (Tmp_win->list && RootFunction != 0)
 	{
 	      if ((Event.xany.window == Tmp_win->list->icon) ||
 		  (Event.xany.window == Tmp_win->list->w)) {
@@ -1939,7 +1992,7 @@ HandleButtonPress()
     /* this section of code checks to see if we were in the middle of
      * a command executed from a menu
      */
-    if (RootFunction != NULL)
+    if (RootFunction != 0)
     {
 	if (Event.xany.window == Scr->Root)
 	{
@@ -1956,7 +2009,7 @@ HandleButtonPress()
 		(XFindContext(dpy, Event.xany.window, TwmContext,
 			      (caddr_t *)&Tmp_win) == XCNOENT))
 	    {
-		RootFunction = NULL;
+		RootFunction = 0;
 		XBell(dpy, 0);
 		return;
 	    }
@@ -1970,13 +2023,19 @@ HandleButtonPress()
 	    Event.xbutton.y = JunkY;
 	    Context = C_WINDOW;
 	}
+	else
+	if (mr != (MenuRoot*) 0) {
+	    RootFunction = 0;
+	    XBell(dpy, 0);
+	    return;
+	}
 
 	/* make sure we are not trying to move an identify window */
 	if (Event.xany.window != Scr->InfoWindow)
 	  ExecuteFunction(RootFunction, Action, Event.xany.window,
 			  Tmp_win, &Event, Context, FALSE);
 
-	RootFunction = NULL;
+	RootFunction = 0;
 	return;
     }
 
@@ -1991,14 +2050,14 @@ HandleButtonPress()
     if ((Context == C_NO_CONTEXT) || (Context == C_IDENTIFY))
 	return;
 
-    RootFunction = NULL;
+    RootFunction = 0;
   if (Scr->Mouse[Event.xbutton.button][Context][modifier]) {
     if (Scr->Mouse[Event.xbutton.button][Context][modifier]->func == F_MENU)
     {
 	do_menu (Scr->Mouse[Event.xbutton.button][Context][modifier]->menu,
 		 (Window) None);
     }
-    else if (Scr->Mouse[Event.xbutton.button][Context][modifier]->func != NULL)
+    else if (Scr->Mouse[Event.xbutton.button][Context][modifier]->func != 0)
     {
 	Action = Scr->Mouse[Event.xbutton.button][Context][modifier]->item ?
 	    Scr->Mouse[Event.xbutton.button][Context][modifier]->item->action : NULL;
@@ -2014,7 +2073,7 @@ HandleButtonPress()
     {
 	OccupyHandleButtonEvent (&Event);
     }
-    else if (Scr->DefaultFunction.func != NULL)
+    else if (Scr->DefaultFunction.func != 0)
     {
 	if (Scr->DefaultFunction.func == F_MENU)
 	{
@@ -2292,8 +2351,14 @@ HandleEnterNotify()
      */
     if (XFindContext (dpy, ewp->window, MenuContext, (caddr_t *)&mr) != XCSUCCESS) return;
 
+    if (! ActiveMenu && mr->pinned && (RootFunction == 0)) {
+	PopUpMenu (mr, 0, 0, 0);
+	Context = C_ROOT;
+	UpdateMenu ();
+	return;
+    }
     mr->entered = TRUE;
-    if (ActiveMenu && mr == ActiveMenu->prev && RootFunction == NULL) {
+    if (ActiveMenu && mr == ActiveMenu->prev && RootFunction == 0) {
 	if (Scr->Shadow) XUnmapWindow (dpy, ActiveMenu->shadow);
 	XUnmapWindow (dpy, ActiveMenu->w);
 	ActiveMenu->mapped = UNMAPPED;
@@ -2305,6 +2370,7 @@ HandleEnterNotify()
 	ActiveItem = NULL;
 	ActiveMenu = mr;
 	MenuDepth--;
+	if (ActiveMenu->pinned) XUngrabPointer(dpy, CurrentTime);
     }
     return;
 }
@@ -2361,6 +2427,11 @@ HandleLeaveNotify()
     HLNScanArgs scanArgs;
     XEvent dummy;
 
+    if (ActiveMenu) {
+	if ((ActiveMenu->pinned) && (Event.xcrossing.window == ActiveMenu->w)) {
+	    PopDownMenu ();
+	}
+    }
     if (Tmp_win != NULL)
     {
 	Bool inicon;

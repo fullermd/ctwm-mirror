@@ -935,7 +935,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (HasShape && reShape) {
 	SetFrameShape (tmp_win);
     }
-    WMapSetupWindow (tmp_win, x, y, w, h - tmp_win->title_height);
+    WMapSetupWindow (tmp_win, x, y + tmp_win->title_height, w, h - tmp_win->title_height);
 
     if (sendEvent)
     {

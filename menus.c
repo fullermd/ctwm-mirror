@@ -60,7 +60,7 @@
 
 extern XEvent Event;
 
-int RootFunction = NULL;
+int RootFunction = 0;
 MenuRoot *ActiveMenu = NULL;		/* the active menu */
 MenuItem *ActiveItem = NULL;		/* the active menu item */
 int MoveFunction;			/* either F_MOVE or F_FORCEMOVE */
@@ -119,11 +119,11 @@ InitMenus()
 	for (j = 0; j < NUM_CONTEXTS; j++)
 	    for (k = 0; k < MOD_SIZE; k++)
 	    {
-		Scr->Mouse[i][j][k] = NULL;
+		Scr->Mouse[i][j][k] = (MouseButton*) 0;
 	    }
 
-    Scr->DefaultFunction.func = NULL;
-    Scr->WindowFunction.func = NULL;
+    Scr->DefaultFunction.func = 0;
+    Scr->WindowFunction.func  = 0;
 
     if (FirstScreen)
     {
@@ -502,7 +502,8 @@ UpdateMenu()
 	if (!DispatchEvent ())
 	    continue;
 
-	if (Event.type == ButtonRelease || Cancel) {
+/*	if ((! ActiveMenu) || (Event.type == ButtonRelease) || Cancel) {*/
+	if ((! ActiveMenu) || Cancel) {
 	  menuFromFrameOrWindowOrTitlebar = FALSE;
 	  fromMenu = FALSE;
 	  return;
@@ -768,6 +769,7 @@ MakeMenus()
 	if (mr->real_menu == FALSE)
 	    continue;
 
+	mr->pinned = FALSE;
 	MakeMenu(mr);
     }
 }
@@ -815,7 +817,7 @@ MenuRoot *mr;
 	mr->height = mr->items * Scr->EntryHeight;
 	mr->width += 10;
 
-	if (Scr->Shadow)
+	if (Scr->Shadow && ! mr->pinned)
 	{
 	    /*
 	     * Make sure that you don't draw into the shadow window or else
@@ -841,8 +843,19 @@ MenuRoot *mr;
 	valuemask = (CWBackPixel | CWBorderPixel | CWEventMask);
 	attributes.background_pixel = Scr->MenuC.back;
 	attributes.border_pixel = Scr->MenuC.fore;
-	attributes.event_mask = (ExposureMask | EnterWindowMask);
-	if (Scr->SaveUnder) {
+	if (mr->pinned) {
+	    attributes.event_mask = (ExposureMask | EnterWindowMask
+				| LeaveWindowMask | ButtonPressMask
+				| ButtonReleaseMask | PointerMotionMask
+				| ButtonMotionMask
+				);
+	    attributes.cursor = Scr->MenuCursor;
+	    valuemask |= CWCursor;
+	}
+	else
+	    attributes.event_mask = (ExposureMask | EnterWindowMask);
+
+	if (Scr->SaveUnder && ! mr->pinned) {
 	    valuemask |= CWSaveUnder;
 	    attributes.save_under = True;
 	}
@@ -887,6 +900,7 @@ MenuRoot *mr;
 	    tmp->hi_back = tmp->fore;
 	}
     }
+    mr->pmenu = NULL;
 
     if (Scr->Monochrome == MONOCHROME || !Scr->InterpolateMenuColors)
 	return;
@@ -1044,13 +1058,14 @@ Bool PopUpMenu (menu, x, y, center)
         }
         free(WindowNames);
 
+	menu->pinned = FALSE;
 	MakeMenu(menu);
     }
 
     if (menu->w == None || menu->items == 0) return False;
 
     /* Prevent recursively bringing up menus. */
-    if (menu->mapped == MAPPED) return False;
+    if ((!menu->pinned) && (menu->mapped == MAPPED)) return False;
 
     /*
      * Dynamically set the parent;  this allows pull-ups to also be main
@@ -1058,8 +1073,20 @@ Bool PopUpMenu (menu, x, y, center)
      */
     menu->prev = ActiveMenu;
 
+    if (menu->pinned) {
+	ActiveMenu    = menu;
+	menu->mapped  = MAPPED;
+	menu->entered = TRUE;
+	MenuOrigins [MenuDepth].x = menu->x;
+	MenuOrigins [MenuDepth].y = menu->y;
+	MenuDepth++;
+
+	XRaiseWindow (dpy, menu->w);
+	return (True);
+    }
+
     XGrabPointer(dpy, Scr->Root, True,
-	ButtonPressMask | ButtonReleaseMask |
+	ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
 	ButtonMotionMask | PointerMotionHintMask,
 	GrabModeAsync, GrabModeAsync,
 	Scr->Root, Scr->MenuCursor, CurrentTime);
@@ -1130,6 +1157,7 @@ PopDownMenu()
 
     for (tmp = ActiveMenu; tmp != NULL; tmp = tmp->prev)
     {
+	if (tmp->pinned) break;
 	if (Scr->Shadow) {
 	    XUnmapWindow (dpy, tmp->shadow);
 	}
@@ -1347,7 +1375,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     Bool fromtitlebar = False;
     extern int ConstrainedMoveTime;
 
-    RootFunction = NULL;
+    RootFunction = 0;
     if (Cancel)
 	return TRUE;			/* XXX should this be FALSE? */
 
@@ -1449,6 +1477,51 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	WMapSetMapState ();
 	break;
 
+    case F_PIN :
+	if (! ActiveMenu) break;
+	if (Context == C_WINDOW || Context == C_FRAME || Context == C_TITLE) break;
+	if (ActiveMenu->pinned) {
+	    XUnmapWindow (dpy, ActiveMenu->w);
+	    ActiveMenu->mapped = UNMAPPED;
+	}
+	else {
+	    XWindowAttributes attr;
+	    MenuRoot *menu;
+
+	    if (ActiveMenu->pmenu == NULL) {
+		menu  = (MenuRoot*) malloc (sizeof (struct MenuRoot));
+		*menu = *ActiveMenu;
+		menu->pinned = True;
+		menu->mapped = NEVER_MAPPED;
+		menu->width -= 10;
+		if (menu->pull) menu->width -= 16 + 10;
+		MakeMenu (menu);
+		ActiveMenu->pmenu = menu;
+	    }
+	    else menu = ActiveMenu->pmenu;
+	    if (menu->mapped == MAPPED) break;
+	    XGetWindowAttributes (dpy, ActiveMenu->w, &attr);
+	    menu->x = attr.x;
+	    menu->y = attr.y;
+	    XMoveWindow (dpy, menu->w, menu->x, menu->y);
+	    XMapRaised  (dpy, menu->w);
+	    menu->mapped = MAPPED;
+	}
+	break;
+
+    case F_MOVEMENU:
+	break;
+
+    case F_VANISH:
+	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
+
+	WMgrRemoveFromCurrentWosksace (tmp_win);
+	break;
+
+    case F_WARPHERE:
+	WMgrAddToCurrentWosksaceAndWarp (action);
+	break;
+
     case F_SORTICONMGR:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
@@ -1496,7 +1569,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
     case F_POPUP:
 	tmp_win = (TwmWindow *)action;
-	if (Scr->WindowFunction.func != NULL)
+	if (Scr->WindowFunction.func != 0)
 	{
 	   ExecuteFunction(Scr->WindowFunction.func,
 			   Scr->WindowFunction.item->action,
@@ -2019,8 +2092,17 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	if (tmp_win->iconmgr)
 	    XBell(dpy, 0);
-	else
+	else {
 	    XKillClient(dpy, tmp_win->w);
+
+	    if (ButtonPressed != -1) {
+		XEvent kev;
+
+		XMaskEvent (dpy, ButtonReleaseMask, &kev);
+		if (kev.xbutton.window == tmp_win->w) kev.xbutton.window = Scr->Root;
+		XPutBackEvent (dpy, &kev);
+	    }
+	}
 	break;
 
     case F_DELETE:
@@ -2133,15 +2215,18 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    len = strlen(action);
 
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-		if (!strncmp(action, t->class.res_name, len)) break;
+		if (!strncmp(action, t->full_name, len)) break;
+		if (match (action, t->full_name)) break;
 	    }
 	    if (!t) {
 		for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 		    if (!strncmp(action, t->class.res_name, len)) break;
+		    if (match (action, t->class.res_name)) break;
 		}
 		if (!t) {
 		    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 			if (!strncmp(action, t->class.res_class, len)) break;
+			if (match (action, t->class.res_class)) break;
 		    }
 		}
 	    }
@@ -2483,7 +2568,7 @@ TwmWindow *tmp_win;
     {
 	if (tmp_win->icon_on)
 	    Zoom(tmp_win->icon_w, tmp_win->frame);
-	else if (tmp_win->group != NULL)
+	else if (tmp_win->group != (Window) 0)
 	{
 	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
 	    {
@@ -2519,10 +2604,12 @@ TwmWindow *tmp_win;
     tmp_win->icon_on = FALSE;
 
 
-    /* now de-iconify transients */
+    /* now de-iconify and window group transients */
 	for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
 	{
-	  if (t->transient && t->transientfor == tmp_win->w)
+	  if ((t->transient && t->transientfor == tmp_win->w) ||
+	      ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
+	       (tmp_win->group != t->w) && t->icon))
 	    {
 	      if (t->icon_on)
 		Zoom(t->icon_w, t->frame);
@@ -2566,7 +2653,7 @@ int def_x, def_y;
     iconify = ((!tmp_win->iconify_by_unmapping) || tmp_win->transient);
     if (iconify)
     {
-	if (tmp_win->icon_w == NULL)
+	if (tmp_win->icon_w == (Window) 0)
 	    CreateIconWindow(tmp_win, def_x, def_y);
 	else
 	    IconUp(tmp_win);
@@ -2580,10 +2667,12 @@ int def_x, def_y;
     XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
     eventMask = winattrs.your_event_mask;
 
-    /* iconify transients first */
+    /* iconify transients and window group first */
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
       {
-	if (t->transient && t->transientfor == tmp_win->w)
+	if ((t->transient && (t->transientfor == tmp_win->w)) ||
+	    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
+		(tmp_win->group != t->w)))
 	  {
 	    if (iconify)
 	      {
@@ -2628,6 +2717,7 @@ int def_x, def_y;
      */
     tmp_win->mapped = FALSE;
     XSelectInput(dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
+    XSync (dpy, False);
     XUnmapWindow(dpy, tmp_win->w);
     XSelectInput(dpy, tmp_win->w, eventMask);
     XUnmapWindow(dpy, tmp_win->frame);
@@ -3027,3 +3117,58 @@ SendTakeFocusMessage (tmp, timestamp)
 {
     send_clientmessage (tmp->w, _XA_WM_TAKE_FOCUS, timestamp);
 }
+
+MoveMenu (eventp)
+XEvent *eventp;
+{
+    int    XW, YW, newX, newY, cont;
+    XEvent ev;
+
+    if (! ActiveMenu) return;
+    if (! ActiveMenu->pinned) return;
+
+    XW = eventp->xbutton.x_root - ActiveMenu->x;
+    YW = eventp->xbutton.y_root - ActiveMenu->y;
+    XGrabPointer (dpy, ActiveMenu->w, True,
+		ButtonPressMask  | ButtonReleaseMask | ButtonMotionMask,
+		GrabModeAsync, GrabModeAsync,
+		None, Scr->MoveCursor, CurrentTime);
+
+    newX = ActiveMenu->x;
+    newY = ActiveMenu->y;
+    cont = TRUE;
+    XMaskEvent (dpy, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, &ev);
+    while (cont) {
+	switch (ev.xany.type) {
+	    case ButtonRelease :
+        	newX = ev.xbutton.x_root - XW;
+        	newY = ev.xbutton.y_root - YW;
+		cont = FALSE;
+		break;
+	    case MotionNotify :
+		while (XCheckMaskEvent (dpy, ButtonMotionMask | ButtonReleaseMask, &ev)) {
+		    if (ev.type == ButtonRelease) break;
+		}
+		if (ev.type == ButtonRelease) continue;
+        	newX = ev.xbutton.x_root - XW;
+        	newY = ev.xbutton.y_root - YW;
+		XMoveWindow (dpy, ActiveMenu->w, newX, newY);
+		XMaskEvent  (dpy, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, &ev);
+		break;
+	    case ButtonPress :
+		cont = FALSE;
+		newX = ActiveMenu->x;
+		newY = ActiveMenu->y;
+		break;
+	}
+    }
+    XUngrabPointer (dpy, CurrentTime);
+    if (ev.xany.type == ButtonRelease) ButtonPressed = -1;
+    /*XPutBackEvent (dpy, &ev);*/
+    XMoveWindow (dpy, ActiveMenu->w, newX, newY);
+    ActiveMenu->x = newX;
+    ActiveMenu->y = newY;
+    MenuOrigins [MenuDepth - 1].x = newX;
+    MenuOrigins [MenuDepth - 1].y = newY;
+}
+

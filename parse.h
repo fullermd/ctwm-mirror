@@ -97,6 +97,9 @@ extern void TwmOutput();
 #define F_SETBUTTONSTATE	50
 #define F_SETMAPSTATE		51
 #define F_TOGGLESTATE		52
+#define F_PIN			53
+#define F_MOVEMENU		54
+#define F_VANISH		55
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
@@ -109,6 +112,7 @@ extern void TwmOutput();
 #define F_WARPTOSCREEN		109	/* string */
 #define F_COLORMAP		110	/* string */
 #define F_GOTOWORKSPACE		111	/* string */
+#define F_WARPHERE		112	/* string */
 
 #define D_NORTH			1
 #define D_SOUTH			2

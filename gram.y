@@ -56,8 +56,6 @@ static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
 static char *curWorkSpc;
 static char *client, *workspace;
-static int numworkspc = 0;
-static int workspcseen = 0;
 
 static MenuRoot *GetRoot();
 
@@ -192,14 +190,7 @@ stmt		: error
 
 		| DONT_ICONIFY_BY_UNMAPPING { list = &Scr->DontIconify; }
 		  win_list
-		| WORKSPACES		{
-			if (workspcseen) {
-				twmrc_error_prefix();
-				fprintf (stderr, "only one workspaces allowed\n");
-				ParseError = 1;
-			}
-			workspcseen = 1;
-		  }
+		| WORKSPACES
 		  workspc_list
 		| OCCUPYALL		{ list = &Scr->OccupyAll; }
 		  win_list
@@ -546,7 +537,7 @@ workspc_list	: LB workspc_entries RB
 		;
 
 workspc_entries	: /* Empty */
-		| workspc_entries workspc_entry {numworkspc++;}
+		| workspc_entries workspc_entry
 		;
 
 workspc_entry	: string	{

@@ -40,7 +40,6 @@
 #define _TWM_
 
 #include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
@@ -50,6 +49,8 @@
 
 #if defined(XPM)
 #   include "util.h"
+#else
+#   include <X11/Intrinsic.h>
 #endif
 
 #ifndef WithdrawnState
@@ -376,7 +377,6 @@ extern Atom _XA_WM_PROTOCOLS;
 extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
-extern Atom _XA_WM_WORKSPACES;
 
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
 

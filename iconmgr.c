@@ -130,14 +130,14 @@ void CreateIconManagers()
     Scr->workSpaceMgr.activeWSPC = Scr->workSpaceMgr.workSpaceList;
     if (Scr->workSpaceManagerActive)
 	Scr->workSpaceMgr.workSpaceList->iconmgr = Scr->iconmgr;
-/*
+
     for (q = Scr->iconmgr; q != NULL; q = q->nextv) {
       for (p = q; p != NULL; p = p->next) {
 	GrabButtons(p->twm_win);
 	GrabKeys(p->twm_win);
       }
     }
-*/
+
 }
 
 /***********************************************************************
@@ -695,8 +695,10 @@ void NotActiveIconManager(active)
 void DrawIconManagerBorder(tmp)
     WList *tmp;
 {
+/*
     for (; tmp != NULL; tmp = tmp->nextv)
     {
+*/
 	XSetForeground(dpy, Scr->NormalGC, tmp->fore);
 	    XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2,
 		tmp->width-5, tmp->height-5);
@@ -710,7 +712,9 @@ void DrawIconManagerBorder(tmp)
 	    tmp->width-1, tmp->height-1);
 	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 1, 1,
 	    tmp->width-3, tmp->height-3);
+/*
     }
+*/
 }
 
 /***********************************************************************

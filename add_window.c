@@ -176,7 +176,6 @@ IconMgr *iconp;
     XGetClassHint(dpy, tmp_win->w, &tmp_win->class);
     FetchWmProtocols (tmp_win);
     FetchWmColormapWindows (tmp_win);
-
     /*
      * do initial clip; should look at window gravity
      */
@@ -802,7 +801,7 @@ IconMgr *iconp;
     /* wait until the window is iconified and the icon window is mapped
      * before creating the icon window 
      */
-    tmp_win->icon_w = NULL;
+    tmp_win->icon_w = (Window) 0;
 #if defined (XPM)
     tmp_win->xpmicon = None;
 #endif
@@ -940,8 +939,8 @@ TwmWindow *tmp_win;
     {
 	for (j = 0; j < MOD_SIZE; j++)
 	{
-	    if ((Scr->Mouse[i][C_WINDOW][j] != NULL) &&
-	        (Scr->Mouse[i][C_WINDOW][j]->func != NULL))
+	    if ((Scr->Mouse[i][C_WINDOW][j] != (MouseButton*) 0) &&
+	        (Scr->Mouse[i][C_WINDOW][j]->func != 0))
 	    {
 	        /* twm used to do this grab on the application main window,
                  * tmp_win->w . This was not ICCCM complient and was changed.

@@ -82,6 +82,10 @@ workspace map window and may only be specified inside of a Color or Monochrome
 list. The  optional \fBwin-list\fP is a list of window names and colors so
 that per-window colors may be specified.
 
+.IP "\fBNoShowOccupyAll\fP" 4
+This variable specifies that OccupyAll windows won't be displayed in the
+WorkSpaceMap window.
+
 .IP "\fBOccupy\fP { \fIoccupy-list\fP }" 4
 This variable specifies which window occupy which workspace at startup.
 .IP
@@ -188,7 +192,7 @@ The maximum number of workspaces is 32.
 .IP "\fBXPMIconDirectory\fP \fIpath\fP " 4
 Ctwm handles colored, shaped icons in XPM format [from Arnaud LE HORS]. This
 variable specifies the path where ctwm looks for to find the files containing
-these icons. The Icons command had been a little modified, the two formats of
+these icons. The Icons command has been a little modified, the two formats of
 icon files : XPM icon files must be prefixed by the character '@'.
 Example :
 .EX
@@ -223,6 +227,11 @@ This function makes the specified window occupy all the workspaces.
 .IP "\fBf.setbuttonsstate\fP" 4
 Set the WorkSpace manager in button state.
 
+.IP "\fBf.pin\fP" 4
+Valid only in a root menu. Make a menu permanent on the screen. This is a toggle
+function, if you select it while the menu is already permanent, it becomes
+non-permanent.
+
 .IP "\fBf.setmapstate\fP" 4
 Set the WorkSpace manager in map state.
 
@@ -231,6 +240,15 @@ Map the WorkSpace manager.
 
 .IP "\fBf.togglestate\fP" 4
 Toggle the state of the WorkSpace manager.
+
+.IP "\fBf.vanish\fP" 4
+The specified window vanish from the current workspace if it occupies at least
+one other WorkSpace. Do nothing in the others cases.
+
+.IP "\fBf.warphere\fP \fBwin_name\fP" 4
+This function adds the window which has a name or class that matches string
+to the current workspace and warps the pointer to it. If the window is iconified,
+it will be deiconified if the variable WarpUnmapped is set or else ignored.
 
 .PP
 

@@ -386,6 +386,7 @@ int def_x, def_y;
 		    tmp_win->icon_width  = xpmicon->attributes.width;
 		    tmp_win->icon_height = xpmicon->attributes.height;
 		    tmp_win->xpmicon = xpmicon;
+		    tmp_win->forced  = TRUE;
 		}
 	    }
 	    else
@@ -655,4 +656,3 @@ int def_x, def_y;
 #endif
     return;
 }
-

@@ -321,6 +321,7 @@ typedef struct _TwmKeyword {
 #define kw0_OpaqueResize		26
 #define kw0_ShowWorkspaceManager	27
 #define kw0_StartInMapState		28
+#define kw0_NoShowOccupyAll		29
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -434,10 +435,12 @@ static TwmKeyword keytable[] = {
     { "f.lower",		FKEYWORD, F_LOWER },
     { "f.menu",			FSKEYWORD, F_MENU },
     { "f.move",			FKEYWORD, F_MOVE },
+    { "f.movemenu",		FKEYWORD, F_MOVEMENU },
     { "f.nexticonmgr",		FKEYWORD, F_NEXTICONMGR },
     { "f.nop",			FKEYWORD, F_NOP },
     { "f.occupy",		FKEYWORD, F_OCCUPY },
     { "f.occupyall",		FKEYWORD, F_OCCUPYALL },
+    { "f.pin",			FKEYWORD, F_PIN },
     { "f.previconmgr",		FKEYWORD, F_PREVICONMGR },
     { "f.quit",			FKEYWORD, F_QUIT },
     { "f.raise",		FKEYWORD, F_RAISE },
@@ -460,9 +463,11 @@ static TwmKeyword keytable[] = {
     { "f.twmrc",		FKEYWORD, F_RESTART },
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
     { "f.upiconmgr",		FKEYWORD, F_UPICONMGR },
+    { "f.vanish",		FKEYWORD, F_VANISH },
     { "f.version",		FKEYWORD, F_VERSION },
     { "f.vlzoom",		FKEYWORD, F_LEFTZOOM },
     { "f.vrzoom",		FKEYWORD, F_RIGHTZOOM },
+    { "f.warphere",		FSKEYWORD, F_WARPHERE },
     { "f.warpring",		FSKEYWORD, F_WARPRING },
     { "f.warpto",		FSKEYWORD, F_WARPTO },
     { "f.warptoiconmgr",	FSKEYWORD, F_WARPTOICONMGR },
@@ -530,6 +535,7 @@ static TwmKeyword keytable[] = {
     { "noraiseonwarp",		KEYWORD, kw0_NoRaiseOnWarp },
     { "north",			DKEYWORD, D_NORTH },
     { "nosaveunders",		KEYWORD, kw0_NoSaveUnders },
+    { "noshowoccupyall",	KEYWORD, kw0_NoShowOccupyAll },
     { "nostackmode",		NO_STACKMODE, 0 },
     { "notitle",		NO_TITLE, 0 },
     { "notitlefocus",		KEYWORD, kw0_NoTitleFocus },
@@ -720,6 +726,10 @@ int do_single_keyword (keyword)
 
       case kw0_StartInMapState:
 	Scr->workSpaceMgr.workspaceWindow.state = MAPSTATE;
+	return 1;
+
+      case kw0_NoShowOccupyAll:
+	Scr->workSpaceMgr.workspaceWindow.noshowoccupyall = TRUE;
 	return 1;
 
       case kw0_NoCaseSensitive:

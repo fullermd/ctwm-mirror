@@ -5,7 +5,7 @@
 #define MAPSTATE      0
 #define BUTTONSSTATE  1
 
-#ifdef ultrix
+#if defined(ultrix) || defined(sequent)
 #   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
 #endif
 
@@ -40,6 +40,7 @@ typedef struct WorkSpaceWindow {
     char		*icon_name;
     int			state;
     int			lines, columns;
+    int			noshowoccupyall;
 
     int			width, height;
     int			bwidth, bheight;
@@ -84,6 +85,7 @@ struct WorkSpaceList {
     Window		buttonw;
     Window		obuttonw;
     int			number;
+    char		*name;
     char		*label;
     ColorPair		cp;
     IconMgr		*iconmgr;

@@ -197,3 +197,67 @@ Occupy {
     8 - AutoRaise with RaiseDelay. Thanks to Johan Vromans (jv@mh.nl) who gave me
 	this patch.  I think  Warren Jessop  (whj@cs.washington.edu) wrote it for
 	twm.
+
+
+    Changes from version 2.0 to 2.1
+    -------------------------------
+
+    1 - Cleanup code to make gcc happy.
+
+    2 - Bugs fixed
+
+	- IconMaskHint honored.
+	- Workaround a bug on  HP7xx/8.07  servers for RaiseLower in  Map window.
+	  The stacking  order in the MapWindow  was not correct on those servers.
+	  use :
+
+	  EXTRA_DEFINES = -DBUGGY_HP700_SERVER
+
+	  in your Imakefile  if you plan to use this server.  It doesn't break on
+	  others servers.
+
+	- No longer core dump if  MapWindowCurrentWorkSpace or  MapWindowDefault-
+	  WorkSpace are specified before WorkSpaces in .ctwmrc
+
+	- Small windows  handling in  the WorkspaceMap  window works even  if the
+	  Workspace  Manager  window  has a  title  (that  was not  the case with
+	  ctwm-2.0).
+
+	- ForceIcon works for Xpm icons.
+
+	- Occupation of "transient for" window is correct.
+
+	- RestartPreviousState  necessary to  keep previous  window occupation on
+	  restart.
+
+	- If a window  dies while  Occupy Window is mapped,  the Occupy Window is
+	  correctly unmapped.
+
+    3 - Ctwm now maintains the  WM_CURRENTWORKSPACE  property on the root  window
+	and  WM_OCCUPATION  on every  windows.  They mean what  you think.  These
+	properties  are string  properties  and are in  clear text  instead of an
+	obscure mask.  If an external application changes  these properties  ctwm
+	respond with the correct actions,  changing the current  workspace or the
+	occupation of a window.  I give a small example  (gtw.c).  An application
+	can manage its  occupation and it is  even possible to  write an external
+	workspace manager. It is of course not ICCCM compliant because ICCCM says
+	nothing on multiple workspaces. The special names "all" and "current" can
+	be used.  And you can specify relative occupations if the workspace names
+	list begin with a  '+' or '-' (ex:  +current adds a window to the current
+	workspace).
+	
+    4 - 3 new functions :
+
+	- f.pin : Pin/Unpin a menu on the screen. Only usable inside a root menu.
+
+	- f.vanish : Remove  a window from  the current workspace.  Works only if
+		     the window occupies at least one other workspace.
+
+	- f.warphere "win-name" : Adds the window whose name matches  win-name to
+			       the current workspace and warps the pointer to it.
+
+    5 - And a new keyword : NoShowOccupyAll : tells ctwm not  to  show  OccupyAll
+			windows in the WorkSpaceMap window.
+
+    6 - All window names can now be specified as (shell-like) regular expressions.
+

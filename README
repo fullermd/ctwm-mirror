@@ -6,7 +6,7 @@
     CTWM is not yet another window manager for X/Window, it is just a
 little variation of twm.
 
-    It adds the hability to use and manage up to  32 virtual screens.
+    It adds the  ability to use and manage up to  32 virtual screens.
 You swap from one to another by clicking on a button in a panel.
     You can  custom each  screens by  choosing  different colors  and
 bitmaps for the buttons and background root windows.
@@ -20,8 +20,7 @@ applied to ctwm sources files. But don't rely on this.
     I certainly introduced many bugs with these modifications. So, be
 tolerant.
 
-    If you are happy with ctwm,  or find severe bugs,  send me a note
-to :
+    If you are happy with ctwm, or find bugs, send me a note to :
 
             lecom@sic.epfl.ch
 
@@ -34,3 +33,8 @@ funny prompt> make
    If you don't have xpm, fetch it from export.lcs.mit.edu or comment
 out the #define XPM in Imakefile.
 
+    There is a man,  but not quite complete  (any volunteer ?).  Many
+useful informations are only in the CHANGES file, so, read it.
+
+    There is a  mailing list :  ctwm@cognac.epfl.ch,  subscribe  at :
+ctwm-request@cognac.epfl.ch.
