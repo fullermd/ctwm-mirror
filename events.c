@@ -194,9 +194,7 @@ int GnomeProxyButtonPress = -1;
 /*#define TRACE_FOCUS*/
 /*#define TRACE*/
 
-#ifdef TRACE
 static void dumpevent ();
-#endif
 
 #if defined(__hpux) && !defined(_XPG4_EXTENDED)
 #   define FDSET int*
@@ -458,6 +456,8 @@ Bool DispatchEvent2 ()
 	Scr = FindScreenInfo (WindowOfEvent (&Event));
     }
 
+    dumpevent(&Event);
+
     if (!Scr) return False;
     if (Scr->Root != Scr->RealRoot) FixRootEvent (&Event);
 
@@ -493,6 +493,9 @@ Bool DispatchEvent ()
     if (XFindContext (dpy, w, ScreenContext, (XPointer *)&Scr) == XCNOENT) {
 	Scr = FindScreenInfo (WindowOfEvent (&Event));
     }
+
+    dumpevent(&Event);
+
     if (!Scr) return False;
 
     if (captive) {
@@ -4336,6 +4339,9 @@ static void dumpevent (e)
 {
     char *name = "Unknown event";
 
+    fprintf(stderr,"foo!\n");
+
+    if (! tracefile) return;
     switch (e->type) {
       case KeyPress:  name = "KeyPress"; break;
       case KeyRelease:  name = "KeyRelease"; break;
@@ -4371,5 +4377,5 @@ static void dumpevent (e)
       case ClientMessage:  name = "ClientMessage"; break;
       case MappingNotify:  name = "MappingNotify"; break;
     }
-    fprintf (stderr, "event:  %s in window 0x%x\n", name, e->xany.window);
+    fprintf (tracefile, "event:  %s in window 0x%x\n", name, e->xany.window);
 }
