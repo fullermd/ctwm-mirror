@@ -52,7 +52,7 @@
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/CharSet.h>
 
-#if defined (IMCONV)
+#ifdef IMCONV
 #   include "im.h"
 #   include "sdsc.h"
 #endif
@@ -416,7 +416,7 @@ Pixmap GetBitmap (name)
 }
 
 
-#if defined (XPM)
+#ifdef XPM
 XpmIcon *GetXpmPixmap (name)
 char *name;
 {
@@ -977,7 +977,7 @@ Pixmap CreateMenuIcon (height, widthp, heightp)
     return Scr->tbpm.menu;
 }
 
-#if defined (IMCONV)
+#ifdef IMCONV
 
 static void free_images  ();
 

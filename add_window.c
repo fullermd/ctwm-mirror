@@ -793,6 +793,7 @@ IconMgr *iconp;
      * before creating the icon window 
      */
     tmp_win->icon = (Icon*) 0;
+    tmp_win->iconslist = (name_list*) 0;
 
     if (!tmp_win->iconmgr)
     {

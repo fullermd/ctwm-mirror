@@ -73,7 +73,9 @@ depend:: lex.c gram.c deftwmrc.c
 
 ComplexProgramTarget(ctwm)
 InstallNonExecFile(system.ctwmrc,$(TWMDIR))
+#ifdef XPM
 InstallMultiple($(PIXMAPFILES),$(TWMDIR))
+#endif
 
 gram.h gram.c: gram.y
 	yacc $(YFLAGS) gram.y

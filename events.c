@@ -1107,7 +1107,7 @@ RedoIconName()
     {
 	XMoveWindow(dpy, Tmp_win->icon->bm_w, x, y);
 	XMapWindow(dpy, Tmp_win->icon->bm_w);
-#if defined (XPM)
+#ifdef XPM
 	if ((Tmp_win->icon->xpmicon != None) && Tmp_win->icon->xpmicon->mask) {
 	    XRectangle rect;
 	    Pixmap     title;
@@ -1150,7 +1150,7 @@ HandleClientMessage()
     {
 	if (Tmp_win != NULL)
 	{
-	    if (Event.xclient.data.l[0] == IconicState && !Tmp_win->icon)
+	    if (Event.xclient.data.l[0] == IconicState && !Tmp_win->isicon)
 	    {
 		XEvent button;
 
@@ -1470,7 +1470,7 @@ HandleMapRequest()
     if (Tmp_win->iconmgr) return;
 
     /* If it's not merely iconified, and we have hints, use them. */
-    if ((! Tmp_win->icon) &&
+    if ((! Tmp_win->isicon) &&
 	Tmp_win->wmhints && (Tmp_win->wmhints->flags & StateHint))
     {
 	int state;
@@ -1599,7 +1599,7 @@ HandleUnmapNotify()
 	    Tmp_win = NULL;
     }
 
-    if (Tmp_win == NULL || (!Tmp_win->mapped && !Tmp_win->icon))
+    if (Tmp_win == NULL || (!Tmp_win->mapped && !Tmp_win->isicon))
 	return;
 
 #ifdef BUGGY_SUN_SERVER

@@ -275,6 +275,34 @@ to the current workspace and warps the pointer to it. If the window is iconified
 it will be deiconified if the variable WarpUnmapped is set or else ignored.
 
 .PP
+.SH WORKSPACE MANAGER
+.PP
+The workspace manager has two states: button and map. When the cursor
+is in the workspace manager, the control key will toggle the state.
+Note that both keypress and release toggle the state. Therefore, if
+you move the cursor out of the workspace manager between press and
+release, the workspace manager will stay in the new state.
+.PP
+The button state is similar to the TWM icon manager in appearance.
+Clicking on a button changes the current workspace to the one named by
+the button. On color screens, the workspace manager has a shadow 3D
+look. When the cursor is on a button, the title may be edited by
+simply typing. Only printable characters, backspace and delete may be
+used.
+.PP
+The map state shows a reduced size map of each workspace. Clicking on
+a root window in the map changes the current workspace. Clicking on a
+window in the map changes workspace and warps the pointer to the
+selected window. 
+.PP
+In the map state, the mouse buttons have special meanings. Button one
+can be used to drag (i.e., change the occupancy of) windows in the map
+from one workspace to another. Button two works the same way, except
+it drags a ``copy'' of the window. (In other words, the source
+workspace occupancy is not changed.) Finally, button three does the
+same thing as the f.vanish function.
+
+.PP
 
 .SH FILES
 .PP

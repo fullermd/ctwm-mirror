@@ -1,5 +1,7 @@
 #define XPM
 #define IMCONV
+#define NullParameter
+#define InstallNonExecFile InstallNonExec
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
@@ -31,7 +33,7 @@
 #endif
 
 LOCAL_LIBRARIES = $(IMCONVLIB) $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEFINES = $(SIGNAL_DEFINES) $(IMCONVDEFINES) $(XPMDEFINES)
+        DEFINES = $(SIGNAL_DEFINES) $(IMCONVDEFINES) $(XPMDEFINES) -DX11R4
  EXTRA_INCLUDES = $(IMCONVINCDIR) $(XPMINCDIR)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
@@ -65,7 +67,9 @@ depend:: lex.c gram.c deftwmrc.c
 
 ComplexProgramTarget(ctwm)
 InstallNonExecFile(system.ctwmrc,$(TWMDIR))
+#ifdef XPM
 InstallMultiple($(PIXMAPFILES),$(TWMDIR))
+#endif
 
 gram.h gram.c: gram.y
 	yacc $(YFLAGS) gram.y

@@ -378,7 +378,7 @@ char *name, *background, *foreground, *backback, *backfore, *backpix;
     else
 #endif
 
-#if defined (IMCONV)
+#ifdef IMCONV
     if (strncmp (backpix, "im:", 3) == 0) {
 	wlist->backpix = im_read_file (&backpix [3], &width, &height);
 	if (wlist->backpix != None) useBackgroundInfo = True;
@@ -1056,8 +1056,6 @@ void PaintWorkSpaceManager () {
 
     width   = Scr->workSpaceMgr.workspaceWindow.width;
     height  = Scr->workSpaceMgr.workspaceWindow.height;
-    bwidth  = Scr->workSpaceMgr.workspaceWindow.bwidth;
-    bheight = Scr->workSpaceMgr.workspaceWindow.bheight;
 
     w = Scr->workSpaceMgr.workspaceWindow.w;
     FB (Scr->White, Scr->Black);
@@ -1102,7 +1100,6 @@ CreateOccupyWindow () {
     columns   = Scr->workSpaceMgr.workspaceWindow.columns;
     bwidth    = Scr->workSpaceMgr.workspaceWindow.bwidth;
     bheight   = Scr->workSpaceMgr.workspaceWindow.bheight;
-    owidth    = Scr->workSpaceMgr.workspaceWindow.bwidth;
     oheight   = Scr->workSpaceMgr.workspaceWindow.bheight;
     vspace    = Scr->workSpaceMgr.occupyWindow.vspace;
     hspace    = Scr->workSpaceMgr.occupyWindow.hspace;
@@ -1800,8 +1797,6 @@ XEvent *event;
     while (cont) {
 	switch (ev.xany.type) {
 	    case ButtonRelease :
-        	newX = ev.xbutton.x_root - XW;
-        	newY = ev.xbutton.y_root - YW;
 		cont = FALSE;
 		break;
 	    case MotionNotify :
@@ -1812,8 +1807,6 @@ XEvent *event;
 		break;
 	    case ButtonPress :
 		cont = FALSE;
-		newX = X1;
-		newY = Y1;
 		break;
 	}
     }

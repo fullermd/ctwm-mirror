@@ -341,7 +341,8 @@ Occupy {
 	     xbm    X11 bitmap file
 	     xwd    X Window System window dump image file
 
-	- You can find the imconv package at ftp.sdsc.edu.
+	- You can find the imconv package at ftp.sdsc.edu. in the directory
+	  [.sdscpub] (it's a VAX).
 	- If (width > screenwidth / 2) || (height > screenheight / 2) the image is
 	  centered else it is tiled.
 	- If you don't have the libim library or don't want to use it, undefine

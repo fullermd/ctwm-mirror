@@ -388,5 +388,9 @@ char *p, *t;
 int match (p, t)
 char *p, *t;
 {
+if ((p == NULL) && (t != NULL)) {
+printf ("p is NULL with t = %s\n", t);
+}
+    if ((p == NULL) || (t == NULL)) return (FALSE);
     return ((regex_match (p,t) == TRUE) ? TRUE : FALSE);
 }

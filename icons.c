@@ -353,11 +353,11 @@ int def_x, def_y;
     Icon	*icon;
     Matchtype	match;
     int		icontype = BitmapType;
-#if defined (XPM)
+#ifdef XPM
     XpmIcon *xpmicon = None;
 #   define XpmType 1
 #endif
-#if defined (XPM)
+#ifdef XPM
 #   define ImType 2
 #endif
 
@@ -378,7 +378,9 @@ int def_x, def_y;
 
     icon->match   = match_none;
     icon->pattern = NULL;
+#ifdef XPM
     icon->xpmicon = None;
+#endif
 
     tmp_win->forced = FALSE;
     tmp_win->icon_not_ours = FALSE;
@@ -412,7 +414,7 @@ int def_x, def_y;
 	bm = None;
 	if (icon_name != NULL)
 	{
-#if defined (XPM)
+#ifdef XPM
 	    int startn;
 
 	    if ((icon_name [0] == '@') || (strncmp (icon_name, "xpm:", 4) == 0)) {
@@ -433,7 +435,7 @@ int def_x, def_y;
 	    }
 	    else
 #endif
-#if defined (IMCONV)
+#ifdef IMCONV
 	    if (strncmp (icon_name, "im:", 3) == 0) {
 		int width, height;
 
@@ -529,7 +531,7 @@ int def_x, def_y;
 	bm = None;
 	if (icon_name != NULL)
 	{
-#if defined (XPM)
+#ifdef XPM
 	    int startn;
 
 	    if ((icon_name [0] == '@') || (strncmp (icon_name, "xpm:", 4) == 0)) {
@@ -549,7 +551,7 @@ int def_x, def_y;
 	    }
 	    else
 #endif
-#if defined (IMCONV)
+#ifdef IMCONV
 	    if (strncmp (icon_name, "im:", 3) == 0) {
 		int width, height;
 
@@ -701,7 +703,7 @@ int def_x, def_y;
 					    (unsigned int) CopyFromParent,
 					    Scr->d_visual, valuemask,
 					    &attributes);
-#if defined (XPM)
+#ifdef XPM
 	if ((xpmicon != None) && xpmicon->mask) {
 	    XRectangle rect;
 	    Pixmap     title;
@@ -719,7 +721,7 @@ int def_x, def_y;
 #endif
     }
 
-    AddToList(&tmp_win->iconslist, icon->pattern, (char *) icon);
+    if (icon->match != match_none) AddToList(&tmp_win->iconslist, icon->pattern, (char *) icon);
 
     tmp_win->icon = icon;
     /* I need to figure out where to put the icon window now, because 
@@ -755,7 +757,7 @@ int def_x, def_y;
     XSaveContext(dpy, icon->w, ScreenContext, (caddr_t)Scr);
     XDefineCursor(dpy, icon->w, Scr->IconCursor);
 
-#if defined (XPM)
+#ifdef XPM
     if ((icontype == XpmType) && (xpmicon == None) && (pm != None)) {
 	XFreePixmap (dpy, pm);
     }

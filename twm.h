@@ -48,10 +48,10 @@
 #endif
 #include "list.h"
 
+#include <X11/Intrinsic.h>
+
 #if defined(XPM)
 #   include "util.h"
-#else
-#   include <X11/Intrinsic.h>
 #endif
 
 #ifndef WithdrawnState
@@ -243,7 +243,7 @@ typedef struct TwmWindow
     Window hilite_w;		/* the hilite window */
     Pixmap gray;
     Icon *icon;			/* the curent icon */
-    name_list iconslist;	/* the current list of icons */
+    name_list *iconslist;	/* the current list of icons */
     int frame_x;		/* x position of frame */
     int frame_y;		/* y position of frame */
     int frame_width;		/* width of frame */

@@ -1213,7 +1213,7 @@ static Bool belongs_to_twm_window (t, w)
     if (!t) return False;
 
     if (w == t->frame || w == t->title_w || w == t->hilite_w ||
-	w == t->icon->w || w == t->icon->bm_w) return True;
+	(t->icon && (w == t->icon->w || w == t->icon->bm_w))) return True;
     
     if (t && t->titlebuttons) {
 	register TBWindow *tbw;
@@ -2660,6 +2660,7 @@ TwmWindow *tmp_win;
 	      if (t->icon_on)
 		Zoom(t->icon->w, t->frame);
 	      else
+	      if (tmp_win->icon)
 		Zoom(tmp_win->icon->w, t->frame);
 	      
 	      XMapWindow(dpy, t->w);
@@ -2670,7 +2671,7 @@ TwmWindow *tmp_win;
 		XMapRaised(dpy, t->frame);
 	      SetMapStateProp(t, NormalState);
 	      
-	      if (t->icon->w) {
+	      if (t->icon && t->icon->w) {
 		XUnmapWindow(dpy, t->icon->w);
 		IconDown (t);
 	      }
@@ -2725,6 +2726,7 @@ int def_x, def_y;
 		if (t->icon_on)
 			Zoom(t->icon->w, tmp_win->icon->w);
 		else
+		if (tmp_win->icon)
 		  Zoom(t->frame, tmp_win->icon->w);
 	      }
 	    
@@ -2737,7 +2739,7 @@ int def_x, def_y;
 	    XUnmapWindow(dpy, t->w);
 	    XSelectInput(dpy, t->w, eventMask);
 	    XUnmapWindow(dpy, t->frame);
-	    if (t->icon->w)
+	    if (t->icon && t->icon->w)
 	      XUnmapWindow(dpy, t->icon->w);
 	    SetMapStateProp(t, IconicState);
 	    SetBorder (t, False);
