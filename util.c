@@ -1938,25 +1938,33 @@ ColorPair cp;
 
 #ifdef LEVITTE_TEST
     FB (cp.shadc, cp.shadd);
-    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point-1, point-1, point);
-    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, point, h-point-1, h-point);
-    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, h-point-1, h-point-1, point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, point-1, point-1, point+1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, point, point, point+1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, point+1, h-point-2, h-point);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point+1, h-point-2, h-point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, h-point-2, h-point-2, point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point-2, h-point-2, point);
 #endif
 
     FB (cp.shadd, cp.shadc);
-    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point-1, h-point-1);
 #ifdef LEVITTE_TEST
-    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, point, h-point, h-point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, point+1, h-point-1, h-point-1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+2, point+1, h-point-1, h-point-2);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+2, point, h-point, h-point-2);
 #else
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point-1, h-point-1);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, point, h-point-1, h-point);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point-1, h-point, h-point-1);
 #endif
 
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point-1, h-point-1, point);
-#ifndef LEVITTE_TEST
+#ifdef LEVITTE_TEST
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, h-point-1, h-point-1, point+1);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, h-point, h-point, point+1);
+#else
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, h-point-1, h-point-1, point-1);
-#endif
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point, h-point, point);
+#endif
 
     image->mask   = None;
     image->width  = h;
