@@ -67,6 +67,8 @@
  *
  ***********************************************************************/
 
+#define LEVITTE_TEST
+
 #include "twm.h"
 #include "util.h"
 #include "events.h"
@@ -1918,12 +1920,14 @@ static Image *Create3DCrossImage (cp)
 ColorPair cp;
 {
     Image *image;
-    int     h;
-    int point;
+    int        h;
+    int    point;
+    int midpoint;
 
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
-    point = 5;
+    point = 4;
+    midpoint = h/2 + 1;
 
     image = (Image*) malloc (sizeof (struct _Image));
     if (! image) return (None);
@@ -1932,13 +1936,26 @@ ColorPair cp;
 
     Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
 
+#ifdef LEVITTE_TEST
+    FB (cp.shadc, cp.shadd);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point-1, point-1, point);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, point, h-point-1, h-point);
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, h-point-1, h-point-1, point-1);
+#endif
+
     FB (cp.shadd, cp.shadc);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point, h-point-1, h-point-1);
+#ifdef LEVITTE_TEST
+    XDrawLine (dpy, image->pixmap, Scr->NormalGC, point+1, point, h-point, h-point-1);
+#else
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, point, h-point-1, h-point);
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, point-1, h-point, h-point-1);
+#endif
 
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point-1, h-point-1, point);
+#ifndef LEVITTE_TEST
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point-1, h-point-1, h-point-1, point-1);
+#endif
     XDrawLine (dpy, image->pixmap, Scr->NormalGC, point, h-point, h-point, point);
 
     image->mask   = None;
