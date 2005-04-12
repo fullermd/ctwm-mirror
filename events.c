@@ -3248,7 +3248,7 @@ void HandleButtonPress(void)
     {
 	OccupyHandleButtonEvent (&Event);
     }
-    else if (Scr->DefaultFunction.func != 0)
+    else if (func == 0 && Scr->DefaultFunction.func != 0)
     {
 	if (Scr->DefaultFunction.func == F_MENU)
 	{
