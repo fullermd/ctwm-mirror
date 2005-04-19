@@ -639,30 +639,126 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	   ((tmp_win->wmhints && (tmp_win->wmhints->initial_state == IconicState)) ||
 	    (! visible (tmp_win))))) { /* just stick it somewhere */
 
-	/* TODO : We should try to fit in the smallest vscreen. */
+#ifdef DEBUG
+	fprintf(stderr,
+		"DEBUG[RandomPlacement]: win: %dx%d+%d+%d, screen: %dx%d, title height: %d, random: +%d+%d\n",
+		tmp_win->attr.width, tmp_win->attr.height,
+		tmp_win->attr.x, tmp_win->attr.y,
+		Scr->rootw, Scr->rooth,
+		tmp_win->title_height,
+		PlaceX, PlaceY);
+#endif
+
+	/* If the right edge of the window would fall outside of the
+	   screen, start over by placing the left edge of the window
+	   50 pixels inside the left edge of the screen.*/
+	if ((PlaceX + tmp_win->attr.width)  > Scr->rootw)
+	  PlaceX = 50;
+
+	/* If the bottom edge of the window would fall outside of the
+	   screen, start over by placing the top edge of the window
+	   50 pixels inside the top edge of the screen.  Because we
+	   add the title height further down, we need to count with
+	   it here as well.  */
+	if ((PlaceY + tmp_win->attr.height
+		 + tmp_win->title_height) > Scr->rooth)
+	  PlaceY = 50;
+
+	/* Assign the current random placement to the new window, as
+	   a preliminary measure.  Add the title height so things will
+	   look right.  */
+	tmp_win->attr.x = PlaceX;
+	tmp_win->attr.y = PlaceY + tmp_win->title_height;
+
+	/* If the window is not supposed to move off the screen, check
+	   that it's still within the screen, and if not, attempt to
+	   correct the situation. */
 	if (Scr->DontMoveOff) {
 	    int available;
 
-	    available = Scr->rootw - tmp_win->attr.width;
-	    if (available <= 0) PlaceX = 0; /* Window is large, place is as
-					       much to the left as possible */
-	    else if (available < 100) PlaceX = available / 2;
-	    else PlaceX = 50;
+#ifdef DEBUG
+	    fprintf(stderr,
+		    "DEBUG[DontMoveOff]: win: %dx%d+%d+%d, screen: %dx%d, bw2: %d, bw3D: %d\n",
+		    tmp_win->attr.width, tmp_win->attr.height,
+		    tmp_win->attr.x, tmp_win->attr.y,
+		    Scr->rootw, Scr->rooth,
+		    bw2, tmp_win->frame_bw3D);
+#endif
 
-	    available = Scr->rooth - tmp_win->attr.height;
-	    if (available <= 0) PlaceY = 0; /* Window is large, place is as
-					       much to the top as possible */
-	    else if (available < 100) PlaceY = available / 2;
-	    else PlaceY = 50;
-	} else {
-	    if ((PlaceX + tmp_win->attr.width)  > Scr->rootw) PlaceX = 50;
-	    if ((PlaceY + tmp_win->attr.height) > Scr->rooth) PlaceY = 50;
+	    /* If the right edge of the window is outside the right edge
+	       of the screen, we need to move the window left.  Note that
+	       this can only happen with windows that are less than 50
+	       pixels less wide than the screen. */
+	    if ((tmp_win->attr.x + tmp_win->attr.width)  > Scr->rootw) {
+	      available = Scr->rootw - tmp_win->attr.width
+		- 2 * (bw2 + tmp_win->frame_bw3D);
+
+#ifdef DEBUG
+	      fprintf(stderr, "DEBUG[DontMoveOff]: availableX: %d\n",
+		      available);
+#endif
+
+	      /* If the window is wider than the screen or exactly the width
+		 of the screen, the availability is exactly 0.  The result
+		 will be to have the window placed as much to the left as
+		 possible. */
+	      if (available <= 0) available = 0;
+
+	      /* Place the window exactly between the left and right edge of
+		 the screen when possible.  If available was originally less
+		 than zero, it means the window's left edge will be against
+		 the screen's left edge, and the window's right edge will be
+		 outside the screen.  */
+	      tmp_win->attr.x = available / 2;
+	    }
+
+	    /* If the bottom edge of the window is outside the bottom edge
+	       of the screen, we need to move the window up.  Note that
+	       this can only happen with windows that are less than 50
+	       pixels less tall than the screen.  Don't forget to count
+	       with the title height and the frame widths.  */
+	    if ((tmp_win->attr.y + tmp_win->attr.height)  > Scr->rooth) {
+	      available = Scr->rooth - tmp_win->attr.height
+		- tmp_win->title_height - 2 * (bw2 + tmp_win->frame_bw3D);
+
+#ifdef DEBUG
+	      fprintf(stderr, "DEBUG[DontMoveOff]: availableY: %d\n",
+		      available);
+#endif
+
+	      /* If the window is taller than the screen or exactly the
+		 height of the screen, the availability is exactly 0.
+		 The result will be to have the window placed as much to
+		 the top as possible. */
+	      if (available <= 0) available = 0;
+
+	      /* Place the window exactly between the top and bottom edge of
+		 the screen when possible.  If available was originally less
+		 than zero, it means the window's top edge will be against
+		 the screen's top edge, and the window's bottom edge will be
+		 outside the screen.  Again, don't forget to add the title
+		 height.  */
+	      tmp_win->attr.y = available / 2 + tmp_win->title_height;
+	    }
+
+#ifdef DEBUG
+	    fprintf(stderr,
+		    "DEBUG[DontMoveOff]: win: %dx%d+%d+%d, screen: %dx%d\n",
+		    tmp_win->attr.width, tmp_win->attr.height,
+		    tmp_win->attr.x, tmp_win->attr.y,
+		    Scr->rootw, Scr->rooth);
+#endif
 	}
 
-	tmp_win->attr.x = PlaceX;
-	tmp_win->attr.y = PlaceY;
-	PlaceX += 30;
-	PlaceY += 30;
+	/* We know that if the window's left edge has moved compared to
+	   PlaceX, it will have moved to the left.  If it was moved less
+	   than 15 pixel either way, change the next "random position"
+	   30 pixels down and right. */
+	if (PlaceX - tmp_win->attr.x < 15
+	    || PlaceY - tmp_win->attr.y < 15) {
+	  PlaceX += 30;
+	  PlaceY += 30;
+	}
 
         random_placed = True;
       } else {				/* else prompt */

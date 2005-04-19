@@ -1354,3 +1354,16 @@ VirtualScreens {
 
    36 - Only use the DefaultFunction if no function was found.
 	[Richard Levitte]
+
+   37 - Correct DontMoveOff
+
+	The DontMoveOff checks when calculating random placement
+	wasn't satisfactory.  It ended up placing all windows that
+	were small enough to fit in a random place at +50+50 with no
+	exception.  The behavior has now been changed to only apply
+	to very large windows (almost as large as or larger than the
+	screen).  At the same time, the RandomPlacement algorithm and
+	the DonMoveOff checks have been tweaked to keep the title
+	height in mind, so centering and coordinates correspond to the
+	realities of the rest of CTWM.
+	[Richard Levitte]
