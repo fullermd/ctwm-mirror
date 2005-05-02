@@ -1,0 +1,38 @@
+XCOMM This is the local configuration file for Imakefile for ctwm.
+
+XCOMM Uhmm, I really don't know what this is about. -- Richard Levitte
+#undef  IMCONV
+
+XCOMM If you want sound support through librplay, defined this.
+#undef  USE_SOUND
+
+XCOMM If you want XPM support, define this.
+#define XPM
+
+XCOMM If you want JPEG support, define this.
+#define JPEG
+
+XCOMM If you want to process the ctwm configuration file with m4, define this.
+#define USEM4
+
+XCOMM If you want to build with Gnome extensions, define this.
+#define GNOME
+
+XCOMM If you want to build for X11R6, define this.
+#define X11R6
+
+XCOMM If you want to build with i18n support, define this.
+#define I18N
+
+XCOMM If you want to build with GNU regex instead of the internal regex
+XCOMM functions, define this.
+#undef  USE_GNU_REGEX
+
+XCOMM DEBUGGING:
+
+XCOMM If you want to get all kinds of debugging output from CTWM, define this.
+#undef  DEBUG
+
+XCOMM If you want debugging output for the configuration file parser,
+XCOMM define this.
+#undef  DEBUGPARSER

@@ -6,17 +6,7 @@ XCOMM other people do also, so perhaps you could do us all a favor and
 XCOMM distribute this one.
 XCOMM
 
-#undef  DEBUG
-#undef  DEBUGPARSER
-#undef  IMCONV
-#undef  USE_SOUND
-#define XPM
-#define JPEG
-#define USEM4
-#define GNOME
-#define X11R6
-#undef  I18N
-#undef  USE_GNU_REGEX
+#include "Imakefile.local"
 
 
 #ifdef DEBUGPARSER
