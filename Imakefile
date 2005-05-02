@@ -213,7 +213,8 @@ dist:	clean gram.h gram.c lex.c deftwmrc.c
 	version="`grep '^char \*VersionNumber' version.c | head -1 | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"; \
 	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \
 	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
-	       \! -name Makefile | sort > ../ctwm-$$version.list; \
+	       \! -name Makefile \! -name Imakefile.local \
+		| sort > ../ctwm-$$version.list; \
 	tar --no-recursion --files-from ../ctwm-$$version.list -cvf - | \
 	tardy --user_number=0  --user_name=ctwm \
 	      --group_number=0 --group_name=ctwm \
