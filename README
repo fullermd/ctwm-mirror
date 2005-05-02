@@ -38,40 +38,65 @@ If you are happy with ctwm, please send me a not to levitte@lp.se.
 If you find bugs, please send a report (one per bug, please!) to
 ctwm-bugs@free.lp.se.
 
+				----------
 
-Installation:
+Configuration:
 
-funny prompt> xmkmf
-funny prompt> make
+Ctwm is built using xmkmf, which read Imakefile.  That file includes
+Imakefile.local, which is meant for local configuration, and WHICH
+YOU MUST CREATE.  For your comfort, the file Imakefile.local-template
+can simply be copied to Imakefile.local, then changed.
 
-
-Build configuration changes are done entirely in Imakefile, through a
-number of C macros that are defined or undefined at the beginning of
-the file.  These are the macros of interest:
+Configuration is done by defining any of the following C macros:
 
 USEM4		If defined, enables the use of the m4 preprocessor on
 		the run-time configuration file.  Disable if m4 isn't
 		present.
+		Defined in Imakefile.local-template.
 XPM		If defined, enables the use of xpm images.  Disable if
 		libxpm isn't present.
+		Defined in Imakefile.local-template.
 JPEG		If defined, enables the use of jpeg images.  Disable
 		if libjpeg isn't present.
+		Defined in Imakefile.local-template.
 GNOME		If defined, build to work with Gnome.
+		Defined in Imakefile.local-template.
 X11R6		If defined, build to work with X11R6 (basically, add
 		session management capabilities)
+		Defined in Imakefile.local-template.
 I18N		If defined, build with i18n capabilities.
-		DO NOT DEFINE, IT DOESN'T WORK (at least with my tests)!
+		Defined in Imakefile.local-template.
 USE_SOUND	if defined, build with sound support.  Disable if
 		librplay isn't present.
+		Defined in Imakefile.local-template.
+USE_GNU_REGEX	if defined, build with GNU regex.  Otherwise, use an
+		internal implementation.
+		Undefined in Imakefile.local-template.
 
 If you don't have xpm, fetch it from ftp.x.org or comment out the
-#define XPM in Imakefile.  If you don't have the m4 preprocessor (or
-don't want to use it) comment out #define USEM4, if you have the
+#define XPM in Imakefile.local.  If you don't have the m4 preprocessor
+(or don't want to use it) comment out #define USEM4, if you have the
 rplay package replace `#undef USE_SOUND' with `#define USE_SOUND'.
 
-There is a man, which always needs more work (any volunteer ?).  Many
-useful informations are only in the CHANGES file, so please read it.
+				----------
 
+Building:
+
+funny prompt> xmkmf
+funny prompt> make
+
+				----------
+
+Installation:
+
+funny prompt> make install
+
+				----------
+
+There is a manual page, which always needs more work (any volunteer ?).
+Many useful informations are only in the CHANGES file, so please read it.
+
+				----------
 
 Mailing lists and other stuff:
 
@@ -85,7 +110,7 @@ There is also the possibility to browse the repository :
 
   http://repository.lp.se/viewcvs/X/ctwm/
 
-The CVS logs are posted to ctwm-cvs@free.lp.se, subscrive at
+The CVS logs are posted to ctwm-cvs@free.lp.se, subscribe at
 ctwm-cvs-request@free.lp.se.
 
 There is a mailing list for discussions ctwm@free.lp.se.  Subscribe at
