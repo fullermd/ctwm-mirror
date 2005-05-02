@@ -1367,3 +1367,10 @@ VirtualScreens {
 	height in mind, so centering and coordinates correspond to the
 	realities of the rest of CTWM.
 	[Richard Levitte]
+
+   38 - Correct resizing from menu
+
+	Choosing resize from the menu when not having 3D borders moved
+	the target window down and right by a border width.  This was
+	an error in window position calculations.
+	[Richard Levitte]
