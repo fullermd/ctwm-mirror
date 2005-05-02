@@ -881,8 +881,8 @@ function_entries: /* Empty */
 		| function_entries function_entry
 		;
 
-function_entry	: action		{ AddToMenu(root, "", Action, NULLSTR, $1,
-						NULL, NULLSTR);
+function_entry	: action		{ AddToMenu(root, "", Action, NULL, $1,
+						    NULLSTR, NULLSTR);
 					  Action = "";
 					}
 		;
