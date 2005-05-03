@@ -1,12 +1,13 @@
 Summary: Ctwm is a window manager for the X Window System.
 Name: ctwm
-Version: 3.7-beta3
+Version: 3.7
+%define versuffix -beta3
 Release: 1
-Source: http://ctwm.free.lp.se/preview/%{name}-%{version}.tar.gz
+Source: http://ctwm.free.lp.se/preview/%{name}-%{version}%{versuffix}.tar.gz
 Copyright: MIT
-Group: X11/Window
+Group: User Interface/X
 Packager: Richard Levitte <richard@levitte.org>
-BuildRoot: /usr/tmp/%{name}-%{version}-buildroot
+BuildRoot: /var/tmp/%{name}-%{version}%{versuffix}-buildroot
 
 %description
 Ctwm is a window manager for the X Window System.  It provides
@@ -24,7 +25,7 @@ to use both, either or none of the above icon/pixmap formats.
 
 %prep
 
-%setup -n %{name}-%{version}
+%setup -n %{name}-%{version}%{versuffix}
 
 %build
 cp Imakefile.local-template Imakefile.local
@@ -33,13 +34,11 @@ make
 
 %install
 rm -fr $RPM_BUILD_ROOT
-#mkdir -p $RPM_BUILD_ROOT/usr/X11R6/bin
-#mkdir -p $RPM_BUILD_ROOT/usr/X11R6/man/man1
-#mkdir -p $RPM_BUILD_ROOT/usr/X11R6/lib/X11/twm/images
 make install DESTDIR=$RPM_BUILD_ROOT
 
 # Call the man page something a little more Unixly.
-cp -f ctwm.man $RPM_BUILD_ROOT/usr/X11R6/man/man1/ctwm.1x
+mkdir -p $RPM_BUILD_ROOT/usr/X11R6/man/man1
+install -c -m 0644 ctwm.man $RPM_BUILD_ROOT/usr/X11R6/man/man1/ctwm.1x
 
 %clean
 rm -fr $RPM_BUILD_ROOT
