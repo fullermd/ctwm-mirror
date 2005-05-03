@@ -1374,3 +1374,8 @@ VirtualScreens {
 	the target window down and right by a border width.  This was
 	an error in window position calculations.
 	[Richard Levitte]
+
+   39 - Enhanced info window
+
+	Added the outer geometry.  Added the 3D border width.
+	[Richard Levitte]
