@@ -225,7 +225,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     int saved_occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
 #endif
     Bool        random_placed = False;
-    int		found;
+    int		found = 0;
 #ifndef VMS
     fd_set	mask;
     int		fd;
@@ -236,7 +236,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     XRectangle logical_rect;
 #endif
     WindowBox *winbox;
-    int iswinbox;
+    int iswinbox = 0;
     int iswman = 0;
     Window vroot;
 

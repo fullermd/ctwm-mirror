@@ -175,7 +175,10 @@ void CreateIconManagers(void)
 	wmhints.flags         = InputHint | StateHint;
 	XSetWMHints (dpy, p->w, &wmhints);
 	p->twm_win = AddWindow(p->w, TRUE, p);
-	p->twm_win->occupation = 1 << ws->number;
+	if (ws)
+	  p->twm_win->occupation = 1 << ws->number;
+	else
+	  p->twm_win->occupation = 1;
 
 	sizehints.flags       = PWinGravity;
 	sizehints.win_gravity = gravity;

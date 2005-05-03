@@ -1178,6 +1178,8 @@ void InitVariables(void)
     Scr->IconManagerFont.basename = DEFAULT_NICE_FONT;
     Scr->DefaultFont.font_set = NULL;
     Scr->DefaultFont.basename = DEFAULT_FAST_FONT;
+    Scr->workSpaceMgr.windowFont.font_set = NULL;
+    Scr->workSpaceMgr.windowFont.basename = DEFAULT_FAST_FONT;
 #else    
 #   define DEFAULT_NICE_FONT "variable"
 #   define DEFAULT_FAST_FONT "fixed"
@@ -1194,6 +1196,8 @@ void InitVariables(void)
     Scr->IconManagerFont.name = DEFAULT_NICE_FONT;
     Scr->DefaultFont.font = NULL;
     Scr->DefaultFont.name = DEFAULT_FAST_FONT;
+    Scr->workSpaceMgr.windowFont.font = NULL;
+    Scr->workSpaceMgr.windowFont.name = DEFAULT_FAST_FONT;
 #endif
 
 }
