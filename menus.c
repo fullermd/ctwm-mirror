@@ -4264,9 +4264,14 @@ static void Identify (TwmWindow *t)
 	(void) sprintf(Info[n++], "Class.res_name   = \"%s\"", t->class.res_name);
 	(void) sprintf(Info[n++], "Class.res_class  = \"%s\"", t->class.res_class);
 	Info[n++][0] = '\0';
-	(void) sprintf(Info[n++], "Geometry/root    = %dx%d+%d+%d", wwidth, wheight,
-		x, y);
+	(void) sprintf(Info[n++], "Geometry/root    = %dx%d+%d+%d (Inner: %dx%d+%d+%d)",
+		       wwidth + 2 * (bw + t->frame_bw3D),
+		       wheight + 2 * (bw + t->frame_bw3D) + t->title_height,
+		       x - (bw + t->frame_bw3D),
+		       y - (bw + t->frame_bw3D + t->title_height),
+		       wwidth, wheight, x, y);
 	(void) sprintf(Info[n++], "Border width     = %d", bw);
+	(void) sprintf(Info[n++], "3D border width  = %d", t->frame_bw3D);
 	(void) sprintf(Info[n++], "Depth            = %d", depth);
 
 	if (XGetWindowProperty (dpy, t->w, _XA_WM_CLIENT_MACHINE, 0L, 64, False,
