@@ -75,6 +75,7 @@ Color
     }
 }
 
+IconManagerGeometry		"202x300-0+0" 1
 IconManagerDontShow {
     "WorkSpaceManager"
 }
