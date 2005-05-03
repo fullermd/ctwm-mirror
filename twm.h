@@ -554,6 +554,9 @@ extern XErrorEvent LastErrorEvent;
 extern Bool RestartPreviousState;
 extern Bool GetWMState(Window w, int *statep, Window *iwp);
 
+extern Bool RestartFlag;	/* Flag that is set when SIGHUP is caught */
+extern void DoRestart(Time t);	/* Function to perform a restart */
+
 extern Atom _XA_MIT_PRIORITY_COLORS;
 extern Atom _XA_WM_CHANGE_STATE;
 extern Atom _XA_WM_STATE;
