@@ -232,6 +232,7 @@ Bool TrapExceptions = True;
 
 unsigned long black, white;
 
+Bool RestartFlag = 0;
 SIGNAL_T Restart(int signum);
 SIGNAL_T Crash(int signum);
 #ifdef __WAIT_FOR_CHILDS
@@ -411,7 +412,7 @@ int main(int argc, char **argv, char **environ)
     if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, action)
 
     newhandler (SIGINT, Done);
-    newhandler (SIGHUP, Restart);
+    signal (SIGHUP, Restart);
     newhandler (SIGQUIT, Done);
     newhandler (SIGTERM, Done);
 #ifdef __WAIT_FOR_CHILDS
@@ -1371,18 +1372,34 @@ SIGNAL_T Crash (int signum)
 
 SIGNAL_T Restart(int signum)
 {
+    fprintf (stderr, "%s:  setting restart flag\n", ProgramName);
+    RestartFlag = 1;
+}
+
+void DoRestart(Time t)
+{
+#ifdef X11R6
+    extern SmcConn smcConn;
+#endif
+    RestartFlag = 0;
+
     StopAnimation ();
     XSync (dpy, 0);
-    Reborder (CurrentTime);
+    Reborder (t);
     XSync (dpy, 0);
+
+#ifdef X11R6
+    if (smcConn) SmcCloseConnection (smcConn, 0, NULL);
+#endif /* X11R6 */
+
+    fprintf (stderr, "%s:  restarting:  %s\n",
+	     ProgramName, *Argv);
 #ifdef VMS
-    fprintf (stderr, "%s:  restart capabilities not yet supported\n",
-	     ProgramName);
+    exit (1);			/* Trust CTWM.COM  /Richard Levitte */
 #else
     execvp(*Argv, Argv);
 #endif
     fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
-    exit (1);
 }
 
 #ifdef __WAIT_FOR_CHILDS

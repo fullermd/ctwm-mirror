@@ -513,12 +513,6 @@ Bool DispatchEvent (void)
  ***********************************************************************
  */
 
-#ifdef X11R6
-#  define nextEvent(event) XtAppNextEvent(appContext, event);
-#else
-#  define nextEvent(event) XNextEvent(dpy, event);
-#endif
-
 void HandleEvents(void)
 {
     while (TRUE)
@@ -542,10 +536,7 @@ void HandleEvents(void)
 	}
 	WindowMoved = FALSE;
 
-	if (AnimationActive && MaybeAnimate)
-	    CtwmNextEvent (dpy, &Event);
-	else
-	    nextEvent (&Event);
+	CtwmNextEvent (dpy, &Event);
 
 #ifdef X11R6
 	if (Event.type < 0 || Event.type >= MAX_X_EVENT)
@@ -556,23 +547,31 @@ void HandleEvents(void)
     }
 }
 
+#ifdef X11R6
+#  define nextEvent(event) XtAppNextEvent(appContext, event);
+#else
+#  define nextEvent(event) XNextEvent(dpy, event);
+#endif
+
 #ifdef VMS
 extern unsigned long timefe;
 #endif
 
 static void CtwmNextEvent (Display *dpy, XEvent  *event)
 {
+    int animate = (AnimationActive && MaybeAnimate);
+
 #ifdef VMS
     if (QLength (dpy) != 0) {
 	nextEvent (event);
 	return;
     }
-    if (AnimationPending) Animate ();
+    if (animate && AnimationPending) Animate ();
     while (1) {
        sys$waitfr(timefe);
        sys$clref(timefe);
-       
-       if (AnimationPending) Animate ();
+
+       if (animate && AnimationPending) Animate ();
        if (QLength (dpy) != 0) {
 	  nextEvent (event);
 	  return;
@@ -584,6 +583,8 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
     int		fd;
     struct timeval timeout, *tout;
 
+    if (RestartFlag)
+	DoRestart(CurrentTime);
     if (XEventsQueued (dpy, QueuedAfterFlush) != 0) {
 	nextEvent (event);
 	return;
@@ -591,14 +592,17 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
     fd = ConnectionNumber (dpy);
 
 #ifdef USE_SIGNALS
-    if (AnimationPending) Animate ();
+    if (animate && AnimationPending) Animate ();
     while (1) {
 	FD_ZERO (&mask);
 	FD_SET  (fd, &mask);
 	found = select (fd + 1, (FDSET)&mask, (FDSET) 0, (FDSET) 0, 0);
+	if (RestartFlag)
+	    DoRestart(CurrentTime);
 	if (found < 0) {
 	    if (errno == EINTR) {
-		Animate ();
+		if (animate)
+		    Animate ();
 	    }
 	    else perror ("select");
 	    continue;
@@ -609,17 +613,23 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
 	}
     }
 #else /* USE_SIGNALS */
-    TryToAnimate ();
+    if (animate) TryToAnimate ();
+    if (RestartFlag)
+	DoRestart(CurrentTime);
     if (! MaybeAnimate) {
 	nextEvent (event);
 	return;
     }
-    tout = (AnimationSpeed > 0) ? &timeout : NULL;
+    if (animate) tout = (AnimationSpeed > 0) ? &timeout : NULL;
     while (1) {
 	FD_ZERO (&mask);
 	FD_SET  (fd, &mask);
-	timeout = AnimateTimeout;
+	if (animate) {
+	    timeout = AnimateTimeout;
+	}
 	found = select (fd + 1, (FDSET)&mask, (FDSET) 0, (FDSET) 0, tout);
+	if (RestartFlag)
+	    DoRestart(CurrentTime);
 	if (found < 0) {
 	    if (errno != EINTR) perror ("select");
 	    continue;
@@ -629,7 +639,9 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
 	    return;
 	}
 	if (found == 0) {
-	    TryToAnimate ();
+	    if (animate) TryToAnimate ();
+	    if (RestartFlag)
+		DoRestart(CurrentTime);
 	    if (! MaybeAnimate) {
 		nextEvent (event);
 		return;
