@@ -1414,3 +1414,13 @@ VirtualScreens {
 	names and event tokens, allowing for a slightly more flexible
 	format.
 	[Richard Levitte]
+
+
+    Changes from version 3.7 to 3.8
+    -------------------------------
+
+    1 - Global cleanup
+
+	There were some variables shadowing others, things not being
+	safely initialized, that sort of thing.
+	[Richard Levitte]

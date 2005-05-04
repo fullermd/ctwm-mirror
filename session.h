@@ -60,13 +60,13 @@ int GetWindowConfig (TwmWindow *theWindow,
 		     Bool *height_ever_changed_by_user,
 		     int *occupation /* <== [ Matthew McNeill Feb 1997 ] == */
 		     );
-void SaveYourselfPhase2CB (SmcConn smcConn, SmPointer clientData);
-void SaveYourselfCB (SmcConn smcConn, SmPointer clientData,
+void SaveYourselfPhase2CB (SmcConn smcCon, SmPointer clientData);
+void SaveYourselfCB (SmcConn smcCon, SmPointer clientData,
 		     int saveType, Bool shutdown,
 		     int interactStyle, Bool fast);
-void DieCB (SmcConn smcConn, SmPointer clientData);
-void SaveCompleteCB (SmcConn smcConn, SmPointer clientData);
-void ShutdownCancelledCB (SmcConn smcConn, SmPointer clientData);
+void DieCB (SmcConn smcCon, SmPointer clientData);
+void SaveCompleteCB (SmcConn smcCon, SmPointer clientData);
+void ShutdownCancelledCB (SmcConn smcCon, SmPointer clientData);
 void ProcessIceMsgProc (XtPointer client_data, int *source, XtInputId *id);
 void ConnectToSessionManager (char *previous_id);
 #endif /* X11R6 */

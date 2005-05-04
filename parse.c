@@ -90,10 +90,13 @@
 #include "gram.h"
 #include "parse.h"
 #include "version.h"
+#ifdef SOUNDS
+#  include "sound.h"
+#endif
 #ifdef VMS
-#include <decw$include/Xatom.h> 
+#  include <decw$include/Xatom.h> 
 #else
-#include <X11/Xatom.h> 
+#  include <X11/Xatom.h> 
 #endif
 
 /* For m4... */
@@ -155,10 +158,6 @@ extern char *defTwmrc[];		/* default bindings */
 
 extern int captive;
 extern char *captivename;
-
-#ifdef SOUNDS
-extern int set_sound_host();
-#endif
 
 /***********************************************************************
  *
@@ -2116,8 +2115,6 @@ static FILE *start_m4(FILE *fraw)
                 exit(23);
         }
         if (fres == 0) {
-                extern Display *dpy;
-                extern char *display_name;
                 char *tmp_file;
 
                 /* Child */

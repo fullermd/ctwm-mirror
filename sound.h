@@ -24,12 +24,9 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
-Bool	CtwmIsRunning			(Display *display, int scrnum);
-char	**CtwmListWorkspaces		(Display *display, int scrnum);
-char	*CtwmCurrentWorkspace		(Display *display, int scrnum);
-int	CtwmChangeWorkspace		(Display *display, int scrnum,
-					 char	*workspace);
-char	**CtwmCurrentOccupation		(Display *display, Window window);
-int	CtwmSetOccupation		(Display *display, Window window,
-					 char **occupation);
-int	CtwmAddToCurrentWorkspace	(Display *display, Window window);
+extern void play_sound(int snd);
+extern void play_startup_sound(void);
+extern void play_exit_sound(void);
+extern void toggle_sound(void);
+extern void reread_sounds(void);
+extern void set_sound_host(char *host);
