@@ -2228,6 +2228,7 @@ static char *m4_defs(Display *display, char *host)
 	if (!(user=getenv("USER")) && !(user=getenv("LOGNAME"))) user = "unknown";
         fputs(MkDef("USER", user), tmpf);
         fputs(MkDef("HOME", getenv("HOME")), tmpf);
+        fputs(MkDef("PIXMAP_DIRECTORY", PIXMAP_DIRECTORY), tmpf);
         fputs(MkNum("VERSION", ProtocolVersion(display)), tmpf);
         fputs(MkNum("REVISION", ProtocolRevision(display)), tmpf);
         fputs(MkDef("VENDOR", ServerVendor(display)), tmpf);
@@ -2262,6 +2263,21 @@ static char *m4_defs(Display *display, char *host)
 #endif
 #ifdef JPEG
 	fputs(MkDef("JPEG", "Yes"), tmpf);
+#endif
+#ifdef IMCONV
+	fputs(MkDef("IMCONV", "Yes"), tmpf);
+#endif
+#ifdef GNOME
+	fputs(MkDef("GNOME", "Yes"), tmpf);
+#endif
+#ifdef SOUNDS
+	fputs(MkDef("SOUNDS", "Yes"), tmpf);
+#endif
+#ifdef X11R6
+	fputs(MkDef("SESSION", "Yes"), tmpf);
+#endif
+#ifdef I18N
+	fputs(MkDef("I18N", "Yes"), tmpf);
 #endif
 	if (captive && captivename) {
             fputs (MkDef ("TWM_CAPTIVE", "Yes"), tmpf);

@@ -1415,6 +1415,11 @@ VirtualScreens {
 	format.
 	[Richard Levitte]
 
+   44 - ctwm.spec
+
+        Added a specification file for RPM building.
+	[Richard Levitte]
+
 
     Changes from version 3.7 to 3.8
     -------------------------------
