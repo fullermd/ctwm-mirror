@@ -116,12 +116,12 @@ DEBUGPARSER_DEFS = -DYYDEBUG=1
 
 #ifdef DEBUG
     CDEBUGFLAGS = -g -O0
+#endif
 
-XCOMM An alternative for hard-core gcc users :-)
-XCOMM   CDEBUGFLAGS = -g -O0 \
-XCOMM	-pedantic -ansi -Wall \
-XCOMM	-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef \
-XCOMM	-aux-info $@.info
+#ifdef GCC_PEDANTIC
+      CCOPTIONS = -pedantic -ansi -Wall \
+		-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef \
+		-aux-info $@.info
 #endif
 
 LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)

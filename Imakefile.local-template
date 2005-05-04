@@ -36,3 +36,7 @@ XCOMM If you want to get all kinds of debugging output from CTWM, define this.
 XCOMM If you want debugging output for the configuration file parser,
 XCOMM define this.
 #undef  DEBUGPARSER
+
+XCOMM If you use gcc, and want to build with as much paranoia as possible,
+XCOMM define this.
+#undef  GCC_PEDANTIC
