@@ -171,8 +171,8 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLI
 		3dcircle.xpm 3ddimple.xpm 3ddot.xpm 3dfeet.xpm 3dleopard.xpm \
 		3dpie.xpm 3dpyramid.xpm 3dslant.xpm
 
-SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(DESTDIR)$(CONFDIR)'/system.ctwmrc"')
-SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="'$(DESTDIR)$(PIXMAPDIR)'"')
+SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="$(DESTDIR)$(CONFDIR)/system.ctwmrc"' '-DPIXMAP_DIRECTORY="$(DESTDIR)$(PIXMAPDIR)"')
+SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="$(DESTDIR)$(PIXMAPDIR)"')
 #if !HasPutenv
 SpecialObjectRule(util.o,util.c,-DNOPUTENV)
 #endif
@@ -212,8 +212,9 @@ deftwmrc.c:  system.ctwmrc
 		system.ctwmrc >>$@
 	echo '    (char *) 0 };' >>$@
 
+GET_VERSION="`grep '^char \*VersionNumber' version.c | head -1 | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"
 dist:	clean gram.h gram.c lex.c deftwmrc.c
-	version="`grep '^char \*VersionNumber' version.c | head -1 | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"; \
+	version=$(GET_VERSION); \
 	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \
 	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
 	       \! -name Makefile \! -name Imakefile.local \
@@ -225,6 +226,20 @@ dist:	clean gram.h gram.c lex.c deftwmrc.c
 	gzip --best >../ctwm-$$version.tar.gz; \
 	rm -f ../ctwm-$$version.list; \
 	ls -l ../ctwm-$$version.tar.gz
+
+rpm: hack_spec dist unhack_spec do_rpm
+hack_spec:
+	if grep 'Debian' /etc/issue > /dev/null 2> /dev/null; then \
+	    mv ctwm.spec ctwm.spec.Redhat; \
+	    sed -e '/^BuildRequires:/d' < ctwm.spec.Redhat > ctwm.spec; \
+	fi
+unhack_spec:
+	if grep 'Debian' /etc/issue > /dev/null 2> /dev/null; then \
+	    mv ctwm.spec.Redhat ctwm.spec; \
+	fi
+do_rpm:
+	version=$(GET_VERSION); \
+	rpmbuild -ta ../ctwm-$$version.tar.gz
 
 # Make all source files depend on this file, so there will be no more
 # surprises.
