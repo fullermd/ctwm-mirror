@@ -602,13 +602,13 @@ void AddWorkSpace (char *name, char *background, char *foreground,
     fullOccupation |= (1 << wsnum);
     ws = (WorkSpace*) malloc (sizeof (WorkSpace));
     ws->FirstWindowRegion = NULL;
-#ifdef VMS
+#if 0 /* def VMS */
     {
        char *ftemp;
        ftemp = (char *) malloc((strlen(name)+1)*sizeof(char));
-       wlist->name = strcpy (ftemp,name);
+       ws->name = strcpy (ftemp,name);
        ftemp = (char *) malloc((strlen(name)+1)*sizeof(char));
-       wlist->label = strcpy (ftemp,name);
+       ws->label = strcpy (ftemp,name);
     }
 #else
     ws->name  = (char*) strdup (name);
