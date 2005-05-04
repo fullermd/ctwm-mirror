@@ -283,7 +283,7 @@ void AddStartResize(TwmWindow *tmp_win, int x, int y, int w, int h)
 void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win)
 {
     int action;
-    Cursor cursor;
+    Cursor cursor = 0;
 
     action = 0;
 
@@ -417,7 +417,7 @@ void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win)
 void DoResize(int x_root, int y_root, TwmWindow *tmp_win)
 {
     int action;
-    Cursor cursor;
+    Cursor cursor = 0;
 
     action = 0;
 
