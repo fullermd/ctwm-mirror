@@ -1,13 +1,16 @@
 Summary: Ctwm is a window manager for the X Window System.
 Name: ctwm
-Version: 3.7
-%define versuffix -beta4
-Release: 1
-Source: http://ctwm.free.lp.se/preview/%{name}-%{version}%{versuffix}.tar.gz
+Version: 3.7beta4
+Release: 3
+Source: http://ctwm.free.lp.se/preview/%{name}-%{version}.tar.gz
 Copyright: MIT
 Group: User Interface/X
 Packager: Richard Levitte <richard@levitte.org>
-BuildRoot: /var/tmp/%{name}-%{version}%{versuffix}-buildroot
+BuildRoot: /var/tmp/%{name}-%{version}-buildroot
+URL: http://ctwm.free.lp.se/
+
+BuildRequires: xorg-x11-devel
+Requires: m4
 
 %description
 Ctwm is a window manager for the X Window System.  It provides
@@ -25,7 +28,7 @@ to use both, either or none of the above icon/pixmap formats.
 
 %prep
 
-%setup -n %{name}-%{version}%{versuffix}
+%setup -q -n %{name}-%{version}
 
 %build
 cp Imakefile.local-template Imakefile.local
@@ -44,8 +47,8 @@ make install \
     DESTDIR=$RPM_BUILD_ROOT \
     PIXMAPDIR=/usr/X11R6/include/X11/pixmaps \
     CONFDIR=/etc/X11/ctwm
-mkdir -p $RPM_BUILD_ROOT/usr/X11R6/lib/X11
-ln -s /etc/X11/ctwm $RPM_BUILD_ROOT/usr/X11R6/lib/X11/ctwm
+%{__mkdir_p} $RPM_BUILD_ROOT/usr/X11R6/lib/X11
+%{__ln_s} ../../../../etc/X11/ctwm $RPM_BUILD_ROOT/usr/X11R6/lib/X11/ctwm
 
 # Install the manual page separately.
 install -c -m 0644 ctwm.man $RPM_BUILD_ROOT/usr/X11R6/man/man1/ctwm.1x
@@ -56,6 +59,8 @@ rm -fr $RPM_BUILD_ROOT
 %files
 %defattr(0644,root,root,0755)
 %doc README CHANGES PROBLEMS README.gnome TODO.gnome
+%doc *.ctwmrc
+%doc sound.doc vms.txt vms2.txt
 
 %attr(0755,root,root) /usr/X11R6/bin/ctwm
 %attr(0644,root,root) /usr/X11R6/man/man1/ctwm.1x.gz
@@ -65,8 +70,10 @@ rm -fr $RPM_BUILD_ROOT
 %attr(0644,root,root) /usr/X11R6/include/X11/pixmaps/*
 
 %changelog
+* Wed May  4 2005 Rudolph T Maceyko <rm55@pobox.com>
+- Tweaks.  Added all .ctwmrc files as well as sound and VMS docs.
+* Wed May  4 2005 Richard Levitte <richard@levitte.org>
+- Changed some directory specifications to RedHat-ish standards.
 * Tue May  3 2005 Richard Levitte <richard@levitte.org>
 - Received the original from Johan Vromans.  Adjusted it to become
   an official .spec file.
-* Wed May  4 2005 Richard Levitte <richard@levitte.org>
-- Changed some directory specifications to RedHat-ish standards.
