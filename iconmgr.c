@@ -721,8 +721,6 @@ void InsertInIconManager(IconMgr *ip, WList *tmp, TwmWindow *tmp_win)
 {
     WList *tmp1;
     int added;
-    int (*compar)(const char *s1, const char *s2)
-      = (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
 
     added = FALSE;
     if (ip->first == NULL)
@@ -736,7 +734,12 @@ void InsertInIconManager(IconMgr *ip, WList *tmp, TwmWindow *tmp_win)
     {
 	for (tmp1 = ip->first; tmp1 != NULL; tmp1 = tmp1->next)
 	{
-	    if ((*compar)(tmp_win->icon_name, tmp1->twm->icon_name) < 0)
+	    int compresult;
+	    if (Scr->CaseSensitive)
+		compresult = strcmp(tmp_win->icon_name,tmp1->tmp->icon_name);
+	    else
+		compresult = XmuCompareISOLatin1(tmp_win->icon_name,tmp1->tmp->icon_name);
+	    if (compresult < 0) {
 	    {
 		tmp->next = tmp1;
 		tmp->prev = tmp1->prev;
@@ -902,12 +905,17 @@ void SortIconManager(IconMgr *ip)
     {
 	for (tmp1 = ip->first; tmp1 != NULL; tmp1 = tmp1->next)
 	{
+	    int compresult;
 	    if ((tmp2 = tmp1->next) == NULL)
 	    {
 		done = TRUE;
 		break;
 	    }
-	    if ((*compar)(tmp1->twm->icon_name, tmp2->twm->icon_name) > 0)
+	    if (Scr->CaseSensitive)
+		compresult = strcmp(tmp1->tmp->icon_name,tmp2->tmp->icon_name);
+	    else
+		compresult = XmuCompareISOLatin1(tmp1->tmp->icon_name,tmp2->tmp->icon_name);
+	    if (compresult > 0) {
 	    {
 		/* take it out and put it back in */
 		RemoveFromIconManager(ip, tmp2);
