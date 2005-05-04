@@ -1414,3 +1414,8 @@ VirtualScreens {
 	names and event tokens, allowing for a slightly more flexible
 	format.
 	[Richard Levitte]
+
+   44 - ctwm.spec
+
+        Added a specification file for RPM building.
+	[Richard Levitte]
