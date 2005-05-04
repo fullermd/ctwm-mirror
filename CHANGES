@@ -1404,3 +1404,13 @@ VirtualScreens {
 	To make it easier to find possible problems, the Imakefile macro
 	GCC_PEDANTIC can be defined in Imakefile.local.
 	[Richard Levitte]
+
+   43 - Allow spaces in sound files.
+
+	The .ctwm-sounds file parser would clip sound files at the first
+	spaces.  That won't do for sound libraries where file names may
+	have spaces in them.  The parser now accepts spaces in file names,
+	and will trim spaces from the beginning and the end of both file
+	names and event tokens, allowing for a slightly more flexible
+	format.
+	[Richard Levitte]
