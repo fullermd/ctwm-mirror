@@ -34,10 +34,20 @@ make
 
 %install
 rm -fr $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
 
 # Call the man page something a little more Unixly.
 mkdir -p $RPM_BUILD_ROOT/usr/X11R6/man/man1
+
+# RedHat-ish OSes have the configuration file in /etc/X11/ctwm,
+# possibly with a symlink /usr/X11R6/lib/X11/ctwm pointing at it.
+make install \
+    DESTDIR=$RPM_BUILD_ROOT \
+    PIXMAPDIR=/usr/X11R6/include/X11/pixmaps \
+    CONFDIR=/etc/X11/ctwm
+mkdir -p $RPM_BUILD_ROOT/usr/X11R6/lib/X11
+ln -s /etc/X11/ctwm $RPM_BUILD_ROOT/usr/X11R6/lib/X11/ctwm
+
+# Install the manual page separately.
 install -c -m 0644 ctwm.man $RPM_BUILD_ROOT/usr/X11R6/man/man1/ctwm.1x
 
 %clean
@@ -50,10 +60,13 @@ rm -fr $RPM_BUILD_ROOT
 %attr(0755,root,root) /usr/X11R6/bin/ctwm
 %attr(0644,root,root) /usr/X11R6/man/man1/ctwm.1x.gz
 
-%config %attr(0644,root,root) /usr/X11R6/lib/X11/twm/system.ctwmrc
-%attr(0644,root,root) /usr/X11R6/lib/X11/twm/images/*
+/usr/X11R6/lib/X11/ctwm
+%config %attr(0644,root,root) /etc/X11/ctwm/system.ctwmrc
+%attr(0644,root,root) /usr/X11R6/include/X11/pixmaps/*
 
 %changelog
 * Tue May  3 2005 Richard Levitte <richard@levitte.org>
 - Received the original from Johan Vromans.  Adjusted it to become
   an official .spec file.
+* Wed May  4 2005 Richard Levitte <richard@levitte.org>
+- Changed some directory specifications to RedHat-ish standards.
