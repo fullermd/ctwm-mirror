@@ -8,6 +8,9 @@ X11XMU=sys$sysroot:[decw$include.xmu]
 # X11XMULIB=X11LIB:XMU.OLB
 X11XMULIB=SYS$SHARE:DECW$XMULIBSHR/SHARE
 
+# X11/SM include files
+X11SM=sys$sysroot:[decw$include.sm]
+
 # xpm object library directory
 XPMLIB=pd:[src.xpm-3_4e]
 
