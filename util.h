@@ -100,7 +100,7 @@ void GetColor (int kind, Pixel *what, char *name);
 void GetShadeColors (ColorPair *cp);
 void GetFont(MyFont *font);
 void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus);
-void SetFocus (TwmWindow *tmp_win, Time time);
+void SetFocus (TwmWindow *tmp_win, Time tim);
 Pixmap CreateMenuIcon(int height, unsigned int *widthp, unsigned int *heightp);
 Pixmap Create3DMenuIcon (unsigned int height,
 			 unsigned int *widthp, unsigned int *heightp,
