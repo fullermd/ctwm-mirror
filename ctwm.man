@@ -225,6 +225,9 @@ The name of the user running the program.  Gotten from the environment.
 .B "HOME"
 The user's home directory.  Gotten from the environment.
 .TP 16
+.B "PIXMAP_DIRECTORY"
+The directory where the \fIctwm\fP pictures are installed.
+.TP 16
 .B "VERSION"
 The X major protocol version.  As seen by ProtocolVersion(3).
 .TP 16
@@ -286,6 +289,26 @@ Is defined only if \fIctwm\fP was compiled with XPM.
 .TP 16
 .B "JPEG"
 Is defined only if \fIctwm\fP was compiled with JPEG.
+
+.TP 16
+.B "IMCONV"
+Is defined only if \fIctwm\fP was compiled with IMCONV.
+
+.TP 16
+.B "GNOME"
+Is defined only if \fIctwm\fP was compiled with GNOME.
+
+.TP 16
+.B "SOUNDS"
+Is defined only if \fIctwm\fP was compiled with USE_SOUND.
+
+.TP 16
+.B "SESSION"
+Is defined only if \fIctwm\fP was compiled with USE_SESSION.
+
+.TP 16
+.B "I18N"
+Is defined only if \fIctwm\fP was compiled with I18N.
 
 .TP 16
 .B "TWM_CAPTIVE"
