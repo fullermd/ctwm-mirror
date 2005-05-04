@@ -9,7 +9,8 @@ Unpacking and configuration:
 
 1) Get the latest xpm library (at time of writing, 3.4) and compile that
    first. This is used for coloured icons. (There should be many sites that
-   have a copy of xpm, try using Archie to find a site near you.)
+   have a copy of xpm, try using Google to find a site near you. I found
+   ftp://ftp2.cnam.fr/decwindows/lib/)
 
 2) Copy the xpm.h file from the xpm distribution to the ctwm source directory.
 
