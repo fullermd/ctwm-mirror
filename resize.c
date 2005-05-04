@@ -666,8 +666,8 @@ void MenuEndResize(TwmWindow *tmp_win)
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
     AddingX = dragx - tmp_win->frame_bw;
     AddingY = dragy - tmp_win->frame_bw;
-    AddingW = dragWidth + (2 * tmp_win->frame_bw);
-    AddingH = dragHeight + (2 * tmp_win->frame_bw);
+    AddingW = dragWidth;
+    AddingH = dragHeight;
     SetupWindow (tmp_win, AddingX, AddingY, AddingW, AddingH, -1);
 }
 
