@@ -102,18 +102,20 @@
 #include "workmgr.h"
 #include "cursor.h"
 #ifdef VMS
-#include <X11Xmu/CharSet.h>
-#include <decw$bitmaps/menu12.xbm>
-#include "vms_cmd_services.h"
-#include <lib$routines.h>
+#  include <X11Xmu/CharSet.h>
+#  include <decw$bitmaps/menu12.xbm>
+#  ifdef X11R6
+#    include <X11SM/SMlib.h>
+#  endif
+#  include "vms_cmd_services.h"
+#  include <lib$routines.h>
 #else
-#include <X11/Xmu/CharSet.h>
+#  include <X11/Xmu/CharSet.h>
+#  ifdef X11R6
+#    include <X11/SM/SMlib.h>
+#  endif
 #endif
 #include "version.h"
-
-#ifdef X11R6
-#include <X11/SM/SMlib.h>
-#endif
 
 #if defined(MACH) || defined(__MACH__) || defined(sony_news) || defined(NeXT)
 #define lrand48 random

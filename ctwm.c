@@ -107,9 +107,17 @@
 #  include <X11Xmu/Error.h>
 #  include "vms_cmd_services.h"
 
-#  ifndef NO_LOCALE
-#    include <locale.h>
-#  endif /* NO_LOCALE */
+#  ifdef X11R6
+#    include <X11SM/SMlib.h>
+#  endif /* X11R6 */
+
+#  ifdef I18N
+#    include <X11/Xlocale.h>
+#  else
+#    ifndef NO_LOCALE
+#      include <locale.h>
+#    endif /* NO_LOCALE */
+#  endif
 
 #  ifndef PIXMAP_DIRECTORY
 #    define PIXMAP_DIRECTORY "DECW$BITMAPS:"
@@ -141,8 +149,8 @@ XtAppContext appContext;	/* Xt application context */
 #endif /* X11R6 */
 
 Display *dpy;			/* which display are we talking to */
-#ifdef USEM4
 char *display_name = NULL;      /* JMO 2/13/90 for m4 */
+#ifdef USEM4
 int KeepTmpFile = False;        /* JMO 3/28/90 for m4 */
 char *keepM4_filename = NULL;	/* Keep M4 output here */
 int GoThroughM4 = True;
