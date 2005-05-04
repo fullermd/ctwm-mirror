@@ -1398,3 +1398,9 @@ VirtualScreens {
 	31 first characters of any symbol name), so some tweaks were
 	needed to get CTWM to build cleanly on VMS.
 	[Richard Levitte]
+
+   42 - Allow gcc users to build with paranoia
+
+	To make it easier to find possible problems, the Imakefile macro
+	GCC_PEDANTIC can be defined in Imakefile.local.
+	[Richard Levitte]
