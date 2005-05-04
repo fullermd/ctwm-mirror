@@ -595,7 +595,7 @@ Pixmap FindBitmap (char *name, unsigned int *widthp, unsigned int *heightp)
 	int i;
 	static struct {
 	    char *name;
-	    Pixmap (*proc)(unsigned int *widthp, unsigned int *heightp);
+	    Pixmap (*proc)(unsigned int *wp, unsigned int *hp);
 	} pmtab[] = {
 	    { TBPM_DOT,		CreateDotPixmap },
 	    { TBPM_ICONIFY,	CreateDotPixmap },
@@ -1538,7 +1538,6 @@ void GetFont(MyFont *font)
     register int i;
     int ascent;
     int descent;
-    XFontStruct *xf;
     int fnum;
     char *basename2;
 
@@ -1683,7 +1682,7 @@ static void move_to_head (TwmWindow *t)
  * SetFocus - separate routine to set focus to make things more understandable
  * and easier to debug
  */
-void SetFocus (TwmWindow *tmp_win, Time	time)
+void SetFocus (TwmWindow *tmp_win, Time	tim)
 {
     Window w = (tmp_win ? tmp_win->w : PointerRoot);
     int f_iconmgr = 0;
@@ -1691,7 +1690,7 @@ void SetFocus (TwmWindow *tmp_win, Time	time)
     if (Scr->Focus && (Scr->Focus->iconmgr)) f_iconmgr = 1;
     if (Scr->SloppyFocus && (w == PointerRoot) && (!f_iconmgr)) return;
 
-    XSetInputFocus (dpy, w, RevertToPointerRoot, time);
+    XSetInputFocus (dpy, w, RevertToPointerRoot, tim);
     if (Scr->Focus == tmp_win) return;
 
     if (Scr->Focus) {
@@ -2473,7 +2472,7 @@ Pixmap CreateMenuIcon (int height, unsigned int *widthp, unsigned int *heightp)
     int	lw, lh;
     int	lx, ly;
     int	lines, dly;
-    int off;
+    int offset;
     int	bw;
 
     h = height;
@@ -2497,9 +2496,9 @@ Pixmap CreateMenuIcon (int height, unsigned int *widthp, unsigned int *heightp)
 	iy = 1;
 	ih = h - iy * 2;
 	iw = w - ix * 2;
-	off = ih / 8;
-	mh = ih - off;
-	mw = iw - off;
+	offset = ih / 8;
+	mh = ih - offset;
+	mw = iw - offset;
 	bw = mh / 16;
 	if (bw == 0 && mw > 2)
 	    bw = 1;
@@ -3200,7 +3199,7 @@ Image *GetImage (char *name, ColorPair cp)
 	int    i;
 	static struct {
 	    char *name;
-	    Image* (*proc)(ColorPair cp);
+	    Image* (*proc)(ColorPair colorpair);
 	} pmtab[] = {
 	    { TBPM_3DDOT,	Create3DDotImage },
 	    { TBPM_3DRESIZE,	Create3DResizeImage },
@@ -3239,7 +3238,7 @@ Image *GetImage (char *name, ColorPair cp)
 	int    i;
 	static struct {
 	    char *name;
-	    Image* (*proc)(ColorPair cp);
+	    Image* (*proc)(ColorPair colorpair);
 	} pmtab[] = {
 	    { "%xpm:menu-up", Create3DMenuUpAnimation },
 	    { "%xpm:menu-down", Create3DMenuDownAnimation },
@@ -3279,7 +3278,7 @@ Image *GetImage (char *name, ColorPair cp)
     if (name [0] == ':') {
 	int		i;
 	unsigned int	width, height;
-	Pixmap		pm;
+	Pixmap		pm = 0;
 	XGCValues	gcvalues;
 	static struct {
 	    char *name;
