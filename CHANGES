@@ -1419,3 +1419,21 @@ VirtualScreens {
 
         Added a specification file for RPM building.
 	[Richard Levitte]
+
+   45 - More info for m4
+
+	The m4 subprocess now gets the variable PIXMAP_DIRECTORY, which
+	is defined to the directory where the pixmaps are installed, and
+	the new flags IMCONV, GNOME, SOUNDS, SESSION and I18N.
+	[Richard Levitte]
+
+   46 - Document sounds
+
+	The sounds system is now documented in the man page.
+	[Richard Levitte]
+
+   47 - Build RPMs
+
+	Added the target "rpm" to build an RPM directly from a distribution
+	tarball.
+	[Richard Levitte]
