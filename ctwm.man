@@ -1265,6 +1265,9 @@ This variable indicates that entries in the icon manager should be
 sorted alphabetically rather than by simply appending new windows to
 the end.
 
+.IP "\fBSoundHost\fP" 8
+The host on which sounds should be played.  See the SOUNDS section.
+
 .IP "\fBSqueezeTitle\fP [{ \fIsqueeze\-list\fP }] " 8
 This variable indicates that \fIctwm\fP should attempt to use the SHAPE
 extension to make titlebars occupy only as much screen space as they need,
@@ -2113,6 +2116,10 @@ is \fIstring\fP.
 .IP "\fBf.refresh\fP" 8
 This function causes all windows to be refreshed.
 
+.IP "\fBf.rereadsounds\fP" 8
+This function causes the \fI.ctwm-sounds\fP file to be re-read.  See
+the SOUNDS section.
+
 .IP "\fBf.resize\fP" 8
 This function displays an outline of the selected window.  Crossing a border
 (or setting \fBAutoRelativeResize\fP) will cause the outline to begin to
@@ -2214,6 +2221,9 @@ should not be used in any other context.
 This function adds the selected window to the workspace whose name
 is \fIstring\fP if it doesn't already belongs to it, and removes it
 from this workspace if not.
+
+.IP "\fBf.togglesound\fP" 8
+Toggle sound on/off.  See the SOUNDS section.
 
 .IP "\fBf.togglestate\fP" 8
 Toggle the state of the WorkSpace manager.
@@ -2364,7 +2374,60 @@ events \fBNoTitleFocus\fP is set).
 Using the \fBf.upiconmgr\fP, \fBf.downiconmgr\fP
 \fBf.lefticonmgr\fP, and
 \fBf.righticonmgr\fP functions,
-the input focus can be changed between windows directly from the keyboard.
+the input focus can be changed between windows directly from the
+keyboard.
+.SH SOUNDS
+If compiled with the USE_SOUND flag, \fIctwm\fP is able to play sounds
+for any X event.  \fIctwm\fP will look for the file \fI.ctwm-sounds\fP
+in the user's home directory to map every X event to a sound file to
+be played.
+.PP
+Each line in \fI.ctwm-sounds\fP has the following syntax:
+.EX
+{X event}: {sound file}
+.EE
+The currently known X events that can be given are:
+.EX
+KeyPress
+KeyRelease
+ButtonPress
+ButtonRelease
+MotionNotify
+EnterNotify
+LeaveNotify
+FocusIn
+FocusOut
+KeymapNotify
+Expose
+GraphicsExpose
+NoExpose
+VisibilityNotify
+CreateNotify
+DestroyNotify
+UnmapNotify
+MapNotify
+MapRequest
+ReparentNotify
+ConfigureNotify
+ConfigureRequest
+GravityNotify
+ResizeRequest
+CirculateNotify
+CirculateRequest
+PropertyNotify
+SelectionClear
+SelectionRequest
+SelectionNotify
+ColormapNotify
+ClientMessage
+MappingNotify
+.EE
+Additionally, the following two are recognised, and represent the time
+when \fIctwm\fP is started or shut down:
+.EX
+Startup
+Shutdown
+.EE
 .SH BUGS
 The resource manager should have been used instead of all of the window
 lists.
