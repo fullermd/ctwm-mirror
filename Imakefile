@@ -124,6 +124,9 @@ DEBUGPARSER_DEFS = -DYYDEBUG=1
 		-aux-info $@.info
 #endif
 
+PIXMAPDIR = $(TWMDIR)/images
+CONFDIR = $(TWMDIR)
+
 LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)
         DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(GNOMEDEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(JPEGDEFINES) $(SESSIONDEFS) $(SOUND_DEFS)  $(I18N_DEFS) $(DEBUGPARSER_DEFS) $(GNUREGEXDEFS)
 
@@ -168,8 +171,8 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLI
 		3dcircle.xpm 3ddimple.xpm 3ddot.xpm 3dfeet.xpm 3dleopard.xpm \
 		3dpie.xpm 3dpyramid.xpm 3dslant.xpm
 
-SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(DESTDIR)$(TWMDIR)'/system.ctwmrc"')
-SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="'$(DESTDIR)$(TWMDIR)'/images"')
+SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(DESTDIR)$(CONFDIR)'/system.ctwmrc"')
+SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="'$(DESTDIR)$(PIXMAPDIR)'"')
 #if !HasPutenv
 SpecialObjectRule(util.o,util.c,-DNOPUTENV)
 #endif
@@ -178,13 +181,13 @@ depend:: lex.c gram.c deftwmrc.c
 
 NormalLibraryTarget(ctwm, libctwm.o)
 ComplexProgramTarget(ctwm)
-InstallNonExecFile(system.ctwmrc,$(TWMDIR))
+InstallNonExecFile(system.ctwmrc,$(CONFDIR))
 #ifdef XPM
 install::
-	MakeDir($(DESTDIR)$(TWMDIR)/images)
+	MakeDir($(DESTDIR)$(PIXMAPDIR))
 	@case '${MFLAGS}' in *[i]*) set +e;; esac; \
 	for i in xpm/?* ; do \
-		(set -x; $(INSTALL) -c $(INSTLIBFLAGS) $$i $(DESTDIR)$(TWMDIR)/images); \
+		(set -x; $(INSTALL) -c $(INSTLIBFLAGS) $$i $(DESTDIR)$(PIXMAPDIR)); \
 	done
 #endif
 
