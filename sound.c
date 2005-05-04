@@ -85,6 +85,23 @@ static int startup_sound = NEVENTS -2;
 static int exit_sound = NEVENTS -1;
 static char hostname[200];
 
+static char *
+trim_spaces(char *str)
+{
+    if (str != NULL) {
+	char *p = str + strlen(str);
+	while(*str != '\0' && *str != '\r' && *str != '\n' && isspace(*str))
+	    str++;
+	/* Assume all line end characters are at the end */
+	while(p > str && (p[-1] == '\r' || p[-1] == '\n'))
+	    p--;
+	while(p > str && isspace(p[-1]))
+	    p--;
+	*p = '\0';
+    }
+    return str;
+}
+
 /*
  * initialize
  */
@@ -127,20 +144,20 @@ sound_init ()
     if (fl == NULL)
 	return;
     while (fgets (buffer, 100, fl) != NULL) {
-	token = strtok (buffer, ": \t");
-	if (token == NULL)
+	token = trim_spaces(strtok (buffer, ": \t"));
+	if (token == NULL || *token == '#')
 	    continue;
-        for (i = 0; i < NEVENTS; i++) {
+	for (i = 0; i < NEVENTS; i++) {
 	    if (strcmp (token, eventNames[i]) == 0) {
-	        token = strtok (NULL, "\r\n");
-	        if (token == NULL || *token == '#' || isspace (*token))
+		token = trim_spaces(strtok (NULL, "\r\n"));
+		if (token == NULL || *token == '#')
 		    continue;
-	        rp[i] = rplay_create (RPLAY_PLAY);
-	        if (rp[i] == NULL) {
+		rp[i] = rplay_create (RPLAY_PLAY);
+		if (rp[i] == NULL) {
 		    rplay_perror ("create");
 		    continue;
 		}
-	        if (rplay_set(rp[i], RPLAY_INSERT, 0, RPLAY_SOUND, token, NULL)
+		if (rplay_set(rp[i], RPLAY_INSERT, 0, RPLAY_SOUND, token, NULL)
 		    < 0)
 		    rplay_perror ("rplay");
 	    }
