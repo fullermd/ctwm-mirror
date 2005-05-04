@@ -79,7 +79,10 @@ void InitVirtualScreens (ScreenInfo *scr) {
   for (nptr = Scr->VirtualScreens; nptr != NULL; nptr = nptr->next) {
     virtualScreen *vs;
     char *geometry = (char*) nptr->name;
-    int x, y, w, h;
+    int x = 0, y = 0;
+    unsigned int w = 0, h = 0;
+
+    XParseGeometry (geometry, &x, &y, &w, &h);
 
     if ((x < 0) || (y < 0) || (w > scr->rootw) || (h > scr->rooth)) {
       twmrc_error_prefix ();
