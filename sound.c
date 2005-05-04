@@ -85,6 +85,9 @@ static int startup_sound = NEVENTS -2;
 static int exit_sound = NEVENTS -1;
 static char hostname[200];
 
+/*
+ * Function to trim away spaces at the start and end of a string
+ */
 static char *
 trim_spaces(char *str)
 {
@@ -93,8 +96,6 @@ trim_spaces(char *str)
 	while(*str != '\0' && *str != '\r' && *str != '\n' && isspace(*str))
 	    str++;
 	/* Assume all line end characters are at the end */
-	while(p > str && (p[-1] == '\r' || p[-1] == '\n'))
-	    p--;
 	while(p > str && isspace(p[-1]))
 	    p--;
 	*p = '\0';
