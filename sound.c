@@ -132,7 +132,7 @@ sound_init ()
 	    continue;
         for (i = 0; i < NEVENTS; i++) {
 	    if (strcmp (token, eventNames[i]) == 0) {
-	        token = strtok (NULL, " \t\r\n");
+	        token = strtok (NULL, "\r\n");
 	        if (token == NULL || *token == '#' || isspace (*token))
 		    continue;
 	        rp[i] = rplay_create (RPLAY_PLAY);
