@@ -104,7 +104,9 @@ extern void twmrc_error_prefix(void);
  ***********************************************************************
  */
 
+#if 0
 static int is_pattern (char *p);
+#endif
 
 void AddToList(name_list **list_head, char *name, char *ptr)
 {
@@ -321,6 +323,7 @@ int match (pattern, string)
 int regex_match (char *p, char *t);
 int regex_match_after_star (char *p, char *t);
 
+#if 0
 static int is_pattern (char *p)
 {
     while ( *p ) {
@@ -335,6 +338,7 @@ static int is_pattern (char *p)
     }
     return FALSE;
 }
+#endif
 
 #define ABORT 2
 

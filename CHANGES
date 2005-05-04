@@ -1437,3 +1437,13 @@ VirtualScreens {
 	Added the target "rpm" to build an RPM directly from a distribution
 	tarball.
 	[Richard Levitte]
+
+
+    Changes from version 3.7 to 3.8
+    -------------------------------
+
+    1 - Global cleanup
+
+	There were some variables shadowing others, things not being
+	safely initialized, that sort of thing.
+	[Richard Levitte]
