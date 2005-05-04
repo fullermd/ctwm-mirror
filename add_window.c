@@ -106,8 +106,8 @@ static unsigned char black_bits[] = {
 
 int AddingX;
 int AddingY;
-int AddingW;
-int AddingH;
+unsigned int AddingW;
+unsigned int AddingH;
 
 static int PlaceX = 50;
 static int PlaceY = 50;
@@ -274,7 +274,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     XSelectInput(dpy, tmp_win->w, PropertyChangeMask);
     XGetWindowAttributes(dpy, tmp_win->w, &tmp_win->attr);
 #ifndef NO_LOCALE
-    tmp_win->name = GetWMPropertyString(tmp_win->w, XA_WM_NAME);
+    tmp_win->name = (char*) GetWMPropertyString(tmp_win->w, XA_WM_NAME);
 #else /* NO_LOCALE */
     XFetchName(dpy, tmp_win->w, &tmp_win->name);
 #endif /* NO_LOCALE */
@@ -1094,7 +1094,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     tmp_win->title_width = tmp_win->attr.width;
 
 #ifndef NO_LOCALE
-    tmp_win->icon_name = GetWMPropertyString(tmp_win->w, XA_WM_ICON_NAME);
+    tmp_win->icon_name = (char*) GetWMPropertyString(tmp_win->w, XA_WM_ICON_NAME);
 #else /* NO_LOCALE */
     if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
 			    XA_STRING, &actual_type, &actual_format, &nitems,
@@ -1217,8 +1217,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     if ((tmp_win->frame_x > Scr->rootw) ||
 	(tmp_win->frame_y > Scr->rooth) ||
-	(tmp_win->frame_x + tmp_win->frame_width  < 0) ||
-	(tmp_win->frame_y + tmp_win->frame_height < 0)) {
+	((int)(tmp_win->frame_x + tmp_win->frame_width)  < 0) ||
+	((int)(tmp_win->frame_y + tmp_win->frame_height) < 0)) {
       tmp_win->frame_x = 0;
       tmp_win->frame_y = 0;
     }
@@ -1820,7 +1820,8 @@ static void CreateLowlightWindows (TwmWindow *tmp_win)
 }
 
 
-void ComputeWindowTitleOffsets (TwmWindow *tmp_win, int width, Bool squeeze)
+void ComputeWindowTitleOffsets (TwmWindow *tmp_win, unsigned int width,
+				Bool squeeze)
 {
     int titlew = width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff;
 

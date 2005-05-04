@@ -91,7 +91,7 @@ static void DisplayWin			(virtualScreen *vs,
 static void CreateWorkSpaceManagerWindow (virtualScreen *vs);
 static void CreateOccupyWindow		(void);
 static unsigned int GetMaskFromResource	(TwmWindow *win, char *res);
-static   int GetPropertyFromMask	(unsigned int mask, char *prop,
+static int GetPropertyFromMask		(unsigned int mask, char *prop,
 					 int *gwkspc);
 static void PaintWorkSpaceManagerBorder	(virtualScreen *vs);
 static void PaintButton			(int which,
@@ -1261,7 +1261,8 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	if (tmp_win->icon_on) {
 	  if (tmp_win->icon && tmp_win->icon->w) {
 	    if (vs != tmp_win->oldvs) {
-		int x, y, junk;
+		int x, y;
+		unsigned int junk;
 		Window junkW, w = tmp_win->icon->w;
 		XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
 		XReparentWindow (dpy, w, vs->window, x, y);
@@ -1507,7 +1508,7 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 {
     int		  mask;
     int		  lines, vspace, hspace, count, columns;
-    int		  width, height, bwidth, bheight, wwidth, wheight;
+    unsigned int  width, height, bwidth, bheight, wwidth, wheight;
     char	  *name, *icon_name, *geometry;
     int		  i, j;
     ColorPair	  cp;
@@ -2162,7 +2163,7 @@ static unsigned int GetMaskFromResource (TwmWindow *win, char *res)
 				   in case... */
 }
 
-unsigned int GetMaskFromProperty (char *prop, unsigned long len)
+unsigned int GetMaskFromProperty (unsigned char *prop, unsigned long len)
 {
     char         wrkSpcName [256];
     WorkSpace    *ws;
@@ -2172,9 +2173,9 @@ unsigned int GetMaskFromProperty (char *prop, unsigned long len)
     mask = 0;
     l = 0;
     while (l < len) {
-	strcpy (wrkSpcName, prop);
-	l    += strlen (prop) + 1;
-	prop += strlen (prop) + 1;
+	strcpy (wrkSpcName, (char *)prop);
+	l    += strlen ((char *)prop) + 1;
+	prop += strlen ((char *)prop) + 1;
 	if (strcmp (wrkSpcName, "all") == 0) {
 	    mask = fullOccupation;
 	    break;

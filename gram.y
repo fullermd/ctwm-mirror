@@ -120,7 +120,7 @@ extern int yylex(void);
 %union
 {
     int num;
-    unsigned char *ptr;
+    char *ptr;
 };
 
 
@@ -976,9 +976,9 @@ button		: BUTTON number		{ $$ = $2;
 		;
 
 string		: STRING		{ ptr = (char *)malloc(strlen((char*)$1)+1);
-					  strcpy((char*)ptr, (char*)$1);
+					  strcpy(ptr, $1);
 					  RemoveDQuote(ptr);
-					  $$ = (unsigned char*)ptr;
+					  $$ = ptr;
 					}
 		;
 

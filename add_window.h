@@ -90,12 +90,8 @@ extern void RemoveWindowFromRegion (TwmWindow	*tmp_win);
 extern name_list **AddWindowRegion (char *geom, int  grav1, int grav2);
 extern int AddingX;	
 extern int AddingY;
-extern int AddingW;
-extern int AddingH;
-
-#ifndef NO_LOCALE
-extern char *GetWMPropertyString(Window w, Atom prop);
-#endif /* NO_LOCALE */
+extern unsigned int AddingW;
+extern unsigned int AddingH;
 
 extern void SetHighlightPixmap (char *filename);
 extern int FetchWmColormapWindows (TwmWindow *tmp);

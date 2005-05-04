@@ -79,7 +79,8 @@ extern void SetupWindow(TwmWindow *tmp_win,
 extern void SetupFrame(TwmWindow *tmp_win,
 		       int x, int y, int w, int h, int bw,
 		       Bool sendEvent);
-extern void ConstrainSize (TwmWindow *tmp_win, int *widthp, int *heightp);
+extern void ConstrainSize (TwmWindow *tmp_win, unsigned
+			   int *widthp, unsigned int *heightp);
 
 extern void fullzoom(TwmWindow *tmp_win, int flag);
 extern void savegeometry (TwmWindow *tmp_win);

@@ -1480,9 +1480,9 @@ int do_string_keyword (int keyword, char *s)
 	    fprintf (stderr, "bad MaxWindowSize \"%s\"\n", s);
 	    return 0;
 	}
-	if (JunkWidth <= 0 || JunkHeight <= 0) {
+	if (JunkWidth == 0 || JunkHeight == 0) {
 	    twmrc_error_prefix();
-	    fprintf (stderr, "MaxWindowSize \"%s\" must be positive\n", s);
+	    fprintf (stderr, "MaxWindowSize \"%s\" must be non-zero\n", s);
 	    return 0;
 	}
 	Scr->MaxWindowWidth = JunkWidth;

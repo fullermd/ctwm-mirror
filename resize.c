@@ -82,8 +82,8 @@
 
 static int dragx;       /* all these variables are used */
 static int dragy;       /* in resize operations */
-static int dragWidth;
-static int dragHeight;
+static unsigned int dragWidth;
+static unsigned int dragHeight;
 
 static int origx;
 static int origy;
@@ -292,7 +292,7 @@ void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win)
 
     if (clampTop) {
         int         delta = y_root - dragy;
-        if (dragHeight - delta < MINHEIGHT) {
+        if ((int)(dragHeight - delta) < MINHEIGHT) {
             delta = dragHeight - MINHEIGHT;
             clampTop = 0;
         }
@@ -314,7 +314,7 @@ void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win)
     }
     if (clampLeft) {
         int         delta = x_root - dragx;
-        if (dragWidth - delta < MINWIDTH) {
+        if ((int)(dragWidth - delta) < MINWIDTH) {
             delta = dragWidth - MINWIDTH;
             clampLeft = 0;
         }
@@ -336,7 +336,7 @@ void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win)
     }
     if (clampBottom) {
         int         delta = y_root - dragy - dragHeight;
-        if (dragHeight + delta < MINHEIGHT) {
+        if ((int)(dragHeight + delta) < MINHEIGHT) {
             delta = MINHEIGHT - dragHeight;
             clampBottom = 0;
         }
@@ -355,7 +355,7 @@ void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win)
     }
     if (clampRight) {
         int         delta = x_root - dragx - dragWidth;
-        if (dragWidth + delta < MINWIDTH) {
+        if ((int)(dragWidth + delta) < MINWIDTH) {
             delta = MINWIDTH - dragWidth;
             clampRight = 0;
         }
@@ -426,7 +426,7 @@ void DoResize(int x_root, int y_root, TwmWindow *tmp_win)
 
     if (clampTop) {
         int         delta = y_root - dragy;
-        if (dragHeight - delta < MINHEIGHT) {
+        if ((int)(dragHeight - delta) < MINHEIGHT) {
             delta = dragHeight - MINHEIGHT;
             clampTop = 0;
         }
@@ -448,7 +448,7 @@ void DoResize(int x_root, int y_root, TwmWindow *tmp_win)
     }
     if (clampLeft) {
         int         delta = x_root - dragx;
-        if (dragWidth - delta < MINWIDTH) {
+        if ((int)(dragWidth - delta) < MINWIDTH) {
             delta = dragWidth - MINWIDTH;
             clampLeft = 0;
         }
@@ -470,7 +470,7 @@ void DoResize(int x_root, int y_root, TwmWindow *tmp_win)
     }
     if (clampBottom) {
         int         delta = y_root - dragy - dragHeight;
-        if (dragHeight + delta < MINHEIGHT) {
+        if ((int)(dragHeight + delta) < MINHEIGHT) {
             delta = MINHEIGHT - dragHeight;
             clampBottom = 0;
         }
@@ -491,7 +491,7 @@ void DoResize(int x_root, int y_root, TwmWindow *tmp_win)
     }
     if (clampRight) {
         int         delta = x_root - dragx - dragWidth;
-        if (dragWidth + delta < MINWIDTH) {
+        if ((int)(dragWidth + delta) < MINWIDTH) {
             delta = MINWIDTH - dragWidth;
             clampRight = 0;
         }
@@ -706,7 +706,8 @@ void AddEndResize(TwmWindow *tmp_win)
  * 
  ***********************************************************************/
 
-void ConstrainSize (TwmWindow *tmp_win, int *widthp, int *heightp)
+void ConstrainSize (TwmWindow *tmp_win,
+		    unsigned int *widthp, unsigned int *heightp)
 {
 #define makemult(a,b) ((b==1) ? (a) : (((int)((a)/(b))) * (b)) )
 #define _min(a,b) (((a) < (b)) ? (a) : (b))
@@ -1222,10 +1223,11 @@ void savegeometry (TwmWindow *tmp_win)
 
 void restoregeometry (TwmWindow *tmp_win)
 {
-    int x, y, w, h;
+    int x, y;
+    unsigned int w, h;
 
     if (!tmp_win) return;
-    if (tmp_win->savegeometry.width == -1) return;
+    if (tmp_win->savegeometry.width == (unsigned int)-1) return;
     x = tmp_win->savegeometry.x;
     y = tmp_win->savegeometry.y;
     w = tmp_win->savegeometry.width;

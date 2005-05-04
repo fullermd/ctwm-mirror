@@ -1817,12 +1817,6 @@ static Bool belongs_to_twm_window (register TwmWindow *t, register Window w)
  ***********************************************************************
  */
 
-
-extern int AddingX;
-extern int AddingY;
-extern int AddingW;
-extern int AddingH;
-
 void resizeFromCenter(Window w, TwmWindow *tmp_win)
 {
   int lastx, lasty, width, height, bw2;
@@ -2236,7 +2230,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	break;
 
     case F_INITSIZE: {
-	int grav, x, y, w, h, sw, sh;
+	int grav, x, y;
+	unsigned int w, h, sw, sh;
 
 	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
 	grav = ((tmp_win->hints.flags & PWinGravity) 
@@ -3740,7 +3735,7 @@ void PlaceTransients (TwmWindow *tmp_win, int where)
 		    xwc.sibling = tmp_win->frame;
 		    XConfigureWindow(dpy, t->frame, CWSibling | CWStackMode, &xwc);
 		    if (lowerontop == t->frame) {
-			lowerontop = -1;
+			lowerontop = (Window)-1;
 		    }
 		}
 	    }
@@ -3756,13 +3751,13 @@ void PlaceOntop (int ontop, int where)
     XWindowChanges xwc;
     xwc.stack_mode = where;
 
-    lowerontop = -1;
+    lowerontop = (Window)-1;
 
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 	if (t->ontoppriority > ontop) {
 	    XConfigureWindow(dpy, t->frame, CWStackMode, &xwc);
 	    PlaceTransients(t, Above);
-	    if (lowerontop == -1) {
+	    if (lowerontop == (Window)-1) {
 		lowerontop = t->frame;
 	    }
 	}
@@ -3782,17 +3777,17 @@ void RaiseWindow (TwmWindow *tmp_win)
 
     if (tmp_win->ontoppriority == ONTOP_MAX) {
 	XRaiseWindow(dpy, tmp_win->frame);
-	if (lowerontop == -1) {
+	if (lowerontop == (Window)-1) {
 	    lowerontop = tmp_win->frame;
 	} else if (lowerontop == tmp_win->frame) {
-	    lowerontop = -1;
+	    lowerontop = (Window)-1;
 	}
     } else {
-	if (lowerontop == -1) {
+	if (lowerontop == (Window)-1) {
 	    PlaceOntop(tmp_win->ontoppriority, Above);
 	}
 	xwcm = CWStackMode;
-	if (lowerontop != -1) {
+	if (lowerontop != (Window)-1) {
 	    xwc.stack_mode = Below;
 	    xwc.sibling = lowerontop;
 	    xwcm |= CWSibling;
@@ -3810,7 +3805,7 @@ void RaiseLower (TwmWindow *tmp_win)
 
     PlaceOntop(tmp_win->ontoppriority, Below);
     PlaceTransients(tmp_win, Below);
-    lowerontop = -1;
+    lowerontop = (Window)-1;
     xwc.stack_mode = Opposite;
     XConfigureWindow(dpy, tmp_win->frame, CWStackMode, &xwc);
     PlaceOntop(tmp_win->ontoppriority, Above);
@@ -3822,7 +3817,7 @@ void RaiseLowerFrame (Window frame, int ontop)
     XWindowChanges xwc;
 
     PlaceOntop(ontop, Below);
-    lowerontop = -1;
+    lowerontop = (Window)-1;
     xwc.stack_mode = Opposite;
     XConfigureWindow(dpy, frame, CWStackMode, &xwc);
     PlaceOntop(ontop, Above);
@@ -3832,7 +3827,7 @@ void LowerWindow (TwmWindow *tmp_win)
 {
     XLowerWindow(dpy, tmp_win->frame);
     if (tmp_win->frame == lowerontop) {
-	lowerontop = -1;
+	lowerontop = (Window)-1;
     }
     PlaceTransients(tmp_win, Above);
 }
@@ -4871,7 +4866,7 @@ void FadeWindow (TwmWindow *tmp_win, Window blanket)
   int w = tmp_win->frame_width;
   int h = tmp_win->frame_height;
 
-  stipple = XCreateBitmapFromData (dpy, blanket, stipple_bits, 8, 8);
+  stipple = XCreateBitmapFromData (dpy, blanket, (char *)stipple_bits, 8, 8);
   mask    = XCreatePixmap (dpy, blanket, w, h, 1);
   gcv.background = 0;
   gcv.foreground = 1;
@@ -4980,7 +4975,8 @@ void packwindow (TwmWindow *tmp_win, char *direction)
 
 void fillwindow (TwmWindow *tmp_win, char *direction)
 {
-    int	cons, newx, newy, neww, newh, save;
+    int	cons, newx, newy, save;
+    unsigned int neww, newh;
     int	i;
     int	winx = tmp_win->frame_x;
     int	winy = tmp_win->frame_y;

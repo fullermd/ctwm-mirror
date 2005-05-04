@@ -178,7 +178,8 @@ static int CatchRedirectError(Display *display, XErrorEvent *event);
 /* for everything else */
 static int TwmErrorHandler(Display *display, XErrorEvent *event);
 char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
-int InfoLines,InfoWidth,InfoHeight;
+int InfoLines;
+unsigned int InfoWidth,InfoHeight;
 char *InitFile = NULL;
 static Window CreateRootWindow (int x, int y,
 				unsigned int width, unsigned int height);

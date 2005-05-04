@@ -101,7 +101,7 @@ void GetShadeColors (ColorPair *cp);
 void GetFont(MyFont *font);
 void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus);
 void SetFocus (TwmWindow *tmp_win, Time time);
-Pixmap CreateMenuIcon(int height, int *widthp, int *heightp);
+Pixmap CreateMenuIcon(int height, unsigned int *widthp, unsigned int *heightp);
 Pixmap Create3DMenuIcon (unsigned int height,
 			 unsigned int *widthp, unsigned int *heightp,
 			 ColorPair cp);
@@ -140,6 +140,9 @@ struct _Image {
 
 extern Image *GetImage (char *name, ColorPair cp);
 
+#ifndef NO_LOCALE
+extern unsigned char *GetWMPropertyString(Window w, Atom prop);
+#endif /* NO_LOCALE */
 extern void ConstrainByBorders1 (int *left, int width, int *top, int height);
 extern void ConstrainByBorders (TwmWindow *twmwin,
 				int *left, int width,

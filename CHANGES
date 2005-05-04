@@ -1389,3 +1389,12 @@ VirtualScreens {
 	now on, CtwmNextEvent() is always used to get the next event, even
 	when no animations are going on.
 	[Richard Levitte]
+
+   41 - A number of VMS-related changes
+
+	DEC/HP PC is a bit picky, the X11 environment is a little bit
+	different, and there were some sign/unsigned conflicts and one
+	too large symbol (the VMS linker truncates anything beyond the
+	31 first characters of any symbol name), so some tweaks were
+	needed to get CTWM to build cleanly on VMS.
+	[Richard Levitte]

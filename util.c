@@ -184,7 +184,8 @@ static Image *GetXpmImage     (char  *name, ColorPair cp);
 static void   xpmErrorMessage (int status, char *name, char *fullname);
 #endif
 #ifdef IMCONV
-static Image *GetImconvImage  (char *filename, int *width, int *height);
+static Image *GetImconvImage  (char *filename,
+			       unsigned int *widthp, unsigned int *heightp);
 #endif
 static Pixmap CreateXLogoPixmap(unsigned int *widthp, unsigned int *heightp);
 static Pixmap CreateResizePixmap(unsigned int *widthp, unsigned int *heightp);
@@ -2462,7 +2463,7 @@ static Pixmap CreateMenuPixmap (unsigned int *widthp, unsigned int *heightp)
     return (CreateMenuIcon (Scr->TBInfo.width - Scr->TBInfo.border * 2,widthp,heightp));
 }
 
-Pixmap CreateMenuIcon (int height, int *widthp, int *heightp)
+Pixmap CreateMenuIcon (int height, unsigned int *widthp, unsigned int *heightp)
 {
     int h, w;
     int ih, iw;
@@ -3276,9 +3277,10 @@ Image *GetImage (char *name, ColorPair cp)
     }
     else
     if (name [0] == ':') {
-	int       i, width, height;
-	Pixmap    pm;
-	XGCValues gcvalues;
+	int		i;
+	unsigned int	width, height;
+	Pixmap		pm;
+	XGCValues	gcvalues;
 	static struct {
 	    char *name;
 	    Pixmap (*proc)(unsigned int *widthp, unsigned int *heightp);
@@ -3636,7 +3638,8 @@ static void compress (XImage *image, XColor *colors, int *ncolors)
 
 static void free_images  ();
 
-static Image *GetImconvImage (char *filename, int *width, int *height)
+static Image *GetImconvImage (char *filename,
+			      unsigned int *widthp, unsigned int *heightp)
 {
     TagTable		*toolInTable;
     ImVfb		*sourceVfb;
@@ -3900,13 +3903,13 @@ void _swaplong (register char *bp, register unsigned n)
  ***********************************************************************
  */
 
-char *GetWMPropertyString(Window w, Atom prop)
+unsigned char *GetWMPropertyString(Window w, Atom prop)
 {
     XTextProperty	text_prop;
     char 		**text_list;
     int 		text_list_count;
     Atom 		XA_COMPOUND_TEXT = XInternAtom(dpy, "COMPOUND_TEXT", False);
-    char		*stringptr;
+    unsigned char	*stringptr;
     int			status, len = -1;
 
     (void)XGetTextProperty(dpy, w, &text_prop, prop);
@@ -3914,8 +3917,8 @@ char *GetWMPropertyString(Window w, Atom prop)
 	if (text_prop.encoding == XA_STRING) {
 	    /* property is encoded as string */
 	    /*stringptr = strcpy((char*)malloc(text_prop.nitems+1), (char*)text_prop.value);*/
-	    stringptr = strncpy((char*)malloc(text_prop.nitems+1),
-				(char*)text_prop.value, text_prop.nitems);
+	    stringptr = memcpy(malloc(text_prop.nitems+1),
+			       text_prop.value, text_prop.nitems);
 	    stringptr [text_prop.nitems] = '\0';
 	} else if (text_prop.encoding == XA_COMPOUND_TEXT) {
 	    /* property is encoded as compound text - convert to locale string */
@@ -3953,7 +3956,7 @@ char *GetWMPropertyString(Window w, Atom prop)
 		*/
 	    } else {
 		len = strlen(text_list[0]);
-		stringptr = strcpy(malloc(len+1), text_list[0]);
+		stringptr = memcpy(malloc(len+1), text_list[0], len+1);
 		XFreeStringList(text_list);
 	    }
 	} else {

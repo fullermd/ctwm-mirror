@@ -1406,7 +1406,7 @@ void free_cwins (TwmWindow *tmp)
 
 void HandlePropertyNotify(void)
 {
-    char *prop = NULL;
+    unsigned char *prop = NULL;
     Atom actual = None;
     int actual_format;
     unsigned long nitems, bytesafter;
@@ -1431,9 +1431,9 @@ void HandlePropertyNotify(void)
 		case PropertyNewValue:
 		    if (XGetWindowProperty (dpy, Scr->Root, _XA_WM_CURRENTWORKSPACE,
 				0L, 200L, False, XA_STRING, &actual, &actual_format,
-				&nitems, &bytesafter, (unsigned char **) &prop) == Success) {
+				&nitems, &bytesafter, &prop) == Success) {
 			if (nitems == 0) return;
-			GotoWorkSpaceByName (Scr->vScreenList, prop);
+			GotoWorkSpaceByName (Scr->vScreenList, (char*)prop);
 			XFree ((char*) prop);
 		    }
 		    return;
@@ -1471,7 +1471,7 @@ void HandlePropertyNotify(void)
 	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L, 
 				MAX_NAME_LEN, False, XA_STRING, &actual,
 				&actual_format, &nitems, &bytesafter,
-				(unsigned char **) &prop) != Success ||
+				&prop) != Success ||
 	    actual == None)
 	  return;
 	if (!prop) prop = NoName;
@@ -1484,8 +1484,8 @@ void HandlePropertyNotify(void)
 #endif
 	free_window_names (Tmp_win, True, True, False);
 
-	Tmp_win->full_name = prop;
-	Tmp_win->name = prop;
+	Tmp_win->full_name = (char*) prop;
+	Tmp_win->name = (char*) prop;
 #ifdef X11R6
 	Tmp_win->nameChanged = 1;
 #endif
@@ -1556,7 +1556,7 @@ void HandlePropertyNotify(void)
 	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0, 
 				MAX_ICON_NAME_LEN, False, XA_STRING, &actual,
 				&actual_format, &nitems, &bytesafter,
-				(unsigned char **) &prop) != Success ||
+				&prop) != Success ||
 	    actual == None)
 	  return;
 	if (!prop) prop = NoName;
@@ -1567,9 +1567,9 @@ void HandlePropertyNotify(void)
 	  *moz = '\0';
 	}
 #endif
-	icon_change = strcmp (Tmp_win->icon_name, prop);
+	icon_change = strcmp (Tmp_win->icon_name, (char*) prop);
 	free_window_names (Tmp_win, False, False, True);
-	Tmp_win->icon_name = prop;
+	Tmp_win->icon_name = (char*) prop;
 
 	if (icon_change) {
 	    RedoIcon();
@@ -1745,7 +1745,7 @@ void HandlePropertyNotify(void)
 	} else if (Event.xproperty.atom == _XA_WM_OCCUPATION) {
 	  if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L, MAX_NAME_LEN, False,
 				  XA_STRING, &actual, &actual_format, &nitems,
-				  &bytesafter, (unsigned char **) &prop) != Success ||
+				  &bytesafter, &prop) != Success ||
 	      actual == None) return;
 	  ChangeOccupation (Tmp_win, GetMaskFromProperty (prop, nitems));
 	}

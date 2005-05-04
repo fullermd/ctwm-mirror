@@ -117,10 +117,9 @@ number				[0-9]+
 "!"				{ yylval.num = F_EXEC; return FSKEYWORD; }
 "^"				{ yylval.num = F_CUT; return FSKEYWORD; }
 
-{string}			{ yylval.ptr = (unsigned char *)yytext; return STRING; }
-{number}			{ (void)sscanf((char *)yytext, "%d", &yylval.num);
-				  return (NUMBER);
-				}
+{string}			{ yylval.ptr = yytext; return STRING; }
+{number}			{ (void)sscanf(yytext, "%d", &yylval.num);
+				  return NUMBER; }
 \#[^\n]*\n			{;}
 [\n\t ]				{;}
 .				{

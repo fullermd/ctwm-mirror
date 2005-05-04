@@ -327,23 +327,23 @@ struct TwmWindow
     name_list *iconslist;	/* the current list of icons */
     int frame_x;		/* x position of frame */
     int frame_y;		/* y position of frame */
-    int frame_width;		/* width of frame */
-    int frame_height;		/* height of frame */
+    unsigned int frame_width;	/* width of frame */
+    unsigned int frame_height;	/* height of frame */
     int frame_bw;		/* borderwidth of frame */
     int frame_bw3D;		/* 3D borderwidth of frame */
     int actual_frame_x;		/* save frame_y of frame when squeezed */
     int actual_frame_y;		/* save frame_x of frame when squeezed */
-    int actual_frame_width;	/* save width of frame when squeezed */
-    int actual_frame_height;	/* save height of frame when squeezed */
+    unsigned int actual_frame_width;  /* save width of frame when squeezed */
+    unsigned int actual_frame_height; /* save height of frame when squeezed */
     int title_x;
     int title_y;
-    int title_height;		/* height of the title bar */
-    int title_width;		/* width of the title bar */
+    unsigned int title_height;	/* height of the title bar */
+    unsigned int title_width;	/* width of the title bar */
     char *full_name;		/* full name of the window */
     char *name;			/* name of the window */
     char *icon_name;            /* name of the icon */
     int name_x;			/* start x of name text */
-    int name_width;		/* width of name text */
+    unsigned int name_width;	/* width of name text */
     int highlightxl;		/* start of left highlight window */
     int highlightxr;		/* start of right highlight window */
     int rightx;			/* start of right buttons */
@@ -381,8 +381,8 @@ struct TwmWindow
     struct IconMgr *iconmgrp;	/* pointer to it if this is an icon manager */
     int save_frame_x;		/* x position of frame */
     int save_frame_y;		/* y position of frame */
-    int save_frame_width;	/* width of frame */
-    int save_frame_height;	/* height of frame */
+    unsigned int save_frame_width;  /* width of frame */
+    unsigned int save_frame_height; /* height of frame */
     short zoomed;		/* is the window zoomed? */
     short wShaped;		/* this window has a bounding shape */
     unsigned long protocols;	/* which protocols this window handles */
@@ -411,7 +411,7 @@ struct TwmWindow
     Bool iswinbox;
     struct {
 	int x, y;
-	int width, height;
+	unsigned int width, height;
     } savegeometry;
     struct virtualScreen *vs;
     struct virtualScreen *oldvs;
@@ -498,7 +498,8 @@ extern void free();
 extern void Reborder(Time time);
 extern SIGNAL_T Done(int signum);
 void ComputeCommonTitleOffsets(void);
-void ComputeWindowTitleOffsets(TwmWindow *tmp_win, int width, Bool squeeze);
+void ComputeWindowTitleOffsets(TwmWindow *tmp_win, unsigned int width,
+			       Bool squeeze);
 void ComputeTitleLocation(register TwmWindow *tmp);
 void CreateFonts(void);
 void RestoreWithdrawnLocation (TwmWindow *tmp);
@@ -538,7 +539,8 @@ extern int JunkX;
 extern int JunkY;
 extern unsigned int JunkWidth, JunkHeight, JunkBW, JunkDepth, JunkMask;
 extern XGCValues Gcv;
-extern int InfoLines,InfoWidth,InfoHeight;
+extern int InfoLines;
+extern unsigned int InfoWidth,InfoHeight;
 extern char Info[][INFO_SIZE];
 extern int Argc;
 extern char **Argv;
