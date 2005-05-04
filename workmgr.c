@@ -1989,13 +1989,8 @@ static void PaintButton (int which,
     int        strWid, strHei, hspace, vspace;
 #ifdef I18N
     XFontSetExtents *font_extents;
-    XFontStruct **xfonts;
-    char **font_names;
-    register int i;
-    int descent;
     XRectangle inc_rect;
     XRectangle logical_rect;
-    int fnum;
 #endif
     
     occwin = Scr->workSpaceMgr.occupyWindow;
