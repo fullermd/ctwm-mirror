@@ -25,7 +25,7 @@ GOAL=
 
 #------------------------- End of customization -----------------------------
 
-MORE_CFLAGS = /DEBUG/DEFINE=(VMS,XPM,X11R6,C_ALLOCA,""emacs"",BLOCK_INPUT,EXIT_ENDSESSION=$(EXIT_ENDSESSION)''extra_defs')
+MORE_CFLAGS = /DEBUG/DEFINE=(VMS,XPM,X11R6,USE_SESSION,I18N,FUNCPROTO=14,C_ALLOCA,""emacs"",BLOCK_INPUT,EXIT_ENDSESSION=$(EXIT_ENDSESSION)''extra_defs')
 
 LD = link
 #LDFLAGS = /DEBUG
@@ -48,6 +48,7 @@ all : setup
 	@ ! We define the MMS/MMK macros as symbols, or we might get problems
 	@ ! we too long DCL lines...		(suggested by Michael Lemke.)
 	X11XMU:=$(X11XMU)
+	X11SM:=$(X11SM)
 	XPMLIB:=$(XPMLIB)
 	CFLAGS=all_cflags
 	LD="$(LD)"
