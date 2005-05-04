@@ -39,4 +39,6 @@ XCOMM define this.
 
 XCOMM If you use gcc, and want to build with as much paranoia as possible,
 XCOMM define this.
+XCOMM Quite honestly, I would recommend for you not to use it for now.
+XCOMM You'll just start running and screaming :-).	-- Richard Levitte
 #undef  GCC_PEDANTIC
