@@ -1409,8 +1409,6 @@ Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
     TwmWindow *tmp_win2,*tmp_win3;
     int i;
     int xl, yt;
-    int (*compar)(const char *s1, const char *s2) =
-	(Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
     Bool clipped;
 #ifdef CLAUDE
     char tmpname3 [256], tmpname4 [256];
@@ -1493,7 +1491,6 @@ Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
             tmp_win != NULL;
             tmp_win = tmp_win->next)
         {
-	    char *tmpname1, *tmpname2;
 	    if (LookInList (Scr->IconMenuDontShow, tmp_win->full_name, &tmp_win->class)) continue;
 
 	    if (tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win) continue;
@@ -1508,6 +1505,8 @@ Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
             tmp_win2 = tmp_win;
 
             for (i = 0; i < WindowNameCount; i++) {
+		int compresult;
+		char *tmpname1, *tmpname2;
 		tmpname1 = tmp_win2->name;
 		tmpname2 = WindowNames[i]->name;
 #ifdef CLAUDE
@@ -1528,10 +1527,14 @@ Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
 		} else {
 		  strcpy (tmpname4, tmpname2);
 		}
-                if ((*compar)(tmpname3,tmpname4) < 0) {
-#else
-                if ((*compar)(tmpname1,tmpname2) < 0) {
+		tmpname1 = tmpname3;
+		tmpname2 = tmpname4;
 #endif
+		if (Scr->CaseSensitive)
+		    compresult = strcmp(tmpname1,tmpname2);
+		else
+		    compresult = XmuCompareISOLatin1(tmpname1,tmpname2);
+                if (compresult < 0) {
                     tmp_win3 = tmp_win2;
                     tmp_win2 = WindowNames[i];
                     WindowNames[i] = tmp_win3;
