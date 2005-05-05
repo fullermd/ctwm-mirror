@@ -257,6 +257,6 @@ do_rpm:
 $(OBJS): Makefile
 
 #define IHaveSpecialMakefileTarget
-Makefile: Imakefile
+Makefile: Imakefile Imakefile.local
 	echo "You need to run 'xmkmf'"
 	exit 1
