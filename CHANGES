@@ -1438,6 +1438,13 @@ VirtualScreens {
 	tarball.
 	[Richard Levitte]
 
+   48 - Make life easier for package builders
+
+	Added the possibility to configure where some libraries can be found
+	through the use of USER_* make variables in Imakefile.local.  Added
+	a lot more commentary in Imakefile.local-template.
+	[Richard Levitte]
+
 
     Changes from version 3.7 to 3.8
     -------------------------------
