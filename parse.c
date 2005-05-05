@@ -90,6 +90,9 @@
 #include "gram.h"
 #include "parse.h"
 #include "version.h"
+#ifdef SOUNDS
+#  include "sound.h"
+#endif
 #ifdef VMS
 #include <decw$include/Xatom.h> 
 #else
@@ -155,10 +158,6 @@ extern char *defTwmrc[];		/* default bindings */
 
 extern int captive;
 extern char *captivename;
-
-#ifdef SOUNDS
-extern int set_sound_host();
-#endif
 
 /***********************************************************************
  *

@@ -581,7 +581,7 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
     int		found;
     fd_set	mask;
     int		fd;
-    struct timeval timeout, *tout;
+    struct timeval timeout, *tout = NULL;
 
     if (RestartFlag)
 	DoRestart(CurrentTime);
@@ -1773,15 +1773,15 @@ static void RedoIcon(void)
 	return;
     }
     icon = (Icon*) 0;
-    if (pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->icon_name)) {
+    if ((pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->icon_name))) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     else
-    if (pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->full_name)) {
+    if ((pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->full_name))) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     else
-    if (pattern = LookPatternInList (Scr->IconNames, Tmp_win->full_name, &Tmp_win->class)) {
+    if ((pattern = LookPatternInList (Scr->IconNames, Tmp_win->full_name, &Tmp_win->class))) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     if (pattern == NULL) {
@@ -2914,7 +2914,7 @@ void HandleButtonPress(void)
     Cursor cur;
     MenuRoot *mr;
     FuncButton *tmp;
-    int func;
+    int func = 0;
     Window w;
 
     GnomeProxyButtonPress = -1;

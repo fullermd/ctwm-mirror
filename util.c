@@ -1538,7 +1538,6 @@ void GetFont(MyFont *font)
     register int i;
     int ascent;
     int descent;
-    XFontStruct *xf;
     int fnum;
     char *basename2;
 
@@ -3279,7 +3278,7 @@ Image *GetImage (char *name, ColorPair cp)
     if (name [0] == ':') {
 	int		i;
 	unsigned int	width, height;
-	Pixmap		pm;
+	Pixmap		pm = 0;
 	XGCValues	gcvalues;
 	static struct {
 	    char *name;

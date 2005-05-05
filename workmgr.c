@@ -415,7 +415,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     Window		 neww;
     unsigned long	 valuemask;
     TwmWindow		 *focuswindow;
-    TwmWindow		 *last_twmWin;
+    TwmWindow		 *last_twmWin = NULL;
     virtualScreen	 *tmpvs;
 
     if (! Scr->workSpaceManagerActive) return;
@@ -1191,7 +1191,7 @@ static WorkSpace *GetWorkspace (char *wname)
 
 void AllocateOthersIconManagers (void)
 {
-    IconMgr   *p, *ip, *oldp, *oldv;
+    IconMgr   *p = NULL, *ip, *oldp, *oldv;
     WorkSpace *ws;
 
     if (! Scr->workSpaceManagerActive) return;
@@ -1989,13 +1989,8 @@ static void PaintButton (int which,
     int        strWid, strHei, hspace, vspace;
 #ifdef I18N
     XFontSetExtents *font_extents;
-    XFontStruct **xfonts;
-    char **font_names;
-    register int i;
-    int descent;
     XRectangle inc_rect;
     XRectangle logical_rect;
-    int fnum;
 #endif
     
     occwin = Scr->workSpaceMgr.occupyWindow;
@@ -2585,7 +2580,7 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
     XEvent		ev;
     Window		w, sw, parent;
     int			X0, Y0, X1, Y1, XW, YW, XSW, YSW;
-    Position		newX, newY, winX, winY;
+    Position		newX = 0, newY = 0, winX = 0, winY = 0;
     Window		junkW;
     unsigned int	junk;
     unsigned int	button;

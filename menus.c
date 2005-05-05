@@ -101,6 +101,9 @@
 #include "windowbox.h"
 #include "workmgr.h"
 #include "cursor.h"
+#ifdef SOUNDS
+#  include "sound.h"
+#endif
 #ifdef VMS
 #  include <X11Xmu/CharSet.h>
 #  include <decw$bitmaps/menu12.xbm>
@@ -129,11 +132,6 @@
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
 #define ABS(x) ((x)<0?-(x):(x))
-
-#ifdef SOUNDS
-extern int toggle_sound();
-extern int reread_sounds();
-#endif
 
 extern XEvent Event;
 
@@ -3967,7 +3965,7 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
     unsigned long eventMask;
     WList *wl;
     Window leader;
-    Window blanket;
+    Window blanket = 0;
 
     iconify = (!tmp_win->iconify_by_unmapping);
     t = (TwmWindow*) 0;
@@ -4883,7 +4881,7 @@ void FadeWindow (TwmWindow *tmp_win, Window blanket)
 
 void SweepWindow (TwmWindow *tmp_win, Window	blanket)
 {
-  float step;
+  float step = 0.0;
   int i, nsteps = 20;
   int dir = 0, dist = tmp_win->frame_x, dist1;
 

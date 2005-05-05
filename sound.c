@@ -32,6 +32,9 @@
 #include <rplay.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
+
+#include "sound.h"
 
 char *eventNames[] =
 {
@@ -106,8 +109,8 @@ trim_spaces(char *str)
 /*
  * initialize
  */
-static
-sound_init ()
+static void
+sound_init (void)
 {
     int i;
     FILE *fl;
@@ -171,8 +174,8 @@ sound_init ()
 /*
  * Play sound
  */
-play_sound (snd)
-int snd;
+void
+play_sound (int snd)
 {
     if (snd > NEVENTS) return;
     if (sound_state == 0)
@@ -187,11 +190,13 @@ int snd;
 	rplay_perror ("create");
 }
 
+void
 play_startup_sound()
 {
     play_sound(startup_sound);
 }
 
+void
 play_exit_sound()
 {
     play_sound(exit_sound);
@@ -200,6 +205,7 @@ play_exit_sound()
 /*
  * Toggle the sound on/off
  */
+void
 toggle_sound ()
 {
     sound_state ^= 1;
@@ -209,6 +215,7 @@ toggle_sound ()
 /*
  * Re-read the sounds mapping file
  */
+void
 reread_sounds ()
 {
     sound_init ();
@@ -217,8 +224,8 @@ reread_sounds ()
 /*
  * Set the SoundHost and force the sound_fd to be re-opened.
  */
-set_sound_host(host)
-char	*host;
+void
+set_sound_host(char *host)
 {
 	strcpy(hostname, host);
 	if (sound_fd != 0)
