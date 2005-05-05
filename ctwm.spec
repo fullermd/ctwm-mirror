@@ -1,11 +1,10 @@
 Summary: Ctwm is a window manager for the X Window System.
 Name: ctwm
 Version: 3.7beta5
-Release: 1
+Release: 2
 Source: http://ctwm.free.lp.se/preview/%{name}-%{version}.tar.gz
 Copyright: MIT
 Group: User Interface/X
-Packager: Richard Levitte <richard@levitte.org>
 BuildRoot: /var/tmp/%{name}-%{version}-buildroot
 URL: http://ctwm.free.lp.se/
 
