@@ -70,8 +70,8 @@ char **CtwmListWorkspaces (Display *dpy, int scrnum)
 
     if (XGetWindowProperty (dpy, RootWindow (dpy, scrnum), _XA_WM_WORKSPACESLIST, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
-			&bytesafter, &prop) != Success) return ((char**) 0);
-    if (len == 0) return ((char**) 0);
+			&bytesafter, &prop) != Success) return 0;
+    if (len == 0) return 0;
 
     count = 0;
     p = (char*)prop;
@@ -91,7 +91,7 @@ char **CtwmListWorkspaces (Display *dpy, int scrnum)
 	l += strlen (p) + 1;
 	p += strlen (p) + 1;
     }
-    ret [i] = (char*) 0;
+    ret [i] = '\0';
     return (ret);
 }
 
@@ -140,9 +140,9 @@ char **CtwmCurrentOccupation (Display *dpy, Window window)
 
     if (XGetWindowProperty (dpy, window, _XA_WM_OCCUPATION, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
-			&bytesafter, &prop) != Success) return ((char**) 0);
-    if (len == 0) return ((char**) 0);
-    
+			&bytesafter, &prop) != Success) return 0;
+    if (len == 0) return 0;
+
     count = 0;
     p = (char*)prop;
     l = 0;
@@ -161,7 +161,7 @@ char **CtwmCurrentOccupation (Display *dpy, Window window)
 	l += strlen (p) + 1;
 	p += strlen (p) + 1;
     }
-    ret [i] = (char*) 0;
+    ret [i] = '\0';
     return (ret);
 }
 
