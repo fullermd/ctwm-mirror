@@ -395,7 +395,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	tmp_win->full_name, &tmp_win->class)) ? ONTOP_MAX : ONTOP_DEFAULT;
 
     tmp_win->titlehighlight = Scr->TitleHighlight && 
-	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name, 
+	(!LookInList(Scr->NoTitleHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
 
     tmp_win->auto_raise = Scr->AutoRaiseDefault ||
@@ -412,12 +412,11 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     if (Scr->IconifyByUnmapping)
     {
 	tmp_win->iconify_by_unmapping = iconm ? FALSE :
-	    !(short)(int) LookInList(Scr->DontIconify, tmp_win->full_name,
+	    !LookInList(Scr->DontIconify, tmp_win->full_name,
 		&tmp_win->class);
     }
-    tmp_win->iconify_by_unmapping |= 
-	(short)(int) LookInList(Scr->IconifyByUn, tmp_win->full_name,
-	    &tmp_win->class);
+    tmp_win->iconify_by_unmapping = tmp_win->iconify_by_unmapping ||
+	LookInList(Scr->IconifyByUn, tmp_win->full_name, &tmp_win->class);
 
     if (LookInList (Scr->UnmapByMovingFarAway, tmp_win->full_name, &tmp_win->class))
 	tmp_win->UnmapByMovingFarAway = True;
