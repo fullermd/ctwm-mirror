@@ -100,6 +100,9 @@
 #include "session.h"
 #include "cursor.h"
 #include "windowbox.h"
+#ifdef SOUNDS
+#  include "sound.h"
+#endif
 #ifdef VMS
 #  include <stdlib.h>
 #  include <decw$include/Xproto.h>

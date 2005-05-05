@@ -126,7 +126,7 @@ extern Bool MaybeAnimate;
 extern int  AlternateKeymap;
 extern Bool AlternateContext;
 
-static void CtwmNextEvent (Display *dpy, XEvent  *event);
+static void CtwmNextEvent (Display *display, XEvent  *event);
 static void RedoIcon(void);
 static void do_key_menu (MenuRoot *menu,	/* menu to pop up */
 			 Window w);		/* invoking window or None */
@@ -557,12 +557,12 @@ void HandleEvents(void)
 extern unsigned long timefe;
 #endif
 
-static void CtwmNextEvent (Display *dpy, XEvent  *event)
+static void CtwmNextEvent (Display *display, XEvent  *event)
 {
     int animate = (AnimationActive && MaybeAnimate);
 
 #ifdef VMS
-    if (QLength (dpy) != 0) {
+    if (QLength (display) != 0) {
 	nextEvent (event);
 	return;
     }
@@ -572,7 +572,7 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
        sys$clref(timefe);
 
        if (animate && AnimationPending) Animate ();
-       if (QLength (dpy) != 0) {
+       if (QLength (display) != 0) {
 	  nextEvent (event);
 	  return;
        }
@@ -581,15 +581,15 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
     int		found;
     fd_set	mask;
     int		fd;
-    struct timeval timeout, *tout;
+    struct timeval timeout, *tout = 0;
 
     if (RestartFlag)
 	DoRestart(CurrentTime);
-    if (XEventsQueued (dpy, QueuedAfterFlush) != 0) {
+    if (XEventsQueued (display, QueuedAfterFlush) != 0) {
 	nextEvent (event);
 	return;
     }
-    fd = ConnectionNumber (dpy);
+    fd = ConnectionNumber (display);
 
 #ifdef USE_SIGNALS
     if (animate && AnimationPending) Animate ();
@@ -1015,7 +1015,6 @@ void HandleKeyPress(void)
     if (ActiveMenu != NULL) {
 	MenuItem *item;
 	int	 offset;
-	Boolean	 match;
 	char *keynam;
 	KeySym keysym;
 	int xx, yy, wx, wy;
@@ -1096,16 +1095,18 @@ void HandleKeyPress(void)
 	    modifier = set_mask_ignore (modifier);
 
 	    while (item != startitem) {
-		match  = False;
+		Boolean	 matched = False;
 		offset = 0;
 		switch (item->item [0]) {
 		    case '^' :
 			if ((modifier & ControlMask) &&
-			    (keynam [0] == tolower (item->item [1]))) match = True;
+			    (keynam [0] == tolower (item->item [1])))
+			    matched = True;
 			break;
 		    case '~' :
 			if ((modifier & Mod1Mask) &&
-			    (keynam [0] == tolower (item->item [1]))) match = True;
+			    (keynam [0] == tolower (item->item [1])))
+			    matched = True;
 			break;
 		    case ' ' :
 			offset = 1;
@@ -1117,10 +1118,10 @@ void HandleKeyPress(void)
 			     (keynam [0] == tolower (item->item [offset]))) ||
 
 			    (!(modifier & ShiftMask) && islower (item->item [offset]) &&
-			     (keynam [0] == item->item [offset]))) match = True;
+			     (keynam [0] == item->item [offset]))) matched = True;
 			break;
 		}
-		if (match) break;
+		if (matched) break;
 		item = item->next;
 		if (item == (MenuItem*) 0) item = ActiveMenu->first;
 	    }
@@ -1279,33 +1280,33 @@ void HandleKeyPress(void)
 
 		/* now try the res_name */
 		if (!matched)
-		for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
-		    Tmp_win = Tmp_win->next)
-		{
-		    if (!strncmp(key->win_name, Tmp_win->class.res_name, len))
+		    for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+			 Tmp_win = Tmp_win->next)
 		    {
-			matched = TRUE;
-			ExecuteFunction(key->func, key->action, Tmp_win->frame,
-			    Tmp_win, &Event, C_FRAME, FALSE);
-			if (!AlternateKeymap && !AlternateContext)
-			    XUngrabPointer(dpy, CurrentTime);
+			if (!strncmp(key->win_name, Tmp_win->class.res_name, len))
+			{
+			    matched = TRUE;
+			    ExecuteFunction(key->func, key->action, Tmp_win->frame,
+					    Tmp_win, &Event, C_FRAME, FALSE);
+			    if (!AlternateKeymap && !AlternateContext)
+				XUngrabPointer(dpy, CurrentTime);
+			}
 		    }
-		}
 
 		/* now try the res_class */
 		if (!matched)
-		for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
-		    Tmp_win = Tmp_win->next)
-		{
-		    if (!strncmp(key->win_name, Tmp_win->class.res_class, len))
+		    for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+			 Tmp_win = Tmp_win->next)
 		    {
-			matched = TRUE;
-			ExecuteFunction(key->func, key->action, Tmp_win->frame,
-			    Tmp_win, &Event, C_FRAME, FALSE);
-			if (!AlternateKeymap && !AlternateContext)
-			    XUngrabPointer(dpy, CurrentTime);
+			if (!strncmp(key->win_name, Tmp_win->class.res_class, len))
+			{
+			    matched = TRUE;
+			    ExecuteFunction(key->func, key->action, Tmp_win->frame,
+					    Tmp_win, &Event, C_FRAME, FALSE);
+			    if (!AlternateKeymap && !AlternateContext)
+				XUngrabPointer(dpy, CurrentTime);
+			}
 		    }
-		}
 		if (matched)
 		    return;
 	    }
@@ -1773,15 +1774,15 @@ static void RedoIcon(void)
 	return;
     }
     icon = (Icon*) 0;
-    if (pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->icon_name)) {
+    if ((pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->icon_name))) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     else
-    if (pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->full_name)) {
+    if ((pattern = LookPatternInNameList (Scr->IconNames, Tmp_win->full_name))) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     else
-    if (pattern = LookPatternInList (Scr->IconNames, Tmp_win->full_name, &Tmp_win->class)) {
+    if ((pattern = LookPatternInList (Scr->IconNames, Tmp_win->full_name, &Tmp_win->class))) {
 	icon = (Icon*) LookInNameList (Tmp_win->iconslist, pattern);
     }
     if (pattern == NULL) {
@@ -2913,8 +2914,8 @@ void HandleButtonPress(void)
     unsigned int modifier;
     Cursor cur;
     MenuRoot *mr;
-    FuncButton *tmp;
-    int func;
+    FuncButton *tmp = 0;
+    int func = 0;
     Window w;
 
     GnomeProxyButtonPress = -1;
@@ -3309,7 +3310,7 @@ typedef struct HENScanArgs {
 } HENScanArgs;
 
 /* ARGSUSED*/
-static Bool HENQueueScanner(Display *dpy, XEvent *ev, char *args)
+static Bool HENQueueScanner(Display *display, XEvent *ev, char *args)
 {
     if (ev->type == LeaveNotify) {
 	if (ev->xcrossing.window == ((HENScanArgs *) args)->w &&
@@ -3705,7 +3706,7 @@ typedef struct HLNScanArgs {
 } HLNScanArgs;
 
 /* ARGSUSED*/
-static Bool HLNQueueScanner(Display *dpy, XEvent *ev, char *args)
+static Bool HLNQueueScanner(Display *display, XEvent *ev, char *args)
 {
     if (ev->type == EnterNotify && ev->xcrossing.mode != NotifyGrab) {
 	((HLNScanArgs *) args)->enters = True;
@@ -4217,7 +4218,7 @@ void InstallRootColormap(void)
 
 
 /* ARGSUSED*/
-static Bool UninstallRootColormapQScanner(Display *dpy, XEvent *ev, char *args)
+static Bool UninstallRootColormapQScanner(Display *display, XEvent *ev, char *args)
 {
     if (!*args) {
 	if (ev->type == EnterNotify) {
