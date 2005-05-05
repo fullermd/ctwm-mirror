@@ -11,7 +11,7 @@ XCOMM
 
 #ifdef DEBUGPARSER
          YFLAGS = -d -t -v
-DEBUGPARSER_DEFS = -DYYDEBUG=1
+DEBUGPARSERDEFINES = -DYYDEBUG=1
 #else
          YFLAGS = -d
 #endif
@@ -19,29 +19,31 @@ DEBUGPARSER_DEFS = -DYYDEBUG=1
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
 
 #ifdef XPM
-      XPMLIBDIR = 
-      XPMINCDIR = 
+      XPMLIBDIR = $(USER_XPMLIBDIR)
+      XPMINCDIR = $(USER_XPMINCDIR) 
 
      XPMDEFINES = -DXPM
          XPMLIB = $(XPMLIBDIR) -lXpm
 #else
-         XPMLIB = 
       XPMLIBDIR = 
       XPMINCDIR = 
+
      XPMDEFINES = 
+         XPMLIB = 
 #endif
 
 #ifdef JPEG
-     JPEGLIBDIR = 
-     JPEGINCDIR = 
+     JPEGLIBDIR = $(USER_JPEGLIBDIR)
+     JPEGINCDIR = $(USER_JPEGINCDIR)
 
     JPEGDEFINES = -DJPEG
         JPEGLIB = $(JPEGLIBDIR) -ljpeg
 #else
-        JPEGLIB = 
      JPEGLIBDIR = 
      JPEGINCDIR = 
+
     JPEGDEFINES = 
+        JPEGLIB = 
 #endif
 
 #ifdef USE_GNU_REGEX
@@ -51,67 +53,75 @@ DEBUGPARSER_DEFS = -DYYDEBUG=1
 #endif
 
 #ifdef IMCONV
-   IMCONVLIBDIR = -L/logiciels/public/graphix/lib
-   IMCONVINCDIR = -I/logiciels/public/graphix/include
+   IMCONVLIBDIR = $(USER_IMCONVLIBDIR)
+   IMCONVINCDIR = $(USER_IMCONVINCDIR)
+
   IMCONVDEFINES = -DIMCONV
       IMCONVLIB = $(IMCONVLIBDIR) -lim -lsdsc
 #else
-      IMCONVLIB = 
    IMCONVLIBDIR = 
    IMCONVINCDIR = 
+
   IMCONVDEFINES = 
+      IMCONVLIB = 
 #endif
 
-#ifdef USEM4
+#if defined USE_M4 || defined USEM4
    M4LIBDIR =
    M4INCDIR =
+
   M4DEFINES = -DUSEM4
       M4LIB = $(M4LIBDIR)
 #else
    M4LIBDIR = 
    M4INCDIR = 
+
   M4DEFINES = 
       M4LIB = 
 #endif
 
 #ifdef GNOME
+  GNOMEDEFINES = -DGNOME
       GNOMESRC = gnome.c
       GNOMEOBJ = gnome.o
-  GNOMEDEFINES = -DGNOME
 #else
+  GNOMEDEFINES = 
       GNOMESRC = 
       GNOMEOBJ = 
-  GNOMEDEFINES = 
 #endif
 
 #ifdef USE_SOUND
-     SOUND_LIBS = -L/usr/local/lib -lrplay
- SOUND_INCLUDES = -I/usr/local/include
-     SOUND_DEFS = -DSOUNDS
+    SOUNDLIBDIR = $(USER_SOUNDLIBDIR)
+    SOUNDINCDIR = $(USER_SOUNDINCDIR)
+
+   SOUNDDEFINES = -DSOUNDS
+       SOUNDLIB = $(SOUNDLIBDIR) -lrplay
        SOUNDSRC = sound.c
        SOUNDOBJ = sound.o
 #else
-     SOUND_LIBS = 
- SOUND_INCLUDES = 
-     SOUND_DEFS =
+    SOUNDLIBDIR = 
+    SOUNDINCDIR = 
+
+   SOUNDDEFINES = 
+       SOUNDLIB = 
        SOUNDSRC = 
        SOUNDOBJ = 
 #endif
 
 #ifdef USE_SESSION
+ SESSIONDEFINES = -DX11R6
      SESSIONSRC = session.c
      SESSIONOBJ = session.o
-    SESSIONDEFS = -DX11R6
 #else
+ SESSIONDEFINES = 
      SESSIONSRC = 
      SESSIONOBJ = 
-    SESSIONDEFS = 
 #endif
 
 #ifdef I18N
-     I18N_DEFS = -DI18N
+   I18NDEFINES = -DI18N
 #else
-     I18N_DEFS =
+   I18NDEFINES =
 #endif
 
 #ifdef DEBUG
@@ -127,10 +137,10 @@ DEBUGPARSER_DEFS = -DYYDEBUG=1
 PIXMAPDIR = $(TWMDIR)/images
 CONFDIR = $(TWMDIR)
 
-LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUND_LIBS)
-        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(GNOMEDEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(JPEGDEFINES) $(SESSIONDEFS) $(SOUND_DEFS)  $(I18N_DEFS) $(DEBUGPARSER_DEFS) $(GNUREGEXDEFS)
+LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUNDLIB)
+        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(GNOMEDEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(JPEGDEFINES) $(SESSIONDEFINES) $(SOUNDDEFINES)  $(I18NDEFINES) $(DEBUGPARSERDEFINES) $(GNUREGEXDEFS)
 
- EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(JPEGINCDIR) $(SOUND_INCLUDES)
+ EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(JPEGINCDIR) $(SOUNDINCDIR)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
