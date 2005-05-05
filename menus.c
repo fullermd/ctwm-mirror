@@ -2229,7 +2229,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
     case F_INITSIZE: {
 	int grav, x, y;
-	unsigned int w, h, sw, sh;
+	unsigned int width, height, swidth, sheight;
 
 	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
 	grav = ((tmp_win->hints.flags & PWinGravity) 
@@ -2237,14 +2237,14 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 	if (!(tmp_win->hints.flags & USSize) && !(tmp_win->hints.flags & PSize)) break;
 
-	w  = tmp_win->hints.width  + 2 * tmp_win->frame_bw3D;
-	h  = tmp_win->hints.height + 2 * tmp_win->frame_bw3D + tmp_win->title_height;
-	ConstrainSize (tmp_win, &w, &h);
+	width  = tmp_win->hints.width  + 2 * tmp_win->frame_bw3D;
+	height  = tmp_win->hints.height + 2 * tmp_win->frame_bw3D + tmp_win->title_height;
+	ConstrainSize (tmp_win, &width, &height);
 
 	x  = tmp_win->frame_x;
 	y  = tmp_win->frame_y;
-	sw = tmp_win->frame_width;
-	sh = tmp_win->frame_height;
+	swidth = tmp_win->frame_width;
+	sheight = tmp_win->frame_height;
 	switch (grav) {
 	    case ForgetGravity :
 	    case StaticGravity :
@@ -2256,40 +2256,40 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 	    case NorthEastGravity :
 	    case EastGravity :
-		x += sw - w;
+		x += swidth - width;
 		break;
 
 	    case SouthWestGravity :
 	    case SouthGravity :
-		y += sh - h;
+		y += sheight - height;
 		break;
 
 	    case SouthEastGravity :
-		x += sw - w;
-		y += sh - h;
+		x += swidth - width;
+		y += sheight - height;
 		break;
 	}
-	SetupWindow (tmp_win, x, y, w, h, -1);
+	SetupWindow (tmp_win, x, y, width, height, -1);
 	break;
     }
 
     case F_MOVERESIZE: {
 	int x, y, mask;
-	unsigned int w, h;
+	unsigned int width, height;
 	int px = 20, py = 30;
 
 	if (DeferExecution (context, func, Scr->SelectCursor)) return TRUE;
-	mask = XParseGeometry (action, &x, &y, &w, &h);
-	if (!(mask &  WidthValue)) w = tmp_win->frame_width;
-	else w += 2 * tmp_win->frame_bw3D;
-	if (!(mask & HeightValue)) h = tmp_win->frame_height;
-	else h += 2 * tmp_win->frame_bw3D + tmp_win->title_height;
-	ConstrainSize (tmp_win, &w, &h);
+	mask = XParseGeometry (action, &x, &y, &width, &height);
+	if (!(mask &  WidthValue)) width = tmp_win->frame_width;
+	else width += 2 * tmp_win->frame_bw3D;
+	if (!(mask & HeightValue)) height = tmp_win->frame_height;
+	else height += 2 * tmp_win->frame_bw3D + tmp_win->title_height;
+	ConstrainSize (tmp_win, &width, &height);
 	if (mask & XValue) {
-	    if (mask & XNegative) x += Scr->rootw  - w;
+	    if (mask & XNegative) x += Scr->rootw  - width;
 	} else x = tmp_win->frame_x;
 	if (mask & YValue) {
-	    if (mask & YNegative) y += Scr->rooth - h;
+	    if (mask & YNegative) y += Scr->rooth - height;
 	} else y = tmp_win->frame_y;
 
 	{
@@ -2298,9 +2298,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    Window	 junkW;
 	    XQueryPointer (dpy, Scr->Root, &junkW, &junkW, &junkX, &junkY, &px, &py, &junkK);
 	}
-	px -= tmp_win->frame_x; if (px > w) px = w / 2;
-	py -= tmp_win->frame_y; if (py > h) px = h / 2;
-	SetupWindow (tmp_win, x, y, w, h, -1);
+	px -= tmp_win->frame_x; if (px > width) px = width / 2;
+	py -= tmp_win->frame_y; if (py > height) px = height / 2;
+	SetupWindow (tmp_win, x, y, width, height, -1);
 	XWarpPointer (dpy, Scr->Root, Scr->Root, 0, 0, 0, 0, x + px, y + py);
 	break;
     }
@@ -2853,12 +2853,12 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 		if (ConstMoveDir != MOVE_NONE)
 		{
-		    int xl, yt, w, h;
+		    int xl, yt, width, height;
 
 		    xl = ConstMoveX;
 		    yt = ConstMoveY;
-		    w = DragWidth + 2 * JunkBW;
-		    h = DragHeight + 2 * JunkBW;
+		    width = DragWidth + 2 * JunkBW;
+		    height = DragHeight + 2 * JunkBW;
 
 		    if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		        TryToGrid (tmp_win, &xl, &yt);
@@ -2871,7 +2871,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 		    if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		    {
-                        ConstrainByBorders (tmp_win, &xl, w, &yt, h);
+                        ConstrainByBorders (tmp_win, &xl, width, &yt, height);
 		    }
 		    CurrentDragX = xl;
 		    CurrentDragY = yt;
@@ -2885,14 +2885,14 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 			WMapSetupWindow (tmp_win, xl, yt, -1, -1);
 		    }
 		    else
-			MoveOutline(eventp->xmotion.root, xl, yt, w, h,
+			MoveOutline(eventp->xmotion.root, xl, yt, width, height,
 			    tmp_win->frame_bw, 
 			    moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 		}
 	    }
 	    else if (DragWindow != None)
 	    {
-		int xl, yt, w, h;
+		int xl, yt, width, height;
 		if (!menuFromFrameOrWindowOrTitlebar) {
 		  xl = eventp->xmotion.x_root - DragX - JunkBW;
 		  yt = eventp->xmotion.y_root - DragY - JunkBW;
@@ -2901,8 +2901,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		  xl = eventp->xmotion.x_root - (DragWidth / 2);
 		  yt = eventp->xmotion.y_root - (DragHeight / 2);
 		}		  
-		w = DragWidth + 2 * JunkBW;
-		h = DragHeight + 2 * JunkBW;
+		width = DragWidth + 2 * JunkBW;
+		height = DragHeight + 2 * JunkBW;
 
 		if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		    TryToGrid (tmp_win, &xl, &yt);
@@ -2915,7 +2915,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 		if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 		{
-                    ConstrainByBorders (tmp_win, &xl, w, &yt, h);
+                    ConstrainByBorders (tmp_win, &xl, width, &yt, height);
 		}
 
 		CurrentDragX = xl;
@@ -2930,7 +2930,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		  if (! moving_icon) WMapSetupWindow (tmp_win, xl, yt, -1, -1);
 		}
 		else
-		    MoveOutline(eventp->xmotion.root, xl, yt, w, h,
+		    MoveOutline(eventp->xmotion.root, xl, yt, width, height,
 			tmp_win->frame_bw,
 			moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 	    }
@@ -3231,7 +3231,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
     case F_WARPTO:
 	{
-	    register TwmWindow *t;
+	    register TwmWindow *tw;
 	    int len;
 
 	    len = strlen(action);
@@ -3242,28 +3242,28 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 			printf ("curren iconmgr entry: %s", tmp_win->iconmgr->Current);
 		}
 #endif /* #ifdef WARPTO_FROM_ICONMGR */
-	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-		if (!strncmp(action, t->full_name, len)) break;
-		if (match (action, t->full_name)) break;
+	    for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+		if (!strncmp(action, tw->full_name, len)) break;
+		if (match (action, tw->full_name)) break;
 	    }
-	    if (!t) {
-		for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-		    if (!strncmp(action, t->class.res_name, len)) break;
-		    if (match (action, t->class.res_name)) break;
+	    if (!tw) {
+		for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+		    if (!strncmp(action, tw->class.res_name, len)) break;
+		    if (match (action, tw->class.res_name)) break;
 		}
-		if (!t) {
-		    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-			if (!strncmp(action, t->class.res_class, len)) break;
-			if (match (action, t->class.res_class)) break;
+		if (!tw) {
+		    for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+			if (!strncmp(action, tw->class.res_class, len)) break;
+			if (match (action, tw->class.res_class)) break;
 		    }
 		}
 	    }
 
-	    if (t) {
-		if (Scr->WarpUnmapped || t->mapped) {
-		    if (!t->mapped) DeIconify (t);
-		    if (!Scr->NoRaiseWarp) RaiseWindow (t);
-		    WarpToWindow (t);
+	    if (tw) {
+		if (Scr->WarpUnmapped || tw->mapped) {
+		    if (!tw->mapped) DeIconify (tw);
+		    if (!Scr->NoRaiseWarp) RaiseWindow (tw);
+		    WarpToWindow (tw);
 		}
 	    } else {
 		XBell (dpy, 0);
@@ -3273,7 +3273,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
     case F_WARPTOICONMGR:
 	{
-	    TwmWindow *t;
+	    TwmWindow *tw;
 	    int len;
 	    Window raisewin = None, iconwin = None;
 
@@ -3287,11 +3287,11 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		    iconwin = Scr->iconmgr->active->w;
 		}
 	    } else {
-		for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-		    if (strncmp (action, t->icon_name, len) == 0) {
-			if (t->list && t->list->iconmgr->twm_win->mapped) {
-			    raisewin = t->list->iconmgr->twm_win->frame;
-			    iconwin = t->list->icon;
+		for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+		    if (strncmp (action, tw->icon_name, len) == 0) {
+			if (tw->list && tw->list->iconmgr->twm_win->mapped) {
+			    raisewin = tw->list->iconmgr->twm_win->frame;
+			    iconwin = tw->list->icon;
 			    break;
 			}
 		    }
@@ -3964,8 +3964,8 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
     XWindowAttributes winattrs;
     unsigned long eventMask;
     WList *wl;
-    Window leader;
-    Window blanket = 0;
+    Window leader = (Window)-1;
+    Window blanket = (Window)-1;
 
     iconify = (!tmp_win->iconify_by_unmapping);
     t = (TwmWindow*) 0;
@@ -5078,15 +5078,15 @@ void fillwindow (TwmWindow *tmp_win, char *direction)
 
 void jump (TwmWindow *tmp_win, int  direction, char *action)
 {
-    int			fx, fy, px, py, step, stat, cons;
+    int			fx, fy, px, py, step, status, cons;
     int			fwidth, fheight;
     int			junkX, junkY;
     unsigned int	junkK;
     Window		junkW;
 
     if (! action) return;
-    stat = sscanf (action, "%d", &step);
-    if (stat != 1) return;
+    status = sscanf (action, "%d", &step);
+    if (status != 1) return;
     if (step < 1) return;
 
     fx = tmp_win->frame_x;

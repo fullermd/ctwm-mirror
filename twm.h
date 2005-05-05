@@ -495,7 +495,7 @@ extern char *malloc(), *calloc(), *realloc(), *getenv();
 extern void free();
 #endif
 #endif
-extern void Reborder(Time time);
+extern void Reborder(Time tim);
 extern SIGNAL_T Done(int signum);
 void ComputeCommonTitleOffsets(void);
 void ComputeWindowTitleOffsets(TwmWindow *tmp_win, unsigned int width,
@@ -505,6 +505,7 @@ void CreateFonts(void);
 void RestoreWithdrawnLocation (TwmWindow *tmp);
 extern char *ProgramName;
 extern Display *dpy;
+extern char *display_name;
 #ifdef X11R6
   extern XtAppContext appContext;
 #endif

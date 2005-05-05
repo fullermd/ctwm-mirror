@@ -873,7 +873,7 @@ static char *unique_filename (char *path, char *prefix)
 #  define PATH_MAX 1023
 #endif
 
-void SaveYourselfPhase2CB (SmcConn smcConn, SmPointer clientData)
+void SaveYourselfPhase2CB (SmcConn smcCon, SmPointer clientData)
 /* this is where all the work is done in saving the state of the windows.
  * it is not done in Phase One because phase one is used for the other clients
  * to make sure that all the property information on their windows is correct
@@ -925,7 +925,7 @@ void SaveYourselfPhase2CB (SmcConn smcConn, SmPointer clientData)
 	props[1] = &prop2;
 	props[2] = &prop3;
 
-	SmcSetProperties (smcConn, 3, props);
+	SmcSetProperties (smcCon, 3, props);
 
 	first_time = 0;
     }
@@ -1035,11 +1035,11 @@ void SaveYourselfPhase2CB (SmcConn smcConn, SmPointer clientData)
     props[0] = &prop1;
     props[1] = &prop2;
 
-    SmcSetProperties (smcConn, 2, props);
+    SmcSetProperties (smcCon, 2, props);
     free ((char *) prop1.vals);
 
  bad:
-    SmcSaveYourselfDone (smcConn, success);
+    SmcSaveYourselfDone (smcCon, success);
     sent_save_done = 1;
 
     if (configFile)
@@ -1051,15 +1051,15 @@ void SaveYourselfPhase2CB (SmcConn smcConn, SmPointer clientData)
 
 /*===[ Save Yourself SM CallBack ]===========================================*/
 
-void SaveYourselfCB (SmcConn smcConn, SmPointer clientData,
+void SaveYourselfCB (SmcConn smcCon, SmPointer clientData,
 		     int saveType, Bool shutdown, int interactStyle, Bool fast)
 /* this procedure is called by the session manager when requesting the 
  * window manager to save its status, ie all the window configurations 
  */
 {
-    if (!SmcRequestSaveYourselfPhase2 (smcConn, SaveYourselfPhase2CB, NULL))
+    if (!SmcRequestSaveYourselfPhase2 (smcCon, SaveYourselfPhase2CB, NULL))
     {  
-        SmcSaveYourselfDone (smcConn, False); 
+        SmcSaveYourselfDone (smcCon, False); 
         sent_save_done = 1;
     }
     else
@@ -1068,19 +1068,19 @@ void SaveYourselfCB (SmcConn smcConn, SmPointer clientData,
 
 /*===[ Die SM Call Back ]====================================================*/
 
-void DieCB (SmcConn smcConn, SmPointer clientData)
+void DieCB (SmcConn smcCon, SmPointer clientData)
 /* this procedure is called by the session manager when requesting that the 
  * application shut istelf down
  */
 {
-    SmcCloseConnection (smcConn, 0, NULL);
+    SmcCloseConnection (smcCon, 0, NULL);
     XtRemoveInput (iceInputId);
     Done(0);
 }
 
 /*===[ Save Complete SM Call Back ]==========================================*/
 
-void SaveCompleteCB (SmcConn smcConn, SmPointer clientData)
+void SaveCompleteCB (SmcConn smcCon, SmPointer clientData)
 /* This function is called to say that the save has been completed and that
  * the program can continue its operation
  */
@@ -1090,12 +1090,12 @@ void SaveCompleteCB (SmcConn smcConn, SmPointer clientData)
 
 /*===[ Shutdown Cancelled SM Call Back ]=====================================*/
 
-void ShutdownCancelledCB (SmcConn smcConn, SmPointer clientData)
+void ShutdownCancelledCB (SmcConn smcCon, SmPointer clientData)
 
 {
     if (!sent_save_done)
     {
-	SmcSaveYourselfDone (smcConn, False);
+	SmcSaveYourselfDone (smcCon, False);
 	sent_save_done = 1;
     }
 }

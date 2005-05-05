@@ -216,8 +216,8 @@ void CreateWorkSpaceManager (void)
 
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
       WorkSpaceWindow *wsw = vs->wsw;
-      WorkSpace *ws = wsw->currentwspc;
-      MapSubwindow *msw = wsw->mswl [ws->number];
+      WorkSpace *ws2 = wsw->currentwspc;
+      MapSubwindow *msw = wsw->mswl [ws2->number];
       if (wsw->curImage == None) {
 	if (wsw->curPaint) {
 	  XSetWindowBackground (dpy, msw->w, wsw->curColors.back);
@@ -229,10 +229,10 @@ void CreateWorkSpaceManager (void)
       XClearWindow (dpy, msw->w);
 
       if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
-	if (ws->image == None)
-	    XSetWindowBackground       (dpy, vs->window, ws->backcp.back);
+	if (ws2->image == None)
+	    XSetWindowBackground       (dpy, vs->window, ws2->backcp.back);
 	else
-	    XSetWindowBackgroundPixmap (dpy, vs->window, ws->image->pixmap);
+	    XSetWindowBackgroundPixmap (dpy, vs->window, ws2->image->pixmap);
 	XClearWindow (dpy, vs->window);
       }
     }
@@ -2626,11 +2626,11 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
 		   (!Scr->ReallyMoveInWorkspaceManager &&  (modifier & ShiftMask));
     startincurrent = (oldws == vs->wsw->currentwspc);
     if (win->OpaqueMove) {
-	int sw, ss;
+	int sw2, ss;
 
-	sw = win->frame_width * win->frame_height;
+	sw2 = win->frame_width * win->frame_height;
 	ss = vs->w * vs->h;
-	if (sw > ((ss * Scr->OpaqueMoveThreshold) / 100))
+	if (sw2 > ((ss * Scr->OpaqueMoveThreshold) / 100))
 	    Scr->OpaqueMove = FALSE;
 	else
 	    Scr->OpaqueMove = TRUE;
@@ -2723,18 +2723,18 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
 		    winX = (int) (XSW / wf);
 		    winY = (int) (YSW / hf);
 		    if (Scr->DontMoveOff) {
-			int w = win->frame_width;
-			int h = win->frame_height;
+			int width = win->frame_width;
+			int height = win->frame_height;
 
 			if ((winX < Scr->BorderLeft) && ((Scr->MoveOffResistance < 0) ||
                              (winX > Scr->BorderLeft - Scr->MoveOffResistance))) {
 			    winX = Scr->BorderLeft;
 			    newX = msw->x + XW + Scr->BorderLeft * mw->wwidth / vs->w;
 			}
-			if (((winX + w) > vs->x - Scr->BorderRight) &&
+			if (((winX + width) > vs->x - Scr->BorderRight) &&
 			    ((Scr->MoveOffResistance < 0) ||
-			     ((winX + w) < vs->w - Scr->BorderRight + Scr->MoveOffResistance))) {
-			    winX = vs->w - Scr->BorderRight - w;
+			     ((winX + width) < vs->w - Scr->BorderRight + Scr->MoveOffResistance))) {
+			    winX = vs->w - Scr->BorderRight - width;
 			    newX = msw->x + mw->wwidth *
                                 (1 - Scr->BorderRight / (double) vs->w) - wl->width + XW - 2;
 			}
@@ -2743,10 +2743,10 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
 			    winY = Scr->BorderTop;
 			    newY = msw->y + YW + Scr->BorderTop * mw->height / vs->h;
 			}
-			if (((winY + h) > vs->h - Scr->BorderBottom) &&
+			if (((winY + height) > vs->h - Scr->BorderBottom) &&
 			    ((Scr->MoveOffResistance < 0) ||
-                             ((winY + h) < vs->h - Scr->BorderBottom + Scr->MoveOffResistance))) {
-			    winY = vs->h - Scr->BorderBottom - h;
+                             ((winY + height) < vs->h - Scr->BorderBottom + Scr->MoveOffResistance))) {
+			    winY = vs->h - Scr->BorderBottom - height;
 			    newY = msw->y + mw->wheight *
                                 (1 - Scr->BorderBottom / (double) vs->h) - wl->height + YW - 2;
 			}
