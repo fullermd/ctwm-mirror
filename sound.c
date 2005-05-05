@@ -191,13 +191,13 @@ play_sound (int snd)
 }
 
 void
-play_startup_sound()
+play_startup_sound(void)
 {
     play_sound(startup_sound);
 }
 
 void
-play_exit_sound()
+play_exit_sound(void)
 {
     play_sound(exit_sound);
 }
@@ -206,7 +206,7 @@ play_exit_sound()
  * Toggle the sound on/off
  */
 void
-toggle_sound ()
+toggle_sound (void)
 {
     sound_state ^= 1;
 }
@@ -216,7 +216,7 @@ toggle_sound ()
  * Re-read the sounds mapping file
  */
 void
-reread_sounds ()
+reread_sounds (void)
 {
     sound_init ();
 }
