@@ -97,7 +97,9 @@
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
-#include "session.h"
+#ifdef X11R6
+#  include "session.h"
+#endif
 #include "cursor.h"
 #include "windowbox.h"
 #ifdef SOUNDS

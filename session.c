@@ -129,7 +129,9 @@
 #include "twm.h"
 #include "icons.h"
 #include "screen.h"
-#include "session.h"
+#ifdef X11R6
+#  include "session.h"
+#endif
 
 SmcConn smcConn = NULL;
 XtInputId iceInputId;

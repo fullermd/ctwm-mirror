@@ -95,7 +95,9 @@
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
-#include "session.h"
+#ifdef X11R6
+#  include "session.h"
+#endif
 
 #define gray_width 2
 #define gray_height 2
