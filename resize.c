@@ -1117,10 +1117,8 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 	{
 		dragHeight = tmp_win->save_frame_height;
 		dragWidth = tmp_win->save_frame_width;
-		/* dl: I removed this. Why restore position when restoring
-		   zoom?
-		  dragx = tmp_win->save_frame_x;
-		  dragy = tmp_win->save_frame_y;*/
+		dragx = tmp_win->save_frame_x;
+		dragy = tmp_win->save_frame_y;
 		tmp_win->zoomed = ZOOM_NONE;
 	}
 	else
