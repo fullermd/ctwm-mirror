@@ -4680,6 +4680,7 @@ int MoveMenu (XEvent *eventp)
 		newY = ActiveMenu->y;
 		break;
 	    case Expose:
+	    case NoExpose:
                 Event = ev;
                 DispatchEvent ();
 		XMaskEvent (dpy, event_mask, &ev);
