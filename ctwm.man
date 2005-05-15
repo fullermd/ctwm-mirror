@@ -12,7 +12,7 @@
 .if t .sp .5
 ..
 .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH CTWM 1 "Version 3.6"
+.TH CTWM 1 "Version 3.7"
 .SH NAME
 ctwm \- Claude's Tab Window Manager for the X Window System
 .SH SYNTAX
@@ -98,7 +98,7 @@ This option specifies the name of the startup file to use.
 \fIctwm\fP will first try to load filename.num, where \fInum\fP is the screen number.
 If it fails, it will try to load filename.
 By default, \fIctwm\fP will look in the user's home directory for files
-named \fI.ctwmrc.num\fP (where \fInum\fP is a screen number) or \fI.ctwmrc\fP.
+named \fI.ctwmrc.num\fP, \fI.ctwmrc\fP, \fI.twmrc.num\fP, or \fI.twmrc\fP (where \fInum\fP is a screen number).
 .TP 8
 .B \-v
 This option indicates that \fIctwm\fP should print error messages whenever
@@ -113,7 +113,7 @@ through m4. Available only if \fIctwm\fP is compiled with the USEM4 flag.
 This option indicates that \fIctwm\fP should keep the definitions it
 prepends to your startup file when filtering through m4 in /tmp.
 Available only if \fIctwm\fP is compiled with the USEM4 flag.
-
+.TP 8
 .B \-K \fIm4file\fP
 This option indicates that \fIctwm\fP should keep the result of filtering
 your startup file through m4 in the named file.
@@ -134,7 +134,7 @@ screen(s), instead it creates a new window that becomes its root window. if the
 win\-id value is given, it is considered to be the id of an existing window, in
 which case, \fIctwm\fP will try to use this window as root window. You can run any
 number of instantiation of \fIctwm\fP at the same time. You can even have
-embedded \fIctwm\fP instantiations. This is totally useless, but I like. The
+embedded \fIctwm\fP instantiations. This is totally useless, but I like it. The
 f.adoptwindow function can be used to capture an existing window belonging to
 another \fIctwm\fP. A possible use of such mode can be to test new configuration file
 without restarting \fIctwm\fP.
@@ -155,6 +155,8 @@ differing visual types.
 .TP 8
 .B "$HOME/.ctwmrc"
 This is the usual name for an individual user's startup file.
+.TP 8
+.B "$HOME/.twmrc.\fIscreennumber\fP"
 .TP 8
 .B "$HOME/.twmrc"
 The users twm startup file.
@@ -192,8 +194,8 @@ a comment.
 \fIctwm\fP uses \fIm4\fP(1) to pre\-process its setup files.
 When \fIctwm\fP starts up, it opens a file for input as described above.
 But, it processes that file through \fIm4\fP before parsing it. So, you can
-use \fIm4\fP macro's to perform operations at runtime.  This makes it very
-easy to work when you use many different display's, with different characteristics.
+use \fIm4\fP macros to perform operations at runtime.  This makes it very
+easy to work when you use many different displays, with different characteristics.
 For example, If you want to set the lower right section of the screen to be your
 \fBIconRegion\fP, (see below for details on the \fBIconRegion\fP variable)
 you can use \fIm4\fP directives and pre\-defined symbols to calculate the region
@@ -353,7 +355,7 @@ or
 When a variable containing a list of strings representing windows is searched
 (e.g. to determine whether or not to enable autoraise as shown above), a string
 must be an exact, case\-sensitive match to
-the window's name name (given by the WM_NAME window property), resource name
+the window's name (given by the WM_NAME window property), resource name
 or class name (both given by the WM_CLASS window property).  The preceding
 example would enable autoraise on windows named \(oqemacs\(cq as well as any
 \fIxterm\fP (since they are of class \(oqXTerm\(cq) or xmh windows
@@ -372,7 +374,7 @@ resize button), and \fB:question\fP (the question mark used for non\-existent
 bitmap files).
 .PP
 The following variables may be specified at the top of a \fIctwm\fP startup
-file.  Lists of Window name prefix strings are indicated by \fIwin\-list\fP.
+file.  Lists of window name prefix strings are indicated by \fIwin\-list\fP.
 Optional arguments are shown in square brackets:
 .IP "\fBAlwaysOnTop\fP { \fIwin\-list\fP }" 8
 This variable specifies a list of windows (all windows if the list is defaulted)
@@ -406,7 +408,7 @@ Transient windows get focus automatically when created.  Useful with
 programs that have keyboard shortcuts that pop up windows.
 
 .IP "\fBAutoLower\fP { \fIwin\-list\fP }" 8
-This variable specicies a list of windows (all windows if the list is
+This variable specifies a list of windows (all windows if the list is
 defaulted) to be automatically lowered whenever the point leaves a
 window.  This action can be interactively enabled or disabled on
 individual windows using the function \fBf.autolower\fP.
@@ -454,9 +456,9 @@ ClearShadowContrast and DarkShadowContrast have no effects.
 
 .IP "\fBBorderBottom\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of a forbidden zone at the
-bottom of the screen. All constrained window function (f.movepack,
-f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
-Default is 0;
+bottom of the screen. All constrained window functions (f.movepack,
+f.move with DontMoveOff, etc...) will consider this zone as offscreen.
+Default is 0.
 
 .IP "\fBBorderColor\fP \fIstring\fP [{ \fIwincolorlist\fP }]" 8
 This variable specifies the default color of the border to be placed around
@@ -476,9 +478,9 @@ The default is \(oqblack\(cq.
 
 .IP "\fBBorderLeft\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of a forbidden zone at the
-left of the screen. All constrained window function (f.movepack,
-f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
-Default is 0;
+left of the screen. All constrained window functions (f.movepack,
+f.move with DontMoveOff, etc...) will consider this zone as offscreen.
+Default is 0.
 
 .IP "\fBBorderResizeCursors\fP" 8
 This variable specifies that \fIctwm\fP should use resizing cursors when
@@ -487,9 +489,9 @@ bound a button to f.resize in the frame context.
 
 .IP "\fBBorderRight\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of a forbidden zone at the
-right of the screen. All constrained window function (f.movepack,
-f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
-Default is 0;
+right of the screen. All constrained window functions (f.movepack,
+f.move with DontMoveOff, etc...) will consider this zone as offscreen.
+Default is 0.
 
 .IP "\fBBorderShadowDepth\fP \fIpixels\fP" 8
 This variable specifies the depth of the shadow \fIctwm\fP uses for
@@ -510,9 +512,9 @@ per\-window colors to be specified.  The default is \(oqblack\(cq.
 
 .IP "\fBBorderTop\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of a forbidden zone at the
-top of the screen. All constrained window function (f.movepack,
-f.move with DontMoveOff, etc...) will use consider this zone as offscreen.
-Default is 0;
+top of the screen. All constrained window functions (f.movepack,
+f.move with DontMoveOff, etc...) will consider this zone as offscreen.
+Default is 0.
 
 .IP "\fBBorderWidth\fP \fIpixels\fP" 8
 This variable specifies the width in pixels of the border surrounding
@@ -628,7 +630,7 @@ The following example shows the default cursor definitions:
 }
 .EE
 .IP "\fBDarkShadowContrast\fP \fIcontrast\fP" 8
-    Indicates to \fIctwm\fP hos to calculate the dark shadow color for 3D items.
+Indicates to \fIctwm\fP how to calculate the dark shadow color for 3D items.
 The value is a comprised between 0 and 100. The formula used is :
 .EX 0
     dark.{RGB}  = color.{RGB} * ((100 \- contrast) / 100),
@@ -714,7 +716,7 @@ This variable specifies the width in pixels of the border surrounding
 icon windows.  The default is 2.
 
 .IP "\fBIconDirectory\fP \fIstring\fP" 8
-This variable specifies the directory that should be searched if
+This variable specifies the directory that should be searched
 if a bitmap file cannot be found in any of the directories
 in the \fBbitmapFilePath\fP resource.
 
@@ -839,14 +841,14 @@ if no specific icon location is provided by the client.  The \fIgeomstring\fP
 is a quoted string containing a standard geometry specification. If more than
 one \fBIconRegion\fP lines are given, icons will be put into the succeeding
 icon regions when the first is full. The \fIvgrav\fP argument should be either
-\fBNorth\fP or \fBSouth\fP and control and is used to control whether icons are
+\fBNorth\fP or \fBSouth\fP  and is used to control whether icons are
 first filled in from the top or bottom of the icon region.  Similarly, the
 \fIhgrav\fP argument should be either \fBEast\fP or \fBWest\fP and is used
-to control whether icons should be filled in from left from the right. Icons
+to control whether icons should be filled in from left or from the right. Icons
 are laid out within the region in a grid with cells \fIgridwidth\fP pixels
 wide and \fIgridheight\fP pixels  high. The optional win\-list argument tells
 \fIctwm\fP that if such a window is iconified, and there is enough room in this
-icon region for its icon, then place it here. The optionnal \fIiconjust\fP,
+icon region for its icon, then place it here. The optional \fIiconjust\fP,
 \fIiconregjust\fP and \fIiconregalign\fP can be used to give specific values
 of IconJustification, IconRegionJustification and IconRegionAlignement for
 this IconRegion.
@@ -854,15 +856,13 @@ this IconRegion.
 .IP "\fBIconRegionAlignement\fP \fIstring\fP" 8
 Where string is either \fB"top"\fP, \fB"center"\fP \fB"bottom"\fP or \fB"border"\fP.
 Tells ctwm how to align icons inside their place in the IconRegion.
-This keyword needs a string value. The acceptable values are : \(oqtop\(cq, \(oqcenter\(cq,
-\(oqbottom\(cq and \(oqborder\(cq. If \(oqborder\(cq is given, the justification will be \(oqtop\(cq if
+If \(oqborder\(cq is given, the justification will be \(oqtop\(cq if
 the icon region gravity is \(oqnorth\(cq and \(oqbottom\(cq if the icon region gravity is \(oqsouth\(cq.
 
 .IP "\fBIconRegionJustification\fP \fIstring\fP" 8
 Where string is either \fB"left"\fP, \fB"center"\fP \fB"right"\fP or \fB"border"\fP.
 Tells ctwm how to justify icons inside their place in the IconRegion.
-This keyword needs a string value. The acceptable values are : \(oqleft\(cq, \(oqcenter\(cq,
-\(oqright\(cq and \(oqborder\(cq. If \(oqborder\(cq is given, the justification will be \(oqleft\(cq if
+If \(oqborder\(cq is given, the justification will be \(oqleft\(cq if
 the icon region gravity is \(oqwest\(cq and \(oqright\(cq if the icon region gravity is \(oqeast\(cq.
 
 .IP "\fBIcons\fP { \fIwin\-list\fP }" 8
@@ -875,7 +875,7 @@ should be used as their icons.  For example:
 	"xfd"		"xfd_icon"
 }
 .EE
-Windows that match \(oqXTerm\(cq and would not be iconified by unmapping, and would try
+Windows that match \(oqXTerm\(cq and would not be iconified by unmapping, would try
 to use  the icon bitmap in the file \(oqxterm.icon\(cq.If \fBForceIcons\fP is
 specified, this bitmap will be used even if the client has requested its
 own icon pixmap.
@@ -983,7 +983,7 @@ can only be specified inside of a
 \fBColor\fP or \fBMonochrome\fP list.  The default is \(oqblack\(cq.
 .IP "\fBMonochrome\fP { \fIcolors\fP }" 8
 This variable specifies a list of color assignments that should be made if
-the screen has a depth of 1.  See the description of \fBColors\fP.
+the screen has a depth of 1.  See the description of \fBColor\fP.
 .IP "\fBMoveDelta\fP \fIpixels\fP" 8
 This variable specifies the number of pixels the pointer
 must move before the \fBf.move\fP function starts working.  Also
@@ -1003,7 +1003,7 @@ This variable indicates that \fIctwm\fP's menus should not request backing
 store to minimize repainting of menus.  This is typically
 used with servers that can repaint faster than they can handle backing store.
 .IP "\fBNoBorder\fP { \fIwin\-list\fP }" 8
-These windows won't have border. If you want no borders on all windows,
+These windows won't have borders. If you want no borders on all windows,
 use the BorderWidth keyword.
 .IP "\fBNoCaseSensitive\fP" 8
 This variable indicates that case should be ignored when sorting icon names
@@ -1180,9 +1180,9 @@ The default for \fITitleHighlight\fP is to use an even stipple pattern.
 .IP "\fBPixmapDirectory\fP \fIpath\fP " 8
 This variable specifies the path where \fIctwm\fP looks to find non\-X11 bitmap
 files.  Whenever you want to use a image file that is not an X11 bitmap,
-specify : xpm:filename, for xpm files), xwd:filename for xwd files,
+specify : xpm:filename, for xpm files, xwd:filename for xwd files,
 im:filename, for other files supported by the imconv package, jpeg:file
-for jpeg file, or \(oq|command\(cq for an on the file generated xwd file. Use the % character
+for jpeg file, or \(oq|command\(cq for an on the fly generated xwd file. Use the % character
 to specify an animation. \fIpath\fP can be a colon separated list of directories.
 Example :
 .EX
@@ -1194,7 +1194,7 @@ Icons
 }
 .EE
 N.B This is only valid if your version of \fIctwm\fP has been compiled with the
-right extention (XPM, JPEG or IMCONV options).
+right extension (XPM, JPEG or IMCONV options).
 
 .IP "\fBRaiseDelay\fP \fImilliseconds\fP" 8
 For windows that are to be automatically raised when the pointer enters
@@ -1239,7 +1239,7 @@ This is typically used to try to regenerate the state that the screen
 was in before the previous window manager was shutdown.
 
 .IP "\fBReverseCurrentWorkspace\fP \fIstring\fP" 8
-This variable specifies tells \fIctwm\fP to reverse the background and
+This variable tells \fIctwm\fP to reverse the background and
 foreground colors in the small windows in the workspace map for the current
 workspace.
 
@@ -1247,9 +1247,9 @@ workspace.
 This variable indicates a list of color assignments to be stored as pixel
 values in the root window property _MIT_PRIORITY_COLORS.  Clients may elect
 to preserve these values when installing their own colormap.  Note that
-use of this mechanism is a way an for application to avoid the \(oqtechnicolor\(cq
+use of this mechanism is a way for an application to avoid the \(oqtechnicolor\(cq
 problem, whereby useful screen objects such as window borders and titlebars
-disappear when a programs custom colors are installed by the window
+disappear when a program's custom colors are installed by the window
 manager.
 For example:
 .EX 0
@@ -1367,7 +1367,7 @@ This variable specifies the depth of the shadow \fIctwm\fP uses for
 3D title buttons, when UseThreeDTitles is selected.
 
 .IP "\fBTitleFont\fP \fIstring\fP" 8
-This variable specifies the font to used for displaying window names in
+This variable specifies the font used for displaying window names in
 titlebars.  The default is \(oqvariable\(cq.
 
 .IP "\fBTitleForeground\fP \fIstring\fP [{ \fIwin\-list\fP }]" 8
@@ -1411,7 +1411,7 @@ clients which do not provide an icon bitmap and are not listed
 in the \fBIcons\fP list.
 
 .IP "\fBUnmapByMovingFarAway\fP [{ \fIwin\-list\fP }] " 8
-These windows will be moved out of the screen instead of beeing unmapped
+These windows will be moved out of the screen instead of being unmapped
 when they become invisible due to a change workspace. This has been
 added because some ill\-behaved clients (Frame5) don't like to be unmapped.
 
@@ -1448,8 +1448,8 @@ values of \fBTitleButtonBorderWidth\fP, \fBFramePadding\fP, \fBTitlePadding\fP
 and \fBButtonIndent\fP are set to 0.
 There are plenty of built\-in scalable pixmaps for buttons, :xpm:menu, :xpm:dot,
 :xpm:cross, :xpm:bar, :xpm:vbar, :xpm:iconify, :xpm:resize,
-:xmp:sunkresize and :xpm:box. There is several built\-in scalable
-animation for buttons : %xpm:resize, %xpm:menu\-up, %xpm:menu\-down,
+:xmp:sunkresize and :xpm:box. There are several built\-in scalable
+animations for buttons : %xpm:resize, %xpm:menu\-up, %xpm:menu\-down,
 %xpm:resize\-out\-top, %xpm:resize\-in\-top, %xpm:resize\-out\-bot,
 %xpm:resize\-in\-bot, %xpm:maze\-out, %xpm:maze\-in, %xpm:zoom\-out,
 %xpm:zoom\-in and %xpm:zoom\-inout. Try them to see what they look like.
@@ -1483,7 +1483,7 @@ will only be warped when those windows are deiconified.
 .IP "\fBWindowBox\fP [{ \fIwin\-list\fP }]" 8
 creates a new window called a box, where
 all the client windows that match the windows list are opened in,
-instead of the roor window. This is useful to group small windows
+instead of the root window. This is useful to group small windows
 in the same box (xload for instance)
 .EX
 WindowBox "xloadbox" "320x100+0\-0" {
@@ -1594,10 +1594,7 @@ declarations. The maximum number of workspaces is 32.
 .IP "\fBXMoveGrid\fP \fInumber\fP" 8
 This variable specifies the value to use to constrain window movement.
 When moving windows around, the x coordinate will always be a multiple of
-this variable. Default id 1. f.forcemove ignores this variable.
-
-.IP "\fBYMoveGrid\fP \fInumber\fP" 8
-Same with y coordinate.
+this variable. Default is 1. f.forcemove ignores this variable.
 
 .IP "\fBXorValue\fP \fInumber\fP" 8
 This variable specifies the value to use when drawing window outlines for
@@ -1611,7 +1608,7 @@ end of the colormap from the graphics.
 .IP "\fBYMoveGrid\fP \fInumber\fP" 8
 This variable specifies the value to use to constrain window movement.
 When moving windows around, the y coordinate will always be a multiple of
-this variable. Default id 1. f.forcemove ignores this variable.
+this variable. Default is 1. f.forcemove ignores this variable.
 
 .IP "\fBZoom\fP [ \fIcount\fP ]" 8
 This variable indicates that outlines suggesting movement of a window
@@ -1645,7 +1642,7 @@ This variable specifies the function to execute when a window is selected
 from the \fBTwmWindows\fP menu.  If this variable is not set, the window
 will be deiconified and raised.
 .SH BINDINGS
-After the desired variables have been set, functions may be attached
+After the desired variables have been set, functions may be attached to
 titlebuttons and key and pointer buttons.  Titlebuttons may be added
 from the left or right side and appear in the titlebar from left\-to\-right
 according to the
@@ -1770,8 +1767,8 @@ This is an abbreviation for \fBf.exec\fP \fIstring\fP.
 This function adds the selected window to the workspace whose name is
 \fIstring\fP.
 .IP "\fBf.adoptwindow\fP" 8
-This function ask for the user to select a window with the mouse, and then
-adopt this window is it doesn't belong to the current ctwm. Useful only
+This function asks for the user to select a window with the mouse, and then
+adopt this window if it doesn't belong to the current ctwm. Useful only
 with the \-w flag.
 .IP "\fBf.altcontext\fP" 8
 Set the alternate context. The next key or button event \fIctwm\fP reveives will
@@ -1911,7 +1908,7 @@ This function passes the argument \fIstring\fP to /bin/sh for execution.
 In multiscreen mode, if \fIstring\fP starts a new X client without
 giving a display argument, the client will appear on the screen from
 which this function was invoked. If the string \(oq$currentworkspace\(cq
-is present inside the string argument, it will be substituated with
+is present inside the string argument, it will be substituted with
 the current workspace name.
 
 .\".IP "\fBf.file\fP \fIstring\fP" 8
@@ -1955,7 +1952,7 @@ else restores the original size if the window was already zoomed.
 This function executes the user\-defined function whose name is specified
 by the argument \fIstring\fP.
 
-.IP "\fBf.gotoworkspace\fP \fBworkspace_name\fP" 8
+.IP "\fBf.gotoworkspace\fP \fIworkspace_name\fP" 8
 This function warps you to the workspace whose name is \fIworkspace_name\fP.
 
 .IP "\fBf.hbzoom\fP" 8
@@ -1976,7 +1973,7 @@ This function is a synonym for \fBf.topzoom\fP.
 
 .IP "\fBf.hypermove\fP" 8
 Use this function to \(oqmove\(cq a window between 2 captives ctwm (or between a
-captive and the root ctwm). Of course 2 Ctwm's are completely different
+captive and the root ctwm). Of course 2 ctwms are completely different
 universes. You have to go in hyperspace to achieve this, hence the name.
 
 .IP "\fBf.hzoom\fP" 8
@@ -2057,7 +2054,7 @@ can overlap with the other window. Useful to pack windows closely.
 
 .IP "\fBf.movepush\fP" 8
 This function is like \fBf.move\fP except that it tries to avoid overlapping
-of windows. When the moving window begin to overlap with another window, the
+of windows. When the moving window begins to overlap with another window, the
 other window is pushed. If you go too far over the other window (more that
 \fIMovePackResistance\fP pixels), there is no push and the moving window
 can overlap with the other window. Only available if \fIOpaqueMove\fP is
@@ -2103,7 +2100,7 @@ This function makes the specified window occupy all the workspaces.
 Where string is either : \(oqright\(cq, \(oqleft\(cq, \(oqtop\(cq or \(oqbottom\(cq
 The current window is moved in the specified direction until it reaches
 an obstacle (either another window, or the screen border). The pointer
-follows the window. Example :
+follows the window.
 
 .IP "\fBf.previconmgr\fI" 8
 This function warps the pointer to the previous icon manager containing any
@@ -2359,7 +2356,7 @@ default is to use the colors specified by the
 The \fIfunction\fP portion of the menu entry is one of the functions,
 including any user\-defined functions, or additional menus.
 .PP
-There is 3 special menus. \fBTwmWindows\fP contains the names of
+There are 3 special menus. \fBTwmWindows\fP contains the names of
 all of the client and \fIctwm\fP\-supplied windows in the current workspace.
 Selecting an entry will cause the \fBWindowFunction\fP to be executed on that
 window.  If \fBWindowFunction\fP hasn't been set, the window will be deiconified
@@ -2367,13 +2364,13 @@ and raised. \fBTwmWorkspaces\fP contains the names of your workspaces, selecting
 an entry goto this workspace. In addition, these entries have submenus containing
 the names of all windows occupying this workspace, selecting such an entry
 executes f.warpto on this window. And finally, \fBTwmAllWindows\fP contains the names
-of all the windows \fIctwm\fP manages. Selectting an entry executes f.warpto on
+of all the windows \fIctwm\fP manages. Selecting an entry executes f.warpto on
 this window.
 .PP
 If an entry name begins with a \(oq*\(cq (star), this star won't be displayed and
 the corresponding entry will be the default entry for this menu. When a menu
 has a default entry and is used as a submenu of another menu, this default entry
-action will be executed automatically when this submenu is selected without beeing
+action will be executed automatically when this submenu is selected without being
 displayed. It's hard to explain, but easy to understand.
 .SH ICONS
 \fIctwm\fP supports several different ways of manipulating iconified windows.
