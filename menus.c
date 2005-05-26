@@ -2007,24 +2007,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	break;
 
     case F_RESTART: {
-#ifdef X11R6
-	extern SmcConn smcConn;
-#endif
-	StopAnimation ();
-	XSync (dpy, 0);
-	Reborder (eventp->xbutton.time);
-	XSync (dpy, 0);
-#ifdef VMS
-	exit (1);		/* Trust CTWM.COM  /Richard Levitte */
-	fprintf (stderr, "%s:  restart capabilities not yet supported\n",
-		 ProgramName);
-#else
-#ifdef X11R6
-	if (smcConn) SmcCloseConnection (smcConn, 0, NULL);
-#endif /* X11R6 */
-	execvp(*Argv, Argv);
-#endif /* VMS */
-	fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
+	DoRestart(eventp->xbutton.time);
 	break;
     }
     case F_UPICONMGR:

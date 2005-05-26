@@ -1379,3 +1379,13 @@ VirtualScreens {
 
 	Added the outer geometry.  Added the 3D border width.
 	[Richard Levitte]
+
+   40 - Restart on subsequent SIGHUPs
+
+	Reworked the code that catches a SIGHUP and has ctwm restart as
+	a result.  The restarting code has moved from Restart() to the new
+	DoRestart().  Restart() now only sets a flag, and CtwmNextEvent()
+	has been changed to react to that flag and call DoRestart().  From
+	now on, CtwmNextEvent() is always used to get the next event, even
+	when no animations are going on.
+	[Richard Levitte]
