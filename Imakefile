@@ -222,7 +222,7 @@ deftwmrc.c:  system.ctwmrc
 		system.ctwmrc >>$@
 	echo '    (char *) 0 };' >>$@
 
-GET_VERSION="`grep '^char \*VersionNumber' version.c | head -1 | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"
+GET_VERSION="`grep '^\#define VERSION_ID' version.c | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"
 dist:	clean gram.h gram.c lex.c deftwmrc.c
 	version=$(GET_VERSION); \
 	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \

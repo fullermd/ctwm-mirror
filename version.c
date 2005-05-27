@@ -50,10 +50,12 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
+#define VERSION_ID "3.7beta6"
 #ifdef I18N
-char *Version = "MIT X Consortium, R6, ctwm 3.7 + I18N Patch ";
-char *VersionNumber = "3.7beta6";
+#define VERSION_I18N " + I18N Patch"
 #else
-char *Version = "MIT X Consortium, R6, ctwm 3.7";
-char *VersionNumber = "3.7beta6";
+#define VERSION_I18N
 #endif
+
+char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID VERSION_I18N;
+char *VersionNumber = VERSION_ID;

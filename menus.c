@@ -4205,33 +4205,49 @@ static void Identify (TwmWindow *t)
     XRectangle inc_rect;
     XRectangle logical_rect;
 #endif
+    Bool first = True;
 
     n = 0;
     (void) sprintf(Info[n++], "Twm version:  %s", Version);
     (void) sprintf(Info[n], "Compile time options :");
 #ifdef XPM
     (void) strcat (Info[n], " XPM");
+    first = False;
 #endif
 #ifdef IMCONV
-    (void) strcat (Info[n], ", IMCONV");
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "IMCONV");
+    first = False;
 #endif
 #ifdef USEM4
-    (void) strcat (Info[n], ", USEM4");
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "USEM4");
+    first = False;
 #endif
 #ifdef GNOME
-    (void) strcat (Info[n], ", GNOME");
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "GNOME");
+    first = False;
 #endif
 #ifdef SOUNDS
-    (void) strcat (Info[n], ", SOUNDS");
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "SOUNDS");
+    first = False;
 #endif
 #ifdef X11R6
-    (void) strcat (Info[n], ", X11R6");
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "X11R6");
+    first = False;
 #endif
 #ifdef DEBUG
-    (void) strcat (Info[n], ", debug");
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "debug");
+    first = False;
 #endif
 #ifdef I18N
-    (void) strcat (Info[n], ", I18N");
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "I18N");
+    first = False;
 #endif    
     n++;
     Info[n++][0] = '\0';
@@ -4263,10 +4279,9 @@ static void Identify (TwmWindow *t)
 		XFree ((char *) prop);
 	    }
 	}
-	
+	Info[n++][0] = '\0';
     }
 
-    Info[n++][0] = '\0';
     (void) sprintf(Info[n++], "Click to dismiss....");
 
     /* figure out the width and height of the info window */

@@ -414,7 +414,7 @@ unhackfiles :
 		write sys$output "********************************************"
 
 version.opt : version.c descrip.mms
-	@ sear version.c "*VersionNumber"/out=version.tmp
+	@ sear version.c "#define VERSION_ID"/out=version.tmp
 	@- open/read foo version.tmp
 	@- read foo line
 	@- close foo
