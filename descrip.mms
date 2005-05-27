@@ -1,31 +1,145 @@
-# Description file for VMSTAR.
+# Description file for CTWM.
 
-# Xmu include files
-# X11XMU=X11LIB:
-X11XMU=sys$sysroot:[decw$include.xmu]
+.INCLUDE descrip.local
 
-# Xmu library to use
-# X11XMULIB=X11LIB:XMU.OLB
-X11XMULIB=SYS$SHARE:DECW$XMULIBSHR/SHARE
+.IFDEF XPM
+.IFDEF USER_XPMLIBDIR
+XPMLIBDIR       = $(USER_XPMLIBDIR)
+.ELSE
+XPMLIBDIR       =
+.ENDIF
+.IFDEF USER_XPMINCDIR
+XPMINCDIR       = ,$(USER_XPMINCDIR)
+.ELSE
+XPMINCDIR       =
+.ENDIF
 
-# X11/SM include files
-X11SM=sys$sysroot:[decw$include.sm]
+XPMDEFINES      = ,XPM
+XPMLIB          = $(XPMLIBDIR)LIBXPM
+.ELSE
+XPMLIBDIR       = 
+XPMINCDIR       = 
 
-# xpm object library directory
-XPMLIB=pd:[src.xpm-3_4e]
+XPMDEFINES      = 
+XPMLIB          = 
+.ENDIF
 
-# ctwm exit style:
-#	0 - Just exit with error code 20.
-#	1 - run sys$system:decw$endsession.exe on exit
-EXIT_ENDSESSION = 0
+.IFDEF JPEG
+.IFDEF USER_JPEGLIBDIR
+JPEGLIBDIR      = $(USER_JPEGLIBDIR)
+.ELSE
+JPEGLIBDIR      =
+.ENDIF
+.IFDEF USER_JPEGINCDIR
+JPEGINCDIR      = ,$(USER_JPEGINCDIR)
+.ELSE
+JPEGINCDIR      =
+.ENDIF
 
-# if you want to put the executable and object files at some specific place,
-# change this macro
-GOAL=
+JPEGDEFINES     = ,JPEG
+JPEGLIB         = $(JPEGLIBDIR)LIBJPEG
+.ELSE
+JPEGLIBDIR      = 
+JPEGINCDIR      = 
 
-#------------------------- End of customization -----------------------------
+JPEGDEFINES     = 
+JPEGLIB         = 
+.ENDIF
 
-MORE_CFLAGS = /DEBUG/DEFINE=(VMS,XPM,X11R6,I18N,GNOME,FUNCPROTO=14,C_ALLOCA,""emacs"",BLOCK_INPUT,EXIT_ENDSESSION=$(EXIT_ENDSESSION)''extra_defs')
+.IFDEF IMCONV
+.IFDEF USER_IMCONVLIBDIR
+IMCONVLIBDIR    = $(USER_IMCONVLIBDIR)
+.ELSE
+IMCONVLIBDIR    =
+.ENDIF
+.IFDEF USER_IMCONVINCDIR
+IMCONVINCDIR    = ,$(USER_IMCONVINCDIR)
+.ELSE
+IMCONVINCDIR    =
+.ENDIF
+
+IMCONVDEFINES   = ,IMCONV
+IMCONVLIB       = $(IMCONVLIBDIR)LIBIM,$(IMCONVLIBDIR)LIBSDSC
+.ELSE
+IMCONVLIBDIR    = 
+IMCONVINCDIR    = 
+
+IMCONVDEFINES   = 
+IMCONVLIB       = 
+.ENDIF
+
+.IFDEF USE_M4
+M4LIBDIR    =
+M4INCDIR    =
+
+M4DEFINES   = ,USEM4
+M4LIB       = $(M4LIBDIR)
+.ELSE
+M4LIBDIR    = 
+M4INCDIR    = 
+
+M4DEFINES   = 
+M4LIB       = 
+.ENDIF
+
+.IFDEF GNOME
+GNOMEDEFINES   = ,GNOME
+GNOMESRC       = GNOME.C
+GNOMEOBJ       = ,$(GOAL)GNOME.$(EXT)OBJ
+.ELSE
+GNOMEDEFINES   = 
+GNOMESRC       = 
+GNOMEOBJ       = 
+.ENDIF
+
+.IFDEF USE_SOUND
+.IFDEF USER_SOUNDLIBDIR
+SOUNDLIBDIR     = $(USER_SOUNDLIBDIR)
+.ELSE
+SOUNDLIBDIR     =
+.ENDIF
+.IFDEF USER_SOUNDINCDIR
+SOUNDINCDIR     = ,$(USER_SOUNDINCDIR)
+.ELSE
+SOUNDINCDIR     =
+.ENDIF
+
+SOUNDDEFINES    = ,SOUNDS
+SOUNDLIB        = $(SOUNDLIBDIR)LIBRPLAY
+SOUNDSRC        = SOUND.C
+SOUNDOBJ        = ,$(GOAL)SOUND.$(EXT)OBJ
+.ELSE
+SOUNDLIBDIR     = 
+SOUNDINCDIR     = 
+
+SOUNDDEFINES    = 
+SOUNDLIB        = 
+SOUNDSRC        = 
+SOUNDOBJ        = 
+.ENDIF
+
+.IFDEF USE_SESSION
+SESSIONLIBDIR   = $(USER_SESSIONLIBDIR)
+SESSIONINCDIR   = ,$(USER_SESSIONINCDIR)
+
+SESSIONDEFINES  = ,X11R6
+SESSIONLIB      = $(SESSIONLIBDIR)DECW$SMSHR
+SESSIONSRC      = SESSION.C
+SESSIONOBJ      = ,$(GOAL)SESSION.$(EXT)OBJ
+.ELSE
+SESSIONDEFINES  = 
+SESSIONSRC      = 
+SESSIONOBJ      = 
+.ENDIF
+
+.IFDEF I18N
+I18NDEFINES    = ,I18N
+.ELSE
+I18NDEFINES    =
+.ENDIF
+
+MORE_CFLAGS    = /DEBUG/DEFINE=(VMS$(M4DEFINES)$(GNOMEDEFINES)$(IMCONVDEFINES)$(XPMDEFINES)$(JPEGDEFINES)$(SESSIONDEFINES)$(SOUNDDEFINES)$(I18NDEFINES),FUNCPROTO=14,C_ALLOCA,""emacs"",BLOCK_INPUT,EXIT_ENDSESSION=$(EXIT_ENDSESSION)''extra_defs')''extra_includes'
+EXTRA_INCLUDES = $(M4INCDIR)$(IMCONVINCDIR)$(XPMINCDIR)$(JPEGINCDIR)$(SOUNDINCDIR)
 
 LD = link
 #LDFLAGS = /DEBUG
@@ -47,19 +161,47 @@ NODIST = gram.c gram.h lex.c
 all : setup
 	@ ! We define the MMS/MMK macros as symbols, or we might get problems
 	@ ! we too long DCL lines...		(suggested by Michael Lemke.)
-	X11XMU:=$(X11XMU)
-	X11SM:=$(X11SM)
-	XPMLIB:=$(XPMLIB)
-	CFLAGS=all_cflags
 	LD="$(LD)"
 	LDFLAGS="$(LDFLAGS)"
 	GOAL="$(GOAL)"
-	CLIB=clib
+	X11XMU="$(X11XMU)"
 	X11XMULIB="$(X11XMULIB)"
+	XPMINCDIR="$(XPMINCDIR)"
+	XPMLIBDIR="$(XPMLIBDIR)"
+	XPMDEFINES="$(XPMDEFINES)"
+	XPMLIB="$(XPMLIB)"
+	JPEGINCDIR="$(JPEGINCDIR)"
+	JPEGLIBDIR="$(JPEGLIBDIR)"
+	JPEGDEFINES="$(JPEGDEFINES)"
+	JPEGLIB="$(JPEGLIB)"
+	IMCONVINCDIR="$(IMCONVINCDIR)"
+	IMCONVLIBDIR="$(IMCONVLIBDIR)"
+	IMCONVDEFINES="$(IMCONVDEFINES)"
+	IMCONVLIB="$(IMCONVLIB)"
+	M4INCDIR="$(M4INCDIR)"
+	M4LIBDIR="$(M4LIBDIR)"
+	M4DEFINES="$(M4DEFINES)"
+	M4LIB="$(M4LIB)"
+	GNOMEDEFINES="$(GNOMEDEFINES)"
+	GNOMESRC="$(GNOMESRC)"
+	GNOMEOBJ="$(GNOMEOBJ)"
+	SOUNDINCDIR="$(SOUNDINCDIR)"
+	SOUNDLIBDIR="$(SOUNDLIBDIR)"
+	SOUNDDEFINES="$(SOUNDDEFINES)"
+	SOUNDLIB="$(SOUNDLIB)"
+	SOUNDSRC="$(SOUNDSRC)"
+	SOUNDOBJ="$(SOUNDOBJ)"
+	SESSIONINCDIR="$(SESSIONINCDIR)"
+	SESSIONLIBDIR="$(SESSIONLIBDIR)"
+	SESSIONDEFINES="$(SESSIONDEFINES)"
+	SESSIONLIB="$(SESSIONLIB)"
+	SESSIONSRC="$(SESSIONSRC)"
+	SESSIONOBJ="$(SESSIONOBJ)"
+	I18NDEFINES="$(I18NDEFINES)"
 	$(MMS) $(MMSQUALIFIERS) /OVERRIDE /DESCRIPTION=DESCRIP.SUBMMS -
 		/MACRO=(EXT="''ext'",EXE_EXT="''exe_ext'"'do_option''dep_xwdfile')
 
-setup : check_xpmlib xpm.h xwdfile.h version.opt
+setup : version.opt
 	__axp = f$getsyi("CPU") .ge. 128
 	__tmp = f$edit("$(CFLAGS)","UPCASE")
 	__decc = f$search("SYS$SYSTEM:DECC$COMPILER.EXE") .nes. "" -
@@ -70,8 +212,8 @@ setup : check_xpmlib xpm.h xwdfile.h version.opt
 	if .not. __decc then ext = ext + "VAXC_"
 	opt_ext = "DECC_OPT"
 	if .not. __decc then opt_ext = "VAXC_OPT"
-	clib = ""
-	if .not. __decc then clib = "SYS$SHARE:VAXCRTL/SHARE"
+	CLIB = ""
+	if .not. __decc then CLIB = "SYS$SHARE:VAXCRTL/SHARE"
 	extra_defs = ""
 	if .not. __decc then extra_defs = extra_defs + ",NO_LOCALE"
 	if f$search("XWDFILE.H") .nes. "" then -
@@ -79,93 +221,14 @@ setup : check_xpmlib xpm.h xwdfile.h version.opt
 	dep_xwdfile = ""
 	if extra_defs - ",HAVE_XWDFILE_H" .nes. extra_defs then -
 		dep_xwdfile = ",DEP_XWDFILE=""XWDFILE.H"""
+	extra_includes = "$(EXTRA_INCLUDES)" - ","
+	if extra_includes .nes. "" then -
+		extra_includes = "/INCLUDE=(" + extra_includes + ")"
 	! Consider that the default CFLAGS contains `/OBJECT=$*.OBJ'
-	all_cflags = "$(CFLAGS)" - "/OBJECT=SETUP.OBJ" + "$(MORE_CFLAGS)"
+	CFLAGS = "$(CFLAGS)" - "/OBJECT=SETUP.OBJ" + "$(MORE_CFLAGS)"
 	do_option = ",OPTION=""$(GOAL)CTWM.''opt_ext'"",OPTIONCMD="",$(GOAL)CTWM.''opt_ext'/OPT"""
-	if __decc then all_cflags = "/DECC/PREFIX=ALL " + all_cflags
-	if __decc .and. __axp then all_cflags = all_cflags + "/L_DOUBLE=64"
-
-xpm.h :
-	@ !Sanity check!			suggested by Michael Lemke
-	@ write sys$output "Hey, you there!  Read README.VMS!  It says that you have to copy XPM.H"
-	@ write sys$output "from somewhere, like a XPM library distribution!  I can't work without it,"
-	@ write sys$output "so I'll quit for now."
-	@ exit
-
-xwdfile.h : descrip.mms
-	@ ! This is a pure hack to circumvent a bug in the file provided by
-	@ ! Digital.  This is so ugly we don't want the user to see what
-	@ ! really happens.
-	@ ! But perhaps we'll give him just a little hint, huh?  :-)
-	@ write sys$output "*** Doing some hackery with XWDFile.h...  Sit tight"
-	@ __result := NO
-	@ if f$search("DECW$UTILS:XWDFILE.H") .nes. "" then __result := YES
-	@ if __result then open/write foo xwdfile.tpu_tmp
-	@ if __result then write foo -
-		"input_file:=GET_INFO(COMMAND_LINE, ""file_name"");"
-	@ if __result then write foo -
-		"main_buffer := CREATE_BUFFER (""main"", input_file);"
-	@ if __result then write foo -
-		"position (beginning_of (main_buffer));"
-	@ if __result then write foo -
-		"loop"
-	@ if __result then write foo -
-		"	r := search_quietly (""""""copyright.h"""""", FORWARD);"
-	@ if __result then write foo -
-		"	EXITIF r = 0;"
-	@ if __result then write foo -
-		"	if beginning_of(r) <> end_of(r)"
-	@ if __result then write foo -
-		"	then"
-	@ if __result then write foo -
-		"		erase (r);"
-	@ if __result then write foo -
-		"		position (r);"
-	@ if __result then write foo -
-		"		copy_text (""<decw$utils/copyright.h>"");"
-	@ if __result then write foo -
-		"	endif;"
-	@ if __result then write foo -
-		"	position (end_of (r));"
-	@ if __result then write foo -
-		"endloop;"
-	@ if __result then write foo -
-		"position (beginning_of (main_buffer));"
-	@ if __result then write foo -
-		"loop"
-	@ if __result then write foo -
-		"	r := search_quietly (LINE_BEGIN + ""struct {"", FORWARD);"
-	@ if __result then write foo -
-		"	EXITIF r = 0;"
-	@ if __result then write foo -
-		"	if beginning_of(r) <> end_of(r)"
-	@ if __result then write foo -
-		"	then"
-	@ if __result then write foo -
-		"		erase (r);"
-	@ if __result then write foo -
-		"		position (r);"
-	@ if __result then write foo -
-		"		copy_text (""typedef struct {"");"
-	@ if __result then write foo -
-		"	endif;"
-	@ if __result then write foo -
-		"	position (end_of (r));"
-	@ if __result then write foo -
-		"endloop;"
-	@ if __result then write foo -
-		"write_file(main_buffer, get_info (command_line, ""output_file""));"
-	@ if __result then write foo "quit;"
-	@ if __result then close foo
-	@ if __result then save_mesg = f$environment("MESSAGE")
-	@ !if __result then -
-	!	set message/nofacility/noidentification/noseverity/notext
-	@ if __result then edit/tpu/nosection/nodisplay -
-		/command=xwdfile.tpu_tmp/out=xwdfile.h -
-		decw$utils:xwdfile.h
-	@ if __result then delete xwdfile.tpu_tmp;*
-	@ if __result then set message'save_mesg'
-	@ if __result then write sys$output "*** There, done."
+	if __decc then CFLAGS = "/DECC/PREFIX=ALL " + CFLAGS
+	if __decc .and. __axp then CFLAGS = CFLAGS + "/L_DOUBLE=64"
 
 !ctwm.hlp : ctwm.rnh
 !	runoff ctwm.rnh
@@ -179,17 +242,6 @@ clean : mostlyclean
 	- delete/log *.*_exe;*
 	- delete/log *.hlp;*
 	- delete/log zip.*;*
-
-FRC :
-	@ ! This clause is to force other clauses to happen.
-
-FAKE_XPMLIB=you:[must.define.this.in]
-
-check_xpmlib :
-	@ if "$(FAKE_XPMLIB)descrip.mms" .eqs. "$(XPMLIB)" then -
-		write sys$output "You must change the definition of XPMLIB in DESCRIP.MMS."
-	@ if "$(FAKE_XPMLIB)descrip.mms" .eqs. "$(XPMLIB)" then -
-		exit
 
 !######################## Only for distributors #############################
 

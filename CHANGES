@@ -1454,3 +1454,15 @@ VirtualScreens {
 	There were some variables shadowing others, things not being
 	safely initialized, that sort of thing.
 	[Richard Levitte]
+
+   49 - Make it easier to configure on VMS
+
+	Moved all the configuration definitions to descrip.local-template,
+	and instruct the users to copy that file to descrip.local and make
+	all needed changes there.
+	[Richard Levitte]
+
+   50 - Changed all relevant occurences of levitte@lp.se to
+	richard@levitte.org.
+	[Richard Levitte]
+

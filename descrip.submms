@@ -1,9 +1,7 @@
-# Makefile for ctwm
+# Submakefile for ctwm
 # Do NOT use this description file directly.  Instead, just type MMS,
 # and this one will be included.
 
-SESSIONOBJ=$(GOAL)SESSION.$(EXT)OBJ,
-#SOUNDOBJ=$(GOAL)SOUND.$(EXT)OBJ,
 OBJS =	$(GOAL)GRAM.$(EXT)OBJ,$(GOAL)LEX.$(EXT)OBJ,$(GOAL)DEFTWMRC.$(EXT)OBJ,-
 	$(GOAL)ADD_WINDOW.$(EXT)OBJ,$(GOAL)GC.$(EXT)OBJ,$(GOAL)LIST.$(EXT)OBJ,-
 	$(GOAL)CTWM.$(EXT)OBJ,$(GOAL)PARSE.$(EXT)OBJ,$(GOAL)MENUS.$(EXT)OBJ,-
@@ -11,16 +9,15 @@ OBJS =	$(GOAL)GRAM.$(EXT)OBJ,$(GOAL)LEX.$(EXT)OBJ,$(GOAL)DEFTWMRC.$(EXT)OBJ,-
 	$(GOAL)VERSION.$(EXT)OBJ,$(GOAL)ICONMGR.$(EXT)OBJ,-
 	$(GOAL)CURSOR.$(EXT)OBJ,$(GOAL)ICONS.$(EXT)OBJ,-
 	$(GOAL)WORKMGR.$(EXT)OBJ,$(GOAL)WINDOWBOX.$(EXT)OBJ,-
-	$(GOAL)CLICKTOFOCUS.$(EXT)OBJ,$(GOAL)VSCREEN.$(EXT)OBJ,-
-	$(GOAL)GNOME.$(EXT)OBJ,-
-	$(SESSIONOBJ)$(SOUNDOBJ)-
+	$(GOAL)CLICKTOFOCUS.$(EXT)OBJ,$(GOAL)VSCREEN.$(EXT)OBJ-
+	$(GNOMEOBJ)$(SESSIONOBJ)$(SOUNDOBJ),-
 	$(GOAL)VMS_CMD_SERVICES.$(EXT)OBJ,-
 	$(GOAL)LNM.$(EXT)OBJ,$(GOAL)ALLOCA.$(EXT)OBJ
 
 .FIRST :
 	DEFINE X11XMU $(X11XMU)
-	DEFINE X11SM $(X11SM)
-	DEFINE XPMLIB $(XPMLIB)
+	sessionincdir="$(SESSIONINCDIR)" - ","
+	IF sessionincdir .NES. "" THEN DEFINE X11SM 'sessionincdir'
 
 .SUFFIXES : .$(EXT)OBJ .C
 
@@ -58,18 +55,18 @@ DEFTWMRC.C : SYSTEM.CTWMRC GENDEFTWMRC.COM
 
 $(OPTION) : DESCRIP.MMS DESCRIP.SUBMMS
 	if "$(CLIB)" .nes. "" then write foo "$(CLIB)"
-	__result := XPMLIB:XPM.OLB
+	__result := $(XPMLIB).OLB
 	if f$search(__result) .eqs. "" then -
-		__result := XPMLIB:LIBXPM.OLB
+		__result := $(XPMLIB).OLB
 	if "$(EXT)" .eqs. "VAX_VAXC_" .and. -
-		f$search("XPMLIB:LIBXPM.OLB_VAXC") .nes. "" then -
-		__result := XPMLIB:LIBXPM.OLB_VAXC
+		f$search("$(XPMLIB).OLB_VAXC") .nes. "" then -
+		__result := $(XPMLIB).OLB_VAXC
 	if "$(EXT)" .eqs. "VAX_" .and. -
-		f$search("XPMLIB:LIBXPM.OLB_DECC") .nes. "" then -
-		__result := XPMLIB:LIBXPM.OLB_DECC
+		f$search("$(XPMLIB).OLB_DECC") .nes. "" then -
+		__result := $(XPMLIB).OLB_DECC
 	if "$(EXT)" .eqs. "AXP_" .and. -
-		f$search("XPMLIB:LIBXPM.OLB_AXP") .nes. "" then -
-		__result := XPMLIB:LIBXPM.OLB_AXP
+		f$search("$(XPMLIB).OLB_AXP") .nes. "" then -
+		__result := $(XPMLIB).OLB_AXP
 	@ !The following will cause a proper error message, says
 	@ !Michael Lemke.
 	if f$search(__result) .eqs. "" then -
@@ -81,8 +78,83 @@ $(OPTION) : DESCRIP.MMS DESCRIP.SUBMMS
 	write foo "SYS$SHARE:DECW$XEXTLIBSHR/SHARE"
 	write foo "SYS$SHARE:DECW$XLIBSHR/SHARE"
 	write foo "SYS$SHARE:DECW$ICELIB/SHARE"
-	write foo "SYS$SHARE:DECW$SMSHR/SHARE"
+	if "$(SESSIONLIB)" .nes. "" then write foo "$(SESSIONLIB)/SHARE"
 	close foo
+
+xwdfile.h : descrip.mms
+	@ ! This is a pure hack to circumvent a bug in the file provided by
+	@ ! Digital.  This is so ugly we don't want the user to see what
+	@ ! really happens.
+	@ ! But perhaps we'll give him just a little hint, huh?  :-)
+	@ write sys$output "*** Doing some hackery with XWDFile.h...  Sit tight"
+	@ __result := NO
+	@ if f$search("DECW$UTILS:XWDFILE.H") .nes. "" then __result := YES
+	@ if __result then open/write foo xwdfile.tpu_tmp
+	@ if __result then write foo -
+		"input_file:=GET_INFO(COMMAND_LINE, ""file_name"");"
+	@ if __result then write foo -
+		"main_buffer := CREATE_BUFFER (""main"", input_file);"
+	@ if __result then write foo -
+		"position (beginning_of (main_buffer));"
+	@ if __result then write foo -
+		"loop"
+	@ if __result then write foo -
+		"	r := search_quietly (""""""copyright.h"""""", FORWARD);"
+	@ if __result then write foo -
+		"	EXITIF r = 0;"
+	@ if __result then write foo -
+		"	if beginning_of(r) <> end_of(r)"
+	@ if __result then write foo -
+		"	then"
+	@ if __result then write foo -
+		"		erase (r);"
+	@ if __result then write foo -
+		"		position (r);"
+	@ if __result then write foo -
+		"		copy_text (""<decw$utils/copyright.h>"");"
+	@ if __result then write foo -
+		"	endif;"
+	@ if __result then write foo -
+		"	position (end_of (r));"
+	@ if __result then write foo -
+		"endloop;"
+	@ if __result then write foo -
+		"position (beginning_of (main_buffer));"
+	@ if __result then write foo -
+		"loop"
+	@ if __result then write foo -
+		"	r := search_quietly (LINE_BEGIN + ""struct {"", FORWARD);"
+	@ if __result then write foo -
+		"	EXITIF r = 0;"
+	@ if __result then write foo -
+		"	if beginning_of(r) <> end_of(r)"
+	@ if __result then write foo -
+		"	then"
+	@ if __result then write foo -
+		"		erase (r);"
+	@ if __result then write foo -
+		"		position (r);"
+	@ if __result then write foo -
+		"		copy_text (""typedef struct {"");"
+	@ if __result then write foo -
+		"	endif;"
+	@ if __result then write foo -
+		"	position (end_of (r));"
+	@ if __result then write foo -
+		"endloop;"
+	@ if __result then write foo -
+		"write_file(main_buffer, get_info (command_line, ""output_file""));"
+	@ if __result then write foo "quit;"
+	@ if __result then close foo
+	@ if __result then save_mesg = f$environment("MESSAGE")
+	@ !if __result then -
+	!	set message/nofacility/noidentification/noseverity/notext
+	@ if __result then edit/tpu/nosection/nodisplay -
+		/command=xwdfile.tpu_tmp/out=xwdfile.h -
+		decw$utils:xwdfile.h
+	@ if __result then delete xwdfile.tpu_tmp;*
+	@ if __result then set message'save_mesg'
+	@ if __result then write sys$output "*** There, done."
 
 ADD_WINDOW.$(EXT)OBJ : ADD_WINDOW.C -
        TWM.H ADD_WINDOW.H UTIL.H RESIZE.H PARSE.H GRAM.H LIST.H EVENTS.H -
@@ -131,7 +203,7 @@ RESIZE.$(EXT)OBJ : RESIZE.C -
        TWM.H PARSE.H UTIL.H RESIZE.H ADD_WINDOW.H SCREEN.H -
        LIST.H MENUS.H ICONMGR.H WORKMGR.H
 UTIL.$(EXT)OBJ : UTIL.C -
-       TWM.H UTIL.H GRAM.H SCREEN.H ICONS.H XPM.H SICONIFY.BM -
+       TWM.H UTIL.H GRAM.H SCREEN.H ICONS.H SICONIFY.BM -
        LIST.H MENUS.H ICONMGR.H WORKMGR.H $(DEP_XWDFILE)
 VERSION.$(EXT)OBJ : VERSION.C
 WINDOWBOX.$(EXT)OBJ : WINDOWBOX.C -

@@ -12,23 +12,31 @@ Unpacking and configuration:
    have a copy of xpm, try using Google to find a site near you. I found
    ftp://ftp2.cnam.fr/decwindows/lib/)
 
-2) Copy the xpm.h file from the xpm distribution to the ctwm source directory.
+2) If you don't already have a working descrip.local, copy
+   descrip.local-template to desrip.local:
 
-3) Edit the make.com or descrip.mms file to change x11xmu, x11xmulib,
-   x11lib and EXIT_ENDSESSION logicals or symbols to point to your own set-up.
+   $ IF F$SEARCH("DESCRIP.LOCAL") .EQS. "" THEN -
+	COPY DESCRIP.LOCAL-TEMPLATE DESCRIP.LOCAL
+
+3) Edit descrip.local and change what needs to be changed.  There are fairly
+   clear comments describing how it should be done.
 
    About EXIT_ENDSESSION, see warning W1 below.
 
 Compilation and linking:
 ------------------------
 
-4) IF YOU DOWNLOADED A PACKAGE WITH OBJECT FILES, you only need to link
-   ctwm, doing "@link.com".  Then go to step 7).
+4) This item is not true any more, because support for make.com and link.com
+   has been removed.  MMK is free and works perfectly well.
+
+   Was: 'IF YOU DOWNLOADED A PACKAGE WITH OBJECT FILES, you only need to link
+   ctwm, doing "@link.com".  Then go to step 7).'
 
 5) You do not need to rename the files with _VMS extensions any more.
 
-6) compile ctwm, either with make.com by doing "@make", or with descrip.mms
-   by doing "mms/ign=w".
+6) build ctwm by doing "mmk/ign=w" (if you have DECSET, you can use MMS
+   instead of MMK).  If you downloaded a package with object files, it
+   should result in ctwm being linked only.
 
 [ N.B.:  WHEN LINKING object files that have been compiled with VAX C
   (*.VAX_VAXC_OBJ), the linker may complain about two undefined symbols.
@@ -121,4 +129,4 @@ A thank you goes to the following people:
 
   Michael Lemke <ai26@a400.sternwarte.uni-erlangen.de>
 
-/Richard Levitte, <levitte@lp.se>
+/Richard Levitte, <richard@levitte.org>
