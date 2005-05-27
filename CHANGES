@@ -1444,3 +1444,10 @@ VirtualScreens {
 	through the use of USER_* make variables in Imakefile.local.  Added
 	a lot more commentary in Imakefile.local-template.
 	[Richard Levitte]
+
+   49 - Make it easier to configure on VMS
+
+	Moved all the configuration definitions to descrip.local-template,
+	and instruct the users to copy that file to descrip.local and make
+	all needed changes there.
+
