@@ -94,9 +94,9 @@
 #  include "sound.h"
 #endif
 #ifdef VMS
-#include <decw$include/Xatom.h> 
+#  include <decw$include/Xatom.h> 
 #else
-#include <X11/Xatom.h> 
+#  include <X11/Xatom.h> 
 #endif
 
 /* For m4... */
@@ -2115,8 +2115,6 @@ static FILE *start_m4(FILE *fraw)
                 exit(23);
         }
         if (fres == 0) {
-                extern Display *dpy;
-                extern char *display_name;
                 char *tmp_file;
 
                 /* Child */
