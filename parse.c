@@ -2073,12 +2073,24 @@ int do_squeeze_entry (name_list **list,	/* squeeze or dont-squeeze list */
 		 num, denom);
 	return (1);
     }
-    if (denom == 1) {
+    /* Process the special cases from the manual here rather than
+     * each time we calculate the position of the title bar
+     * in add_window.c:ComputeTitleLocation().
+     * In fact, it's better to get rid of them entirely, but we
+     * probably should not do that for compatibility's sake.
+     * By using a non-zero denominator the position will be relative.
+     */
+    if (denom == 0 && num == 0) {
+	if (justify == J_CENTER) {
+	    num = 1;
+	    denom = 2;
+	} else if (justify == J_RIGHT) {
+	    num = 2;
+	    denom = 2;
+	}
 	twmrc_error_prefix();
-	fprintf (stderr, "useless SqueezeTitle faction %d/%d, assuming 0/0\n",
+	fprintf (stderr, "deprecated SqueezeTitle faction 0/0, assuming %d/%d\n",
 		 num, denom);
-	num = 0;
-	denom = 0;
     }
 
     if (HasShape) {

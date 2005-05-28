@@ -1887,21 +1887,13 @@ void ComputeTitleLocation (register TwmWindow *tmp)
 	/*
 	 * figure label base from squeeze info (justification fraction)
 	 */
-	if (si->denom == 0) {	/* num is pixel based */
-	    if ((basex = si->num) == 0) {  /* look for special cases */
-		switch (si->justify) {
-		  case J_RIGHT:
-		    basex = maxwidth;
-		    break;
-		  case J_CENTER:
-		    basex = maxwidth / 2;
-		break;
-		}
-	    }
+	if (si->denom == 0) {		/* num is pixel based */
+	    basex = si->num;
 	} else {			/* num/denom is fraction */
 	    basex = ((si->num * maxwidth) / si->denom);
-	    if (si->num < 0) basex += maxwidth;
 	}
+	if (si->num < 0)
+	    basex += maxwidth;
 
 	/*
 	 * adjust for left (nop), center, right justify and clip

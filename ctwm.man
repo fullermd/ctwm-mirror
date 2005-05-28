@@ -1307,19 +1307,27 @@ where \fIname\fP is a window name, \fIjustification\fP is either \fBleft\fP,
 are numbers specifying a ratio giving the relative position about which
 the titlebar is justified.  The ratio is measured from left to right if
 the numerator is positive, and right to left if negative.  A denominator
-of 0 indicates that the numerator should be measured in pixels.  For
-convenience, the ratio 0/0 is the same as 1/2 for \fBcenter\fP and \-1/1
-for \fBright\fP.  For example:
+of 0 indicates that the numerator should be interpreted as pixels. 
+For compatibility, the pixel-position 0/0 is the relative  middle  of
+the window (1/2) for \fBcenter\fP and the relative right side of the
+window (2/2) for \fBright\fP, but this use is not recommended.
+Use "right 2 2" for relative positioning, or "right -1 0" for absolute;
+this makes a difference when  dragging  the  titlebar (see
+\fIf.movetitlebar\fP).
+For example:
+
 .EX 0
 \fBSqueezeTitle\fP
 {
-	"XTerm"	left		0	0
-	"xterm1"	left		1	3
-	"xterm2"	left		2	3
-	"oclock"	center		0	0
-	"emacs"	right		0	0
+	"XTerm"	left			0	0
+	"xterm1"	left			1	3
+	"xterm2"	left			2	3
+	"oclock"	center		1	2
+	"emacs"	right		2	2
 }
 .EE
+The  default  positioning is left-justified, absolute at 0 pixels).
+
 The \fBDontSqueezeTitle\fP list can be used to turn off squeezing on
 certain titles.
 
