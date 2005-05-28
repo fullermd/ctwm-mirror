@@ -2916,7 +2916,7 @@ void PaintIcon (TwmWindow *tmp_win)
 
     x     = 0;
     width = icon->w_width;
-    if (Scr->SchrinkIconTitles && icon->title_schrinked) {
+    if (Scr->ShrinkIconTitles && icon->title_shrunk) {
 	x     = GetIconOffset (icon);
 	width = icon->width;
     }

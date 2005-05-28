@@ -622,7 +622,7 @@ typedef struct _TwmKeyword {
 #define kw0_DontWarpCursorInWMap	49
 #define kw0_CenterFeedbackWindow	50
 #define kw0_WarpToDefaultMenuEntry	51
-#define kw0_SchrinkIconTitles		52
+#define kw0_ShrinkIconTitles		52
 #define kw0_AutoRaiseIcons		53
 #define kw0_use3DIconBorders		54
 #define kw0_UseSunkTitlePixmap          55
@@ -1021,7 +1021,8 @@ static TwmKeyword keytable[] = {
     { "root",			ROOT, 0 },
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
-    { "schrinkicontitles",	KEYWORD, kw0_SchrinkIconTitles },
+    { "schrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
+    { "shrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
     { "shortallwindowsmenus",	KEYWORD, kw0_ShortAllWindowsMenus },
@@ -1323,8 +1324,8 @@ int do_single_keyword (int keyword)
 	Scr->WarpToDefaultMenuEntry = TRUE;
 	return 1;
 
-      case kw0_SchrinkIconTitles:
-	Scr->SchrinkIconTitles = TRUE;
+      case kw0_ShrinkIconTitles:
+	Scr->ShrinkIconTitles = TRUE;
 	return 1;
 
       case kw0_AutoRaiseIcons:
