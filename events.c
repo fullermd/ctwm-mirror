@@ -1903,7 +1903,7 @@ void RedoIconName(void)
 			0, 0, &rect, 1, ShapeSet, 0);
 	}
 	if (Tmp_win->icon->has_title) {
-	    if (Scr->SchrinkIconTitles && Tmp_win->icon->title_schrinked) {
+	    if (Scr->ShrinkIconTitles && Tmp_win->icon->title_shrunk) {
 		rect.x      = x;
 		rect.y      = Tmp_win->icon->height;
 		rect.width  = Tmp_win->icon->width;
@@ -1918,8 +1918,8 @@ void RedoIconName(void)
 				     0, &rect, 1, ShapeUnion, 0);
 	}
     }
-    if (Scr->SchrinkIconTitles &&
-	Tmp_win->icon->title_schrinked &&
+    if (Scr->ShrinkIconTitles &&
+	Tmp_win->icon->title_shrunk &&
 	Tmp_win->icon_on && (visible (Tmp_win))) {
 	IconDown (Tmp_win);
 	IconUp (Tmp_win);
@@ -3488,7 +3488,7 @@ void HandleEnterNotify(void)
 	    if (Scr->FocusRoot && (!scanArgs.leaves || scanArgs.inferior)) {
 		Bool accinput;
 
-		if (Scr->SchrinkIconTitles &&
+		if (Scr->ShrinkIconTitles &&
 		    Tmp_win->icon &&
 		    ewp->window == Tmp_win->icon->w &&
 		    ewp->detail != NotifyInferior) {
@@ -3746,11 +3746,11 @@ void HandleLeaveNotify(void)
 	if (Event.xcrossing.mode != NotifyNormal)
 	    return;
 
-	if (Scr->SchrinkIconTitles &&
+	if (Scr->ShrinkIconTitles &&
 	    Tmp_win->icon &&
 	    Event.xcrossing.window == Tmp_win->icon->w &&
 	    Event.xcrossing.detail != NotifyInferior) {
-	    SchrinkIconTitle (Tmp_win);
+	    ShrinkIconTitle (Tmp_win);
 	    return;
 	}
 

@@ -3896,7 +3896,7 @@ void DeIconify(TwmWindow *tmp_win)
     if (tmp_win->icon && tmp_win->icon->w) {
 	XUnmapWindow(dpy, tmp_win->icon->w);
 	IconDown (tmp_win);
-	if (Scr->SchrinkIconTitles) tmp_win->icon->title_schrinked = True;
+	if (Scr->ShrinkIconTitles) tmp_win->icon->title_shrunk = True;
     }
     if (tmp_win->list)
       for (wl = tmp_win->list; wl != NULL; wl = wl->nextv)

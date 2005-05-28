@@ -263,7 +263,7 @@ struct ScreenInfo
     short	XMoveGrid, YMoveGrid;
     short	FastServer;
     short	CenterFeedbackWindow;
-    short	SchrinkIconTitles;
+    short	ShrinkIconTitles;
     short	AutoRaiseIcons;
     short       AutoFocusToTransients; /* kai */
     short       PackNewWindows;

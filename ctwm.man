@@ -426,7 +426,7 @@ interactively enabled or disabled on individual windows using the function
 \fBf.autoraise\fP.
 
 .IP "\fBAutoRaiseIcons\fP" 8
-Icons are raised when the cursor enters it. Useful with SchrinkIconTitles.
+Icons are raised when the cursor enters it. Useful with ShrinkIconTitles.
 
 .IP "\fBAutoRelativeResize\fP" 8
 This variable indicates that dragging out a window size (either when
@@ -1266,8 +1266,9 @@ For example:
 This would place on the root window 3 pixel values for borders and titlebars,
 as well as the three color strings, all taken from the default colormap.
 
-.IP "\fBSchrinkIconTitles\fP" 8
-A la Motif schrinking of icon titles, and expansion when mouse is inside icon.
+.IP "\fBShrinkIconTitles\fP" 8
+A la Motif shrinking of icon titles, and expansion when mouse is inside icon.
+The old incorrect spelling \fBSchrinkIconTitles\fP is also still accepted.
 
 .IP "\fBShortAllWindowsMenus\fP" 8
 Don't show WorkSpaceManager and IconManagers in the TwmWindows and TwmAllWindows menus.

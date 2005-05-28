@@ -1155,7 +1155,7 @@ void InitVariables(void)
     Scr->YMoveGrid = 1;
     Scr->FastServer = True;
     Scr->CenterFeedbackWindow = False;
-    Scr->SchrinkIconTitles = False;
+    Scr->ShrinkIconTitles = False;
     Scr->AutoRaiseIcons = False;
     Scr->AutoFocusToTransients = False; /* kai */
     Scr->use3Diconborders = False;
