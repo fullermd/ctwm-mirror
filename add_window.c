@@ -471,6 +471,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     tmp_win->ring.cursor_valid = False;
 
     tmp_win->squeeze_info = NULL;
+    tmp_win->squeeze_info_copied = 0;
     /*
      * get the squeeze information; note that this does not have to be freed
      * since it is coming from the screen list

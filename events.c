@@ -2298,6 +2298,7 @@ void HandleDestroyNotify(void)
      *     9.  cwins
      *     10. titlebuttons
      *     11. window ring
+     *     12. squeeze_info (delete if squeeze_info_copied)
      */
     WMapDestroyWindow (Tmp_win);
     if (Tmp_win->gray) XFreePixmap (dpy, Tmp_win->gray);
@@ -2327,6 +2328,8 @@ void HandleDestroyNotify(void)
     if (Tmp_win->titlebuttons)					/* 10 */
       free ((char *) Tmp_win->titlebuttons);
     remove_window_from_ring (Tmp_win);				/* 11 */
+    if (Tmp_win->squeeze_info_copied)				/* 12 */
+	free(Tmp_win->squeeze_info);
 
     free((char *)Tmp_win);
 

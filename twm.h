@@ -389,6 +389,7 @@ struct TwmWindow
     Colormaps cmaps;		/* colormaps for this application */
     TBWindow *titlebuttons;
     SqueezeInfo *squeeze_info;	/* should the title be squeezed? */
+    int squeeze_info_copied;	/* must above SqueezeInfo be freed? */
     struct {
 	struct TwmWindow *next, *prev;
 	Bool cursor_valid;

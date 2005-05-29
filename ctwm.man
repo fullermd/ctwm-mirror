@@ -1326,7 +1326,7 @@ For example:
 	"emacs"	right		2	2
 }
 .EE
-The  default  positioning is left-justified, absolute at 0 pixels).
+The default positioning is left-justified, absolute at 0 pixels.
 
 The \fBDontSqueezeTitle\fP list can be used to turn off squeezing on
 certain titles.
@@ -2075,6 +2075,22 @@ standard X geometry syntax (e.g. 200x300+150\-0). Sets the current window
 to the specified geometry. The width and height are to be given in pixel,
 no base size or resize increment are used.
 
+.IP "\fBf.movetitlebar\fP" 8
+If applied to a squeezed titlebar (see \fISqueezeTitle\fP) you can drag
+it along the top of the window (a feature which was first found in
+BeOS). The existing justification type is preserved, as is the
+positioning (relative or absolute). This means that a relatively
+positioned titlebar will move when the width of a window changes,
+whereas an absolutely positioned title will not.
+
+The default positioning is left-justified, absolute at 0 pixels.
+.EX 0
+Button1 = m1 : title : f.movetitlebar
+.EE
+\fBf.movetitlebar\fP does nothing if the window has no title, the
+window is squeezed (see f.squeeze), or the title is not squeezed
+(see \fISqueezeTitle\fP).
+ 
 .IP "\fBf.movetonextworkspace\fI" 8
 Move the window to the next workspace.
 

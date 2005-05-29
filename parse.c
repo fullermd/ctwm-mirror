@@ -838,6 +838,7 @@ static TwmKeyword keytable[] = {
     { "f.movepack",		FKEYWORD, F_MOVEPACK },
     { "f.movepush",		FKEYWORD, F_MOVEPUSH },
     { "f.moveresize",		FSKEYWORD, F_MOVERESIZE },
+    { "f.movetitlebar",		FKEYWORD, F_MOVETITLEBAR },
     { "f.movetonextworkspace",  FKEYWORD, F_MOVETONEXTWORKSPACE },
     { "f.movetonextworkspaceandfollow",  FKEYWORD, F_MOVETONEXTWORKSPACEANDFOLLOW },
     { "f.movetoprevworkspace",  FKEYWORD, F_MOVETOPREVWORKSPACE },
@@ -2137,7 +2138,12 @@ static FILE *start_m4(FILE *fraw)
                 dup2(fids[1], 1);       /* stdout = pipe to parent */
                 /* get_defs("m4", dpy, display_name) */
                 tmp_file = m4_defs(dpy, display_name);
-                execlp("m4", "m4", "-s", tmp_file, "-", NULL);
+                execlp("m4", "m4",
+#if !defined(__NetBSD__)
+			"-s",
+#endif
+			tmp_file, "-", NULL);
+
                 /* If we get here we are screwed... */
                 perror("Can't execlp() m4");
                 exit(124);
