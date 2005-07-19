@@ -227,7 +227,8 @@ dist:	clean gram.h gram.c lex.c deftwmrc.c
 	version=$(GET_VERSION); \
 	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \
 	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
-	       \! -name Makefile \! -name Imakefile.local \! descrip.local \
+	       \! -name Makefile \
+	       \! -name Imakefile.local \! -name descrip.local \
 		| sort > ../ctwm-$$version.list; \
 	tar --no-recursion --files-from ../ctwm-$$version.list -cvf - | \
 	tardy --user_number=0  --user_name=ctwm \
