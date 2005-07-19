@@ -50,7 +50,7 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
-#define VERSION_ID "3.7beta6"
+#define VERSION_ID "3.7"
 #ifdef I18N
 #define VERSION_I18N " + I18N Patch"
 #else
