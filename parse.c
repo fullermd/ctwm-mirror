@@ -1022,12 +1022,12 @@ static TwmKeyword keytable[] = {
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
     { "schrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
-    { "shrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
     { "shortallwindowsmenus",	KEYWORD, kw0_ShortAllWindowsMenus },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
     { "showworkspacemanager",	KEYWORD, kw0_ShowWorkspaceManager },
+    { "shrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
     { "sloppyfocus",            KEYWORD, kw0_SloppyFocus },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
 #ifdef SOUNDS
