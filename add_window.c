@@ -207,11 +207,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int width, height;			/* tmp variable */
-#ifdef NO_LOCALE
-    Atom actual_type;
-    int actual_format;
-    unsigned long nitems, bytesafter;
-#endif /* NO_LOCALE */
     int ask_user;		/* don't know where to put the window */
     int gravx, gravy;			/* gravity signs for positioning */
     int namelen;
@@ -275,11 +270,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     XSelectInput(dpy, tmp_win->w, PropertyChangeMask);
     XGetWindowAttributes(dpy, tmp_win->w, &tmp_win->attr);
-#ifndef NO_LOCALE
     tmp_win->name = (char*) GetWMPropertyString(tmp_win->w, XA_WM_NAME);
-#else /* NO_LOCALE */
-    XFetchName(dpy, tmp_win->w, &tmp_win->name);
-#endif /* NO_LOCALE */
     tmp_win->class = NoClass;
     XGetClassHint(dpy, tmp_win->w, &tmp_win->class);
     FetchWmProtocols (tmp_win);
@@ -373,6 +364,11 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     if (tmp_win->class.res_class == NULL)
     	tmp_win->class.res_class = NoName;
 
+    /*
+     * full_name seems to exist only because in the conditional code below,
+     * name is sometimes changed. In all other cases, name and full_name
+     * seem to be identical. Is that worth it?
+     */
     tmp_win->full_name = tmp_win->name;
 #ifdef CLAUDE
     if (strstr (tmp_win->name, " - Mozilla")) {
@@ -1094,16 +1090,10 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     tmp_win->title_width = tmp_win->attr.width;
 
-#ifndef NO_LOCALE
     tmp_win->icon_name = (char*) GetWMPropertyString(tmp_win->w, XA_WM_ICON_NAME);
-#else /* NO_LOCALE */
-    if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
-			    XA_STRING, &actual_type, &actual_format, &nitems,
-			    &bytesafter,(unsigned char **)&tmp_win->icon_name))
+    if (!tmp_win->icon_name)
 	tmp_win->icon_name = tmp_win->name;
-#endif /* NO_LOCALE */
 
-    if (tmp_win->icon_name == NULL) tmp_win->icon_name = tmp_win->name;
 #ifdef CLAUDE
     if (strstr (tmp_win->icon_name, " - Mozilla")) {
       char *moz = strstr (tmp_win->icon_name, " - Mozilla");
@@ -1757,6 +1747,22 @@ static void CreateHighlightWindows (TwmWindow *tmp_win)
 		       Scr->d_visual, valuemask, &attributes);
 }
 
+void DeleteHighlightWindows(TwmWindow *tmp_win)
+{
+    if (tmp_win->HiliteImage) {
+	if (Scr->HighlightPixmapName) {
+	    /*
+	     * Image obtained from GetImage(): it is in a cache
+	     * so we don't need to free it. There will not be multiple
+	     * copies if the same xpm:foo image is requested again.
+	     */
+	} else {
+	    XFreePixmap (dpy, tmp_win->HiliteImage->pixmap);
+	}
+	free(tmp_win->HiliteImage);
+    }
+}
+
 static void CreateLowlightWindows (TwmWindow *tmp_win)
 {
     XSetWindowAttributes attributes;    /* attributes for create windows */
@@ -2010,7 +2016,6 @@ static void CreateWindowTitlebarButtons (TwmWindow *tmp_win)
     if (tmp_win->lolite_wr) XMapWindow(dpy, tmp_win->lolite_wr);
     return;
 }
-
 
 void SetHighlightPixmap (char *filename)
 {

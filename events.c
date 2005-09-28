@@ -1343,27 +1343,35 @@ static void free_window_names (TwmWindow *tmp,
  * XXX - are we sure that nobody ever sets these to another constant (check
  * twm windows)?
  */
-#define isokay(v) ((v) && (v) != NoName)
     if ((tmp->name == tmp->full_name) && (tmp->name == tmp->icon_name)) {
-	if (nukefull && nukename && nukeicon && isokay(tmp->name)) XFree (tmp->name);
+	if (nukefull && nukename && nukeicon)
+	    FreeWMPropertyString(tmp->name);
     } else
     if (tmp->name == tmp->full_name) {
-	if (nukename && nukefull && isokay(tmp->name)) XFree (tmp->name);
-	if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+	if (nukename && nukefull)
+	    FreeWMPropertyString(tmp->name);
+	if (nukeicon)
+	    FreeWMPropertyString(tmp->icon_name);
     } else
     if (tmp->name == tmp->icon_name) {
-	if (nukename && nukeicon && isokay(tmp->name)) XFree (tmp->name);
-	if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
+	if (nukename && nukeicon)
+	    FreeWMPropertyString(tmp->name);
+	if (nukefull)
+	    FreeWMPropertyString(tmp->full_name);
     } else
     if (tmp->icon_name == tmp->full_name) {
-	if (nukeicon && nukefull && isokay(tmp->icon_name)) XFree (tmp->icon_name);
-	if (nukename && isokay(tmp->name)) XFree (tmp->name);
+	if (nukeicon && nukefull)
+	    FreeWMPropertyString(tmp->icon_name);
+	if (nukename)
+	    FreeWMPropertyString(tmp->name);
     } else {
-	if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
-	if (nukename && isokay(tmp->name)) XFree (tmp->name);
-	if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+	if (nukefull)
+	    FreeWMPropertyString(tmp->full_name);
+	if (nukename)
+	    FreeWMPropertyString(tmp->name);
+	if (nukeicon)
+	    FreeWMPropertyString(tmp->icon_name);
     }
-#undef isokay
     return;
 }
 
@@ -1465,18 +1473,8 @@ void HandlePropertyNotify(void)
 
     switch (Event.xproperty.atom) {
       case XA_WM_NAME:
-#ifndef NO_LOCALE
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_NAME);
 	if (prop == NULL) return;
-#else /* NO_LOCALE */
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L, 
-				MAX_NAME_LEN, False, XA_STRING, &actual,
-				&actual_format, &nitems, &bytesafter,
-				&prop) != Success ||
-	    actual == None)
-	  return;
-	if (!prop) prop = NoName;
-#endif /* NO_LOCALE */
 #ifdef CLAUDE
 	if (strstr (prop, " - Mozilla")) {
 	  char *moz = strstr (prop, " - Mozilla");
@@ -1550,18 +1548,8 @@ void HandlePropertyNotify(void)
 	break;
 
       case XA_WM_ICON_NAME:
-#ifndef NO_LOCALE
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_ICON_NAME);
 	if (prop == NULL) return;
-#else /* NO_LOCALE */
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0, 
-				MAX_ICON_NAME_LEN, False, XA_STRING, &actual,
-				&actual_format, &nitems, &bytesafter,
-				&prop) != Success ||
-	    actual == None)
-	  return;
-	if (!prop) prop = NoName;
-#endif /* NO_LOCALE */
 #ifdef CLAUDE
 	if (strstr (prop, " - Mozilla")) {
 	  char *moz = strstr (prop, " - Mozilla");
@@ -2246,32 +2234,30 @@ void HandleDestroyNotify(void)
 	XDeleteContext(dpy, Tmp_win->icon->w, TwmContext);
 	XDeleteContext(dpy, Tmp_win->icon->w, ScreenContext);
     }
-    if (Tmp_win->title_height)
-    {
+    if (Tmp_win->title_height) {
 	int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
+
 	XDeleteContext(dpy, Tmp_win->title_w, TwmContext);
 	XDeleteContext(dpy, Tmp_win->title_w, ScreenContext);
-	if (Tmp_win->hilite_wl)
-	{
+	if (Tmp_win->hilite_wl) {
 	    XDeleteContext(dpy, Tmp_win->hilite_wl, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->hilite_wl, ScreenContext);
 	}
-	if (Tmp_win->hilite_wr)
-	{
+	if (Tmp_win->hilite_wr) {
 	    XDeleteContext(dpy, Tmp_win->hilite_wr, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->hilite_wr, ScreenContext);
 	}
-	if (Tmp_win->lolite_wr)
-	{
+	if (Tmp_win->lolite_wr) {
 	    XDeleteContext(dpy, Tmp_win->lolite_wr, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->lolite_wr, ScreenContext);
 	}
-	if (Tmp_win->lolite_wl)
-	{
+	if (Tmp_win->lolite_wl) {
 	    XDeleteContext(dpy, Tmp_win->lolite_wl, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->lolite_wl, ScreenContext);
 	}
 	if (Tmp_win->titlebuttons) {
+	    int i;
+
 	    for (i = 0; i < nb; i++) {
 		XDeleteContext (dpy, Tmp_win->titlebuttons[i].window,
 				TwmContext);
@@ -2279,6 +2265,10 @@ void HandleDestroyNotify(void)
 				ScreenContext);
 	    }
         }
+	/*
+	 * The hilite_wl etc windows don't need to be XDestroyWindow()ed
+	 * since that will happen when the parent is destroyed (??)
+	 */
     }
 
     if (Scr->cmapInfo.cmaps == &Tmp_win->cmaps)
@@ -2298,14 +2288,26 @@ void HandleDestroyNotify(void)
      *     9.  cwins
      *     10. titlebuttons
      *     11. window ring
+     *     12. (reserved for squeeze_info)
+     *     13. HiliteImage
+     *     14. iconslist
      */
     WMapDestroyWindow (Tmp_win);
     if (Tmp_win->gray) XFreePixmap (dpy, Tmp_win->gray);
 
+    /*
+     * According to the manual page, the following destroys all child windows
+     * of the frame too, which is most of the windows we're concerned with, so
+     * anything related to them must be done before here.
+     * Icons are not child windows.
+     */
     XDestroyWindow(dpy, Tmp_win->frame);
-    if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->icon_not_ours) {
-	XDestroyWindow(dpy, Tmp_win->icon->w);
-	IconDown (Tmp_win);
+    if (Tmp_win->icon) {
+	if (Tmp_win->icon->w && !Tmp_win->icon_not_ours) {
+	    XDestroyWindow(dpy, Tmp_win->icon->w);
+	    IconDown (Tmp_win);
+	}
+	free (Tmp_win->icon);
     }
     Tmp_win->occupation = 0;
     RemoveIconManager(Tmp_win);					/* 7 */
@@ -2323,10 +2325,12 @@ void HandleDestroyNotify(void)
       XFree ((char *)Tmp_win->class.res_name);
     if (Tmp_win->class.res_class && Tmp_win->class.res_class != NoName) /* 6 */
       XFree ((char *)Tmp_win->class.res_class);
-    free_cwins (Tmp_win);				/* 9 */
+    free_cwins (Tmp_win);					/* 9 */
     if (Tmp_win->titlebuttons)					/* 10 */
-      free ((char *) Tmp_win->titlebuttons);
+	free(Tmp_win->titlebuttons);
     remove_window_from_ring (Tmp_win);				/* 11 */
+    DeleteHighlightWindows(Tmp_win);				/* 13 */
+    DeleteIconsList (Tmp_win);					/* 14 */
 
     free((char *)Tmp_win);
 

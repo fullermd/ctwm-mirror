@@ -3145,7 +3145,6 @@ Image *GetImage (char *name, ColorPair cp)
 {
     name_list **list;
     char fullname [256];
-    int   startn;
     Image *image;
 
     if (name == NULL) return (None);
@@ -3154,9 +3153,10 @@ Image *GetImage (char *name, ColorPair cp)
     list = &Scr->ImageCache;
 #ifdef XPM
     if ((name [0] == '@') || (strncmp (name, "xpm:", 4) == 0)) {
-	startn = (name [0] == '@') ? 1 : 4;
-	if ((image = (Image*) LookInNameList (*list, name)) == None) {
-	    sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+	sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+
+	if ((image = (Image*) LookInNameList (*list, fullname)) == None) {
+	    int startn = (name [0] == '@') ? 1 : 4;
 	    if ((image = GetXpmImage (name + startn, cp)) != None) {
 	        AddToList (list, fullname, (char*) image);
 	    }
@@ -3186,7 +3186,7 @@ Image *GetImage (char *name, ColorPair cp)
 #endif
 #if !defined(VMS) || defined(HAVE_XWDFILE_H)
     if ((strncmp (name, "xwd:", 4) == 0) || (name [0] == '|')) {
-	startn = (name [0] == '|') ? 0 : 4;
+	int startn = (name [0] == '|') ? 0 : 4;
 	if ((image = (Image*) LookInNameList (*list, name)) == None) {
 	    if ((image = GetXwdImage (&name [startn], cp)) != None) {
 		AddToList (list, name, (char*) image);
@@ -3885,7 +3885,6 @@ void _swaplong (register char *bp, register unsigned n)
     }
 }
 
-#ifndef NO_LOCALE
 /***********************************************************************
  *
  *  Procedure:
@@ -3904,6 +3903,19 @@ void _swaplong (register char *bp, register unsigned n)
 
 unsigned char *GetWMPropertyString(Window w, Atom prop)
 {
+#ifdef NO_LOCALE
+    Atom actual_type;
+    int actual_format;
+    unsigned long nitems, bytesafter;
+    unsigned char *string;
+
+    if (XGetWindowProperty (dpy, w, prop, 0L, 200L, False,
+			    XA_STRING, &actual_type, &actual_format, &nitems,
+			    &bytesafter, &string) != Success)
+	string = NULL;
+
+    return string;
+#else
     XTextProperty	text_prop;
     char 		**text_list;
     int 		text_list_count;
@@ -3970,9 +3982,19 @@ unsigned char *GetWMPropertyString(Window w, Atom prop)
     }
 
     return stringptr;
-}
 #endif /* NO_LOCALE */
+}
 
+void FreeWMPropertyString(unsigned char *prop)
+{
+    if (prop && (char *)prop != NoName) {
+#ifdef NO_LOCALE
+	XFree(prop);
+#else
+	free(prop);
+#endif /* NO_LOCALE */
+    }
+}
 
 static void ConstrainLeftTop (int *value, int border)
 {
