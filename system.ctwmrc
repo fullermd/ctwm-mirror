@@ -104,6 +104,7 @@ Button3 = m	: window|icon	: f.function "move-or-raise"
 
 Button1 =	: title		: f.function "move-or-raise"
 Button2 =	: title		: f.raiselower
+Button1 = m     : title		: f.movetitlebar
 
 Button1 =	: icon		: f.function "move-or-iconify"
 Button2 =	: icon		: f.iconify

@@ -193,6 +193,7 @@ extern void TwmOutput(int c);
 #define F_MOVETONEXTWORKSPACEANDFOLLOW   126
 #define F_MOVETOPREVWORKSPACEANDFOLLOW   127
 #define F_CHANGESIZE            128     /* string */
+#define F_MOVETITLEBAR		129
 
 #define D_NORTH			1
 #define D_SOUTH			2

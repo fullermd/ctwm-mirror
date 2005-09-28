@@ -2288,7 +2288,7 @@ void HandleDestroyNotify(void)
      *     9.  cwins
      *     10. titlebuttons
      *     11. window ring
-     *     12. (reserved for squeeze_info)
+     *     12. squeeze_info (delete if squeeze_info_copied)
      *     13. HiliteImage
      *     14. iconslist
      */
@@ -2329,6 +2329,8 @@ void HandleDestroyNotify(void)
     if (Tmp_win->titlebuttons)					/* 10 */
 	free(Tmp_win->titlebuttons);
     remove_window_from_ring (Tmp_win);				/* 11 */
+    if (Tmp_win->squeeze_info_copied)				/* 12 */
+	free(Tmp_win->squeeze_info);
     DeleteHighlightWindows(Tmp_win);				/* 13 */
     DeleteIconsList (Tmp_win);					/* 14 */
 
