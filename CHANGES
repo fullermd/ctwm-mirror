@@ -1477,3 +1477,6 @@ VirtualScreens {
 	richard@levitte.org.
 	[Richard Levitte]
 
+   51 - Fixed several memory leaks found by
+	"Nadav Har'El" <nyh@math.technion.ac.il>.
+	[Olaf "Rhialto" Seibert]
