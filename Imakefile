@@ -225,10 +225,11 @@ deftwmrc.c:  system.ctwmrc
 GET_VERSION="`grep '^\#define VERSION_ID' version.c | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"
 dist:	clean gram.h gram.c lex.c deftwmrc.c
 	version=$(GET_VERSION); \
-	if echo $$version | grep 'devel$' > /dev/null; then \
+	if echo $$version | grep 'devel$$' > /dev/null; then \
 	    version="$$version.`date '+%Y%m%d'`"; \
 	fi; \
 	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \
+	       \! -path MT/\* \! -path \*/MT/\* \! -name MT \
 	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
 	       \! -name Makefile \
 	       \! -name Imakefile.local \! -name descrip.local \
