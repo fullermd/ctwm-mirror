@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "twm.h"
 #include "ctwm.h"
 
 Atom _XA_WM_OCCUPATION;
@@ -37,7 +38,7 @@ Atom _XA_WM_WORKSPACESLIST;
 /* Note that this doesn't assure that ctwm is really running,
    i should set up a communication via flipping a property */
 
-Bool CtwmIsRunning (Display *dpy, int scrnum)
+Bool CtwmIsRunning (Display *display, int scrnum)
 {
     unsigned char	*prop;
     unsigned long	bytesafter;
@@ -45,16 +46,16 @@ Bool CtwmIsRunning (Display *dpy, int scrnum)
     Atom		actual_type;
     int			actual_format;
 
-    _XA_WM_WORKSPACESLIST = XInternAtom (dpy, "WM_WORKSPACESLIST", True);
+    _XA_WM_WORKSPACESLIST = XInternAtom (display, "WM_WORKSPACESLIST", True);
     if (_XA_WM_WORKSPACESLIST == None) return (False);
-    if (XGetWindowProperty (dpy, RootWindow (dpy, scrnum), _XA_WM_WORKSPACESLIST, 0L, 512,
+    if (XGetWindowProperty (display, RootWindow (display, scrnum), _XA_WM_WORKSPACESLIST, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) return (False);
     if (len == 0) return (False);
     return (True);
 }
 
-char **CtwmListWorkspaces (Display *dpy, int scrnum)
+char **CtwmListWorkspaces (Display *display, int scrnum)
 {
     unsigned char	*prop;
     char		*p;
@@ -66,9 +67,9 @@ char **CtwmListWorkspaces (Display *dpy, int scrnum)
     int			count;
     int			i, l;
 
-    _XA_WM_WORKSPACESLIST = XInternAtom (dpy, "_WIN_WORKSPACE_NAMES", True);
+    _XA_WM_WORKSPACESLIST = XInternAtom (display, "_WIN_WORKSPACE_NAMES", True);
 
-    if (XGetWindowProperty (dpy, RootWindow (dpy, scrnum), _XA_WM_WORKSPACESLIST, 0L, 512,
+    if (XGetWindowProperty (display, RootWindow (display, scrnum), _XA_WM_WORKSPACESLIST, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) return 0;
     if (len == 0) return 0;
@@ -87,7 +88,7 @@ char **CtwmListWorkspaces (Display *dpy, int scrnum)
     l = 0;
     i = 0;
     while (l < len) {
-	ret [i++] = (char*) p;
+	ret [i++] = p;
 	l += strlen (p) + 1;
 	p += strlen (p) + 1;
     }
@@ -95,7 +96,7 @@ char **CtwmListWorkspaces (Display *dpy, int scrnum)
     return (ret);
 }
 
-char *CtwmCurrentWorkspace (Display *dpy, int scrnum)
+char *CtwmCurrentWorkspace (Display *display, int scrnum)
 {
     unsigned char	*prop;
     unsigned long	bytesafter;
@@ -103,28 +104,28 @@ char *CtwmCurrentWorkspace (Display *dpy, int scrnum)
     Atom		actual_type;
     int			actual_format;
 
-    _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", True);
+    _XA_WM_CURRENTWORKSPACE = XInternAtom (display, "WM_CURRENTWORKSPACE", True);
     if (_XA_WM_CURRENTWORKSPACE == None) return ((char*) 0);
 
-    if (XGetWindowProperty (dpy, RootWindow (dpy, scrnum), _XA_WM_CURRENTWORKSPACE, 0L, 512,
+    if (XGetWindowProperty (display, RootWindow (display, scrnum), _XA_WM_CURRENTWORKSPACE, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) return ((char*) 0);
     if (len == 0) return ((char*) 0);
     return ((char*) prop);
 }
 
-int CtwmChangeWorkspace (Display *dpy, int scrnum, char	*workspace)
+int CtwmChangeWorkspace (Display *display, int scrnum, char	*workspace)
 {
-    _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", True);
+    _XA_WM_CURRENTWORKSPACE = XInternAtom (display, "WM_CURRENTWORKSPACE", True);
     if (_XA_WM_CURRENTWORKSPACE == None) return (0);
 
-    XChangeProperty (dpy, RootWindow (dpy, scrnum), _XA_WM_CURRENTWORKSPACE, XA_STRING, 8, 
+    XChangeProperty (display, RootWindow (display, scrnum), _XA_WM_CURRENTWORKSPACE, XA_STRING, 8, 
 		     PropModeReplace, (unsigned char *) workspace, strlen (workspace));
-    XFlush (dpy);
+    XFlush (display);
     return (1);
 }
 
-char **CtwmCurrentOccupation (Display *dpy, Window window)
+char **CtwmCurrentOccupation (Display *display, Window window)
 {
     unsigned char	*prop;
     char		*p;
@@ -135,10 +136,10 @@ char **CtwmCurrentOccupation (Display *dpy, Window window)
     int			count, l, i;
     char		**ret;
 
-    _XA_WM_OCCUPATION = XInternAtom (dpy, "WM_OCCUPATION", True);
+    _XA_WM_OCCUPATION = XInternAtom (display, "WM_OCCUPATION", True);
     if (_XA_WM_OCCUPATION == None) return ((char**) 0);
 
-    if (XGetWindowProperty (dpy, window, _XA_WM_OCCUPATION, 0L, 512,
+    if (XGetWindowProperty (display, window, _XA_WM_OCCUPATION, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) return 0;
     if (len == 0) return 0;
@@ -157,7 +158,7 @@ char **CtwmCurrentOccupation (Display *dpy, Window window)
     l = 0;
     i = 0;
     while (l < len) {
-	ret [i++] = (char*) p;
+	ret [i++] = p;
 	l += strlen (p) + 1;
 	p += strlen (p) + 1;
     }
@@ -165,13 +166,13 @@ char **CtwmCurrentOccupation (Display *dpy, Window window)
     return (ret);
 }
 
-int CtwmSetOccupation (Display *dpy, Window window, char **occupation)
+int CtwmSetOccupation (Display *display, Window window, char **occupation)
 {
     int		len;
     char	**occ;
     char	*occup, *o;
 
-    _XA_WM_OCCUPATION = XInternAtom (dpy, "WM_OCCUPATION", True);
+    _XA_WM_OCCUPATION = XInternAtom (display, "WM_OCCUPATION", True);
     if (_XA_WM_OCCUPATION == None) return (0);
 
     occ = occupation;
@@ -187,14 +188,14 @@ int CtwmSetOccupation (Display *dpy, Window window, char **occupation)
 	o += strlen (*occupation) + 1;
 	occupation++;
     }
-    XChangeProperty (dpy, window, _XA_WM_OCCUPATION, XA_STRING, 8, 
+    XChangeProperty (display, window, _XA_WM_OCCUPATION, XA_STRING, 8, 
 		     PropModeReplace, (unsigned char *) occup, len - 1);
-    XFlush (dpy);
+    XFlush (display);
     free (occup);
     return (1);
 }
 
-int CtwmAddToCurrentWorkspace (Display *dpy, Window window)
+int CtwmAddToCurrentWorkspace (Display *display, Window window)
 {
     unsigned char	*prop;
     unsigned long	bytesafter;
@@ -204,29 +205,29 @@ int CtwmAddToCurrentWorkspace (Display *dpy, Window window)
     XWindowAttributes	attr;
     unsigned char	*currentw;
 
-    if (! XGetWindowAttributes (dpy, window, &attr)) return (0);
+    if (! XGetWindowAttributes (display, window, &attr)) return (0);
 
-    _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", True);
+    _XA_WM_CURRENTWORKSPACE = XInternAtom (display, "WM_CURRENTWORKSPACE", True);
     if (_XA_WM_CURRENTWORKSPACE == None) return (0);
 
-    if (XGetWindowProperty (dpy, attr.root, _XA_WM_CURRENTWORKSPACE, 0L, 512,
+    if (XGetWindowProperty (display, attr.root, _XA_WM_CURRENTWORKSPACE, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &currentw) != Success) return (0);
     if (len == 0) return (0);
 
-    _XA_WM_OCCUPATION = XInternAtom (dpy, "WM_OCCUPATION", True);
+    _XA_WM_OCCUPATION = XInternAtom (display, "WM_OCCUPATION", True);
     if (_XA_WM_OCCUPATION == None) return (0);
 
-    if (XGetWindowProperty (dpy, window, _XA_WM_OCCUPATION, 0L, 512,
+    if (XGetWindowProperty (display, window, _XA_WM_OCCUPATION, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) return (0);
     if (len == 0) return (0);
 
     strcpy ((char*)prop + len, (char*)currentw);
-    XChangeProperty (dpy, window, _XA_WM_OCCUPATION, XA_STRING, 8, 
+    XChangeProperty (display, window, _XA_WM_OCCUPATION, XA_STRING, 8,
 		     PropModeReplace,
 		     prop, (int) len + strlen ((char*)currentw));
-    XFlush (dpy);
+    XFlush (display);
     return (1);
 }
 

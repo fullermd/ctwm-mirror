@@ -752,7 +752,8 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	}
     }
 
-    if (icon->match != match_none) AddToList (&tmp_win->iconslist, icon->pattern, (char*) icon);
+    if (icon->match != match_none)
+	AddToList (&tmp_win->iconslist, icon->pattern, (char*) icon);
 
     tmp_win->icon = icon;
     /* I need to figure out where to put the icon window now, because 
@@ -794,6 +795,15 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     XDefineCursor(dpy, icon->w, Scr->IconCursor);
     MaybeAnimate = True;
     return (0);
+}
+
+void DeleteIconsList(TwmWindow *tmp_win)
+{
+    /*
+     * Only the list itself needs to be freed, since the pointers it
+     * contains point into various lists that belong to Scr.
+     */
+    FreeList(&tmp_win->iconslist);
 }
 
 void ShrinkIconTitle (TwmWindow *tmp_win)

@@ -126,7 +126,7 @@ extern Bool MaybeAnimate;
 extern int  AlternateKeymap;
 extern Bool AlternateContext;
 
-static void CtwmNextEvent (Display *dpy, XEvent  *event);
+static void CtwmNextEvent (Display *display, XEvent  *event);
 static void RedoIcon(void);
 static void do_key_menu (MenuRoot *menu,	/* menu to pop up */
 			 Window w);		/* invoking window or None */
@@ -557,12 +557,12 @@ void HandleEvents(void)
 extern unsigned long timefe;
 #endif
 
-static void CtwmNextEvent (Display *dpy, XEvent  *event)
+static void CtwmNextEvent (Display *display, XEvent  *event)
 {
     int animate = (AnimationActive && MaybeAnimate);
 
 #ifdef VMS
-    if (QLength (dpy) != 0) {
+    if (QLength (display) != 0) {
 	nextEvent (event);
 	return;
     }
@@ -572,7 +572,7 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
        sys$clref(timefe);
 
        if (animate && AnimationPending) Animate ();
-       if (QLength (dpy) != 0) {
+       if (QLength (display) != 0) {
 	  nextEvent (event);
 	  return;
        }
@@ -585,11 +585,11 @@ static void CtwmNextEvent (Display *dpy, XEvent  *event)
 
     if (RestartFlag)
 	DoRestart(CurrentTime);
-    if (XEventsQueued (dpy, QueuedAfterFlush) != 0) {
+    if (XEventsQueued (display, QueuedAfterFlush) != 0) {
 	nextEvent (event);
 	return;
     }
-    fd = ConnectionNumber (dpy);
+    fd = ConnectionNumber (display);
 
 #ifdef USE_SIGNALS
     if (animate && AnimationPending) Animate ();
@@ -1015,7 +1015,6 @@ void HandleKeyPress(void)
     if (ActiveMenu != NULL) {
 	MenuItem *item;
 	int	 offset;
-	Boolean	 match;
 	char *keynam;
 	KeySym keysym;
 	int xx, yy, wx, wy;
@@ -1096,16 +1095,18 @@ void HandleKeyPress(void)
 	    modifier = set_mask_ignore (modifier);
 
 	    while (item != startitem) {
-		match  = False;
+		Boolean	 matched = False;
 		offset = 0;
 		switch (item->item [0]) {
 		    case '^' :
 			if ((modifier & ControlMask) &&
-			    (keynam [0] == tolower (item->item [1]))) match = True;
+			    (keynam [0] == tolower (item->item [1])))
+			    matched = True;
 			break;
 		    case '~' :
 			if ((modifier & Mod1Mask) &&
-			    (keynam [0] == tolower (item->item [1]))) match = True;
+			    (keynam [0] == tolower (item->item [1])))
+			    matched = True;
 			break;
 		    case ' ' :
 			offset = 1;
@@ -1117,10 +1118,10 @@ void HandleKeyPress(void)
 			     (keynam [0] == tolower (item->item [offset]))) ||
 
 			    (!(modifier & ShiftMask) && islower (item->item [offset]) &&
-			     (keynam [0] == item->item [offset]))) match = True;
+			     (keynam [0] == item->item [offset]))) matched = True;
 			break;
 		}
-		if (match) break;
+		if (matched) break;
 		item = item->next;
 		if (item == (MenuItem*) 0) item = ActiveMenu->first;
 	    }
@@ -1279,33 +1280,33 @@ void HandleKeyPress(void)
 
 		/* now try the res_name */
 		if (!matched)
-		for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
-		    Tmp_win = Tmp_win->next)
-		{
-		    if (!strncmp(key->win_name, Tmp_win->class.res_name, len))
+		    for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+			 Tmp_win = Tmp_win->next)
 		    {
-			matched = TRUE;
-			ExecuteFunction(key->func, key->action, Tmp_win->frame,
-			    Tmp_win, &Event, C_FRAME, FALSE);
-			if (!AlternateKeymap && !AlternateContext)
-			    XUngrabPointer(dpy, CurrentTime);
+			if (!strncmp(key->win_name, Tmp_win->class.res_name, len))
+			{
+			    matched = TRUE;
+			    ExecuteFunction(key->func, key->action, Tmp_win->frame,
+					    Tmp_win, &Event, C_FRAME, FALSE);
+			    if (!AlternateKeymap && !AlternateContext)
+				XUngrabPointer(dpy, CurrentTime);
+			}
 		    }
-		}
 
 		/* now try the res_class */
 		if (!matched)
-		for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
-		    Tmp_win = Tmp_win->next)
-		{
-		    if (!strncmp(key->win_name, Tmp_win->class.res_class, len))
+		    for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+			 Tmp_win = Tmp_win->next)
 		    {
-			matched = TRUE;
-			ExecuteFunction(key->func, key->action, Tmp_win->frame,
-			    Tmp_win, &Event, C_FRAME, FALSE);
-			if (!AlternateKeymap && !AlternateContext)
-			    XUngrabPointer(dpy, CurrentTime);
+			if (!strncmp(key->win_name, Tmp_win->class.res_class, len))
+			{
+			    matched = TRUE;
+			    ExecuteFunction(key->func, key->action, Tmp_win->frame,
+					    Tmp_win, &Event, C_FRAME, FALSE);
+			    if (!AlternateKeymap && !AlternateContext)
+				XUngrabPointer(dpy, CurrentTime);
+			}
 		    }
-		}
 		if (matched)
 		    return;
 	    }
@@ -1342,27 +1343,35 @@ static void free_window_names (TwmWindow *tmp,
  * XXX - are we sure that nobody ever sets these to another constant (check
  * twm windows)?
  */
-#define isokay(v) ((v) && (v) != NoName)
     if ((tmp->name == tmp->full_name) && (tmp->name == tmp->icon_name)) {
-	if (nukefull && nukename && nukeicon && isokay(tmp->name)) XFree (tmp->name);
+	if (nukefull && nukename && nukeicon)
+	    FreeWMPropertyString(tmp->name);
     } else
     if (tmp->name == tmp->full_name) {
-	if (nukename && nukefull && isokay(tmp->name)) XFree (tmp->name);
-	if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+	if (nukename && nukefull)
+	    FreeWMPropertyString(tmp->name);
+	if (nukeicon)
+	    FreeWMPropertyString(tmp->icon_name);
     } else
     if (tmp->name == tmp->icon_name) {
-	if (nukename && nukeicon && isokay(tmp->name)) XFree (tmp->name);
-	if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
+	if (nukename && nukeicon)
+	    FreeWMPropertyString(tmp->name);
+	if (nukefull)
+	    FreeWMPropertyString(tmp->full_name);
     } else
     if (tmp->icon_name == tmp->full_name) {
-	if (nukeicon && nukefull && isokay(tmp->icon_name)) XFree (tmp->icon_name);
-	if (nukename && isokay(tmp->name)) XFree (tmp->name);
+	if (nukeicon && nukefull)
+	    FreeWMPropertyString(tmp->icon_name);
+	if (nukename)
+	    FreeWMPropertyString(tmp->name);
     } else {
-	if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
-	if (nukename && isokay(tmp->name)) XFree (tmp->name);
-	if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
+	if (nukefull)
+	    FreeWMPropertyString(tmp->full_name);
+	if (nukename)
+	    FreeWMPropertyString(tmp->name);
+	if (nukeicon)
+	    FreeWMPropertyString(tmp->icon_name);
     }
-#undef isokay
     return;
 }
 
@@ -1464,18 +1473,8 @@ void HandlePropertyNotify(void)
 
     switch (Event.xproperty.atom) {
       case XA_WM_NAME:
-#ifndef NO_LOCALE
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_NAME);
 	if (prop == NULL) return;
-#else /* NO_LOCALE */
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L, 
-				MAX_NAME_LEN, False, XA_STRING, &actual,
-				&actual_format, &nitems, &bytesafter,
-				&prop) != Success ||
-	    actual == None)
-	  return;
-	if (!prop) prop = NoName;
-#endif /* NO_LOCALE */
 #ifdef CLAUDE
 	if (strstr (prop, " - Mozilla")) {
 	  char *moz = strstr (prop, " - Mozilla");
@@ -1549,18 +1548,8 @@ void HandlePropertyNotify(void)
 	break;
 
       case XA_WM_ICON_NAME:
-#ifndef NO_LOCALE
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_ICON_NAME);
 	if (prop == NULL) return;
-#else /* NO_LOCALE */
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0, 
-				MAX_ICON_NAME_LEN, False, XA_STRING, &actual,
-				&actual_format, &nitems, &bytesafter,
-				&prop) != Success ||
-	    actual == None)
-	  return;
-	if (!prop) prop = NoName;
-#endif /* NO_LOCALE */
 #ifdef CLAUDE
 	if (strstr (prop, " - Mozilla")) {
 	  char *moz = strstr (prop, " - Mozilla");
@@ -2245,32 +2234,30 @@ void HandleDestroyNotify(void)
 	XDeleteContext(dpy, Tmp_win->icon->w, TwmContext);
 	XDeleteContext(dpy, Tmp_win->icon->w, ScreenContext);
     }
-    if (Tmp_win->title_height)
-    {
+    if (Tmp_win->title_height) {
 	int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
+
 	XDeleteContext(dpy, Tmp_win->title_w, TwmContext);
 	XDeleteContext(dpy, Tmp_win->title_w, ScreenContext);
-	if (Tmp_win->hilite_wl)
-	{
+	if (Tmp_win->hilite_wl) {
 	    XDeleteContext(dpy, Tmp_win->hilite_wl, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->hilite_wl, ScreenContext);
 	}
-	if (Tmp_win->hilite_wr)
-	{
+	if (Tmp_win->hilite_wr) {
 	    XDeleteContext(dpy, Tmp_win->hilite_wr, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->hilite_wr, ScreenContext);
 	}
-	if (Tmp_win->lolite_wr)
-	{
+	if (Tmp_win->lolite_wr) {
 	    XDeleteContext(dpy, Tmp_win->lolite_wr, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->lolite_wr, ScreenContext);
 	}
-	if (Tmp_win->lolite_wl)
-	{
+	if (Tmp_win->lolite_wl) {
 	    XDeleteContext(dpy, Tmp_win->lolite_wl, TwmContext);
 	    XDeleteContext(dpy, Tmp_win->lolite_wl, ScreenContext);
 	}
 	if (Tmp_win->titlebuttons) {
+	    int i;
+
 	    for (i = 0; i < nb; i++) {
 		XDeleteContext (dpy, Tmp_win->titlebuttons[i].window,
 				TwmContext);
@@ -2278,6 +2265,10 @@ void HandleDestroyNotify(void)
 				ScreenContext);
 	    }
         }
+	/*
+	 * The hilite_wl etc windows don't need to be XDestroyWindow()ed
+	 * since that will happen when the parent is destroyed (??)
+	 */
     }
 
     if (Scr->cmapInfo.cmaps == &Tmp_win->cmaps)
@@ -2297,14 +2288,26 @@ void HandleDestroyNotify(void)
      *     9.  cwins
      *     10. titlebuttons
      *     11. window ring
+     *     12. (reserved for squeeze_info)
+     *     13. HiliteImage
+     *     14. iconslist
      */
     WMapDestroyWindow (Tmp_win);
     if (Tmp_win->gray) XFreePixmap (dpy, Tmp_win->gray);
 
+    /*
+     * According to the manual page, the following destroys all child windows
+     * of the frame too, which is most of the windows we're concerned with, so
+     * anything related to them must be done before here.
+     * Icons are not child windows.
+     */
     XDestroyWindow(dpy, Tmp_win->frame);
-    if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->icon_not_ours) {
-	XDestroyWindow(dpy, Tmp_win->icon->w);
-	IconDown (Tmp_win);
+    if (Tmp_win->icon) {
+	if (Tmp_win->icon->w && !Tmp_win->icon_not_ours) {
+	    XDestroyWindow(dpy, Tmp_win->icon->w);
+	    IconDown (Tmp_win);
+	}
+	free (Tmp_win->icon);
     }
     Tmp_win->occupation = 0;
     RemoveIconManager(Tmp_win);					/* 7 */
@@ -2322,10 +2325,12 @@ void HandleDestroyNotify(void)
       XFree ((char *)Tmp_win->class.res_name);
     if (Tmp_win->class.res_class && Tmp_win->class.res_class != NoName) /* 6 */
       XFree ((char *)Tmp_win->class.res_class);
-    free_cwins (Tmp_win);				/* 9 */
+    free_cwins (Tmp_win);					/* 9 */
     if (Tmp_win->titlebuttons)					/* 10 */
-      free ((char *) Tmp_win->titlebuttons);
+	free(Tmp_win->titlebuttons);
     remove_window_from_ring (Tmp_win);				/* 11 */
+    DeleteHighlightWindows(Tmp_win);				/* 13 */
+    DeleteIconsList (Tmp_win);					/* 14 */
 
     free((char *)Tmp_win);
 
@@ -2913,7 +2918,7 @@ void HandleButtonPress(void)
     unsigned int modifier;
     Cursor cur;
     MenuRoot *mr;
-    FuncButton *tmp;
+    FuncButton *tmp = 0;
     int func = 0;
     Window w;
 
@@ -3309,7 +3314,7 @@ typedef struct HENScanArgs {
 } HENScanArgs;
 
 /* ARGSUSED*/
-static Bool HENQueueScanner(Display *dpy, XEvent *ev, char *args)
+static Bool HENQueueScanner(Display *display, XEvent *ev, char *args)
 {
     if (ev->type == LeaveNotify) {
 	if (ev->xcrossing.window == ((HENScanArgs *) args)->w &&
@@ -3705,7 +3710,7 @@ typedef struct HLNScanArgs {
 } HLNScanArgs;
 
 /* ARGSUSED*/
-static Bool HLNQueueScanner(Display *dpy, XEvent *ev, char *args)
+static Bool HLNQueueScanner(Display *display, XEvent *ev, char *args)
 {
     if (ev->type == EnterNotify && ev->xcrossing.mode != NotifyGrab) {
 	((HLNScanArgs *) args)->enters = True;
@@ -4217,7 +4222,7 @@ void InstallRootColormap(void)
 
 
 /* ARGSUSED*/
-static Bool UninstallRootColormapQScanner(Display *dpy, XEvent *ev, char *args)
+static Bool UninstallRootColormapQScanner(Display *display, XEvent *ev, char *args)
 {
     if (!*args) {
 	if (ev->type == EnterNotify) {

@@ -94,9 +94,9 @@
 #  include "sound.h"
 #endif
 #ifdef VMS
-#include <decw$include/Xatom.h> 
+#  include <decw$include/Xatom.h> 
 #else
-#include <X11/Xatom.h> 
+#  include <X11/Xatom.h> 
 #endif
 
 /* For m4... */
@@ -1022,12 +1022,12 @@ static TwmKeyword keytable[] = {
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
     { "schrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
-    { "shrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
     { "shortallwindowsmenus",	KEYWORD, kw0_ShortAllWindowsMenus },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
     { "showworkspacemanager",	KEYWORD, kw0_ShowWorkspaceManager },
+    { "shrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
     { "sloppyfocus",            KEYWORD, kw0_SloppyFocus },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
 #ifdef SOUNDS
@@ -2116,8 +2116,6 @@ static FILE *start_m4(FILE *fraw)
                 exit(23);
         }
         if (fres == 0) {
-                extern Display *dpy;
-                extern char *display_name;
                 char *tmp_file;
 
                 /* Child */
