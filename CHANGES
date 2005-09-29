@@ -1466,17 +1466,6 @@ VirtualScreens {
 	safely initialized, that sort of thing.
 	[Richard Levitte]
 
-   49 - Make it easier to configure on VMS
-
-	Moved all the configuration definitions to descrip.local-template,
-	and instruct the users to copy that file to descrip.local and make
-	all needed changes there.
-	[Richard Levitte]
-
-   50 - Changed all relevant occurences of levitte@lp.se to
-	richard@levitte.org.
-	[Richard Levitte]
-
-   51 - Fixed several memory leaks found by
+    2 - Fixed several memory leaks found by
 	"Nadav Har'El" <nyh@math.technion.ac.il>.
 	[Olaf "Rhialto" Seibert]
