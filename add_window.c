@@ -467,6 +467,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     tmp_win->ring.cursor_valid = False;
 
     tmp_win->squeeze_info = NULL;
+    tmp_win->squeeze_info_copied = 0;
     /*
      * get the squeeze information; note that this does not have to be freed
      * since it is coming from the screen list
@@ -1893,21 +1894,13 @@ void ComputeTitleLocation (register TwmWindow *tmp)
 	/*
 	 * figure label base from squeeze info (justification fraction)
 	 */
-	if (si->denom == 0) {	/* num is pixel based */
-	    if ((basex = si->num) == 0) {  /* look for special cases */
-		switch (si->justify) {
-		  case J_RIGHT:
-		    basex = maxwidth;
-		    break;
-		  case J_CENTER:
-		    basex = maxwidth / 2;
-		break;
-		}
-	    }
+	if (si->denom == 0) {		/* num is pixel based */
+	    basex = si->num;
 	} else {			/* num/denom is fraction */
 	    basex = ((si->num * maxwidth) / si->denom);
-	    if (si->num < 0) basex += maxwidth;
 	}
+	if (si->num < 0)
+	    basex += maxwidth;
 
 	/*
 	 * adjust for left (nop), center, right justify and clip
