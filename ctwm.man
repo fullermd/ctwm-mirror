@@ -1172,7 +1172,7 @@ may be specified:
 \fBPixmaps\fP
 {
 	TitleHighlight	"gray1"
-#	TitleHighlight	"supman%.xbm"
+XCOMM	TitleHighlight	"supman%.xbm"
 }
 .EE
 The default for \fITitleHighlight\fP is to use an even stipple pattern.
