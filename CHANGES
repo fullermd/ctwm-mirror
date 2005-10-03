@@ -1469,6 +1469,7 @@ VirtualScreens {
     2 - Fixed several memory leaks found by
 	"Nadav Har'El" <nyh@math.technion.ac.il>.
 	[Olaf "Rhialto" Seibert]
-   51 - Fixed several memory leaks found by
-	"Nadav Har'El" <nyh@math.technion.ac.il>.
+
+    3 - Merged in the f.movetitlebar command. By default this is bound to
+        alt-left-click in the titlebar.
 	[Olaf "Rhialto" Seibert]
