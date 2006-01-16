@@ -2731,7 +2731,7 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
 			    winX = Scr->BorderLeft;
 			    newX = msw->x + XW + Scr->BorderLeft * mw->wwidth / vs->w;
 			}
-			if (((winX + width) > vs->x - Scr->BorderRight) &&
+			if (((winX + width) > vs->w - Scr->BorderRight) &&
 			    ((Scr->MoveOffResistance < 0) ||
 			     ((winX + width) < vs->w - Scr->BorderRight + Scr->MoveOffResistance))) {
 			    winX = vs->w - Scr->BorderRight - width;
