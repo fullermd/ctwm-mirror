@@ -42,7 +42,7 @@ XCOMM If you want XPM support, define XPM.
 XCOMM
 XCOMM The make variables USER_XPMLIBDIR and USER_XPMINCDIR can be
 XCOMM used to configure library search paths and include file search paths
-XCOMM to find the rplay libraries and header files.
+XCOMM to find the xpm libraries and header files.
 XCOMM
 XCOMM Example:
 XCOMM
@@ -58,7 +58,7 @@ XCOMM If you want JPEG support, define JPEG.
 XCOMM
 XCOMM The make variables USER_JPEGLIBDIR and USER_JPEGINCDIR can be
 XCOMM used to configure library search paths and include file search paths
-XCOMM to find the rplay libraries and header files.
+XCOMM to find the jpeg libraries and header files.
 XCOMM
 XCOMM Example:
 XCOMM
