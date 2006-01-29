@@ -90,6 +90,7 @@ funny prompt> make
 Installation:
 
 funny prompt> make install
+funny prompt> make install.man
 
 				----------
 
