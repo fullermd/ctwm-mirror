@@ -126,9 +126,15 @@ static void do_auto_clamp (TwmWindow *tmp_win, XEvent *evp)
 	  return;
     }
 
-    h = ((x - dragx) / (dragWidth < 3 ? 1 : (dragWidth / 3)));
-    v = ((y - dragy - tmp_win->title_height) / 
-	 (dragHeight < 3 ? 1 : (dragHeight / 3)));
+    /*
+     * Determine in which of the 9 "quadrants" of the window we are.
+     * Cast the values to signed int: if the numerator is negative
+     * we don't want them converted to unsigned due to the default
+     * promotion rules: that would produce a very large quotient.
+     */
+    h = (int)(x - dragx) / (int)(dragWidth < 3 ? 1 : (dragWidth / 3));
+    v = (int)(y - dragy - tmp_win->title_height) / 
+	 (int)(dragHeight < 3 ? 1 : (dragHeight / 3));
 	
     if (h <= 0) {
 	clampLeft = 1;
@@ -180,7 +186,7 @@ void StartResize(XEvent *evp, TwmWindow *tmp_win,
         GrabModeAsync, GrabModeAsync, grabwin, cursor, CurrentTime);
 
     XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
-        &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
+        &dragx, &dragy, &dragWidth, &dragHeight, &junkbw,
                  &junkDepth);
     dragx += tmp_win->frame_bw;
     dragy += tmp_win->frame_bw;
@@ -191,7 +197,7 @@ void StartResize(XEvent *evp, TwmWindow *tmp_win,
     clampTop = clampBottom = clampLeft = clampRight = clampDX = clampDY = 0;
 
     if (Scr->AutoRelativeResize && (from3dborder || !fromtitlebar))
-      do_auto_clamp (tmp_win, evp);
+	do_auto_clamp (tmp_win, evp);
 
     Scr->SizeStringOffset = SIZE_HINDENT;
     XResizeWindow (dpy, Scr->SizeWindow,

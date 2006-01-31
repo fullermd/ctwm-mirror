@@ -2395,9 +2395,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    /*
 	     * see if this is being done from the titlebar
 	     */
-	    fromtitlebar = 
+	    from3dborder = (eventp->xbutton.window == tmp_win->frame);
+	    fromtitlebar = !from3dborder &&
 	      belongs_to_twm_window (tmp_win, eventp->xbutton.window);
-	    from3dborder = (eventp->xbutton.window == tmp_win->frame) ? True : False;
 	    
 	    /* Save pointer position so we can tell if it was moved or
 	       not during the resize. */
@@ -2407,15 +2407,15 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    StartResize (eventp, tmp_win, fromtitlebar, from3dborder);
 	    
 	    do {
-	      XMaskEvent(dpy,
+		XMaskEvent(dpy,
 			   ButtonPressMask | ButtonReleaseMask |
 			   EnterWindowMask | LeaveWindowMask |
 			   ButtonMotionMask | VisibilityChangeMask | ExposureMask, &Event);
 		
 		if (fromtitlebar && Event.type == ButtonPress) {
-		  fromtitlebar = False;
+		    fromtitlebar = False;
 		    continue;
-		  }
+		}
 		
 	    	if (Event.type == MotionNotify) {
 		  /* discard any extra motion events before a release */

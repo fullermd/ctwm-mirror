@@ -3068,74 +3068,63 @@ extern Cursor	TopRightCursor, TopLeftCursor, BottomRightCursor, BottomLeftCursor
 
 void SetBorderCursor (TwmWindow *tmp_win, int x, int y)
 {
-  Cursor cursor;
-      XSetWindowAttributes attr;
-      /*int h  = Scr->TitleHeight + tmp_win->frame_bw3D;
-	int fw = tmp_win->frame_width;
-	int fh = tmp_win->frame_height;
-	int wd = tmp_win->frame_bw3D;*/
-  int h, fw, fh, wd;
+    Cursor cursor;
+    XSetWindowAttributes attr;
+    int h, fw, fh, wd;
 
-  if (! tmp_win) return;
+    if (!tmp_win)
+	return;
 
-  /*    if ((x < 0) || (y < 0)) cursor = Scr->FrameCursor;*/
-  /* use the max of these, but since one is always 0 we can add them. */
-  wd = tmp_win->frame_bw + tmp_win->frame_bw3D;
-  h = Scr->TitleHeight + wd;
-  fw = tmp_win->frame_width;
-  fh = tmp_win->frame_height;
+    /* Use the max of these, but since one is always 0 we can add them. */
+    wd = tmp_win->frame_bw + tmp_win->frame_bw3D;
+    h = Scr->TitleHeight + wd;
+    fw = tmp_win->frame_width;
+    fh = tmp_win->frame_height;
 
 #if defined DEBUG && DEBUG
-  fprintf(stderr, "wd=%d h=%d, fw=%d fh=%d x=%d y=%d\n",
-	  wd, h, fw, fh, x, y);
+    fprintf(stderr, "wd=%d h=%d, fw=%d fh=%d x=%d y=%d\n",
+	    wd, h, fw, fh, x, y);
 #endif
 
-  /*
-   * If not using 3D borders:
-   *
-   * The left border has negative x coordinates,
-   * The top border (above the title) has negative y coordinates.
-   * The title is TitleHeight high, the next wd pixels are border.
-   * The bottom border has coordinates >= the frame height.
-   * The right border has coordinates >= the frame width.
-   *
-   * If using 3D borders: all coordinates are >= 0, and all coordinates
-   * are higher by the border width.
-   *
-   * Since we only get events when we're actually in the border, we simply
-   * allow for both cases at the same time.
-   */
+    /*
+     * If not using 3D borders:
+     *
+     * The left border has negative x coordinates,
+     * The top border (above the title) has negative y coordinates.
+     * The title is TitleHeight high, the next wd pixels are border.
+     * The bottom border has coordinates >= the frame height.
+     * The right border has coordinates >= the frame width.
+     *
+     * If using 3D borders: all coordinates are >= 0, and all coordinates
+     * are higher by the border width.
+     *
+     * Since we only get events when we're actually in the border, we simply
+     * allow for both cases at the same time.
+     */
 
-  if ((x < -wd) || (y < -wd)) cursor = Scr->FrameCursor;
-    else
-    if (x < wd) {
-	if (y < h) cursor = TopLeftCursor;
+    if ((x < -wd) || (y < -wd)) {
+	cursor = Scr->FrameCursor;
+    } else if (x < h) {
+	if (y < h)
+	    cursor = TopLeftCursor;
+	else if (y >= fh - h)
+	    cursor = BottomLeftCursor;
 	else
-	if (y >= fh - h) cursor = BottomLeftCursor;
-	else cursor = LeftCursor;
-    }
-    else
-    if (x >= fw - wd) {
-	if (y < h) cursor = TopRightCursor;
+	    cursor = LeftCursor;
+    } else if (x >= fw - h) {
+	if (y < h)
+	    cursor = TopRightCursor;
+	else if (y >= fh - h)
+	    cursor = BottomRightCursor;
 	else
-	if (y >= fh - h) cursor = BottomRightCursor;
-	else cursor = RightCursor;
+	    cursor = RightCursor;
+    } else if (y < h) {	/* also include title bar in top border area */
+	cursor = TopCursor;
+    } else if (y >= fh - h) {
+	cursor = BottomCursor;
+    } else {
+	cursor = Scr->FrameCursor;
     }
-    else
-    if (y < wd) {
-	if (x < h) cursor = TopLeftCursor;
-	else
-	if (x >= fw - h) cursor = TopRightCursor;
-	else cursor = TopCursor;
-    }
-    else
-    if (y >= fh - wd) {
-	if (x < h) cursor = BottomLeftCursor;
-	else
-	if (x >= fw - h) cursor = BottomRightCursor;
-	else cursor = BottomCursor;
-    }
-    else cursor = Scr->FrameCursor;
     attr.cursor = cursor;
     XChangeWindowAttributes (dpy, tmp_win->frame, CWCursor, &attr);
     tmp_win->curcurs = cursor;
