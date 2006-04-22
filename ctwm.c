@@ -742,9 +742,6 @@ int main(int argc, char **argv, char **environ)
 	InitMenus();
 	InitWorkSpaceManager ();
 
-	InitVirtualScreens (Scr);
-	ConfigureWorkSpaceManager ();
-
 	/* Parse it once for each screen. */
 	if(cfgchk) {
 	  if(ParseTwmrc(InitFile)==0) {
@@ -760,6 +757,9 @@ int main(int argc, char **argv, char **environ)
 	  {
 	    ParseTwmrc(InitFile);
 	  }
+
+	InitVirtualScreens (Scr);
+	ConfigureWorkSpaceManager ();
 
 	if (ShowWelcomeWindow && ! screenmasked) MaskScreen (NULL);
 	if (Scr->ClickToFocus) {
@@ -879,7 +879,7 @@ int main(int argc, char **argv, char **environ)
 		vs->wsw->twm_win->mapped = TRUE;
 	    }
 	}
-	
+
 	if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->DefaultC);
 	attributes.border_pixel = Scr->DefaultC.fore;
 	attributes.background_pixel = Scr->DefaultC.back;
@@ -1275,10 +1275,12 @@ void RestoreWithdrawnLocation (TwmWindow *tmp)
 	    mask |= CWBorderWidth;
 	}
 
+#if 0
 	if (tmp->vs) {
 	  xwc.x += tmp->vs->x;
 	  xwc.y += tmp->vs->y;
 	}
+#endif
 
 	if (tmp->winbox && tmp->winbox->twmwin && tmp->frame) {
 	  int xbox, ybox;

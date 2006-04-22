@@ -1473,3 +1473,21 @@ VirtualScreens {
     3 - Merged in the f.movetitlebar command. By default this is bound to
         alt-left-click in the titlebar.
 	[Olaf "Rhialto" Seibert]
+
+    4 - Fixed the following issues:
+	Poking at the code, it looks like InitVirtualScreens() is called
+	before the configuration file is parsed which would explain what
+	I see since there's no attempt to create them after the config
+	file read.
+
+	Moving the call after the config parsing causes things to work.
+
+	I've run into a few other issues that I fixed with the attached
+	patch:
+
+		- shadow menus on the right screen open the shadow on
+		  the left screen
+		- shadow menus on the left screen open on top of the
+		  window
+		- windows on the right screen disappear after startup
+	[Todd Kover]

@@ -114,6 +114,7 @@ unsigned int AddingH;
 static int PlaceX = 50;
 static int PlaceY = 50;
 static void CreateWindowTitlebarButtons(TwmWindow *tmp_win);
+void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_win);
 
 static void		splitWindowRegionEntry (WindowEntry	*we,
 						int grav1, int grav2,
@@ -1214,6 +1215,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
       tmp_win->frame_x = 0;
       tmp_win->frame_y = 0;
     }
+
+    DealWithNonSensicalGeometries(dpy, vroot, tmp_win);
+
     tmp_win->frame = XCreateWindow (dpy, vroot, tmp_win->frame_x, tmp_win->frame_y, 
 				    (unsigned int) tmp_win->frame_width,
 				    (unsigned int) tmp_win->frame_height,
@@ -2514,3 +2518,48 @@ void RemoveWindowFromRegion (TwmWindow *tmp_win)
     }
 }
 
+/*
+ * This is largely for Xinerama support with VirtualScreens.
+ * In this case, windows may be on something other then the main screen
+ * on startup, or the mapping may be relative to the right side of the
+ * screen, which is on a different monitor, which will cause issues with
+ * the virtual screens.
+ *
+ * It probably needs to be congnizant of windows that are actually owned by
+ * other workspaces, and ignore them (this needs to be revisited), or perhaps
+ * that functionality is appropriate in AddWindow().  This needs to be dug into
+ * more deply.
+ * 
+ * this approach assumes screens that are next to each other horizontally,
+ * Other possibilities need to be investigated and accounted for.
+ */
+void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_win)
+{
+    Window		vvroot;
+    int			x,y;
+    unsigned int	w,h;
+    unsigned int	j;
+    virtualScreen	*myvs, *vs;
+    int			dropx = 0;
+
+    if(! vroot)
+	return;
+
+    if(!(XGetGeometry(dpy, vroot, &vvroot, &x, &y, &w, &h, &j, &j)))
+	return;
+
+    myvs = getVScreenOf(x, y);
+
+    for(vs = myvs->next; vs; vs = vs->next) {
+	dropx += vs->w;
+    }
+
+    for(vs = Scr->vScreenList; vs && vs != myvs; vs = vs->next) {
+	dropx -= vs->x;
+    }
+
+    if(tmp_win->frame_x > 0 && tmp_win->frame_x > w) {
+	tmp_win->frame_x = tmp_win->frame_x - dropx;
+    }
+
+}
