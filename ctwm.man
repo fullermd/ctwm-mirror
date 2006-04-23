@@ -1042,9 +1042,9 @@ in the WorkSpaceMap.
 This variable indicates that menus should not have drop shadows drawn behind
 them.  This is typically used with slower servers since it speeds up menu
 drawing at the expense of making the menu slightly harder to read.
-.IP "\fBNoOpaqueMove\fP { \fIwindow\-list\fP }" 8
+.IP "\fBNoOpaqueMove\fP [{ \fIwindow\-list\fP }]" 8
 The counterpart of \fBOpaqueMove\fP. See \fBOpaqueMove\fP.
-.IP "\fBNoOpaqueResize\fP { \fIwindow\-list\fP }" 8
+.IP "\fBNoOpaqueResize\fP [{ \fIwindow\-list\fP }]" 8
 The counterpart of \fBOpaqueResize\fP. See \fBOpaqueResize\fP.
 .IP "\fBNoRaiseOnDeiconify\fP" 8
 This variable indicates that windows that are deiconified should not be
@@ -1134,7 +1134,7 @@ OccupyAll
 .EE
 Note : The OccupyAll declaration should come after the WorkSpaces declaration.
 
-.IP "\fBOpaqueMove\fP { \fIwindow\-list\fP }" 8
+.IP "\fBOpaqueMove\fP [{ \fIwindow\-list\fP }]" 8
 This variable indicates that the \fBf.move\fP function should actually move
 the window instead of just an outline so that the user can immediately see
 what the window will look like in the new position.  This option is typically
@@ -1142,17 +1142,17 @@ used on fast displays (particularly if \fBNoGrabServer\fP is set). The optional
 window list parameter indicates that only windows in this list should actually
 be moved in opaque mode. The \fBNoOpaqueMove\fP counterpart is also available.
 
-.IP "\fBOpaqueMoveThreshold\fP { \fIthreshold\fP }" 8
+.IP "\fBOpaqueMoveThreshold\fP \fIthreshold\fP" 8
 The integer parameter is a percentage and indicates that only windows (elligible
 for opaque moving) with a surface smaller than this percentage of the surface
 of the screen should actually be moved in opaque mode.
 
-.IP "\fBOpaqueResize\fP { \fIwindow\-list\fP }" 8
+.IP "\fBOpaqueResize\fP [{ \fIwindow\-list\fP }]" 8
 The opaque version of resize. Extremely resource intensive,
 but beautiful with fast server/client/network. See \fBOpaqueMove\fP. The
 \fBNoOpaqueResize\fP counterpart is also available.
 
-.IP "\fBOpaqueResizeThreshold\fP { \fIthreshold\fP }" 8
+.IP "\fBOpaqueResizeThreshold\fP \fIthreshold\fP" 8
 The resize version of \fBOpaqueMoveThreshold\fP.
 
 .IP "\fBOpenWindowTimeout\fP \fIseconds\fP" 8

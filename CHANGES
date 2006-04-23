@@ -1491,3 +1491,14 @@ VirtualScreens {
 		  window
 		- windows on the right screen disappear after startup
 	[Todd Kover]
+
+    5 - Adjustments to ctwm.man:
+	I noticed a couple of small errors.
+
+	One is that the window list arguments for the opaque
+	keywords are now optional, are listed with square brackets
+	in the man page.  The other is that the two Threshold
+	keywords are shown in the man page as requiring curly-
+	brackets, but they are not required or accepted in
+	configuration files.
+	[Ross Combs]
