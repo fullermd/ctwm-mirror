@@ -586,6 +586,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
      * (restore session for example)
      */
 
+    /* note, this is where tmp_win->vs get setup, among other things */
+
 #ifdef X11R6
     if (restoredFromPrevSession) {
       SetupOccupation (tmp_win, saved_occupation);
@@ -1764,7 +1766,15 @@ void DeleteHighlightWindows(TwmWindow *tmp_win)
 	} else {
 	    XFreePixmap (dpy, tmp_win->HiliteImage->pixmap);
 	}
+#if 1
+	/* 
+	 * XXX - this was being free'd twice for some reason.   Commenting
+	 * this out almost certainly introduces a memory leak, but they're
+	 * better than core dumps.  :)
+	 */
 	free(tmp_win->HiliteImage);
+	tmp_win->HiliteImage = NULL;
+#endif
     }
 }
 
@@ -2548,18 +2558,25 @@ void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_wi
     if(!(XGetGeometry(dpy, vroot, &vvroot, &x, &y, &w, &h, &j, &j)))
 	return;
 
-    myvs = getVScreenOf(x, y);
+    myvs = findIfVScreenOf(x, y);
+
+    /*
+     * probably need to rethink this  for unmapped vs's.  ugh.
+     */
+    if(!myvs)
+	return;
 
     for(vs = myvs->next; vs; vs = vs->next) {
 	dropx += vs->w;
     }
 
     for(vs = Scr->vScreenList; vs && vs != myvs; vs = vs->next) {
-	dropx -= vs->x;
+	dropx -= vs->w;
     }
 
-    if(tmp_win->frame_x > 0 && tmp_win->frame_x > w) {
-	tmp_win->frame_x = tmp_win->frame_x - dropx;
-    }
+    if(tmp_win->frame_x > 0 && tmp_win->frame_x >= w) {
+	tmp_win->frame_x -= abs(dropx);
+    } else {
+}
 
 }

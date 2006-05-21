@@ -37,6 +37,7 @@ struct virtualScreen {
 };
 
 void InitVirtualScreens (ScreenInfo *scr);
+virtualScreen *findIfVScreenOf (int x, int y);
 virtualScreen *getVScreenOf (int x, int y);
 
 #endif /* -VSCREEN- */

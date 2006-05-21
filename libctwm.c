@@ -230,5 +230,3 @@ int CtwmAddToCurrentWorkspace (Display *display, Window window)
     XFlush (display);
     return (1);
 }
-
-

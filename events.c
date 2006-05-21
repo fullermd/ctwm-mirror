@@ -2308,6 +2308,7 @@ void HandleDestroyNotify(void)
 	    IconDown (Tmp_win);
 	}
 	free (Tmp_win->icon);
+	Tmp_win->icon = NULL;
     }
     Tmp_win->occupation = 0;
     RemoveIconManager(Tmp_win);					/* 7 */
@@ -2326,11 +2327,16 @@ void HandleDestroyNotify(void)
     if (Tmp_win->class.res_class && Tmp_win->class.res_class != NoName) /* 6 */
       XFree ((char *)Tmp_win->class.res_class);
     free_cwins (Tmp_win);					/* 9 */
-    if (Tmp_win->titlebuttons)					/* 10 */
+    if (Tmp_win->titlebuttons) { 				/* 10 */ 
 	free(Tmp_win->titlebuttons);
+	Tmp_win->titlebuttons = NULL;
+    }
+    
     remove_window_from_ring (Tmp_win);				/* 11 */
-    if (Tmp_win->squeeze_info_copied)				/* 12 */
+    if (Tmp_win->squeeze_info_copied) { 			/* 12 */
 	free(Tmp_win->squeeze_info);
+	Tmp_win->squeeze_info = NULL;
+    }
     DeleteHighlightWindows(Tmp_win);				/* 13 */
     DeleteIconsList (Tmp_win);					/* 14 */
 
@@ -2660,7 +2666,7 @@ void HandleButtonRelease(void)
 
     if (DragWindow != None)
     {
-	MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+	MoveOutline(Scr->RealRoot, 0, 0, 0, 0, 0, 0);
 
 	XFindContext(dpy, DragWindow, TwmContext, (XPointer *)&Tmp_win);
 	if (Tmp_win->winbox) {
@@ -2713,8 +2719,32 @@ void HandleButtonRelease(void)
 
 	CurrentDragX = xl;
 	CurrentDragY = yt;
-	if (DragWindow == Tmp_win->frame)
+	/*
+	 * sometimes getScreenOf() replies with the wrong window when moving
+	 * y to a negative number.  Need to figure out why... [XXX]
+	 */
+	if(xl < 0 || yt < 0 || xl > Scr->rootw || yt > Scr->rooth) {
+		int odestx, odesty;
+		int destx, desty;
+		Window cr;
+		virtualScreen *newvs;
 
+		XTranslateCoordinates(dpy, Tmp_win->vs->window, 
+			Scr->RealRoot, xl, yt, &odestx, &odesty, &cr);
+
+		newvs = findIfVScreenOf(odestx, odesty);
+		if(newvs && newvs->wsw && newvs->wsw->currentwspc) {
+			XTranslateCoordinates(dpy, Scr->RealRoot, 
+				newvs->window, odestx, odesty, 
+				&destx, &desty, &cr);
+			AddToWorkSpace(newvs->wsw->currentwspc->name, Tmp_win);
+			RemoveFromWorkSpace(Tmp_win->vs->wsw->currentwspc->name, Tmp_win);
+			xl = destx;
+			yt = desty;
+		}
+
+	}
+	if (DragWindow == Tmp_win->frame)
 	  SetupWindow (Tmp_win, xl, yt,
 		       Tmp_win->frame_width, Tmp_win->frame_height, -1);
 	else

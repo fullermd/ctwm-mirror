@@ -110,6 +110,7 @@ Atom _XA_WM_OCCUPATION;
 Atom _XA_WM_CURRENTWORKSPACE;
 Atom _XA_WM_WORKSPACESLIST;
 Atom _XA_WM_CTWMSLIST;
+Atom _XA_WM_CTWM_VSCREENMAP;
 Atom _OL_WIN_ATTR;
 
 int       fullOccupation    = 0;
@@ -178,9 +179,10 @@ void ConfigureWorkSpaceManager (void) {
 void CreateWorkSpaceManager (void)
 {
     char wrkSpcList [512];
+    char vsmapbuf    [1024], *vsmap;
     virtualScreen    *vs;
-    WorkSpace        *ws;
-    int len, junk;
+    WorkSpace        *ws, *fws;
+    int len, junk, vsmaplen;
 
     if (! Scr->workSpaceManagerActive) return;
 
@@ -196,6 +198,7 @@ void CreateWorkSpaceManager (void)
 
     _XA_WM_OCCUPATION       = XInternAtom (dpy, "WM_OCCUPATION",        False);
     _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE",  False);
+    _XA_WM_CTWM_VSCREENMAP  = XInternAtom (dpy, "WM_CTWM_VSCREENMAP", False);
 #ifdef GNOME
     _XA_WM_WORKSPACESLIST   = XInternAtom (dpy, "_WIN_WORKSPACE_NAMES", False);
 #else /* GNOME */
@@ -205,12 +208,33 @@ void CreateWorkSpaceManager (void)
 
     NewFontCursor (&handCursor, "top_left_arrow");
 
+    vsmaplen = sizeof(vsmapbuf);
+    if(CtwmGetVScreenMap(dpy, Scr->RealRoot, vsmapbuf, &vsmaplen) == True)
+	vsmap = strtok(vsmapbuf, ",");
+    else
+	vsmap = NULL;
+
+    /*
+     * weird things can happen if the config file is changed or the atom
+     * returned above is messed with.  Sometimes windows may disappear in
+     * that case depending on what's changed.  (depending on where they were
+     * on the actual screen.
+     */
     ws = Scr->workSpaceMgr.workSpaceList;
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
       WorkSpaceWindow *wsw = vs->wsw;
-      wsw->currentwspc = ws;
+      if(vsmap)
+          fws = GetWorkspace(vsmap);
+      else
+          fws = NULL;
+      if(fws) {
+          wsw->currentwspc = fws;
+	  vsmap = strtok(NULL, ",");
+      } else {
+          wsw->currentwspc = ws;
+          ws = ws->next;
+      }
       CreateWorkSpaceManagerWindow (vs);
-      ws = ws->next;
     }
     CreateOccupyWindow ();
 
@@ -401,6 +425,7 @@ void ShowBackground (virtualScreen *vs)
     state = 1;
   }
 }
+
 void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 {
     TwmWindow		 *twmWin;
@@ -577,6 +602,10 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	ExecuteFunction (Scr->ChangeWorkspaceFunction.func, action,
 			   (Window) 0, (TwmWindow*) 0, &event, C_ROOT, FALSE);
     }
+
+    /* keep track of the order of the workspaces across restarts */
+    CtwmSetVScreenMap(dpy, Scr->RealRoot, Scr->vScreenList);
+
     XSync (dpy, 0);
     if (Scr->ClickToFocus || Scr->SloppyFocus) set_last_window (newws);
     MaybeAnimate = True;
@@ -695,6 +724,7 @@ void SetupOccupation (TwmWindow *twm_win,
     XrmDatabase       db = NULL;
     virtualScreen     *vs;
     int gwkspc = 0; /* for GNOME - which workspace we occupy */
+    int hadnovs = 0;
 
     if (! Scr->workSpaceManagerActive) {
 	twm_win->occupation = 1;
@@ -780,6 +810,7 @@ void SetupOccupation (TwmWindow *twm_win,
 	break;
       }
     }
+	
     len = GetPropertyFromMask (twm_win->occupation, wrkSpcList, &gwkspc);
 
     if (!XGetWindowAttributes(dpy, twm_win->w, &winattrs)) return;
@@ -1238,13 +1269,37 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
 	XUnmapWindow (dpy, tmp_win->w);
 	XUnmapWindow (dpy, tmp_win->frame);
 	XSelectInput (dpy, tmp_win->w, eventMask);
+
 	if (!tmp_win->DontSetInactive) SetMapStateProp (tmp_win, InactiveState);
     } else
     if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w) {
 	XUnmapWindow (dpy, tmp_win->icon->w);
 	IconDown (tmp_win);
     }
-    tmp_win->oldvs = tmp_win->vs;
+
+    /*
+     * XXX - this may need to be tweaked to find the real window at 0x0.
+     * Most people will setup virtualscreens left to right, but some
+     * may not.  The purpose of this is in the event of a ctwm death/restart,
+     * geometries of windows that were on unmapped workspaces will show
+     * up where they belong.
+     *
+     */
+
+    if(Scr->vScreenList) {
+	int x, y;
+	unsigned int junk;
+	Window junkW, w = tmp_win->frame;
+	virtualScreen *firstvs = NULL;
+	for(firstvs = Scr->vScreenList; firstvs; firstvs = firstvs->next)
+	    if(firstvs->x == 0 && firstvs->y == 0)
+	    	break;
+	if(firstvs) {
+	    XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
+	    XReparentWindow(dpy, w, firstvs->window, x, y);
+	}
+    }
+
     tmp_win->vs = NULL;
 }
 
@@ -1260,13 +1315,12 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
       if (tmp_win->isicon) {
 	if (tmp_win->icon_on) {
 	  if (tmp_win->icon && tmp_win->icon->w) {
-	    if (vs != tmp_win->oldvs) {
-		int x, y;
-		unsigned int junk;
-		Window junkW, w = tmp_win->icon->w;
-		XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
-		XReparentWindow (dpy, w, vs->window, x, y);
-	    }
+	    int x, y;
+	    unsigned int junk;
+	    Window junkW, w = tmp_win->icon->w;
+	    XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
+	    XReparentWindow (dpy, w, vs->window, x, y);
+
 	    IconUp (tmp_win);
 	    XMapWindow (dpy, tmp_win->icon->w);
 	    return;
@@ -1287,8 +1341,7 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	    XMapWindow   (dpy, tmp_win->w);
 	    XSelectInput (dpy, tmp_win->w, eventMask);
 	}
-	if (vs != tmp_win->oldvs)
-	  XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
+	XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
 	XMapWindow (dpy, tmp_win->frame);
 	SetMapStateProp (tmp_win, NormalState);
     }
@@ -3593,6 +3646,5 @@ Window   window;
     XConfigureWindow (display, window, CWStackMode, &changes);
 }
 #endif
-
 
 

@@ -1502,3 +1502,14 @@ VirtualScreens {
 	brackets, but they are not required or accepted in
 	configuration files.
 	[Ross Combs]
+
+    6 - improve algoritm to deal with mismatched geometry of virtual
+	screens
+
+      - allow windows to be dragged from one virtual screen to another and
+	have them switch workspaces appropriately
+
+      - handle restarts properly with virtual screens, including preserving
+	where windows were placed within workspaces regardless of which
+	virtual screen a window was on; preserve across restarts
+	[Todd Kover]
