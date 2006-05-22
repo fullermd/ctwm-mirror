@@ -2341,6 +2341,7 @@ void HandleDestroyNotify(void)
     DeleteIconsList (Tmp_win);					/* 14 */
 
     free((char *)Tmp_win);
+    Tmp_Win = NULL;
 
     if (Scr->ClickToFocus || Scr->SloppyFocus)
 	set_last_window (Scr->currentvs->wsw->currentwspc);
