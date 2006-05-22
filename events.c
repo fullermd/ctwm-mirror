@@ -2206,7 +2206,6 @@ static void remove_window_from_ring (TwmWindow *tmp)
 
 void HandleDestroyNotify(void)
 {
-    int i;
     /*
      * Warning, this is also called by HandleUnmapNotify; if it ever needs to
      * look at the event, HandleUnmapNotify will have to mash the UnmapNotify
@@ -2341,7 +2340,7 @@ void HandleDestroyNotify(void)
     DeleteIconsList (Tmp_win);					/* 14 */
 
     free((char *)Tmp_win);
-    Tmp_Win = NULL;
+    Tmp_win = NULL;
 
     if (Scr->ClickToFocus || Scr->SloppyFocus)
 	set_last_window (Scr->currentvs->wsw->currentwspc);
