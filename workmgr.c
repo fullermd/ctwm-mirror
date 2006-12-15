@@ -92,7 +92,7 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs);
 static void CreateOccupyWindow		(void);
 static unsigned int GetMaskFromResource	(TwmWindow *win, char *res);
 static int GetPropertyFromMask		(unsigned int mask, char *prop,
-					 int *gwkspc);
+					 long *gwkspc);
 static void PaintWorkSpaceManagerBorder	(virtualScreen *vs);
 static void PaintButton			(int which,
 					 virtualScreen *vs, Window w,
@@ -723,7 +723,7 @@ void SetupOccupation (TwmWindow *twm_win,
     unsigned long     eventMask;
     XrmDatabase       db = NULL;
     virtualScreen     *vs;
-    int gwkspc = 0; /* for GNOME - which workspace we occupy */
+    long gwkspc = 0; /* for GNOME - which workspace we occupy */
     int hadnovs = 0;
 
     if (! Scr->workSpaceManagerActive) {
@@ -1358,7 +1358,7 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
     int	      final_x, final_y;
     XWindowAttributes winattrs;
     unsigned long     eventMask;
-    int	gwkspc = 0; /* for gnome - the workspace of this window */
+    long      gwkspc = 0; /* for gnome - the workspace of this window */
 #ifdef GNOME
     unsigned char *prop;
     unsigned long bytesafter, numitems;
@@ -2243,7 +2243,7 @@ unsigned int GetMaskFromProperty (unsigned char *prop, unsigned long len)
     return (mask);
 }
 
-static int GetPropertyFromMask (unsigned int mask, char *prop, int *gwkspc)
+static int GetPropertyFromMask (unsigned int mask, char *prop, long *gwkspc)
 {
     WorkSpace *ws;
     int       len;

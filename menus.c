@@ -4323,7 +4323,8 @@ void Squeeze (TwmWindow *tmp_win)
     unsigned char	*prop;
     unsigned long	nitems, bytesafter;
     Atom		actual_type;
-    int			actual_format, gwkspc;
+    int			actual_format;
+    long		gwkspc;
 #endif /* GNOME */
     if (tmp_win->squeezed) {
 	tmp_win->squeezed = False;

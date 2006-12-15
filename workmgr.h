@@ -62,7 +62,7 @@ struct WorkSpaceMgr {
     ColorPair  	    windowcp;
     Bool       	    windowcpgiven;
     ColorPair       cp;
-    int		    count;
+    long	    count;
     char	    *geometry;
     int		    lines, columns;
     int		    noshowoccupyall;
@@ -73,7 +73,7 @@ struct WorkSpaceMgr {
 };
 
 struct WorkSpace {
-  int	              number;
+  long	              number;
   char	              *name;
   char	              *label;
   Image	              *image;
