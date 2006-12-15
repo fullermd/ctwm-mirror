@@ -39,5 +39,9 @@ struct virtualScreen {
 void InitVirtualScreens (ScreenInfo *scr);
 virtualScreen *findIfVScreenOf (int x, int y);
 virtualScreen *getVScreenOf (int x, int y);
+Bool CtwmGetVScreenMap (Display *display, Window rootw,
+			char *outbuf, int *outbuf_len);
+Bool CtwmSetVScreenMap(Display *display, Window rootw,
+		       struct virtualScreen *firstvs)
 
 #endif /* -VSCREEN- */

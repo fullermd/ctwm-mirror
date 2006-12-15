@@ -182,7 +182,8 @@ void CreateWorkSpaceManager (void)
     char vsmapbuf    [1024], *vsmap;
     virtualScreen    *vs;
     WorkSpace        *ws, *fws;
-    int len, junk, vsmaplen;
+    int len, vsmaplen;
+    long junk;
 
     if (! Scr->workSpaceManagerActive) return;
 
@@ -724,7 +725,6 @@ void SetupOccupation (TwmWindow *twm_win,
     XrmDatabase       db = NULL;
     virtualScreen     *vs;
     long gwkspc = 0; /* for GNOME - which workspace we occupy */
-    int hadnovs = 0;
 
     if (! Scr->workSpaceManagerActive) {
 	twm_win->occupation = 1;

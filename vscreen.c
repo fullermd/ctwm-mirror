@@ -129,25 +129,26 @@ virtualScreen *findIfVScreenOf (int x, int y)
 virtualScreen *getVScreenOf (int x, int y)
 {
   virtualScreen *vs;
-  if(vs = findIfVScreenOf(x, y))
+  if ((vs = findIfVScreenOf(x, y)))
 	return vs;
   return Scr->vScreenList;
 }
 
-/*  
+/*
  * Returns the order that virtual screens are displayed for the vscreen
  * list.  This is stored this way so everything ends up in the right place
- * on a ctwm restart.   
- */ 
-Bool CtwmGetVScreenMap (Display *display, Window rootw, char *outbuf, int *outbuf_len)
-{   
+ * on a ctwm restart.
+ */
+Bool CtwmGetVScreenMap (Display *display, Window rootw,
+			char *outbuf, int *outbuf_len)
+{
     Atom		_XA_WM_CTWM_VSCREENMAP;
     unsigned char       *prop;
     unsigned long       bytesafter;
     unsigned long       len;
-    Atom                actual_type;  
+    Atom                actual_type;
     int                 actual_format;
-    
+
     _XA_WM_CTWM_VSCREENMAP = XInternAtom (display, "WM_CTWM_VSCREENMAP", True);
     if (_XA_WM_CTWM_VSCREENMAP == None) return (False);
     if (XGetWindowProperty (display, rootw, _XA_WM_CTWM_VSCREENMAP, 0L, 512, 
@@ -155,16 +156,17 @@ Bool CtwmGetVScreenMap (Display *display, Window rootw, char *outbuf, int *outbu
                         &bytesafter, &prop) != Success) return (False);
     if (len == 0) return (False);
     *outbuf_len = (len>=*outbuf_len)?*outbuf_len-1:len;
-    strncpy(outbuf, prop, *outbuf_len);
+    memcpy(outbuf, prop, *outbuf_len);
     outbuf[*outbuf_len] = '\0';
     return (True); 
 }
 
-Bool CtwmSetVScreenMap(Display *display, Window rootw, struct virtualScreen *firstvs)
+Bool CtwmSetVScreenMap(Display *display, Window rootw,
+		       struct virtualScreen *firstvs)
 {
     char			buf[1024];
     int				tally = 0;
-    Atom 			_XA_WM_CTWM_VSCREENMAP;
+    Atom			_XA_WM_CTWM_VSCREENMAP;
     struct virtualScreen	*vs;
 
     _XA_WM_CTWM_VSCREENMAP = XInternAtom (display, "WM_CTWM_VSCREENMAP", True);

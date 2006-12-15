@@ -4365,7 +4365,8 @@ static void dumpevent (XEvent *e)
       case ClientMessage:  name = "ClientMessage"; break;
       case MappingNotify:  name = "MappingNotify"; break;
     }
-    fprintf (tracefile, "event:  %s in window 0x%x\n", name, e->xany.window);
+    fprintf (tracefile, "event:  %s in window 0x%x\n", name,
+	     (unsigned int)e->xany.window);
     switch (e->type) {
       case KeyPress:
       case KeyRelease:

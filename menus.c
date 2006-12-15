@@ -2949,8 +2949,6 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		  if (! moving_icon) WMapSetupWindow (tmp_win, xl, yt, -1, -1);
 		}
 		else {
-                  Window this_root = rootw;
-
 		    MoveOutline(dragroot, xl, yt, width, height,
 			tmp_win->frame_bw,
 			moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
