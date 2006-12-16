@@ -3261,10 +3261,10 @@ void WMapCreateCurrentBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap)
 {
-    virtualScreen *vs = Scr->vScreenList;
+    virtualScreen *vs;
     Image *image;
 
-    while (vs != NULL) {
+    for (vs = Scr->vScreenList; vs; vs = vs->next) {
       vs->wsw->curBorderColor = Scr->Black;
       vs->wsw->curColors.back = Scr->White;
       vs->wsw->curColors.fore = Scr->Black;
@@ -3284,7 +3284,6 @@ void WMapCreateCurrentBackGround (char *border,
 	continue;
       }
       vs->wsw->curImage = image;
-      vs = vs->next;
     }
 }
 
@@ -3292,10 +3291,10 @@ void WMapCreateDefaultBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap)
 {
-    virtualScreen *vs = Scr->vScreenList;
+    virtualScreen *vs;
     Image *image;
 
-    while (vs != NULL) {
+    for (vs = Scr->vScreenList; vs; vs = vs->next) {
       vs->wsw->defBorderColor = Scr->Black;
       vs->wsw->defColors.back = Scr->White;
       vs->wsw->defColors.fore = Scr->Black;
@@ -3311,7 +3310,6 @@ void WMapCreateDefaultBackGround (char *border,
       if (pixmap == NULL) continue;
       if ((image = GetImage (pixmap, vs->wsw->defColors)) == None) continue;
       vs->wsw->defImage = image;
-      vs = vs->next;
     }
 }
 
