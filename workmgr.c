@@ -69,7 +69,7 @@ extern char *captivename;
 /***********************************************************************
  *
  *  Procedure:
- *	CreateWorkSpaceManager - create teh workspace manager window
+ *	CreateWorkSpaceManager - create the workspace manager window
  *		for this screen.
  *
  *  Returned Value:
@@ -178,11 +178,13 @@ void ConfigureWorkSpaceManager (void) {
 
 void CreateWorkSpaceManager (void)
 {
-    char wrkSpcList [512];
-    char vsmapbuf    [1024], *vsmap;
+    char wrkSpcList[512];
+    char vsmapbuf[1024], *vsmap;
     virtualScreen    *vs;
     WorkSpace        *ws, *fws;
-    int len, junk, vsmaplen;
+    long	      junk;
+    int               len,
+		      vsmaplen;
 
     if (! Scr->workSpaceManagerActive) return;
 
@@ -260,7 +262,7 @@ void CreateWorkSpaceManager (void)
 	XClearWindow (dpy, vs->window);
       }
     }
-    len = GetPropertyFromMask (0xFFFFFFFF, wrkSpcList, &junk);
+    len = GetPropertyFromMask (0xFFFFFFFFU, wrkSpcList, &junk);
     XChangeProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST, XA_STRING, 8, 
 		     PropModeReplace, (unsigned char *) wrkSpcList, len);
 }
@@ -3268,18 +3270,18 @@ void WMapCreateCurrentBackGround (char *border,
       vs->wsw->curColors.fore = Scr->Black;
       vs->wsw->curImage       = None;
 
-      if (border == NULL) return;
+      if (border == NULL) continue;
       GetColor (Scr->Monochrome, &(vs->wsw->curBorderColor), border);
-      if (background == NULL) return;
+      if (background == NULL) continue;
       vs->wsw->curPaint = True;
       GetColor (Scr->Monochrome, &(vs->wsw->curColors.back), background);
-      if (foreground == NULL) return;
+      if (foreground == NULL) continue;
       GetColor (Scr->Monochrome, &(vs->wsw->curColors.fore), foreground);
 
-      if (pixmap == NULL) return;
+      if (pixmap == NULL) continue;
       if ((image = GetImage (pixmap, vs->wsw->curColors)) == None) {
 	fprintf (stderr, "Can't find pixmap %s\n", pixmap);
-	return;
+	continue;
       }
       vs->wsw->curImage = image;
       vs = vs->next;
@@ -3299,15 +3301,15 @@ void WMapCreateDefaultBackGround (char *border,
       vs->wsw->defColors.fore = Scr->Black;
       vs->wsw->defImage       = None;
 
-      if (border == NULL) return;
+      if (border == NULL) continue;
       GetColor (Scr->Monochrome, &(vs->wsw->defBorderColor), border);
-      if (background == NULL) return;
+      if (background == NULL) continue;
       GetColor (Scr->Monochrome, &(vs->wsw->defColors.back), background);
-      if (foreground == NULL) return;
+      if (foreground == NULL) continue;
       GetColor (Scr->Monochrome, &(vs->wsw->defColors.fore), foreground);
 
-      if (pixmap == NULL) return;
-      if ((image = GetImage (pixmap, vs->wsw->defColors)) == None) return;
+      if (pixmap == NULL) continue;
+      if ((image = GetImage (pixmap, vs->wsw->defColors)) == None) continue;
       vs->wsw->defImage = image;
       vs = vs->next;
     }

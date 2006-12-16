@@ -1513,3 +1513,8 @@ VirtualScreens {
 	where windows were placed within workspaces regardless of which
 	virtual screen a window was on; preserve across restarts
 	[Todd Kover]
+
+    7 - WMapCreateCurrentBackGround() and WMapCreateDefaultBackGround() 
+	would skip remaining virtual screens if not all parameters are present.
+
+      - small type errors.
