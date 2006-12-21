@@ -141,6 +141,18 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.occupyWindow->columns   = 0;
     Scr->workSpaceMgr.occupyWindow->twm_win   = (TwmWindow*) 0;
 
+    Scr->workSpaceMgr.curColors.back  = Scr->Black;
+    Scr->workSpaceMgr.curColors.fore  = Scr->White;
+    Scr->workSpaceMgr.defColors.back  = Scr->White;
+    Scr->workSpaceMgr.defColors.fore  = Scr->Black;	
+    Scr->workSpaceMgr.curImage        = None;
+    Scr->workSpaceMgr.curPaint        = False;
+    Scr->workSpaceMgr.defImage        = None;
+    Scr->workSpaceMgr.vspace          = Scr->WMgrVertButtonIndent;
+    Scr->workSpaceMgr.hspace          = Scr->WMgrHorizButtonIndent;
+    Scr->workSpaceMgr.name	      = "WorkSpaceManager";
+    Scr->workSpaceMgr.icon_name       = "WorkSpaceManager Icon";
+
 #ifdef I18N
     Scr->workSpaceMgr.windowFont.basename =
       "-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1";
@@ -157,22 +169,12 @@ void InitWorkSpaceManager (void)
 
 void ConfigureWorkSpaceManager (void) {
     virtualScreen *vs;
+
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
 	WorkSpaceWindow *wsw = (WorkSpaceWindow*) malloc (sizeof (WorkSpaceWindow));
-	wsw->name	     = "WorkSpaceManager";
-	wsw->icon_name       = "WorkSpaceManager Icon";
 	wsw->twm_win	     = (TwmWindow*) 0;
+	wsw->state = Scr->workSpaceMgr.initialstate; /* BUTTONSSTATE */
 	vs->wsw = wsw;
-	vs->wsw->curColors.back  = Scr->Black;
-	vs->wsw->curColors.fore  = Scr->White;
-	vs->wsw->defColors.back  = Scr->White;
-	vs->wsw->defColors.fore  = Scr->Black;	
-	vs->wsw->curImage        = None;
-	vs->wsw->curPaint        = False;
-	vs->wsw->defImage        = None;
-	vs->wsw->state = Scr->workSpaceMgr.initialstate; /* BUTTONSSTATE */
-	vs->wsw->vspace          = Scr->WMgrVertButtonIndent;
-	vs->wsw->hspace          = Scr->WMgrHorizButtonIndent;
     }
 }
 
@@ -244,14 +246,14 @@ void CreateWorkSpaceManager (void)
       WorkSpaceWindow *wsw = vs->wsw;
       WorkSpace *ws2 = wsw->currentwspc;
       MapSubwindow *msw = wsw->mswl [ws2->number];
-      if (wsw->curImage == None) {
-	if (wsw->curPaint) {
-	  XSetWindowBackground (dpy, msw->w, wsw->curColors.back);
+      if (Scr->workSpaceMgr.curImage == None) {
+	if (Scr->workSpaceMgr.curPaint) {
+	  XSetWindowBackground (dpy, msw->w, Scr->workSpaceMgr.curColors.back);
 	}
       } else {
-	XSetWindowBackgroundPixmap (dpy, msw->w, wsw->curImage->pixmap);
+	XSetWindowBackgroundPixmap (dpy, msw->w, Scr->workSpaceMgr.curImage->pixmap);
       }
-      XSetWindowBorder (dpy, msw->w, wsw->curBorderColor);
+      XSetWindowBorder (dpy, msw->w, Scr->workSpaceMgr.curBorderColor);
       XClearWindow (dpy, msw->w);
 
       if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
@@ -561,21 +563,21 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	    XSetWindowBackgroundPixmap (dpy, oldw, oldws->image->pixmap);
     }
     else {
-	if (vs->wsw->defImage == None || Scr->NoImagesInWorkSpaceManager)
-	    XSetWindowBackground       (dpy, oldw, vs->wsw->defColors.back);
+	if (Scr->workSpaceMgr.defImage == None || Scr->NoImagesInWorkSpaceManager)
+	    XSetWindowBackground       (dpy, oldw, Scr->workSpaceMgr.defColors.back);
 	else
-	    XSetWindowBackgroundPixmap (dpy, oldw, vs->wsw->defImage->pixmap);
+	    XSetWindowBackgroundPixmap (dpy, oldw, Scr->workSpaceMgr.defImage->pixmap);
     }
-    attr.border_pixel = vs->wsw->defBorderColor;
+    attr.border_pixel = Scr->workSpaceMgr.defBorderColor;
     XChangeWindowAttributes (dpy, oldw, CWBorderPixel, &attr);
 
-    if (vs->wsw->curImage == None) {
-	if (vs->wsw->curPaint) XSetWindowBackground (dpy, neww, vs->wsw->curColors.back);
+    if (Scr->workSpaceMgr.curImage == None) {
+	if (Scr->workSpaceMgr.curPaint) XSetWindowBackground (dpy, neww, Scr->workSpaceMgr.curColors.back);
     }
     else {
-	XSetWindowBackgroundPixmap (dpy, neww, vs->wsw->curImage->pixmap);
+	XSetWindowBackgroundPixmap (dpy, neww, Scr->workSpaceMgr.curImage->pixmap);
     }
-    attr.border_pixel = vs->wsw->curBorderColor;
+    attr.border_pixel =  Scr->workSpaceMgr.curBorderColor;
     XChangeWindowAttributes (dpy, neww, CWBorderPixel, &attr);
 
     XClearWindow (dpy, oldw);
@@ -846,7 +848,7 @@ void SetupOccupation (TwmWindow *twm_win,
 	    state = twm_win->wmhints->initial_state;
     }
     if (visible (twm_win)) {
-	if (state == InactiveState) SetMapStateProp (twm_win,   NormalState);
+	if (state == InactiveState) SetMapStateProp (twm_win, NormalState);
     } else {
 	if (state ==   NormalState) SetMapStateProp (twm_win, InactiveState);
     }
@@ -1583,15 +1585,15 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 	XRectangle logical_rect;
 #endif
 
-    name      = vs->wsw->name;
-    icon_name = vs->wsw->icon_name;
+    name      = Scr->workSpaceMgr.name;
+    icon_name = Scr->workSpaceMgr.icon_name;
     geometry  = Scr->workSpaceMgr.geometry;
     columns   = Scr->workSpaceMgr.columns;
-    vspace    = vs->wsw->vspace;
-    hspace    = vs->wsw->hspace;
+    vspace    = Scr->workSpaceMgr.vspace;
+    hspace    = Scr->workSpaceMgr.hspace;
     font      = Scr->workSpaceMgr.buttonFont;
     cp        = Scr->workSpaceMgr.cp;
-    border    = vs->wsw->defBorderColor;
+    border    = Scr->workSpaceMgr.defBorderColor;
 
     count = 0;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) count++;
@@ -1702,10 +1704,10 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 		XSetWindowBackgroundPixmap (dpy, mapsw, ws->image->pixmap);
 	}
 	else {
-	    if (vs->wsw->defImage == None || Scr->NoImagesInWorkSpaceManager)
-		XSetWindowBackground       (dpy, mapsw, vs->wsw->defColors.back);
+	    if (Scr->workSpaceMgr.defImage == None || Scr->NoImagesInWorkSpaceManager)
+		XSetWindowBackground       (dpy, mapsw, Scr->workSpaceMgr.defColors.back);
 	    else
-		XSetWindowBackgroundPixmap (dpy, mapsw, vs->wsw->defImage->pixmap);
+		XSetWindowBackgroundPixmap (dpy, mapsw, Scr->workSpaceMgr.defImage->pixmap);
 	}
 	XClearWindow (dpy, butsw);
 	i++;
@@ -3162,8 +3164,8 @@ static void ResizeWorkSpaceManager (virtualScreen *vs, TwmWindow *win)
     if ((neww == oldw) && (newh == oldh)) return;
     oldw = neww; oldh = newh;
 
-    hspace  = vs->wsw->hspace;
-    vspace  = vs->wsw->vspace;
+    hspace  = Scr->workSpaceMgr.hspace;
+    vspace  = Scr->workSpaceMgr.vspace;
     lines   = Scr->workSpaceMgr.lines;
     columns = Scr->workSpaceMgr.columns;
     bwidth  = (neww - (columns * hspace)) / columns;
@@ -3261,56 +3263,60 @@ void WMapCreateCurrentBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap)
 {
-    virtualScreen *vs;
     Image *image;
+    WorkSpaceMgr *ws = &Scr->workSpaceMgr;
 
-    for (vs = Scr->vScreenList; vs; vs = vs->next) {
-      vs->wsw->curBorderColor = Scr->Black;
-      vs->wsw->curColors.back = Scr->White;
-      vs->wsw->curColors.fore = Scr->Black;
-      vs->wsw->curImage       = None;
+    ws->curBorderColor = Scr->Black;
+    ws->curColors.back = Scr->White;
+    ws->curColors.fore = Scr->Black;
+    ws->curImage       = None;
 
-      if (border == NULL) continue;
-      GetColor (Scr->Monochrome, &(vs->wsw->curBorderColor), border);
-      if (background == NULL) continue;
-      vs->wsw->curPaint = True;
-      GetColor (Scr->Monochrome, &(vs->wsw->curColors.back), background);
-      if (foreground == NULL) continue;
-      GetColor (Scr->Monochrome, &(vs->wsw->curColors.fore), foreground);
+    if (border == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->curBorderColor, border);
+    if (background == NULL)
+	return;
+    ws->curPaint = True;
+    GetColor (Scr->Monochrome, &ws->curColors.back, background);
+    if (foreground == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->curColors.fore, foreground);
 
-      if (pixmap == NULL) continue;
-      if ((image = GetImage (pixmap, vs->wsw->curColors)) == None) {
+    if (pixmap == NULL)
+	return;
+    if ((image = GetImage (pixmap, ws->curColors)) == None) {
 	fprintf (stderr, "Can't find pixmap %s\n", pixmap);
-	continue;
-      }
-      vs->wsw->curImage = image;
+	return;
     }
+    ws->curImage = image;
 }
 
 void WMapCreateDefaultBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap)
 {
-    virtualScreen *vs;
     Image *image;
+    WorkSpaceMgr *ws = &Scr->workSpaceMgr;
 
-    for (vs = Scr->vScreenList; vs; vs = vs->next) {
-      vs->wsw->defBorderColor = Scr->Black;
-      vs->wsw->defColors.back = Scr->White;
-      vs->wsw->defColors.fore = Scr->Black;
-      vs->wsw->defImage       = None;
+    ws->defBorderColor = Scr->Black;
+    ws->defColors.back = Scr->White;
+    ws->defColors.fore = Scr->Black;
+    ws->defImage       = None;
 
-      if (border == NULL) continue;
-      GetColor (Scr->Monochrome, &(vs->wsw->defBorderColor), border);
-      if (background == NULL) continue;
-      GetColor (Scr->Monochrome, &(vs->wsw->defColors.back), background);
-      if (foreground == NULL) continue;
-      GetColor (Scr->Monochrome, &(vs->wsw->defColors.fore), foreground);
-
-      if (pixmap == NULL) continue;
-      if ((image = GetImage (pixmap, vs->wsw->defColors)) == None) continue;
-      vs->wsw->defImage = image;
-    }
+    if (border == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->defBorderColor, border);
+    if (background == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->defColors.back, background);
+    if (foreground == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->defColors.fore, foreground);
+    if (pixmap == NULL)
+	return;
+    if ((image = GetImage (pixmap, ws->defColors)) == None)
+	return;
+    ws->defImage = image;
 }
 
 Bool AnimateRoot (void)

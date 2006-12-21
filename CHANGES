@@ -1517,4 +1517,20 @@ VirtualScreens {
     7 - WMapCreateCurrentBackGround() and WMapCreateDefaultBackGround() 
 	would skip remaining virtual screens if not all parameters are present.
 
-      - small type errors.
+      - small type errors. [Olaf "Rhialto" Seibert].
+
+    8 - There were some directives in the config file that wanted to set some
+	setting for all virtual screens. However since that list is (now) only
+	set up after parsing the config file, they failed to work.  Moreover,
+	these settings were basically meant to be global to all virtual
+	screens, so a better place for them is somewhere in *Scr.  They all
+	related to the Workspace Manager, so I moved them from struct
+	WorkSpaceWindow to struct WorkSpaceMgr.
+
+	The affected directives are StartInMapState, WMgrVertButtonIndent,
+	WMgrHorizButtonIndent, MapWindowCurrentWorkSpace,
+	MapWindowDefaultWorkSpace.  The window and icon_name, even though not
+	user-settable, were also moved.
+	
+	This is basically change #7 above done right.
+	[Olaf "Rhialto" Seibert]
