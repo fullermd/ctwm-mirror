@@ -1339,8 +1339,7 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 		}
 	    }
 	}
-      }
-      return;
+	return;
     }
     if (tmp_win->UnmapByMovingFarAway) {
         if (vs)
