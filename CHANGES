@@ -1513,3 +1513,43 @@ VirtualScreens {
 	where windows were placed within workspaces regardless of which
 	virtual screen a window was on; preserve across restarts
 	[Todd Kover]
+
+    7 - WMapCreateCurrentBackGround() and WMapCreateDefaultBackGround() 
+	would skip remaining virtual screens if not all parameters are present.
+
+      - small type errors. [Olaf "Rhialto" Seibert].
+
+    8 - There were some directives in the config file that wanted to set some
+	setting for all virtual screens. However since that list is (now) only
+	set up after parsing the config file, they failed to work.  Moreover,
+	these settings were basically meant to be global to all virtual
+	screens, so a better place for them is somewhere in *Scr.  They all
+	related to the Workspace Manager, so I moved them from struct
+	WorkSpaceWindow to struct WorkSpaceMgr.
+
+	The affected directives are StartInMapState, WMgrVertButtonIndent,
+	WMgrHorizButtonIndent, MapWindowCurrentWorkSpace,
+	MapWindowDefaultWorkSpace.  The window and icon_name, even though not
+	user-settable, were also moved.
+	
+	This is basically change #7 above done right.
+	[Olaf "Rhialto" Seibert]
+
+    9 - Re-introduced TwmWindow.oldvs, used to avoid calling
+	XReparentWindow() when possibe (it messed up the stacking order
+	of windows). However, maybe the use of .vs should be rethought a
+	bit: in Vanish() it is now set to NULL with the old value kept
+	in .oldvs.  However the window is still a child of the same vs.
+	Maybe it is better not to set it to NULL and then, when *really*
+	changing the virtual screen, .vs can be used instead of .oldvs.
+
+	This whole "virtual screen" thing is unexplained in the manual,
+	which even uses it as a synonym for "workspace" already in the
+	introduction paragraph. (There also does not seem to be a way
+	now to test virtual screens in captive windows) I suspect that
+	all this causes lots of confusion, and when cleared up, can
+	simplify the code a lot. 
+
+	I also fixed up the horrible indentation in the functions
+	where I changed something.
+	[Olaf "Rhialto" Seibert]

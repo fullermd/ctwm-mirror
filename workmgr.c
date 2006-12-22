@@ -69,7 +69,7 @@ extern char *captivename;
 /***********************************************************************
  *
  *  Procedure:
- *	CreateWorkSpaceManager - create teh workspace manager window
+ *	CreateWorkSpaceManager - create the workspace manager window
  *		for this screen.
  *
  *  Returned Value:
@@ -141,6 +141,18 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.occupyWindow->columns   = 0;
     Scr->workSpaceMgr.occupyWindow->twm_win   = (TwmWindow*) 0;
 
+    Scr->workSpaceMgr.curColors.back  = Scr->Black;
+    Scr->workSpaceMgr.curColors.fore  = Scr->White;
+    Scr->workSpaceMgr.defColors.back  = Scr->White;
+    Scr->workSpaceMgr.defColors.fore  = Scr->Black;	
+    Scr->workSpaceMgr.curImage        = None;
+    Scr->workSpaceMgr.curPaint        = False;
+    Scr->workSpaceMgr.defImage        = None;
+    Scr->workSpaceMgr.vspace          = Scr->WMgrVertButtonIndent;
+    Scr->workSpaceMgr.hspace          = Scr->WMgrHorizButtonIndent;
+    Scr->workSpaceMgr.name	      = "WorkSpaceManager";
+    Scr->workSpaceMgr.icon_name       = "WorkSpaceManager Icon";
+
 #ifdef I18N
     Scr->workSpaceMgr.windowFont.basename =
       "-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1";
@@ -157,22 +169,12 @@ void InitWorkSpaceManager (void)
 
 void ConfigureWorkSpaceManager (void) {
     virtualScreen *vs;
+
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
 	WorkSpaceWindow *wsw = (WorkSpaceWindow*) malloc (sizeof (WorkSpaceWindow));
-	wsw->name	     = "WorkSpaceManager";
-	wsw->icon_name       = "WorkSpaceManager Icon";
 	wsw->twm_win	     = (TwmWindow*) 0;
+	wsw->state = Scr->workSpaceMgr.initialstate; /* BUTTONSSTATE */
 	vs->wsw = wsw;
-	vs->wsw->curColors.back  = Scr->Black;
-	vs->wsw->curColors.fore  = Scr->White;
-	vs->wsw->defColors.back  = Scr->White;
-	vs->wsw->defColors.fore  = Scr->Black;	
-	vs->wsw->curImage        = None;
-	vs->wsw->curPaint        = False;
-	vs->wsw->defImage        = None;
-	vs->wsw->state = Scr->workSpaceMgr.initialstate; /* BUTTONSSTATE */
-	vs->wsw->vspace          = Scr->WMgrVertButtonIndent;
-	vs->wsw->hspace          = Scr->WMgrHorizButtonIndent;
     }
 }
 
@@ -243,14 +245,14 @@ void CreateWorkSpaceManager (void)
       WorkSpaceWindow *wsw = vs->wsw;
       WorkSpace *ws2 = wsw->currentwspc;
       MapSubwindow *msw = wsw->mswl [ws2->number];
-      if (wsw->curImage == None) {
-	if (wsw->curPaint) {
-	  XSetWindowBackground (dpy, msw->w, wsw->curColors.back);
+      if (Scr->workSpaceMgr.curImage == None) {
+	if (Scr->workSpaceMgr.curPaint) {
+	  XSetWindowBackground (dpy, msw->w, Scr->workSpaceMgr.curColors.back);
 	}
       } else {
-	XSetWindowBackgroundPixmap (dpy, msw->w, wsw->curImage->pixmap);
+	XSetWindowBackgroundPixmap (dpy, msw->w, Scr->workSpaceMgr.curImage->pixmap);
       }
-      XSetWindowBorder (dpy, msw->w, wsw->curBorderColor);
+      XSetWindowBorder (dpy, msw->w, Scr->workSpaceMgr.curBorderColor);
       XClearWindow (dpy, msw->w);
 
       if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
@@ -261,7 +263,7 @@ void CreateWorkSpaceManager (void)
 	XClearWindow (dpy, vs->window);
       }
     }
-    len = GetPropertyFromMask (0xFFFFFFFF, wrkSpcList, &junk);
+    len = GetPropertyFromMask (0xFFFFFFFFu, wrkSpcList, &junk);
     XChangeProperty (dpy, Scr->Root, _XA_WM_WORKSPACESLIST, XA_STRING, 8, 
 		     PropModeReplace, (unsigned char *) wrkSpcList, len);
 }
@@ -560,21 +562,21 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	    XSetWindowBackgroundPixmap (dpy, oldw, oldws->image->pixmap);
     }
     else {
-	if (vs->wsw->defImage == None || Scr->NoImagesInWorkSpaceManager)
-	    XSetWindowBackground       (dpy, oldw, vs->wsw->defColors.back);
+	if (Scr->workSpaceMgr.defImage == None || Scr->NoImagesInWorkSpaceManager)
+	    XSetWindowBackground       (dpy, oldw, Scr->workSpaceMgr.defColors.back);
 	else
-	    XSetWindowBackgroundPixmap (dpy, oldw, vs->wsw->defImage->pixmap);
+	    XSetWindowBackgroundPixmap (dpy, oldw, Scr->workSpaceMgr.defImage->pixmap);
     }
-    attr.border_pixel = vs->wsw->defBorderColor;
+    attr.border_pixel = Scr->workSpaceMgr.defBorderColor;
     XChangeWindowAttributes (dpy, oldw, CWBorderPixel, &attr);
 
-    if (vs->wsw->curImage == None) {
-	if (vs->wsw->curPaint) XSetWindowBackground (dpy, neww, vs->wsw->curColors.back);
+    if (Scr->workSpaceMgr.curImage == None) {
+	if (Scr->workSpaceMgr.curPaint) XSetWindowBackground (dpy, neww, Scr->workSpaceMgr.curColors.back);
     }
     else {
-	XSetWindowBackgroundPixmap (dpy, neww, vs->wsw->curImage->pixmap);
+	XSetWindowBackgroundPixmap (dpy, neww, Scr->workSpaceMgr.curImage->pixmap);
     }
-    attr.border_pixel = vs->wsw->curBorderColor;
+    attr.border_pixel =  Scr->workSpaceMgr.curBorderColor;
     XChangeWindowAttributes (dpy, neww, CWBorderPixel, &attr);
 
     XClearWindow (dpy, oldw);
@@ -844,7 +846,7 @@ void SetupOccupation (TwmWindow *twm_win,
 	    state = twm_win->wmhints->initial_state;
     }
     if (visible (twm_win)) {
-	if (state == InactiveState) SetMapStateProp (twm_win,   NormalState);
+	if (state == InactiveState) SetMapStateProp (twm_win, NormalState);
     } else {
 	if (state ==   NormalState) SetMapStateProp (twm_win, InactiveState);
     }
@@ -1258,11 +1260,11 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
     XWindowAttributes winattrs;
     unsigned long     eventMask;
 
-    if (vs && tmp_win->vs && (tmp_win->vs != vs)) return;
+    if (vs && tmp_win->vs && tmp_win->vs != vs)
+	return;
     if (tmp_win->UnmapByMovingFarAway) {
-        XMoveWindow (dpy, tmp_win->frame, Scr->rootw + 1, Scr->rooth + 1);
-    } else
-    if (tmp_win->mapped) {
+	XMoveWindow (dpy, tmp_win->frame, Scr->rootw + 1, Scr->rooth + 1);
+    } else if (tmp_win->mapped) {
 	XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
 	eventMask = winattrs.your_event_mask;
 	XSelectInput (dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
@@ -1270,9 +1272,9 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
 	XUnmapWindow (dpy, tmp_win->frame);
 	XSelectInput (dpy, tmp_win->w, eventMask);
 
-	if (!tmp_win->DontSetInactive) SetMapStateProp (tmp_win, InactiveState);
-    } else
-    if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w) {
+	if (!tmp_win->DontSetInactive)
+	SetMapStateProp (tmp_win, InactiveState);
+    } else if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w) {
 	XUnmapWindow (dpy, tmp_win->icon->w);
 	IconDown (tmp_win);
     }
@@ -1283,23 +1285,30 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
      * may not.  The purpose of this is in the event of a ctwm death/restart,
      * geometries of windows that were on unmapped workspaces will show
      * up where they belong.
-     *
+     * XXX - XReparentWindow() messes up the stacking order of windows.
+     * It should be avoided as much as possible. This already affects
+     * switching away from and back to a workspace. Therefore do this only
+     * if there are at least 2 virtual screens AND the new one (firstvs)
+     * differs from where the window currently is. (Olaf Seibert).
      */
 
-    if(Scr->vScreenList) {
+    if (Scr->vScreenList && Scr->vScreenList->next) {
 	int x, y;
 	unsigned int junk;
 	Window junkW, w = tmp_win->frame;
 	virtualScreen *firstvs = NULL;
-	for(firstvs = Scr->vScreenList; firstvs; firstvs = firstvs->next)
-	    if(firstvs->x == 0 && firstvs->y == 0)
-	    	break;
-	if(firstvs) {
+
+	for (firstvs = Scr->vScreenList; firstvs; firstvs = firstvs->next)
+	    if (firstvs->x == 0 && firstvs->y == 0)
+		break;
+	if (firstvs && firstvs != vs) {
 	    XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
 	    XReparentWindow(dpy, w, firstvs->window, x, y);
+	    tmp_win->vs = firstvs;
 	}
     }
 
+    tmp_win->oldvs = tmp_win->vs;
     tmp_win->vs = NULL;
 }
 
@@ -1308,31 +1317,37 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
     XWindowAttributes	winattrs;
     unsigned long	eventMask;
 
-    if (vs && tmp_win->vs) return;
+    if (vs && tmp_win->vs)
+	return;
     tmp_win->vs = vs;
 
     if (!tmp_win->mapped) {
-      if (tmp_win->isicon) {
-	if (tmp_win->icon_on) {
-	  if (tmp_win->icon && tmp_win->icon->w) {
-	    int x, y;
-	    unsigned int junk;
-	    Window junkW, w = tmp_win->icon->w;
-	    XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
-	    XReparentWindow (dpy, w, vs->window, x, y);
+	if (tmp_win->isicon) {
+	    if (tmp_win->icon_on) {
+		if (tmp_win->icon && tmp_win->icon->w) {
+		    if (vs != tmp_win->oldvs) {
+			int x, y;
+			unsigned int junk;
+			Window junkW, w = tmp_win->icon->w;
+			XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
+			XReparentWindow (dpy, w, vs->window, x, y);
+		    }
 
-	    IconUp (tmp_win);
-	    XMapWindow (dpy, tmp_win->icon->w);
-	    return;
-	  }
+		    IconUp (tmp_win);
+		    XMapWindow (dpy, tmp_win->icon->w);
+		    return;
+		}
+	    }
 	}
       }
       return;
     }
     if (tmp_win->UnmapByMovingFarAway) {
-        if (vs) XReparentWindow (dpy, tmp_win->frame, vs->window,
-				 tmp_win->frame_x, tmp_win->frame_y);
-	else XMoveWindow (dpy, tmp_win->frame, tmp_win->frame_x, tmp_win->frame_y);
+        if (vs)
+	    XReparentWindow (dpy, tmp_win->frame, vs->window,
+		tmp_win->frame_x, tmp_win->frame_y);
+	else
+	    XMoveWindow (dpy, tmp_win->frame, tmp_win->frame_x, tmp_win->frame_y);
     } else {
 	if (!tmp_win->squeezed) {
 	    XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
@@ -1341,7 +1356,9 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	    XMapWindow   (dpy, tmp_win->w);
 	    XSelectInput (dpy, tmp_win->w, eventMask);
 	}
-	XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
+	if (vs != tmp_win->oldvs) {
+	    XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
+	}
 	XMapWindow (dpy, tmp_win->frame);
 	SetMapStateProp (tmp_win, NormalState);
     }
@@ -1581,15 +1598,15 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 	XRectangle logical_rect;
 #endif
 
-    name      = vs->wsw->name;
-    icon_name = vs->wsw->icon_name;
+    name      = Scr->workSpaceMgr.name;
+    icon_name = Scr->workSpaceMgr.icon_name;
     geometry  = Scr->workSpaceMgr.geometry;
     columns   = Scr->workSpaceMgr.columns;
-    vspace    = vs->wsw->vspace;
-    hspace    = vs->wsw->hspace;
+    vspace    = Scr->workSpaceMgr.vspace;
+    hspace    = Scr->workSpaceMgr.hspace;
     font      = Scr->workSpaceMgr.buttonFont;
     cp        = Scr->workSpaceMgr.cp;
-    border    = vs->wsw->defBorderColor;
+    border    = Scr->workSpaceMgr.defBorderColor;
 
     count = 0;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) count++;
@@ -1700,10 +1717,10 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 		XSetWindowBackgroundPixmap (dpy, mapsw, ws->image->pixmap);
 	}
 	else {
-	    if (vs->wsw->defImage == None || Scr->NoImagesInWorkSpaceManager)
-		XSetWindowBackground       (dpy, mapsw, vs->wsw->defColors.back);
+	    if (Scr->workSpaceMgr.defImage == None || Scr->NoImagesInWorkSpaceManager)
+		XSetWindowBackground       (dpy, mapsw, Scr->workSpaceMgr.defColors.back);
 	    else
-		XSetWindowBackgroundPixmap (dpy, mapsw, vs->wsw->defImage->pixmap);
+		XSetWindowBackgroundPixmap (dpy, mapsw, Scr->workSpaceMgr.defImage->pixmap);
 	}
 	XClearWindow (dpy, butsw);
 	i++;
@@ -3160,8 +3177,8 @@ static void ResizeWorkSpaceManager (virtualScreen *vs, TwmWindow *win)
     if ((neww == oldw) && (newh == oldh)) return;
     oldw = neww; oldh = newh;
 
-    hspace  = vs->wsw->hspace;
-    vspace  = vs->wsw->vspace;
+    hspace  = Scr->workSpaceMgr.hspace;
+    vspace  = Scr->workSpaceMgr.vspace;
     lines   = Scr->workSpaceMgr.lines;
     columns = Scr->workSpaceMgr.columns;
     bwidth  = (neww - (columns * hspace)) / columns;
@@ -3259,58 +3276,60 @@ void WMapCreateCurrentBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap)
 {
-    virtualScreen *vs = Scr->vScreenList;
     Image *image;
+    WorkSpaceMgr *ws = &Scr->workSpaceMgr;
 
-    while (vs != NULL) {
-      vs->wsw->curBorderColor = Scr->Black;
-      vs->wsw->curColors.back = Scr->White;
-      vs->wsw->curColors.fore = Scr->Black;
-      vs->wsw->curImage       = None;
+    ws->curBorderColor = Scr->Black;
+    ws->curColors.back = Scr->White;
+    ws->curColors.fore = Scr->Black;
+    ws->curImage       = None;
 
-      if (border == NULL) return;
-      GetColor (Scr->Monochrome, &(vs->wsw->curBorderColor), border);
-      if (background == NULL) return;
-      vs->wsw->curPaint = True;
-      GetColor (Scr->Monochrome, &(vs->wsw->curColors.back), background);
-      if (foreground == NULL) return;
-      GetColor (Scr->Monochrome, &(vs->wsw->curColors.fore), foreground);
+    if (border == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->curBorderColor, border);
+    if (background == NULL)
+	return;
+    ws->curPaint = True;
+    GetColor (Scr->Monochrome, &ws->curColors.back, background);
+    if (foreground == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->curColors.fore, foreground);
 
-      if (pixmap == NULL) return;
-      if ((image = GetImage (pixmap, vs->wsw->curColors)) == None) {
+    if (pixmap == NULL)
+	return;
+      if ((image = GetImage (pixmap, Scr->workSpaceMgr.curColors)) == None) {
 	fprintf (stderr, "Can't find pixmap %s\n", pixmap);
 	return;
-      }
-      vs->wsw->curImage = image;
-      vs = vs->next;
     }
+    ws->curImage = image;
 }
 
 void WMapCreateDefaultBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap)
 {
-    virtualScreen *vs = Scr->vScreenList;
     Image *image;
+    WorkSpaceMgr *ws = &Scr->workSpaceMgr;
 
-    while (vs != NULL) {
-      vs->wsw->defBorderColor = Scr->Black;
-      vs->wsw->defColors.back = Scr->White;
-      vs->wsw->defColors.fore = Scr->Black;
-      vs->wsw->defImage       = None;
+    ws->defBorderColor = Scr->Black;
+    ws->defColors.back = Scr->White;
+    ws->defColors.fore = Scr->Black;
+    ws->defImage       = None;
 
-      if (border == NULL) return;
-      GetColor (Scr->Monochrome, &(vs->wsw->defBorderColor), border);
-      if (background == NULL) return;
-      GetColor (Scr->Monochrome, &(vs->wsw->defColors.back), background);
-      if (foreground == NULL) return;
-      GetColor (Scr->Monochrome, &(vs->wsw->defColors.fore), foreground);
-
-      if (pixmap == NULL) return;
-      if ((image = GetImage (pixmap, vs->wsw->defColors)) == None) return;
-      vs->wsw->defImage = image;
-      vs = vs->next;
-    }
+    if (border == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->defBorderColor, border);
+    if (background == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->defColors.back, background);
+    if (foreground == NULL)
+	return;
+    GetColor (Scr->Monochrome, &ws->defColors.fore, foreground);
+    if (pixmap == NULL)
+	return;
+    if ((image = GetImage (pixmap, ws->defColors)) == None)
+	return;
+    ws->defImage = image;
 }
 
 Bool AnimateRoot (void)

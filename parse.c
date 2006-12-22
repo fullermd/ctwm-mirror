@@ -1215,10 +1215,7 @@ int do_single_keyword (int keyword)
 	return 1;
 
       case kw0_StartInMapState:
-	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-	  vs->wsw->state = MAPSTATE;
-	}
-	Scr->workSpaceMgr.initialstate = MAPSTATE; /* redundant, really */
+	Scr->workSpaceMgr.initialstate = MAPSTATE;
 	return 1;
 
       case kw0_NoShowOccupyAll:
@@ -1670,18 +1667,14 @@ int do_number_keyword (int keyword, int num)
       case kwn_WMgrVertButtonIndent:
 	if (Scr->FirstTime) Scr->WMgrVertButtonIndent = num;
 	if (Scr->WMgrVertButtonIndent < 0) Scr->WMgrVertButtonIndent = 0;
-	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-	  vs->wsw->vspace          = Scr->WMgrVertButtonIndent;
-	}
+	Scr->workSpaceMgr.vspace = Scr->WMgrVertButtonIndent;
 	Scr->workSpaceMgr.occupyWindow->vspace = Scr->WMgrVertButtonIndent;
 	return 1;
 
       case kwn_WMgrHorizButtonIndent:
 	if (Scr->FirstTime) Scr->WMgrHorizButtonIndent = num;
 	if (Scr->WMgrHorizButtonIndent < 0) Scr->WMgrHorizButtonIndent = 0;
-	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-	  vs->wsw->hspace          = Scr->WMgrHorizButtonIndent;
-	}
+	Scr->workSpaceMgr.hspace = Scr->WMgrVertButtonIndent;
 	Scr->workSpaceMgr.occupyWindow->hspace = Scr->WMgrHorizButtonIndent;
 	return 1;
 

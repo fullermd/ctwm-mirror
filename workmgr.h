@@ -70,6 +70,18 @@ struct WorkSpaceMgr {
     short      	    buttonStyle;
     name_list	    *windowBackgroundL;
     name_list	    *windowForegroundL;
+    /* The fields below have been moved from WorkSpaceWindow */
+    ColorPair    	curColors;
+    Image		*curImage;
+    unsigned long	curBorderColor;
+    Bool		curPaint;
+
+    ColorPair    	defColors;
+    Image	       *defImage;
+    unsigned long	defBorderColor;
+    int			hspace, vspace;
+    char		*name;
+    char		*icon_name;
 };
 
 struct WorkSpace {
@@ -105,24 +117,11 @@ struct WorkSpaceWindow {
   WorkSpace       *currentwspc;
 
   int	       	x, y;
-  char		*name;
-  char		*icon_name;
   int	       	state;
 
   int	       	width, height;
   int	       	bwidth, bheight;
-  int	       	hspace, vspace;
   int	       	wwidth, wheight;
-  
-  ColorPair    	curColors;
-  Image		*curImage;
-  unsigned long	curBorderColor;
-  Bool		curPaint;
-
-  ColorPair    	defColors;
-  Image		*defImage;
-  unsigned long	defBorderColor;
-  struct WorkSpaceWindow *next;
 };
 
 struct OccupyWindow {
