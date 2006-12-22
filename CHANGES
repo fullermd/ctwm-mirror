@@ -1553,3 +1553,13 @@ VirtualScreens {
 	I also fixed up the horrible indentation in the functions
 	where I changed something.
 	[Olaf "Rhialto" Seibert]
+
+   10 - Fixed interaction between "inner" and "outer" workspace
+	selection with "captive" windows. This was because the Gnome
+	"_WIN_WORKSPACE" property is used in 2 conflicting ways: for
+	client windows it indicates which workspace they are in, for
+	root windows it indicates which workspace they show. Captive
+	windows are both. Also, the initially selected inner workspace
+	is now the first, not the same as the outer workspace (this had
+	a different cause).
+	[Olaf "Rhialto" Seibert]

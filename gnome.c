@@ -23,7 +23,7 @@ static Atom _XA_WIN_CLIENT_LIST;
 
 
 void InitGnome (void) {
-  long curws = 1;
+  long curws = 0;
   virtualScreen *vs;
   Atom _XA_WIN_SUPPORTING_WM_CHECK, _XA_WIN_PROTOCOLS,
     _XA_WIN_PROTOCOLS_LIST[PROTOCOLS_COUNT], _XA_WIN_DESKTOP_BUTTON_PROXY;
@@ -67,7 +67,8 @@ void InitGnome (void) {
   XChangeProperty (dpy, Scr->Root, _XA_WIN_PROTOCOLS_LIST[1], XA_CARDINAL, 32,
 		   PropModeReplace, (unsigned char *) &(Scr->workSpaceMgr.count), 1);
 
-  XChangeProperty (dpy, Scr->Root, _XA_WIN_PROTOCOLS_LIST[0], XA_CARDINAL, 32,
+  if (!Scr->CaptiveRoot)
+    XChangeProperty (dpy, Scr->Root, _XA_WIN_PROTOCOLS_LIST[0], XA_CARDINAL, 32,
 		   PropModeReplace, (unsigned char *) &curws, 1);
 
   XSelectInput (dpy, Scr->Root, eventMask);

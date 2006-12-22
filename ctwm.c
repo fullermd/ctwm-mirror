@@ -629,7 +629,6 @@ int main(int argc, char **argv, char **environ)
 	Scr->Workspaces = (MenuRoot*) 0;
 	Scr->IconMenuDontShow = NULL;
 	Scr->VirtualScreens = NULL;
-	Scr->CaptiveRoot = captiveroot;
 	Scr->IgnoreTransientL = NULL;
 
 	/* remember to put an initialization in InitVariables also
@@ -639,6 +638,7 @@ int main(int argc, char **argv, char **environ)
 	Scr->d_depth = DefaultDepth(dpy, scrnum);
 	Scr->d_visual = DefaultVisual(dpy, scrnum);
 	Scr->RealRoot = RootWindow (dpy, scrnum);
+	Scr->CaptiveRoot = captiveroot;
 	Scr->Root = croot;
 	XSaveContext (dpy, Scr->Root, ScreenContext, (XPointer) Scr);
 

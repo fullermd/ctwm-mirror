@@ -121,9 +121,9 @@ struct ScreenInfo
 
     TwmWindow TwmRoot;		/* the head of the twm window list */
 
-    Window Root;		/* the root window */
+    Window Root;		/* the root window, may be CaptiveRoot or otherwise RealRoot */
     Window RealRoot;		/* the actual root window */
-    Window CaptiveRoot;		/* the captive root window */
+    Window CaptiveRoot;		/* the captive root window, if any, or 0 */
     Window SizeWindow;		/* the resize dimensions window */
     Window InfoWindow;		/* the information window */
     Window WindowMask;		/* the window masking the screen at startup */

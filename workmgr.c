@@ -212,7 +212,7 @@ void CreateWorkSpaceManager (void)
     NewFontCursor (&handCursor, "top_left_arrow");
 
     vsmaplen = sizeof(vsmapbuf);
-    if(CtwmGetVScreenMap(dpy, Scr->RealRoot, vsmapbuf, &vsmaplen) == True)
+    if(CtwmGetVScreenMap(dpy, Scr->Root, vsmapbuf, &vsmaplen) == True)
 	vsmap = strtok(vsmapbuf, ",");
     else
 	vsmap = NULL;
@@ -589,8 +589,15 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     XChangeProperty (dpy, Scr->Root, _XA_WM_CURRENTWORKSPACE, XA_STRING, 8, 
 		     PropModeReplace, (unsigned char *) newws->name, strlen (newws->name));
 #ifdef GNOME
-/* nhd 6/19/1999 for GNOME compliance */
-    XChangeProperty (dpy, Scr->Root, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
+/* nhd 6/19/1999 for GNOME compliance
+ * Publish which workspace the root window shows/contains.
+ * Olaf Rhialto Seibert: However, don't do it when the root window is
+ * captive, since it will be moved itself: for non-root windows this
+ * property is used to indicate in which workspace it is contained.
+ */
+    
+    if (!Scr->CaptiveRoot)
+	XChangeProperty (dpy, Scr->Root, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
 		    PropModeReplace, (unsigned char *) &(newws->number), 1);
 #endif /* GNOME */
     XSelectInput(dpy, Scr->Root, eventMask);
@@ -607,7 +614,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     }
 
     /* keep track of the order of the workspaces across restarts */
-    CtwmSetVScreenMap(dpy, Scr->RealRoot, Scr->vScreenList);
+    CtwmSetVScreenMap(dpy, Scr->Root, Scr->vScreenList);
 
     XSync (dpy, 0);
     if (Scr->ClickToFocus || Scr->SloppyFocus) set_last_window (newws);
