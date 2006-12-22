@@ -266,6 +266,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     tmp_win->wspmgr = iswman;
     tmp_win->iswinbox = iswinbox;
     tmp_win->vs = NULL;
+    tmp_win->oldvs = NULL;
+    tmp_win->savevs = NULL;
     tmp_win->cmaps.number_cwins = 0;
     tmp_win->savegeometry.width = -1;
 
@@ -594,6 +596,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     } else
 #endif      
       SetupOccupation (tmp_win, 0);
+    tmp_win->oldvs = vs;
     /*=================================================================*/
 
     tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;

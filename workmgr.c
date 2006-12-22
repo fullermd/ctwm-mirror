@@ -608,6 +608,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     }
 
     /* keep track of the order of the workspaces across restarts */
+    /* XXX by Rhialto: Is this order ever going to change after startup??? */
     CtwmSetVScreenMap(dpy, Scr->RealRoot, Scr->vScreenList);
 
     XSync (dpy, 0);
@@ -962,9 +963,9 @@ void Occupy (TwmWindow *twm_win)
     if ((y + yoffset) > Scr->rooth) y = Scr->rooth - yoffset;
 
     Scr->workSpaceMgr.occupyWindow->twm_win->occupation = twm_win->occupation;
-    if (Scr->Root != Scr->CaptiveRoot)
+    if (Scr->Root != Scr->CaptiveRoot) {
       XReparentWindow  (dpy, Scr->workSpaceMgr.occupyWindow->twm_win->frame, Scr->Root, x, y);
-    else
+    } else
       XMoveWindow  (dpy, Scr->workSpaceMgr.occupyWindow->twm_win->frame, x, y);
 
     SetMapStateProp (Scr->workSpaceMgr.occupyWindow->twm_win, NormalState);
@@ -1262,11 +1263,11 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
     XWindowAttributes winattrs;
     unsigned long     eventMask;
 
-    if (vs && tmp_win->vs && (tmp_win->vs != vs)) return;
+    if (vs && tmp_win->vs && tmp_win->vs != vs)
+	return;
     if (tmp_win->UnmapByMovingFarAway) {
-        XMoveWindow (dpy, tmp_win->frame, Scr->rootw + 1, Scr->rooth + 1);
-    } else
-    if (tmp_win->mapped) {
+	XMoveWindow (dpy, tmp_win->frame, Scr->rootw + 1, Scr->rooth + 1);
+    } else if (tmp_win->mapped) {
 	XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
 	eventMask = winattrs.your_event_mask;
 	XSelectInput (dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
@@ -1274,9 +1275,9 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
 	XUnmapWindow (dpy, tmp_win->frame);
 	XSelectInput (dpy, tmp_win->w, eventMask);
 
-	if (!tmp_win->DontSetInactive) SetMapStateProp (tmp_win, InactiveState);
-    } else
-    if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w) {
+	if (!tmp_win->DontSetInactive)
+	    SetMapStateProp (tmp_win, InactiveState);
+    } else if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w) {
 	XUnmapWindow (dpy, tmp_win->icon->w);
 	IconDown (tmp_win);
     }
@@ -1287,23 +1288,30 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
      * may not.  The purpose of this is in the event of a ctwm death/restart,
      * geometries of windows that were on unmapped workspaces will show
      * up where they belong.
-     *
+     * XXX - XReparentWindow() messes up the stacking order of windows.
+     * It should be avoided as much as possible. This already affects
+     * switching away from and back to a workspace. Therefore do this only
+     * if there are at least 2 virtual screens AND the new one (firstvs)
+     * differs from where the window currently is. (Olaf Seibert).
      */
 
-    if(Scr->vScreenList) {
+    if (Scr->vScreenList && Scr->vScreenList->next) {
 	int x, y;
 	unsigned int junk;
 	Window junkW, w = tmp_win->frame;
 	virtualScreen *firstvs = NULL;
-	for(firstvs = Scr->vScreenList; firstvs; firstvs = firstvs->next)
-	    if(firstvs->x == 0 && firstvs->y == 0)
-	    	break;
-	if(firstvs) {
+
+	for (firstvs = Scr->vScreenList; firstvs; firstvs = firstvs->next)
+	    if (firstvs->x == 0 && firstvs->y == 0)
+		break;
+	if (firstvs && firstvs != vs) {
 	    XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
 	    XReparentWindow(dpy, w, firstvs->window, x, y);
+	    tmp_win->vs = firstvs;
 	}
     }
 
+    tmp_win->oldvs = tmp_win->vs;
     tmp_win->vs = NULL;
 }
 
@@ -1312,31 +1320,37 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
     XWindowAttributes	winattrs;
     unsigned long	eventMask;
 
-    if (vs && tmp_win->vs) return;
+    if (vs && tmp_win->vs)
+	return;
+
     tmp_win->vs = vs;
 
     if (!tmp_win->mapped) {
-      if (tmp_win->isicon) {
-	if (tmp_win->icon_on) {
-	  if (tmp_win->icon && tmp_win->icon->w) {
-	    int x, y;
-	    unsigned int junk;
-	    Window junkW, w = tmp_win->icon->w;
-	    XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
-	    XReparentWindow (dpy, w, vs->window, x, y);
+	if (tmp_win->isicon) {
+	    if (tmp_win->icon_on) {
+		if (tmp_win->icon && tmp_win->icon->w) {
+		    if (vs != tmp_win->oldvs) {
+			int x, y;
+			unsigned int junk;
+			Window junkW, w = tmp_win->icon->w;
+			XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
+			XReparentWindow (dpy, w, vs->window, x, y);
+		    }
 
-	    IconUp (tmp_win);
-	    XMapWindow (dpy, tmp_win->icon->w);
-	    return;
-	  }
+		    IconUp (tmp_win);
+		    XMapWindow (dpy, tmp_win->icon->w);
+		    return;
+		}
+	    }
 	}
-      }
-      return;
+	return;
     }
     if (tmp_win->UnmapByMovingFarAway) {
-        if (vs) XReparentWindow (dpy, tmp_win->frame, vs->window,
-				 tmp_win->frame_x, tmp_win->frame_y);
-	else XMoveWindow (dpy, tmp_win->frame, tmp_win->frame_x, tmp_win->frame_y);
+	if (vs)
+	    XReparentWindow (dpy, tmp_win->frame, vs->window,
+		tmp_win->frame_x, tmp_win->frame_y);
+	else
+	    XMoveWindow (dpy, tmp_win->frame, tmp_win->frame_x, tmp_win->frame_y);
     } else {
 	if (!tmp_win->squeezed) {
 	    XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
@@ -1345,7 +1359,9 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	    XMapWindow   (dpy, tmp_win->w);
 	    XSelectInput (dpy, tmp_win->w, eventMask);
 	}
-	XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
+	if (vs != tmp_win->oldvs) {
+	    XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
+	}
 	XMapWindow (dpy, tmp_win->frame);
 	SetMapStateProp (tmp_win, NormalState);
     }

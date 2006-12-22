@@ -1534,3 +1534,22 @@ VirtualScreens {
 	
 	This is basically change #7 above done right.
 	[Olaf "Rhialto" Seibert]
+
+    9 - Re-introduced TwmWindow.oldvs, used to avoid calling
+	XReparentWindow() when possibe (it messed up the stacking order
+	of windows). However, maybe the use of .vs should be rethought a
+	bit: in Vanish() it is now set to NULL with the old value kept
+	in .oldvs.  However the window is still a child of the same vs.
+	Maybe it is better not to set it to NULL and then, when *really*
+	changing the virtual screen, .vs can be used instead of .oldvs.
+
+	This whole "virtual screen" thing is unexplained in the manual,
+	which even uses it as a synonym for "workspace" already in the
+	introduction paragraph. (There also does not seem to be a way
+	now to test virtual screens in captive windows) I suspect that
+	all this causes lots of confusion, and when cleared up, can
+	simplify the code a lot. 
+
+	I also fixed up the horrible indentation in the functions
+	where I changed something.
+	[Olaf "Rhialto" Seibert]
