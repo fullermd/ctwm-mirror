@@ -1674,7 +1674,7 @@ int do_number_keyword (int keyword, int num)
       case kwn_WMgrHorizButtonIndent:
 	if (Scr->FirstTime) Scr->WMgrHorizButtonIndent = num;
 	if (Scr->WMgrHorizButtonIndent < 0) Scr->WMgrHorizButtonIndent = 0;
-	Scr->workSpaceMgr.hspace = Scr->WMgrVertButtonIndent;
+	Scr->workSpaceMgr.hspace = Scr->WMgrHorizButtonIndent;
 	Scr->workSpaceMgr.occupyWindow->hspace = Scr->WMgrHorizButtonIndent;
 	return 1;
 
