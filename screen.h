@@ -106,8 +106,8 @@ struct ScreenInfo
     int d_depth;		/* copy of DefaultDepth(dpy, screen) */
     Visual *d_visual;		/* copy of DefaultVisual(dpy, screen) */
     int Monochrome;		/* is the display monochrome ? */
-    int rootx;		        /* The x coordinate of the root window */
-    int rooty;		        /* The y coordinate of the root window */
+    int rootx;		        /* The x coordinate of the root window (virtual screen) relative to RealRoot */
+    int rooty;		        /* The y coordinate of the root window (virtual screen) relative to RealRoot */
     int rootw;		        /* my copy of DisplayWidth(dpy, screen) */
     int rooth;	                /* my copy of DisplayHeight(dpy, screen) */
 
@@ -121,9 +121,32 @@ struct ScreenInfo
 
     TwmWindow TwmRoot;		/* the head of the twm window list */
 
-    Window Root;		/* the root window, may be CaptiveRoot or otherwise RealRoot */
-    Window RealRoot;		/* the actual root window */
+    Window Root;		/* the root window: the current virual screen */
+    Window XineramaRoot;	/* the root window, may be CaptiveRoot or otherwise RealRoot */
     Window CaptiveRoot;		/* the captive root window, if any, or 0 */
+    Window RealRoot;		/* the actual root window of the display */
+
+/*
+ *  +--RealRoot-----------------------------------------------------------+
+ *  | the root of the display (most uses of this are probably incorrect!) |
+ *  |                                                                     |
+ *  |   +--CaptiveRoot--------------------------------------------------+ |
+ *  |   | when captive window is used (most uses are likely incorrect!) | |
+ *  |   |                                                               | |
+ *  |   | +--XineramaRoot---------------------------------------------+ | |
+ *  |   | | the root that encompasses all virual screens              | | |
+ *  |   | |                                                           | | |
+ *  |   | | +--Root-----------+ +--Root--------+ +--Root------------+ | | |
+ *  |   | | | one or more     | | Most cases   | |                  | | | |
+ *  |   | | | virtual screens | | use Root.    | |                  | | | |
+ *  |   | | |                 | |              | |                  | | | |
+ *  |   | | |                 | |              | |                  | | | |
+ *  |   | | +-----------------+ +--------------+ +------------------+ | | |
+ *  |   | +-----------------------------------------------------------+ | |
+ *  |   +---------------------------------------------------------------+ |
+ *  +---------------------------------------------------------------------+
+ */
+
     Window SizeWindow;		/* the resize dimensions window */
     Window InfoWindow;		/* the information window */
     Window WindowMask;		/* the window masking the screen at startup */
@@ -432,6 +455,7 @@ struct ScreenInfo
 #endif /* GNOME */
 };
 
+extern int captive;
 extern int MultiScreen;
 extern int NumScreens;
 extern ScreenInfo **ScreenList;

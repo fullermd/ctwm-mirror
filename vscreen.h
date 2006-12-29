@@ -29,9 +29,9 @@
 #define _VSCREEN_
 
 struct virtualScreen {
-  int   x, y, w, h;
+  int   x, y, w, h;		/* x,y relative to XineramaRoot */
   Window window;
-  Boolean main;
+  /* Boolean main; */
   struct WorkSpaceWindow *wsw;
   struct virtualScreen *next;
 };

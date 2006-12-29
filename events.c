@@ -152,8 +152,8 @@ int origDragX;
 int origDragY;
 int DragX;
 int DragY;
-int DragWidth;
-int DragHeight;
+unsigned int DragWidth;
+unsigned int DragHeight;
 unsigned int DragBW;
 int CurrentDragX;
 int CurrentDragY;
@@ -393,6 +393,9 @@ Window WindowOfEvent (XEvent *e)
 
 void FixRootEvent (XEvent *e)
 {
+    if (Scr->Root == Scr->RealRoot)
+	return;
+
     switch (e->type) {
       case KeyPress:
       case KeyRelease:
@@ -448,7 +451,7 @@ Bool DispatchEvent2 (void)
     dumpevent(&Event);
 
     if (!Scr) return False;
-    if (Scr->Root != Scr->RealRoot) FixRootEvent (&Event);
+    FixRootEvent (&Event);
 
 #ifdef SOUNDS
     play_sound(Event.type);
@@ -493,7 +496,7 @@ Bool DispatchEvent (void)
 	return (False);
       }
     }
-    if (Scr->Root != Scr->RealRoot) FixRootEvent (&Event);
+    FixRootEvent (&Event);
     if (Event.type>= 0 && Event.type < MAX_X_EVENT) {
 #ifdef SOUNDS
         play_sound(Event.type);
@@ -2616,7 +2619,7 @@ void HandleMotionNotify(void)
 	    &(Event.xmotion.x), &(Event.xmotion.y),
 	    &JunkMask);
 
-	if (Scr->Root != Scr->RealRoot) FixRootEvent (&Event);
+	FixRootEvent (&Event);
 	/* Set WindowMoved appropriately so that f.deltastop will
 	   work with resize as well as move. */
 	if (abs (Event.xmotion.x - ResizeOrigX) >= Scr->MoveDelta
@@ -2666,7 +2669,7 @@ void HandleButtonRelease(void)
 
     if (DragWindow != None)
     {
-	MoveOutline(Scr->RealRoot, 0, 0, 0, 0, 0, 0);
+	MoveOutline(Scr->XineramaRoot, 0, 0, 0, 0, 0, 0);
 
 	XFindContext(dpy, DragWindow, TwmContext, (XPointer *)&Tmp_win);
 	if (Tmp_win->winbox) {
@@ -2730,11 +2733,11 @@ void HandleButtonRelease(void)
 		virtualScreen *newvs;
 
 		XTranslateCoordinates(dpy, Tmp_win->vs->window, 
-			Scr->RealRoot, xl, yt, &odestx, &odesty, &cr);
+			Scr->XineramaRoot, xl, yt, &odestx, &odesty, &cr);
 
 		newvs = findIfVScreenOf(odestx, odesty);
 		if(newvs && newvs->wsw && newvs->wsw->currentwspc) {
-			XTranslateCoordinates(dpy, Scr->RealRoot, 
+			XTranslateCoordinates(dpy, Scr->XineramaRoot, 
 				newvs->window, odestx, odesty, 
 				&destx, &desty, &cr);
 			AddToWorkSpace(newvs->wsw->currentwspc->name, Tmp_win);
@@ -2745,7 +2748,7 @@ void HandleButtonRelease(void)
 
 	}
 	if (DragWindow == Tmp_win->frame)
-	  SetupWindow (Tmp_win, xl, yt,
+	    SetupWindow (Tmp_win, xl, yt,
 		       Tmp_win->frame_width, Tmp_win->frame_height, -1);
 	else
 	    XMoveWindow (dpy, DragWindow, xl, yt);

@@ -1315,7 +1315,7 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
 	}
     }
 
-    tmp_win->oldvs = tmp_win->vs;
+    tmp_win->old_parent_vs = tmp_win->vs;
     tmp_win->vs = NULL;
 }
 
@@ -1324,6 +1324,10 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
     XWindowAttributes	winattrs;
     unsigned long	eventMask;
 
+    /*
+     * A window cannot be shown in multiple virtual screens, even if
+     * it occupies both corresponding workspaces.
+     */
     if (vs && tmp_win->vs)
 	return;
     tmp_win->vs = vs;
@@ -1332,7 +1336,7 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	if (tmp_win->isicon) {
 	    if (tmp_win->icon_on) {
 		if (tmp_win->icon && tmp_win->icon->w) {
-		    if (vs != tmp_win->oldvs) {
+		    if (vs != tmp_win->old_parent_vs) {
 			int x, y;
 			unsigned int junk;
 			Window junkW, w = tmp_win->icon->w;
@@ -1349,7 +1353,7 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	return;
     }
     if (tmp_win->UnmapByMovingFarAway) {
-        if (vs)
+        if (vs)		/* XXX I don't believe the handling of UnmapByMovingFarAway is quite correct */
 	    XReparentWindow (dpy, tmp_win->frame, vs->window,
 		tmp_win->frame_x, tmp_win->frame_y);
 	else
@@ -1362,7 +1366,7 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	    XMapWindow   (dpy, tmp_win->w);
 	    XSelectInput (dpy, tmp_win->w, eventMask);
 	}
-	if (vs != tmp_win->oldvs) {
+	if (vs != tmp_win->old_parent_vs) {
 	    XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
 	}
 	XMapWindow (dpy, tmp_win->frame);
@@ -1425,6 +1429,11 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
     if (tmp_win->vs && !OCCUPY (tmp_win, tmp_win->vs->wsw->currentwspc)) {
 	Vanish (tmp_win->vs, tmp_win);
     }
+    /*
+     * If a window occupies multiple workspaces, try to find another workspace
+     * which is currently in another virtual screen, so that the window
+     * can be shown there now.
+     */
     if (!tmp_win->vs) {
       for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
 	if (OCCUPY (tmp_win, vs->wsw->currentwspc)) {

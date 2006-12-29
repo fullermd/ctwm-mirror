@@ -1563,3 +1563,10 @@ VirtualScreens {
 	is now the first, not the same as the outer workspace (this had
 	a different cause).
 	[Olaf "Rhialto" Seibert]
+
+   11 - Introduce Scr->XineramaRoot to store the root window that
+	encompasses all virtual screen rootwindows. This further reduces
+	any need to use RealRoot and/or CaptiveRoot.
+	Add a schematic drawing that clarifies the relation between the
+	various root-type windows.
+	[Olaf "Rhialto" Seibert]

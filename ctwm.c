@@ -538,8 +538,8 @@ int main(int argc, char **argv, char **environ)
 	    croot  = RootWindow (dpy, scrnum);
 	    crootx = 0;
 	    crooty = 0;
-	    crootw = DisplayWidth  (dpy, scrnum);;
-	    crooth = DisplayHeight (dpy, scrnum);;
+	    crootw = DisplayWidth  (dpy, scrnum);
+	    crooth = DisplayHeight (dpy, scrnum);
 	}
 
         /* Make sure property priority colors is empty */
@@ -640,6 +640,7 @@ int main(int argc, char **argv, char **environ)
 	Scr->RealRoot = RootWindow (dpy, scrnum);
 	Scr->CaptiveRoot = captiveroot;
 	Scr->Root = croot;
+	Scr->XineramaRoot = croot;
 	XSaveContext (dpy, Scr->Root, ScreenContext, (XPointer) Scr);
 
 	if (captive) {

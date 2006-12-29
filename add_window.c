@@ -266,7 +266,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     tmp_win->wspmgr = iswman;
     tmp_win->iswinbox = iswinbox;
     tmp_win->vs = NULL;
-    tmp_win->oldvs = NULL;
+    tmp_win->old_parent_vs = NULL;
     tmp_win->savevs = NULL;
     tmp_win->cmaps.number_cwins = 0;
     tmp_win->savegeometry.width = -1;
@@ -596,7 +596,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     } else
 #endif      
       SetupOccupation (tmp_win, 0);
-    tmp_win->oldvs = vs;
+    tmp_win->old_parent_vs = vs;
     /*=================================================================*/
 
     tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;
@@ -801,7 +801,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 			if (scrnum != NumScreens) PreviousScreen = scrnum;
 		    }
 		    if (Scr->currentvs) {
-		      vroot = Scr->currentvs->window;
+			vroot = Scr->currentvs->window;
 		    }
 		    firsttime = False;
 		}
@@ -908,7 +908,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 			if (event.type == ButtonPress)
 			    break;
 		}
-		if (Scr->Root != Scr->RealRoot) FixRootEvent (&event);
+		FixRootEvent (&event);
 		if (event.type == ButtonPress) {
 		  AddingX = event.xbutton.x_root;
 		  AddingY = event.xbutton.y_root;
@@ -1007,7 +1007,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 			    if (event.type == ButtonRelease)
 				break;
 		    }
-		    if (Scr->Root != Scr->RealRoot) FixRootEvent (&event);
+		    FixRootEvent (&event);
 
 		    if (event.type == ButtonRelease)
 		    {

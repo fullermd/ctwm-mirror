@@ -1841,7 +1841,7 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
   
   height = Scr->SizeFont.height + SIZE_VINDENT * 2;
   XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
-	       (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, 
+	       &DragWidth, &DragHeight, 
 	       &JunkBW, &JunkDepth);
 
   XWarpPointer(dpy, None, w,
@@ -2604,7 +2604,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		   Scr->SizeFont.height + SIZE_VINDENT * 2);
 	XMapRaised (dpy, Scr->SizeWindow);
 
-	grabwin = Scr->RealRoot;
+	grabwin = Scr->XineramaRoot;
 	if (tmp_win->winbox) grabwin = tmp_win->winbox->window;
 	XGrabPointer(dpy, grabwin, True,
 	    ButtonPressMask | ButtonReleaseMask |
@@ -2632,8 +2632,13 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 	DragWindow = None;
 
+	/* Get x/y relative to parent window, i.e. the virtual screen, Root.
+	 * XMoveWindow() moves are relative to this.
+	 * MoveOutline()s however are drawn from the XineramaRoot since they
+	 * may cross virtual screens.
+	 */
 	XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
-	    (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &DragBW,
+	    &DragWidth, &DragHeight, &DragBW,
 	    &JunkDepth);
 
 	JunkBW = DragBW;
@@ -2670,8 +2675,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	}
 	last_time = eventp->xbutton.time;
 
-	dragroot = rootw;
-	dragroot = Scr->RealRoot;
+	dragroot = Scr->XineramaRoot;
 
 	if (!Scr->OpaqueMove)
 	{
@@ -2685,7 +2689,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		 * MoveOutline's below.
 		 */
 		MoveOutline(dragroot,
-		    origDragX - JunkBW, origDragY - JunkBW,
+		    origDragX - JunkBW + Scr->currentvs->x,
+		    origDragY - JunkBW + Scr->currentvs->y,
 		    DragWidth + 2 * JunkBW, DragHeight + 2 * JunkBW,
 		    tmp_win->frame_bw,
 		    moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
@@ -2745,9 +2750,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    if (!menuFromFrameOrWindowOrTitlebar)
 	      if (Event.type == ButtonPress && DragWindow != None) {
 		Cursor cur;
-		if (Scr->OpaqueMove)
+		if (Scr->OpaqueMove) {
 		  XMoveWindow (dpy, DragWindow, origDragX, origDragY);
-		else {
+		} else {
 		  MoveOutline(dragroot, 0, 0, 0, 0, 0, 0);
 		}
 		DragWindow = None;
@@ -2783,7 +2788,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		WindowMoved = FALSE;
 		if (!Scr->OpaqueMove)
 		    UninstallRootColormap();
-		    return TRUE;	/* XXX should this be FALSE? */
+		return TRUE;	/* XXX should this be FALSE? */
 	    }
 	    if (Event.type == releaseEvent)
 	    {
@@ -2812,7 +2817,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		&(eventp->xmotion.x_root), &(eventp->xmotion.y_root),
 		&JunkX, &JunkY, &JunkMask);
 
-	    if (Scr->Root != Scr->RealRoot) FixRootEvent (eventp);
+	    FixRootEvent (eventp);
 	    if (tmp_win->winbox) {
 		XTranslateCoordinates (dpy, dragroot, tmp_win->winbox->window,
 		    eventp->xmotion.x_root, eventp->xmotion.y_root,
@@ -2890,7 +2895,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 			WMapSetupWindow (tmp_win, xl, yt, -1, -1);
 		    }
 		    else {
-			MoveOutline(dragroot, xl, yt, width, height,
+			MoveOutline(dragroot, xl + Scr->currentvs->x,
+			    yt + Scr->currentvs->y, width, height,
 			    tmp_win->frame_bw, 
 			    moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 		    }
@@ -2905,12 +2911,11 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		/*
 		 * this is split out for virtual screens.  In that case, it's
 		 * possible to drag windows from one workspace to another, and
-		 * as such, these need to be adjusted to the real root, rather
-		 * than this screen...
+		 * as such, these need to be adjusted to the root, rather
+		 * than this virtual screen...
 		 */
-		xroot = eventp->xmotion.x_root + Scr->rootx;
-		yroot = eventp->xmotion.y_root + Scr->rooty;
-
+		xroot = eventp->xmotion.x_root;
+		yroot = eventp->xmotion.y_root;
 
 		if (!menuFromFrameOrWindowOrTitlebar) {
 		  xl = xroot - DragX - JunkBW;
@@ -2949,7 +2954,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		  if (! moving_icon) WMapSetupWindow (tmp_win, xl, yt, -1, -1);
 		}
 		else {
-		    MoveOutline(dragroot, xl, yt, width, height,
+		    MoveOutline(dragroot, xl + Scr->currentvs->x,
+			yt + Scr->currentvs->y, width, height,
 			tmp_win->frame_bw,
 			moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 		}
@@ -3050,7 +3056,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	DragWindow = None;
 
 	XGetGeometry(dpy, tmp_win->title_w, &JunkRoot, &origDragX, &origDragY,
-	    (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &DragBW,
+	    &DragWidth, &DragHeight, &DragBW,
 	    &JunkDepth);
 
 	origX = eventp->xbutton.x_root;
@@ -3106,7 +3112,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		&eventp->xmotion.x_root, &eventp->xmotion.y_root,
 		&JunkX, &JunkY, &JunkMask);
 
-	    if (Scr->Root != Scr->RealRoot) FixRootEvent(eventp);
+	    FixRootEvent(eventp);
 	    if (tmp_win->winbox) {
 		XTranslateCoordinates(dpy, Scr->Root, tmp_win->winbox->window,
 		    eventp->xmotion.x_root, eventp->xmotion.y_root,

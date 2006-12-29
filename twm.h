@@ -415,7 +415,7 @@ struct TwmWindow
 	unsigned int width, height;
     } savegeometry;
     struct virtualScreen *vs;
-    struct virtualScreen *oldvs;
+    struct virtualScreen *old_parent_vs;
     struct virtualScreen *savevs;
 
 #ifdef X11R6
