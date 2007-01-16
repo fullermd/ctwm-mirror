@@ -518,15 +518,9 @@ void Paint3DEntry(MenuRoot *mr, MenuItem *mi, int exposure)
 	    Draw3DBorder (mr->w, Scr->MenuShadowDepth, y_offset,
 			mr->width - 2 * Scr->MenuShadowDepth, Scr->EntryHeight, 1, 
 			mi->highlight, off, True, False);
-#ifdef I18N
 	    FB(mi->highlight.fore, mi->highlight.back);
 	    XmbDrawImageString(dpy, mr->w, Scr->MenuFont.font_set, gc,
 		mi->x + Scr->MenuShadowDepth, text_y, mi->item, mi->strlen);
-#else	    
-	    FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
-	    XDrawImageString(dpy, mr->w, gc,
-		mi->x + Scr->MenuShadowDepth, text_y, mi->item, mi->strlen);
-#endif
 	}
 	else {
 	    if (mi->user_colors || !exposure) {
@@ -534,24 +528,14 @@ void Paint3DEntry(MenuRoot *mr, MenuItem *mi, int exposure)
 		XFillRectangle (dpy, mr->w, gc,
 			Scr->MenuShadowDepth, y_offset,
 			mr->width - 2 * Scr->MenuShadowDepth, Scr->EntryHeight);
-#ifdef I18N
 		FB (mi->normal.fore, mi->normal.back);
-#else		
-		FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
-#endif		
 	    }
 	    else {
 		gc = Scr->MenuGC;
 	    }
-#ifdef I18N
 	    XmbDrawImageString (dpy, mr->w, Scr->MenuFont.font_set, gc,
 				mi->x + Scr->MenuShadowDepth, text_y,
 				mi->item, mi->strlen);
-#else	    
-	    XDrawImageString (dpy, mr->w, gc,
-			      mi->x + Scr->MenuShadowDepth, text_y,
-			      mi->item, mi->strlen);
-#endif	    
 	    if (mi->separated) {
 		FB (Scr->MenuC.shadd, Scr->MenuC.shadc);
 		XDrawLine (dpy, mr->w, Scr->NormalGC,
@@ -585,14 +569,9 @@ void Paint3DEntry(MenuRoot *mr, MenuItem *mi, int exposure)
 	Draw3DBorder (mr->w, Scr->MenuShadowDepth, y_offset,
 			mr->width - 2 * Scr->MenuShadowDepth, Scr->EntryHeight, 1, 
 			mi->normal, off, True, False);
-#ifdef I18N
 	FB (mi->normal.fore, mi->normal.back);
 	XmbDrawImageString(dpy, mr->w, Scr->MenuFont.font_set, Scr->NormalGC,
 			   mi->x + 2, text_y, mi->item, mi->strlen);
-#else	
-	FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
-	XDrawImageString (dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
-#endif	
     }
 }
 
@@ -617,16 +596,9 @@ void PaintNormalEntry(MenuRoot *mr, MenuItem *mi, int exposure)
 
 	    XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
 		mr->width, Scr->EntryHeight);
-#ifdef I18N
 	    FB(mi->highlight.fore, mi->highlight.back);
 	    XmbDrawString(dpy, mr->w, Scr->MenuFont.font_set, Scr->NormalGC,
 			  mi->x, text_y, mi->item, mi->strlen);
-#else	    
-	    FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
-
-	    XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
-		text_y, mi->item, mi->strlen);
-#endif	    
 
 	    gc = Scr->NormalGC;
 	}
@@ -639,23 +611,14 @@ void PaintNormalEntry(MenuRoot *mr, MenuItem *mi, int exposure)
 		XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
 		    mr->width, Scr->EntryHeight);
 
-#ifdef I18N
 		FB(mi->normal.fore, mi->normal.back);
-#else
-		FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
-#endif
 		gc = Scr->NormalGC;
 	    }
 	    else {
 		gc = Scr->MenuGC;
 	    }
-#ifdef I18N
 	    XmbDrawString(dpy, mr->w, Scr->MenuFont.font_set, gc, mi->x,
 			  text_y, mi->item, mi->strlen);
-#else	    
-	    XDrawString(dpy, mr->w, gc, mi->x,
-			text_y, mi->item, mi->strlen);
-#endif	    
 	    if (mi->separated)
 		XDrawLine (dpy, mr->w, gc, 0, y_offset + Scr->EntryHeight - 1,
 				mr->width, y_offset + Scr->EntryHeight - 1);
@@ -695,17 +658,10 @@ void PaintNormalEntry(MenuRoot *mr, MenuItem *mi, int exposure)
 	    XDrawLine(dpy, mr->w, Scr->NormalGC, 0, y, mr->width, y);
 	}
 
-#ifdef I18N
 	FB(mi->normal.fore, mi->normal.back);
 	/* finally render the title */
 	XmbDrawString(dpy, mr->w, Scr->MenuFont.font_set, Scr->NormalGC, mi->x,
 		      text_y, mi->item, mi->strlen);
-#else	
-	FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
-	/* finally render the title */
-	XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
-	    text_y, mi->item, mi->strlen);
-#endif	
     }
 }
 
@@ -1018,10 +974,8 @@ MenuItem *AddToMenu(MenuRoot *menu, char *item, char *action,
     MenuItem *tmp;
     int width;
     char *itemname;
-#ifdef I18N
     XRectangle ink_rect;
     XRectangle logical_rect;
-#endif    
 
 #ifdef DEBUG_MENUS
     fprintf(stderr, "adding menu item=\"%s\", action=%s, sub=%d, f=%d\n",
@@ -1075,16 +1029,12 @@ MenuItem *AddToMenu(MenuRoot *menu, char *item, char *action,
     tmp->separated = 0;
 
     if (!Scr->HaveFonts) CreateFonts();
-    
-#ifdef I18N
+
     XmbTextExtents(Scr->MenuFont.font_set,
 		   itemname, tmp->strlen,
 		   &ink_rect, &logical_rect);
     width = logical_rect.width;
-#else    
-    width = XTextWidth(Scr->MenuFont.font, itemname, tmp->strlen);
-#endif    
-    
+
     if (width <= 0)
 	width = 1;
     if (width > menu->width)
@@ -1143,10 +1093,8 @@ int MakeMenu(MenuRoot *mr)
     unsigned long valuemask;
     XSetWindowAttributes attributes;
     Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
-#ifdef I18N
     XRectangle ink_rect;
     XRectangle logical_rect;
-#endif    
 
     Scr->EntryHeight = Scr->MenuFont.height + 4;
 
@@ -1161,14 +1109,9 @@ int MakeMenu(MenuRoot *mr)
 	    if (cur->func != F_TITLE)
 		cur->x = 5;
 	    else {
-#ifdef I18N
 		XmbTextExtents(Scr->MenuFont.font_set, cur->item, cur->strlen,
 			       &ink_rect, &logical_rect);
 		cur->x = width - logical_rect.width;
-#else		
-		cur->x = width - XTextWidth(Scr->MenuFont.font, cur->item,
-				cur->strlen);
-#endif		
 		cur->x /= 2;
 	    }
 	}
@@ -1820,25 +1763,18 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
 {
   int lastx, lasty, width, height, bw2;
   int namelen;
-#ifdef I18N
   XRectangle inc_rect;
   XRectangle logical_rect;
-#endif  
 
   namelen = strlen (tmp_win->name);
   bw2 = tmp_win->frame_bw * 2;
   AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
   AddingH = tmp_win->attr.height + tmp_win->title_height + bw2 + 2 * tmp_win->frame_bw3D;
 
-#ifdef I18N
   XmbTextExtents(Scr->SizeFont.font_set, tmp_win->name, namelen,
 		 &inc_rect, &logical_rect);
   width = (SIZE_HINDENT + logical_rect.width);
-#else  
-  width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
-				      tmp_win->name, namelen));
-#endif
-  
+
   height = Scr->SizeFont.height + SIZE_VINDENT * 2;
   XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
 	       &DragWidth, &DragHeight, 
@@ -4414,10 +4350,8 @@ static void Identify (TwmWindow *t)
     unsigned long	nitems, bytesafter;
     Atom		actual_type;
     int			actual_format;
-#ifdef I18N
     XRectangle inc_rect;
     XRectangle logical_rect;
-#endif
     Bool first = True;
 
     n = 0;
@@ -4457,11 +4391,9 @@ static void Identify (TwmWindow *t)
     (void) strcat (Info[n], "debug");
     first = False;
 #endif
-#ifdef I18N
     if (!first) (void) strcat(Info[n], ", ");
     (void) strcat (Info[n], "I18N");
     first = False;
-#endif    
     n++;
     Info[n++][0] = '\0';
 
@@ -4502,15 +4434,10 @@ static void Identify (TwmWindow *t)
     width = 1;
     for (i = 0; i < n; i++)
     {
-#ifdef I18N
 	XmbTextExtents(Scr->DefaultFont.font_set, Info[i],
 		       strlen(Info[i]), &inc_rect, &logical_rect);
-	
+
 	twidth = logical_rect.width;
-#else
-	twidth = XTextWidth(Scr->DefaultFont.font, Info[i],
-	    strlen(Info[i]));
-#endif	
 	if (twidth > width)
 	    width = twidth;
     }
@@ -4961,18 +4888,10 @@ void DisplayPosition (TwmWindow *tmp_win, int x, int y)
 		Scr->SizeFont.height + SIZE_VINDENT * 2,
 		2, Scr->DefaultC, off, False, False);
 
-#ifdef I18N
     FB(Scr->DefaultC.fore, Scr->DefaultC.back);
     XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
 			Scr->NormalGC, Scr->SizeStringOffset,
 			Scr->SizeFont.ascent + SIZE_VINDENT , str, 13);
-#else    
-    FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
-    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
-		      Scr->SizeStringOffset,
-		      Scr->SizeFont.font->ascent + SIZE_VINDENT,
-		      str, 13);
-#endif    
 }
 
 void MosaicFade (TwmWindow *tmp_win, Window blanket)

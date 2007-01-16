@@ -601,18 +601,10 @@ void DisplaySize(TwmWindow *tmp_win, int width, int height)
 		Scr->SizeFont.height + SIZE_VINDENT * 2,
 		2, Scr->DefaultC, off, False, False);
 
-#ifdef I18N
     FB(Scr->DefaultC.fore, Scr->DefaultC.back);
     XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
 		      Scr->NormalGC, Scr->SizeStringOffset,
 		      Scr->SizeFont.ascent + SIZE_VINDENT, str, 13);
-#else    
-    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
-    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
-		      Scr->SizeStringOffset,
-		      Scr->SizeFont.font->ascent + SIZE_VINDENT,
-		      str, 13);
-#endif
 }
 
 /***********************************************************************

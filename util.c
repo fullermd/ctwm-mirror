@@ -1527,7 +1527,6 @@ void GetShadeColors (ColorPair *cp)
 
 void GetFont(MyFont *font)
 {
-#ifdef I18N
     char *deffontname = "fixed,*";
     char **missing_charset_list_return;
     int missing_charset_count_return;
@@ -1579,27 +1578,6 @@ void GetFont(MyFont *font)
     font->y = ascent;
     font->ascent = ascent;
     font->descent = descent;
-#else
-    char *deffontname = "fixed";
-
-    if (font->font != NULL){
-	XFreeFont(dpy, font->font);
-    }
-    if ((font->font = XLoadQueryFont(dpy, font->name)) == NULL)
-    {
-	if (Scr->DefaultFont.name) {
-	    deffontname = Scr->DefaultFont.name;
-	}
-	if ((font->font = XLoadQueryFont(dpy, deffontname)) == NULL)
-	{
-	    fprintf (stderr, "%s:  unable to open fonts \"%s\" or \"%s\"\n",
-		     ProgramName, font->name, deffontname);
-	    exit(1);
-	}
-    }
-    font->height = font->font->ascent + font->font->descent;
-    font->y = font->font->ascent;
-#endif	
 }
 
 
@@ -2813,10 +2791,8 @@ void PaintBorders (TwmWindow *tmp_win, Bool focus)
 void PaintTitle (TwmWindow *tmp_win)
 {
     int width, mwidth, len;
-#ifdef I18N
     XRectangle inc_rect;
     XRectangle logical_rect;
-#endif    
 
     if (Scr->use3Dtitles) {
 	if (Scr->SunkFocusWindowTitle && (Scr->Focus == tmp_win) &&
@@ -2833,82 +2809,50 @@ void PaintTitle (TwmWindow *tmp_win)
 		Scr->TitleHeight, Scr->TitleShadowDepth,
 		tmp_win->title, off, True, False);
     }
-#ifdef I18N
     FB(tmp_win->title.fore, tmp_win->title.back);
-#else
-    FBF(tmp_win->title.fore, tmp_win->title.back, Scr->TitleBarFont.font->fid);
-#endif
     if (Scr->use3Dtitles) {
 	len    = strlen(tmp_win->name);
-#ifdef I18N
 	XmbTextExtents(Scr->TitleBarFont.font_set,
 		       tmp_win->name, strlen (tmp_win->name),
 		       &inc_rect, &logical_rect);
 	width = logical_rect.width;
-#else	
-	width  = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, len);
-#endif	
 	mwidth = tmp_win->title_width  - Scr->TBInfo.titlex -
 		 Scr->TBInfo.rightoff  - Scr->TitlePadding  -
 		 Scr->TitleShadowDepth - 4;
 	while ((len > 0) && (width > mwidth)) {
 	    len--;
-#ifdef I18N
 	    XmbTextExtents(Scr->TitleBarFont.font_set,
 			   tmp_win->name, len,
 			   &inc_rect, &logical_rect);
 	    width = logical_rect.width;
-#else
-	    width  = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, len);
-#endif
 	}
 	if (Scr->Monochrome != COLOR) {
-#ifdef I18N
 	    XmbDrawImageString(dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
 			     Scr->NormalGC,
 			     tmp_win->name_x,
 			     Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
 			     tmp_win->name, len);
-#else	    
-	    XDrawImageString (dpy, tmp_win->title_w, Scr->NormalGC,
-		 tmp_win->name_x, Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
-		 tmp_win->name, len);
-#endif	    
 	}
 	else {
-#ifdef I18N
 	    XmbDrawString (dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
 			   Scr->NormalGC, tmp_win->name_x,
 			   Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
 			   tmp_win->name, len);
-#else	    
-	    XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
-		 tmp_win->name_x, Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
-		 tmp_win->name, len);
-#endif
 	}
     }
     else
-#ifdef I18N
         XmbDrawString (dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
 		       Scr->NormalGC,
 		       tmp_win->name_x, Scr->TitleBarFont.y, 
 		       tmp_win->name, strlen(tmp_win->name));
-#else
-        XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
-		 tmp_win->name_x, Scr->TitleBarFont.y, 
-		 tmp_win->name, strlen(tmp_win->name));
-#endif    
 }
 
 void PaintIcon (TwmWindow *tmp_win)
 {
     int		width, twidth, mwidth, len, x;
     Icon	*icon;
-#ifdef I18N
     XRectangle inc_rect;
     XRectangle logical_rect;
-#endif    
 
     if (!tmp_win || !tmp_win->icon) return;
     icon = tmp_win->icon;
@@ -2921,14 +2865,10 @@ void PaintIcon (TwmWindow *tmp_win)
 	width = icon->width;
     }
     len    = strlen (tmp_win->icon_name);
-#ifdef I18N
     XmbTextExtents(Scr->IconFont.font_set,
 		   tmp_win->icon_name, len,
 		   &inc_rect, &logical_rect);
     twidth = logical_rect.width;
-#else
-    twidth = XTextWidth (Scr->IconFont.font, tmp_win->icon_name, len);
-#endif
     mwidth = width - 2 * Scr->IconManagerShadowDepth - 6;
     if (Scr->use3Diconmanagers) {
 	Draw3DBorder (icon->w, x, icon->height, width,
@@ -2937,26 +2877,15 @@ void PaintIcon (TwmWindow *tmp_win)
     }
     while ((len > 0) && (twidth > mwidth)) {
 	len--;
-#ifdef I18N
 	XmbTextExtents(Scr->IconFont.font_set,
 		       tmp_win->icon_name, len,
 		       &inc_rect, &logical_rect);
 	twidth = logical_rect.width;
-#else
-	twidth = XTextWidth (Scr->IconFont.font, tmp_win->icon_name, len);
-#endif
     }
-#ifdef I18N
     FB (icon->iconc.fore, icon->iconc.back);
     XmbDrawString(dpy, icon->w, Scr->IconFont.font_set, Scr->NormalGC,
 		  x + ((mwidth - twidth)/2) + Scr->IconManagerShadowDepth + 3,
 		  icon->y, tmp_win->icon_name, len);
-#else    
-    FBF (icon->iconc.fore, icon->iconc.back, Scr->IconFont.font->fid);
-    XDrawString (dpy, icon->w, Scr->NormalGC,
-		x + ((mwidth - twidth) / 2) + Scr->IconManagerShadowDepth + 3,
-		icon->y, tmp_win->icon_name, len);
-#endif    
 }
 
 void PaintTitleButton (TwmWindow *tmp_win, TBWindow  *tbw)
@@ -3892,19 +3821,6 @@ void _swaplong (register char *bp, register unsigned n)
 
 unsigned char *GetWMPropertyString(Window w, Atom prop)
 {
-#ifdef NO_LOCALE
-    Atom actual_type;
-    int actual_format;
-    unsigned long nitems, bytesafter;
-    unsigned char *string;
-
-    if (XGetWindowProperty (dpy, w, prop, 0L, 200L, False,
-			    XA_STRING, &actual_type, &actual_format, &nitems,
-			    &bytesafter, &string) != Success)
-	string = NULL;
-
-    return string;
-#else
     XTextProperty	text_prop;
     char 		**text_list;
     int 		text_list_count;
@@ -3966,17 +3882,12 @@ unsigned char *GetWMPropertyString(Window w, Atom prop)
     }
 
     return stringptr;
-#endif /* NO_LOCALE */
 }
 
 void FreeWMPropertyString(unsigned char *prop)
 {
     if (prop && (char *)prop != NoName) {
-#ifdef NO_LOCALE
-	XFree(prop);
-#else
 	free(prop);
-#endif /* NO_LOCALE */
     }
 }
 

@@ -88,12 +88,6 @@ XCOMM
 #define USE_SESSION
 
 XCOMM ----------------------------------------------------------------------
-XCOMM Feature: I18n support
-XCOMM If you want to build with i18n support, define I18N.
-XCOMM
-#define I18N
-
-XCOMM ----------------------------------------------------------------------
 XCOMM Feature: Use GNU regex
 XCOMM If you want to build with GNU regex instead of the internal regex
 XCOMM functions, define USE_GNU_REGEX.

@@ -112,9 +112,6 @@ void CreateGCs(void)
     gcm = 0;
     gcm |= GCForeground;    gcv.foreground = Scr->MenuC.fore;
     gcm |= GCBackground;    gcv.background = Scr->MenuC.back;
-#ifndef I18N    
-    gcm |= GCFont;	    gcv.font =  Scr->MenuFont.font->fid;
-#endif    
 
     Scr->MenuGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
 

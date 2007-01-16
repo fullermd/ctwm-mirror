@@ -1408,7 +1408,6 @@ int do_string_keyword (int keyword, char *s)
 	    return 1;
 	}
 
-#ifdef I18N
       case kws_IconFont:
 	if (!Scr->HaveFonts) Scr->IconFont.basename = s;
 	return 1;
@@ -1432,31 +1431,6 @@ int do_string_keyword (int keyword, char *s)
       case kws_IconManagerFont:
 	if (!Scr->HaveFonts) Scr->IconManagerFont.basename = s;
 	return 1;
-#else	
-      case kws_IconFont:
-	if (!Scr->HaveFonts) Scr->IconFont.name = s;
-	return 1;
-
-      case kws_ResizeFont:
-	if (!Scr->HaveFonts) Scr->SizeFont.name = s;
-	return 1;
-
-      case kws_MenuFont:
-	if (!Scr->HaveFonts) Scr->MenuFont.name = s;
-	return 1;
-
-      case kws_WorkSpaceFont:
-	if (!Scr->HaveFonts) Scr->workSpaceMgr.windowFont.name = s;
-	return 1;
-
-      case kws_TitleFont:
-	if (!Scr->HaveFonts) Scr->TitleBarFont.name = s;
-	return 1;
-
-      case kws_IconManagerFont:
-	if (!Scr->HaveFonts) Scr->IconManagerFont.name = s;
-	return 1;
-#endif
 
       case kws_UnknownIcon:
 	if (Scr->FirstTime) GetUnknownIcon (s);
@@ -2288,9 +2262,7 @@ static char *m4_defs(Display *display, char *host)
 #ifdef X11R6
 	fputs(MkDef("SESSION", "Yes"), tmpf);
 #endif
-#ifdef I18N
 	fputs(MkDef("I18N", "Yes"), tmpf);
-#endif
 	if (captive && captivename) {
             fputs (MkDef ("TWM_CAPTIVE", "Yes"), tmpf);
             fputs (MkDef ("TWM_CAPTIVE_NAME", captivename), tmpf);

@@ -629,19 +629,13 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	icon->has_title = False;
     }
     else {
-#ifdef I18N
 	XRectangle inc_rect;
 	XRectangle logical_rect;
-	
+
 	XmbTextExtents(Scr->IconFont.font_set,
 		       tmp_win->icon_name, strlen (tmp_win->icon_name),
 		       &inc_rect, &logical_rect);
 	icon->w_width = logical_rect.width;
-
-#else
-	icon->w_width = XTextWidth(Scr->IconFont.font,
-		tmp_win->icon_name, strlen(tmp_win->icon_name));
-#endif
 
 	icon->w_width += 2 * Scr->IconManagerShadowDepth + 6;
 	if (icon->w_width > Scr->MaxIconTitleWidth) icon->w_width = Scr->MaxIconTitleWidth;

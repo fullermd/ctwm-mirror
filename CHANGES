@@ -1570,3 +1570,9 @@ VirtualScreens {
 	Add a schematic drawing that clarifies the relation between the
 	various root-type windows.
 	[Olaf "Rhialto" Seibert]
+
+   12 - Get rid of all non-locale code and make I18N the silent default
+	(doesn't have to be mentioned any more).
+	THIS WILL BREAK CTWM ON OLDER (PRE-LOCALE) ENVIRONMENTS.
+	I strongly recommend an upgrade to "post-locale" standards.
+	[Richard Levitte]

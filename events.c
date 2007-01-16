@@ -1426,10 +1426,8 @@ void HandlePropertyNotify(void)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     Pixmap pm;
     int icon_change;
-#ifdef I18N
     XRectangle inc_rect;
     XRectangle logical_rect;
-#endif    
 
     unsigned char *gwkspc;
 
@@ -1491,16 +1489,10 @@ void HandlePropertyNotify(void)
 #ifdef X11R6
 	Tmp_win->nameChanged = 1;
 #endif
-#ifdef I18N
 	XmbTextExtents(Scr->TitleBarFont.font_set,
 		       Tmp_win->name, strlen (Tmp_win->name),
 		       &inc_rect, &logical_rect);
 	Tmp_win->name_width = logical_rect.width;
-#else	
-	Tmp_win->name_width = XTextWidth (Scr->TitleBarFont.font,
-					  Tmp_win->name,
-					  strlen (Tmp_win->name));
-#endif	
 
 	SetupWindow (Tmp_win, Tmp_win->frame_x, Tmp_win->frame_y,
 		     Tmp_win->frame_width, Tmp_win->frame_height, -1);
@@ -1823,10 +1815,8 @@ static void RedoIcon(void)
 void RedoIconName(void)
 {
     int x;
-#ifdef I18N
     XRectangle ink_rect;
     XRectangle logical_rect;
-#endif    
 
     if (Scr->NoIconTitlebar || 
 	LookInNameList (Scr->NoIconTitle, Tmp_win->icon_name) ||
@@ -1844,15 +1834,10 @@ void RedoIconName(void)
 
     if (Tmp_win->icon_not_ours) goto wmapupd;
 
-#ifdef I18N
     XmbTextExtents(Scr->IconFont.font_set,
 		   Tmp_win->icon_name, strlen(Tmp_win->icon_name),
 		   &ink_rect, &logical_rect);
     Tmp_win->icon->w_width = logical_rect.width;
-#else    
-    Tmp_win->icon->w_width = XTextWidth(Scr->IconFont.font,
-	Tmp_win->icon_name, strlen(Tmp_win->icon_name));
-#endif    
     Tmp_win->icon->w_width += 2 * Scr->IconManagerShadowDepth + 6;
     if (Tmp_win->icon->w_width > Scr->MaxIconTitleWidth)
 	Tmp_win->icon->w_width = Scr->MaxIconTitleWidth;
@@ -2036,25 +2021,15 @@ void HandleExpose(void)
 	Draw3DBorder (Scr->InfoWindow, 0, 0,
 		InfoWidth, InfoHeight, 2, Scr->DefaultC, off, True, False);
 
-#ifdef I18N
 	FB(Scr->DefaultC.fore, Scr->DefaultC.back);
-#else	
-	FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
-	    Scr->DefaultFont.font->fid);
-#endif	
 
 	height = Scr->DefaultFont.height+2;
 	for (i = 0; i < InfoLines; i++)
 	{
-#ifdef I18N
 	    XmbDrawString(dpy, Scr->InfoWindow, Scr->DefaultFont.font_set,
 			  Scr->NormalGC, 5,
 			  (i*height) + Scr->DefaultFont.y + 5,
 			  Info[i], strlen(Info[i]));
-#else
-	    XDrawString(dpy, Scr->InfoWindow, Scr->NormalGC,
-		5, (i*height) + Scr->DefaultFont.y + 5, Info[i], strlen(Info[i]));
-#endif	    
 	}
 	flush_expose (Event.xany.window);
     }
@@ -2111,15 +2086,9 @@ void HandleExpose(void)
 
 		DrawIconManagerBorder(Tmp_win->list, True);
 
-#ifdef I18N
 		FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
-#else
-		FBF(Tmp_win->list->cp.fore, Tmp_win->list->cp.back,
-			Scr->IconManagerFont.font->fid);
-#endif		
 		offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
 		if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
-#ifdef I18N
 		    XmbDrawImageString(dpy, Event.xany.window,
 				       Scr->IconManagerFont.font_set,
 				       Scr->NormalGC, 
@@ -2127,24 +2096,13 @@ void HandleExpose(void)
 				       Scr->IconManagerFont.y + offs + 2,
 				       Tmp_win->icon_name,
 				       strlen(Tmp_win->icon_name));
-#else
-		    XDrawImageString (dpy, Event.xany.window, Scr->NormalGC, 
-			iconmgr_textx, Scr->IconManagerFont.y + offs + 2,
-			Tmp_win->icon_name, strlen(Tmp_win->icon_name));
-#endif
 		else
-#ifdef I18N
 		    XmbDrawString(dpy, Event.xany.window,
 				  Scr->IconManagerFont.font_set, Scr->NormalGC,
 				  iconmgr_textx,
 				  Scr->IconManagerFont.y + offs + 2,
 				  Tmp_win->icon_name,
 				  strlen(Tmp_win->icon_name));
-#else
-		    XDrawString (dpy, Event.xany.window, Scr->NormalGC, 
-			iconmgr_textx, Scr->IconManagerFont.y + offs + 2,
-			Tmp_win->icon_name, strlen(Tmp_win->icon_name));
-#endif
 		flush_expose (Event.xany.window);
 		return;
 	    }

@@ -116,13 +116,7 @@
 #    include <X11SM/SMlib.h>
 #  endif /* X11R6 */
 
-#  ifdef I18N
-#    include <X11/Xlocale.h>
-#  else
-#    ifndef NO_LOCALE
-#      include <locale.h>
-#    endif /* NO_LOCALE */
-#  endif
+#  include <X11/Xlocale.h>
 
 #  ifndef PIXMAP_DIRECTORY
 #    define PIXMAP_DIRECTORY "DECW$BITMAPS:"
@@ -136,13 +130,7 @@
 #    include <X11/SM/SMlib.h>
 #  endif /* X11R6 */
 
-#  ifdef I18N
-#    include <X11/Xlocale.h>
-#  else
-#    ifndef NO_LOCALE
-#      include <locale.h>
-#    endif /* NO_LOCALE */
-#  endif
+#  include <X11/Xlocale.h>
 
 #  ifndef PIXMAP_DIRECTORY
 #    define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
@@ -291,17 +279,10 @@ int main(int argc, char **argv, char **environ)
     Window capwin = (Window) 0;
     IconRegion *ir;
 
-#ifdef I18N
     XRectangle ink_rect;
     XRectangle logical_rect;
 
     (void)setlocale(LC_ALL, "");
-    
-#else    
-#ifndef NO_LOCALE
-    (void)setlocale(LC_ALL, NULL);
-#endif
-#endif    
 
 #ifdef VMS
 #if 0
@@ -897,15 +878,10 @@ int main(int argc, char **argv, char **environ)
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 
-#ifdef I18N
 	XmbTextExtents(Scr->SizeFont.font_set,
 		       " 8888 x 8888 ", 13,
 		       &ink_rect, &logical_rect);
 	Scr->SizeStringWidth = logical_rect.width;
-#else	
-	Scr->SizeStringWidth = XTextWidth (Scr->SizeFont.font,
-					   " 8888 x 8888 ", 13);
-#endif	
 	valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
 	attributes.bit_gravity = NorthWestGravity;
 
@@ -1178,7 +1154,6 @@ void InitVariables(void)
     
     /* setup default fonts; overridden by defaults from system.twmrc */
 
-#ifdef I18N
 #   define DEFAULT_NICE_FONT "-*-helvetica-bold-r-normal-*-*-120-*"
 #   define DEFAULT_FAST_FONT "-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-*"
 
@@ -1196,26 +1171,6 @@ void InitVariables(void)
     Scr->DefaultFont.basename = DEFAULT_FAST_FONT;
     Scr->workSpaceMgr.windowFont.font_set = NULL;
     Scr->workSpaceMgr.windowFont.basename = DEFAULT_FAST_FONT;
-#else    
-#   define DEFAULT_NICE_FONT "variable"
-#   define DEFAULT_FAST_FONT "fixed"
-
-    Scr->TitleBarFont.font = NULL;
-    Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
-    Scr->MenuFont.font = NULL;
-    Scr->MenuFont.name = DEFAULT_NICE_FONT;
-    Scr->IconFont.font = NULL;
-    Scr->IconFont.name = DEFAULT_NICE_FONT;
-    Scr->SizeFont.font = NULL;
-    Scr->SizeFont.name = DEFAULT_FAST_FONT;
-    Scr->IconManagerFont.font = NULL;
-    Scr->IconManagerFont.name = DEFAULT_NICE_FONT;
-    Scr->DefaultFont.font = NULL;
-    Scr->DefaultFont.name = DEFAULT_FAST_FONT;
-    Scr->workSpaceMgr.windowFont.font = NULL;
-    Scr->workSpaceMgr.windowFont.name = DEFAULT_FAST_FONT;
-#endif
-
 }
 
 
@@ -1545,9 +1500,7 @@ static void DisplayInfo (void) {
 #ifdef SOUNDS
     (void) printf (" SOUNDS");
 #endif
-#ifdef I18N
     (void) printf (" I18N");
-#endif    
     (void) printf ("\n");
 }
 

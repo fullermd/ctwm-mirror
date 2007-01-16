@@ -153,15 +153,9 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.name	      = "WorkSpaceManager";
     Scr->workSpaceMgr.icon_name       = "WorkSpaceManager Icon";
 
-#ifdef I18N
     Scr->workSpaceMgr.windowFont.basename =
       "-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1";
     /*"-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1";*/
-#else
-    Scr->workSpaceMgr.windowFont.name =
-      "-adobe-times-*-r-*--10-*-*-*-*-*-*-*";
-    /*"-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1";*/
-#endif
 
     XrmInitialize ();
     if (MapWListContext == (XContext) 0) MapWListContext = XUniqueContext ();
@@ -189,12 +183,8 @@ void CreateWorkSpaceManager (void)
 
     if (! Scr->workSpaceManagerActive) return;
 
-#ifdef I18N
     Scr->workSpaceMgr.windowFont.basename =
       "-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1";
-#else
-    Scr->workSpaceMgr.windowFont.name = "-adobe-times-*-r-*--10-*-*-*-*-*-*-*";
-#endif    
     Scr->workSpaceMgr.buttonFont = Scr->IconManagerFont;
     Scr->workSpaceMgr.cp	 = Scr->IconManagerC;
     if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->workSpaceMgr.cp);
@@ -1608,10 +1598,8 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
     XSizeHints	  sizehints;
     XWMHints	  wmhints;
     int		  gravity;
-#ifdef I18N
 	XRectangle inc_rect;
 	XRectangle logical_rect;
-#endif
 
     name      = Scr->workSpaceMgr.name;
     icon_name = Scr->workSpaceMgr.icon_name;
@@ -1639,14 +1627,9 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 
     strWid = 0;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-#ifdef I18N
 	XmbTextExtents(font.font_set, ws->label, strlen (ws->label),
 		       &inc_rect, &logical_rect);
 	wid = logical_rect.width;
-#else
-	wid = XTextWidth (font.font, ws->label, strlen (ws->label));
-	if (wid > strWid) strWid = wid;
-#endif
     }
     if (geometry != NULL) {
 	mask = XParseGeometry (geometry, &x, &y, &width, &height);
@@ -1883,10 +1866,8 @@ static void CreateOccupyWindow (void) {
     unsigned long attrmask;
     OccupyWindow  *occwin;
     virtualScreen *vs;
-#ifdef I18N
     XRectangle inc_rect;
     XRectangle logical_rect;
-#endif
 
     occwin = Scr->workSpaceMgr.occupyWindow;
     occwin->font     = Scr->IconManagerFont;
@@ -1910,7 +1891,6 @@ static void CreateOccupyWindow (void) {
     cp        = occwin->cp;
     height    = ((bheight + vspace) * lines) + oheight + (2 * vspace);
     font      = occwin->font;
-#ifdef I18N
     XmbTextExtents(font.font_set, ok_string, strlen(ok_string),
 		       &inc_rect, &logical_rect);
     min_bwidth = logical_rect.width;
@@ -1922,13 +1902,6 @@ static void CreateOccupyWindow (void) {
 		   &inc_rect, &logical_rect);
     i = logical_rect.width;
     if (i > min_bwidth) min_bwidth = i;
-#else
-    min_bwidth = XTextWidth (font.font, ok_string, strlen (ok_string));
-    i = XTextWidth (font.font, cancel_string, strlen (cancel_string));
-    if (i > min_bwidth) min_bwidth = i;
-    i = XTextWidth (font.font, everywhere_string, strlen (everywhere_string));
-    if (i > min_bwidth) min_bwidth = i;
-#endif    
     min_bwidth = (min_bwidth + hspace); /* normal width calculation */
     width = columns * (bwidth  + hspace); 
     min_width = 3 * (min_bwidth + hspace); /* width by text width */
@@ -2072,12 +2045,10 @@ static void PaintButton (int which,
     int        bwidth, bheight;
     MyFont     font;
     int        strWid, strHei, hspace, vspace;
-#ifdef I18N
     XFontSetExtents *font_extents;
     XRectangle inc_rect;
     XRectangle logical_rect;
-#endif
-    
+
     occwin = Scr->workSpaceMgr.occupyWindow;
     if (which == WSPCWINDOW) {
 	bwidth  = vs->wsw->bwidth;
@@ -2098,17 +2069,11 @@ static void PaintButton (int which,
     }
     else return;
 
-#ifdef I18N
     font_extents = XExtentsOfFontSet(font.font_set);
     strHei = font_extents->max_logical_extent.height;
     vspace = ((bheight + strHei) / 2) - font.descent;
     XmbTextExtents(font.font_set, label, strlen (label), &inc_rect, &logical_rect);
     strWid = logical_rect.width;
-#else
-    strHei = font.font->max_bounds.ascent + font.font->max_bounds.descent;
-    vspace = ((bheight + strHei) / 2) - font.font->max_bounds.descent;
-    strWid = XTextWidth (font.font, label, strlen (label));
-#endif
     hspace = (bwidth - strWid) / 2;
     if (hspace < (Scr->WMgrButtonShadowDepth + 1)) hspace = Scr->WMgrButtonShadowDepth + 1;
     XClearWindow (dpy, w);
@@ -2148,37 +2113,22 @@ static void PaintButton (int which,
 			1, cp, (state == on) ? off : on, True, False);
 		break;
 	}
-#ifdef I18N
 	FB (cp.fore, cp.back);
 	XmbDrawString (dpy, w, font.font_set, Scr->NormalGC, hspace, vspace,
 		       label, strlen (label));
-#else
-	FBF (cp.fore, cp.back, font.font->fid);
-	XDrawString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
-#endif
     }
     else {
 	Draw3DBorder (w, 0, 0, bwidth, bheight, Scr->WMgrButtonShadowDepth,
 		cp, state, True, False);
 	if (state == on) {
-#ifdef I18N
 	    FB (cp.fore, cp.back);
 	    XmbDrawImageString (dpy, w, font.font_set, Scr->NormalGC, hspace, vspace,
 				label, strlen (label));
-#else
-	    FBF (cp.fore, cp.back, font.font->fid);
-	    XDrawImageString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
-#endif
 	}
 	else {
-#ifdef I18N
 	    FB (cp.back, cp.fore);
 	    XmbDrawImageString (dpy, w, font.font_set, Scr->NormalGC, hspace, vspace,
 				label, strlen (label));
-#else
-	    FBF (cp.back, cp.fore, font.font->fid);
-	    XDrawImageString (dpy, w, Scr->NormalGC, hspace, vspace, label, strlen (label));
-#endif
 	}
     }
 }
@@ -3002,7 +2952,6 @@ static void WMapRedrawWindow (Window window, int width, int height,
 {
     int		x, y, strhei, strwid;
     MyFont	font;
-#ifdef I18N
     XFontSetExtents *font_extents;
     XRectangle inc_rect;
     XRectangle logical_rect;
@@ -3011,12 +2960,10 @@ static void WMapRedrawWindow (Window window, int width, int height,
     register int i;
     int descent;
     int fnum;
-#endif
 
     XClearWindow (dpy, window);
     font = Scr->workSpaceMgr.windowFont;
 
-#ifdef I18N
     font_extents = XExtentsOfFontSet(font.font_set);
     strhei = font_extents->max_logical_extent.height;
 
@@ -3049,30 +2996,6 @@ static void WMapRedrawWindow (Window window, int width, int height,
     } else {
 	XmbDrawString (dpy, window, font.font_set,Scr->NormalGC, x, y, label, strlen (label));
     }
-
-#else
-    strhei = font.font->max_bounds.ascent + font.font->max_bounds.descent;
-    if (strhei > height) return;
-
-    strwid = XTextWidth (font.font, label, strlen (label));
-    x = (width  - strwid) / 2;
-    if (x < 1) x = 1;
-    y = ((height + strhei) / 2) - font.font->max_bounds.descent;
-
-    if (Scr->use3Dwmap) {
-	Draw3DBorder (window, 0, 0, width, height, 1, cp, off, True, False);
-	FBF(cp.fore, cp.back, font.font->fid);
-    } else {
-	FBF (cp.back, cp.fore, font.font->fid);
-	XFillRectangle (dpy, window, Scr->NormalGC, 0, 0, width, height);
-	FBF (cp.fore, cp.back, font.font->fid);
-    }
-    if (Scr->Monochrome != COLOR) {
-	XDrawImageString (dpy, window, Scr->NormalGC, x, y, label, strlen (label));
-    } else {
-	XDrawString (dpy, window, Scr->NormalGC, x, y, label, strlen (label));
-    }
-#endif    
 }
 
 static void WMapAddToList (TwmWindow *win, WorkSpace *ws)

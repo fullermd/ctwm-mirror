@@ -184,22 +184,15 @@ typedef SIGNAL_T (*SigProc)(int); /* type of function returned by signal() */
     Gcv.background = fix_back;\
     XChangeGC(dpy, Scr->NormalGC, GCForeground|GCBackground,&Gcv)
 
-#ifdef I18N
 #define MaxSize(a, b)  (((a) < (b)) ? (b) : (a))
 #define MinSize(a, b)  (((a) > (b)) ? (b) : (a))
-#endif
 
 struct MyFont
 {
-#ifdef I18N    
     char *basename;			/* name of the font */
     XFontSet	font_set;
     int         ascent;
     int         descent;
-#else    
-    char *name;			/* name of the font */
-    XFontStruct	*font;		/* font structure */
-#endif
     int height;			/* height of the font */
     int y;			/* Y coordinate to draw characters */
 };

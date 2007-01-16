@@ -229,10 +229,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     int		fd;
     struct timeval timeout;
 #endif
-#ifdef I18N
     XRectangle ink_rect;
     XRectangle logical_rect;
-#endif
     WindowBox *winbox;
     int iswinbox = 0;
     int iswman = 0;
@@ -823,7 +821,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 		if (stat == GrabSuccess) break;
 	    }
 
-#ifdef I18N
 	    XmbTextExtents(Scr->SizeFont.font_set,
 			   tmp_win->name, namelen,
 			   &ink_rect, &logical_rect);
@@ -832,32 +829,16 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	    XmbTextExtents(Scr->SizeFont.font_set,
 			   ": ", 2,  &logical_rect, &logical_rect);
 	    Scr->SizeStringOffset = width + logical_rect.width;
-#else	    
-	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
-						tmp_win->name, namelen));
-	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
-	    Scr->SizeStringOffset = width + XTextWidth (Scr->SizeFont.font, ": ", 2);
-#endif	    
-	    
+
 	    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
 				Scr->SizeStringWidth + SIZE_HINDENT, height);
 	    XMapRaised(dpy, Scr->SizeWindow);
 	    InstallRootColormap();
-#ifdef I18N
 	    FB(Scr->DefaultC.fore, Scr->DefaultC.back);
 	    XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
 				Scr->NormalGC, SIZE_HINDENT,
 				SIZE_VINDENT + Scr->SizeFont.ascent,
 				tmp_win->name, namelen);
-#else
-	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
-		Scr->SizeFont.font->fid);
-
-	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
-			      SIZE_HINDENT,
-			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
-			      tmp_win->name, namelen);
-#endif
 
 	    if (winbox) ConstrainedToWinBox (tmp_win, AddingX, AddingY, &AddingX, &AddingY);
 
@@ -867,14 +848,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	    MoveOutline(vroot,AddingX, AddingY, AddingW, AddingH,
 			tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
-#ifdef I18N
 	    XmbDrawImageString (dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
 				Scr->NormalGC, width,
 				SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
-#else	    
-	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
-				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
-#endif	  
 	    DisplayPosition (tmp_win, AddingX, AddingY);
 
 	    tmp_win->frame_width  = AddingW;
@@ -947,7 +923,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	    if (event.xbutton.button == Button2) {
 		int lastx, lasty;
 
-#ifdef I18N
 		XmbTextExtents(Scr->SizeFont.font_set,
 			       ": ", 2,  &logical_rect, &logical_rect);
 		Scr->SizeStringOffset = width + logical_rect.width;
@@ -958,21 +933,11 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 		XmbDrawImageString(dpy, Scr->SizeWindow, Scr->SizeFont.font_set,
 				   Scr->NormalGC, width,
 				   SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
-#else		
-		Scr->SizeStringOffset = width +
-		  XTextWidth(Scr->SizeFont.font, ": ", 2);
-		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-			       Scr->SizeStringWidth + SIZE_HINDENT, height);
 
-		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
-				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
-				  ": ", 2);
-#endif
-		
 		if (0/*Scr->AutoRelativeResize*/) {
 		    int dx = (tmp_win->attr.width / 4);
 		    int dy = (tmp_win->attr.height / 4);
-		    
+
 #define HALF_AVE_CURSOR_SIZE 8		/* so that it is visible */
 		    if (dx < HALF_AVE_CURSOR_SIZE + Scr->BorderLeft)
                         dx = HALF_AVE_CURSOR_SIZE + Scr->BorderLeft;
@@ -1108,12 +1073,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     }
 #endif
 
-#ifdef I18N
     XmbTextExtents (Scr->TitleBarFont.font_set, tmp_win->name, namelen, &ink_rect, &logical_rect);
     tmp_win->name_width = logical_rect.width;
-#else    
-    tmp_win->name_width = XTextWidth (Scr->TitleBarFont.font, tmp_win->name, namelen);
-#endif    
 
     if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
 
