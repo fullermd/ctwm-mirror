@@ -3914,13 +3914,8 @@ unsigned char *GetWMPropertyString(Window w, Atom prop)
 
     (void)XGetTextProperty(dpy, w, &text_prop, prop);
     if (text_prop.value != NULL) {
-	if (text_prop.encoding == XA_STRING) {
-	    /* property is encoded as string */
-	    /*stringptr = strcpy((char*)malloc(text_prop.nitems+1), (char*)text_prop.value);*/
-	    stringptr = memcpy(malloc(text_prop.nitems+1),
-			       text_prop.value, text_prop.nitems);
-	    stringptr [text_prop.nitems] = '\0';
-	} else if (text_prop.encoding == XA_COMPOUND_TEXT) {
+	if (text_prop.encoding == XA_STRING
+	    || text_prop.encoding == XA_COMPOUND_TEXT) {
 	    /* property is encoded as compound text - convert to locale string */
 	    status = XmbTextPropertyToTextList(dpy, &text_prop,
 					       &text_list, &text_list_count);
