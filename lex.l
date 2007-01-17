@@ -79,11 +79,7 @@ extern void twmrc_error_prefix(void);
 #ifdef FLEX_SCANNER
    int yylineno;
 #  undef YY_INPUT
-# ifdef I18N
 #  define YY_INPUT(buf,result,max_size) {buf[0]=twmInputFunc();result=(buf[0] != 0);}
-# else
-#  define YY_INPUT(buf,result,max_size) {buf[0]=twmInputFunc();result=(buf[0]>0);}
-# endif
 #endif
 
 int twmrc_lineno;
