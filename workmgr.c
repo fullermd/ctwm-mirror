@@ -2070,10 +2070,9 @@ static void PaintButton (int which,
     }
     else return;
 
-    font_extents = XExtentsOfFontSet(font.font_set);
-    strHei = font_extents->max_logical_extent.height;
-    vspace = ((bheight + strHei) / 2) - font.descent;
     XmbTextExtents(font.font_set, label, strlen (label), &inc_rect, &logical_rect);
+    strHei = logical_rect.height;
+    vspace = ((bheight + strHei - font.descent) / 2);
     strWid = logical_rect.width;
     hspace = (bwidth - strWid) / 2;
     if (hspace < (Scr->WMgrButtonShadowDepth + 1)) hspace = Scr->WMgrButtonShadowDepth + 1;
