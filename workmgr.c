@@ -1630,6 +1630,7 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 	XmbTextExtents(font.font_set, ws->label, strlen (ws->label),
 		       &inc_rect, &logical_rect);
 	wid = logical_rect.width;
+	if (wid > strWid) strWid = wid;
     }
     if (geometry != NULL) {
 	mask = XParseGeometry (geometry, &x, &y, &width, &height);
