@@ -1404,9 +1404,10 @@ Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
   
 	ws = NULL;
 
-	if (! (all || allicons) && CurrentSelectedWorkspace) {
+	if (! (all || allicons)
+	    && CurrentSelectedWorkspace && Scr->workSpaceManagerActive) {
 	    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-        	if (strcmp (ws->name, CurrentSelectedWorkspace) == 0) break;
+		if (strcmp (ws->name, CurrentSelectedWorkspace) == 0) break;
 	    }
 	}
 	if (!Scr->currentvs) return False;
