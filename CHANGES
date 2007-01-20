@@ -1576,3 +1576,12 @@ VirtualScreens {
 	THIS WILL BREAK CTWM ON OLDER (PRE-LOCALE) ENVIRONMENTS.
 	I strongly recommend an upgrade to "post-locale" standards.
 	[Richard Levitte]
+
+   13 - Enhance RandomPlacement with a displacement argument, so the
+	pseudo-radomness can be of displacements other than +30+30.
+	Here's an example for a pretty funky displacement:
+
+		RandomPlacement "on" "-30-100"
+
+	[Richard Levitte]
+

@@ -651,20 +651,39 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 		PlaceX, PlaceY);
 #endif
 
-	/* If the right edge of the window would fall outside of the
-	   screen, start over by placing the left edge of the window
-	   50 pixels inside the left edge of the screen.*/
-	if ((PlaceX + tmp_win->attr.width)  > Scr->rootw)
+	/* For a positive horizontal displacement, if the right edge
+	   of the window would fall outside of the screen, start over
+	   by placing the left edge of the window 50 pixels inside
+	   the left edge of the screen.*/
+	if (Scr->RandomDisplacementX >= 0
+	    && (PlaceX + tmp_win->attr.width)  > Scr->rootw)
 	  PlaceX = 50;
 
-	/* If the bottom edge of the window would fall outside of the
-	   screen, start over by placing the top edge of the window
-	   50 pixels inside the top edge of the screen.  Because we
-	   add the title height further down, we need to count with
-	   it here as well.  */
-	if ((PlaceY + tmp_win->attr.height
-		 + tmp_win->title_height) > Scr->rooth)
+	/* For a negative horizontal displacement, if the left edge
+	   of the window would fall outside of the screen, start over
+	   by placing the right edge of the window 50 pixels inside
+	   the right edge of the screen.*/
+	if (Scr->RandomDisplacementX < 0 && PlaceX < 0)
+	  PlaceX = Scr->rootw - tmp_win->attr.width - 50;
+
+	/* For a positive vertical displacement, if the bottom edge
+	   of the window would fall outside of the screen, start over
+	   by placing the top edge of the window 50 pixels inside the
+	   top edge of the screen.  Because we add the title height
+	   further down, we need to count with it here as well.  */
+	if (Scr->RandomDisplacementY >= 0
+	    && (PlaceY + tmp_win->attr.height
+		+ tmp_win->title_height) > Scr->rooth)
 	  PlaceY = 50;
+
+	/* For a negative vertical displacement, if the top edge of
+	   the window would fall outside of the screen, start over by
+	   placing the bottom edge of the window 50 pixels inside the
+	   bottom edge of the screen.  Because we add the title height
+	   further down, we need to count with it here as well.  */
+	if (Scr->RandomDisplacementY < 0 && PlaceY < 0)
+	  PlaceY =
+	    Scr->rooth - tmp_win->attr.height - tmp_win->title_height- 50;
 
 	/* Assign the current random placement to the new window, as
 	   a preliminary measure.  Add the title height so things will
@@ -758,8 +777,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	   30 pixels down and right. */
 	if (PlaceX - tmp_win->attr.x < 15
 	    || PlaceY - tmp_win->attr.y < 15) {
-	  PlaceX += 30;
-	  PlaceY += 30;
+	  PlaceX += Scr->RandomDisplacementX;
+	  PlaceY += Scr->RandomDisplacementY;
 	}
 
         random_placed = True;

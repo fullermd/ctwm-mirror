@@ -1214,13 +1214,18 @@ the button to use for RaiseOnClick.
 .IP "\fBRaiseWhenAutoUnSqueeze\fP" 8
 Windows are raised when auto\-unsqueezed (See AutoSqueeze).
 
-.IP "\fBRandomPlacement\fP [ \fIstring\fP ]" 8
-Where \fIstring\fP is either \(oqon\(cq, \(oqoff\(cq, \(oqall\(cq or \(oqunmapped\(cq.
+.IP "\fBRandomPlacement\fP [ \fIstring1\fP [ \fIstring2\fP ]]" 8
+Where \fIstring1\fP is either \(oqon\(cq, \(oqoff\(cq, \(oqall\(cq or
+\(oqunmapped\(cq, and string2 is a displacement for the
+pseudo\-randomly placed window compared to the previous one.
 This variable indicates that windows with no specified geometry should
-be placed in a pseudo\-random location instead of having the user drag out
-an outline. The argument \(oqon\(cq or \(oqall\(cq tells ctwm do do this for all such windows,
-\(oqoff\(cq, not to do this, and \(oqunmapped\(cq, only for unmapped windows, e.g.
-iconified or not visible in the current workspace.
+be placed in a pseudo\-random location instead of having the user drag
+out an outline. The argument \(oqon\(cq or \(oqall\(cq tells ctwm do
+do this for all such windows, \(oqoff\(cq, not to do this, and
+\(oqunmapped\(cq, only for unmapped windows, e.g. iconified or not
+visible in the current workspace.
+If the second argument isn't given, the displacement +30+30 (30 pixels
+left and down) is used.
 
 .IP "\fBReallyMoveInWorkspaceManager\fP" 8
 This keyword tells \fIctwm\fP to move the actual window when the user is

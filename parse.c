@@ -635,7 +635,7 @@ typedef struct _TwmKeyword {
 #define kw0_IgnoreCaseInMenuSelection	62
 #define kw0_SloppyFocus                 63
 #define kw0_NoImagesInWorkSpaceManager  64
-#define kw0_NoWarpToMenuTitle 65
+#define kw0_NoWarpToMenuTitle           65
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -647,7 +647,7 @@ typedef struct _TwmKeyword {
 #define kws_IconDirectory		8
 #define kws_MaxWindowSize		9
 #define kws_PixmapDirectory		10
-#define kws_RandomPlacement		11
+/* RandomPlacement moved because it's now a string string keyword */
 #define kws_IconJustification		12
 #define kws_TitleJustification		13
 #define kws_IconRegionJustification	14
@@ -658,6 +658,8 @@ typedef struct _TwmKeyword {
 #define kws_WMgrButtonStyle		17
 #define kws_WorkSpaceFont               18
 #define kws_IconifyStyle                19
+
+#define kwss_RandomPlacement		1
 
 #define kwn_ConstrainedMoveTime		1
 #define kwn_MoveDelta			2
@@ -1011,7 +1013,7 @@ static TwmKeyword keytable[] = {
     { "raiseonclick",		KEYWORD, kw0_RaiseOnClick },
     { "raiseonclickbutton",	NKEYWORD, kwn_RaiseOnClickButton },
     { "raisewhenautounsqueeze",	KEYWORD, kw0_RaiseWhenAutoUnSqueeze },
-    { "randomplacement",	SKEYWORD, kws_RandomPlacement },
+    { "randomplacement",	SSKEYWORD, kwss_RandomPlacement },
     { "reallymoveinworkspacemanager",	KEYWORD, kw0_ReallyMoveInWorkspaceManager },
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
@@ -1127,8 +1129,6 @@ int parse_keyword (char *s, int *nump)
 
 int do_single_keyword (int keyword)
 {
-    virtualScreen *vs;
-
     switch (keyword) {
       case kw0_NoDefaults:
 	Scr->NoDefaults = TRUE;
@@ -1371,10 +1371,45 @@ int do_single_keyword (int keyword)
 	Scr->NoImagesInWorkSpaceManager = TRUE;
 	return 1;
 
- case kw0_NoWarpToMenuTitle:
- Scr->NoWarpToMenuTitle = TRUE;
- return 1;
+      case kw0_NoWarpToMenuTitle:
+	Scr->NoWarpToMenuTitle = TRUE;
+	return 1;
 
+    }
+    return 0;
+}
+
+
+int do_string_string_keyword (int keyword, char *s1, char *s2)
+{
+    switch (keyword) {
+       case kwss_RandomPlacement:
+       {
+	    int rp = ParseRandomPlacement (s1);
+	    if (rp < 0) {
+		twmrc_error_prefix();
+		fprintf (stderr,
+			 "ignoring invalid RandomPlacement argument 1 \"%s\"\n", s1);
+	    } else {
+		Scr->RandomPlacement = rp;
+	    }
+       }
+       {
+	   if (strcmp (s2, "default") == 0) return 1;
+	    JunkMask = XParseGeometry (s2, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+	    fprintf (stderr, "DEBUG:: JunkMask = %x, WidthValue = %x, HeightValue = %x\n", JunkMask, WidthValue, HeightValue);
+	    fprintf (stderr, "DEBUG:: JunkX = %d, JunkY = %d\n", JunkX, JunkY);
+	    if ((JunkMask & (XValue | YValue)) !=
+		(XValue | YValue)) {
+		twmrc_error_prefix();
+		fprintf (stderr,
+			 "ignoring invalid RandomPlacement displacement \"%s\"\n", s2);
+	    } else {
+		Scr->RandomDisplacementX = JunkX;
+		Scr->RandomDisplacementY = JunkY;
+	    }
+	    return 1;
+	}
     }
     return 0;
 }
@@ -1383,18 +1418,6 @@ int do_single_keyword (int keyword)
 int do_string_keyword (int keyword, char *s)
 {
     switch (keyword) {
-       case kws_RandomPlacement:
-	{
-	    int rp = ParseRandomPlacement (s);
-	    if (rp < 0) {
-		twmrc_error_prefix();
-		fprintf (stderr,
-			 "ignoring invalid RandomPlacement argument \"%s\"\n", s);
-	    } else {
-		Scr->RandomPlacement = rp;
-	    }
-	    return 1;
-	}
       case kws_UsePPosition:
 	{
 	    int ppos = ParseUsePPosition (s);
@@ -1556,8 +1579,6 @@ int do_string_keyword (int keyword, char *s)
 
 int do_number_keyword (int keyword, int num)
 {
-    virtualScreen *vs;
-
     switch (keyword) {
       case kwn_ConstrainedMoveTime:
 	ConstrainedMoveTime = num;

@@ -135,7 +135,7 @@ extern int yylex(void);
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
 %token <num> MOVE RESIZE WAITC SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
-%token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WINDOW_RING_EXCLUDE WARP_CURSOR ERRORTOKEN
+%token <num> SKEYWORD SSKEYWORD DKEYWORD JKEYWORD WINDOW_RING WINDOW_RING_EXCLUDE WARP_CURSOR ERRORTOKEN
 %token <num> NO_STACKMODE ALWAYS_ON_TOP WORKSPACE WORKSPACES WORKSPCMGR_GEOMETRY
 %token <num> OCCUPYALL OCCUPYLIST MAPWINDOWCURRENTWORKSPACE MAPWINDOWDEFAULTWORKSPACE
 %token <num> UNMAPBYMOVINGFARAWAY OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
@@ -453,6 +453,33 @@ sarg		: SKEYWORD string	{ if (!do_string_keyword ($1, $2)) {
 					  }
 					}
 		| SKEYWORD		{ if (!do_string_keyword ($1, defstring)) {
+					    twmrc_error_prefix();
+					    fprintf (stderr,
+				"unknown string keyword %d (no value)\n",
+						     $1);
+					    ParseError = 1;
+					  }
+					}
+		;
+
+sarg		: SSKEYWORD string string
+					{ if (!do_string_string_keyword ($1, $2, $3)) {
+					    twmrc_error_prefix();
+					    fprintf (stderr,
+				"unknown strings keyword %d (value \"%s\" and \"%s\")\n",
+						     $1, $2, $3);
+					    ParseError = 1;
+					  }
+					}
+		| SSKEYWORD string	{ if (!do_string_string_keyword ($1, $2, defstring)) {
+					    twmrc_error_prefix();
+					    fprintf (stderr,
+				"unknown string keyword %d (value \"%s\")\n",
+						     $1, $2);
+					    ParseError = 1;
+					  }
+					}
+		| SSKEYWORD		{ if (!do_string_string_keyword ($1, defstring, defstring)) {
 					    twmrc_error_prefix();
 					    fprintf (stderr,
 				"unknown string keyword %d (no value)\n",

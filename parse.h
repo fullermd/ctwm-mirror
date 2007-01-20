@@ -147,7 +147,7 @@ extern void TwmOutput(int c);
 #define F_RIGHTWORKSPACE	70
 #define F_UPWORKSPACE		71
 #define F_DOWNWORKSPACE		72
-#define F_RAISEICONS	        73
+#define F_RAISEICONS		73
 #define F_MOVEPACK		74
 #define F_MOVEPUSH		75
 #define F_DELETEORDESTROY	76
@@ -192,7 +192,7 @@ extern void TwmOutput(int c);
 #define F_MOVETOPREVWORKSPACE   125
 #define F_MOVETONEXTWORKSPACEANDFOLLOW   126
 #define F_MOVETOPREVWORKSPACEANDFOLLOW   127
-#define F_CHANGESIZE            128     /* string */
+#define F_CHANGESIZE		128     /* string */
 #define F_MOVETITLEBAR		129
 
 #define D_NORTH			1
@@ -207,6 +207,7 @@ int parse_keyword (char *s, int *nump);
 
 int do_single_keyword(int keyword);
 int do_string_keyword(int keyword, char *s);
+int do_string_string_keyword(int keyword, char *s1, char *s2);
 int do_number_keyword(int keyword, int num);
 name_list **do_colorlist_keyword(int keyword, int colormode, char *s);
 int do_color_keyword(int keyword, int colormode, char *s);

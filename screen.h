@@ -394,7 +394,7 @@ struct ScreenInfo
     int MovePackResistance;	/* nb of pixel before f.movepack gives up */
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
-    short IconManagerFocus;	/* focus on window in title bar ? */
+    short IconManagerFocus;	/* focus on iconified window ? */
     short NoIconTitlebar;	/* put title bars on icons */
     short NoTitlebar;		/* put title bars on windows */
     short DecorateTransients;	/* put title bars on transients */
@@ -408,6 +408,8 @@ struct ScreenInfo
     short BackingStore;		/* use backing store for menus */
     short SaveUnder;		/* use save under's for menus */
     short RandomPlacement;	/* randomly place windows that no give hints */
+    short RandomDisplacementX;	/* randomly displace by this much horizontally */
+    short RandomDisplacementY;	/* randomly displace by this much vertically */
     short OpaqueMove;		/* move the window rather than outline */
     short DoOpaqueMove;		/* move the window rather than outline */
     short OpaqueMoveThreshold;		/*  */

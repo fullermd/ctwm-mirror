@@ -1079,6 +1079,8 @@ void InitVariables(void)
     Scr->BackingStore = TRUE;
     Scr->SaveUnder = TRUE;
     Scr->RandomPlacement = RP_OFF;
+    Scr->RandomDisplacementX = 30;
+    Scr->RandomDisplacementY = 30;
     Scr->DoOpaqueMove = FALSE;
     Scr->OpaqueMove = FALSE;
     Scr->OpaqueMoveThreshold = 200;
