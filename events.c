@@ -2991,25 +2991,33 @@ void HandleButtonPress(void)
     {
 	register int i;
 	register TBWindow *tbw;
+	register TitleButtonFunc *tbf;
 	int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
+
+	modifier = Event.xbutton.state & mods_used;
+	modifier = set_mask_ignore (modifier);
 
 	for (i = 0, tbw = Tmp_win->titlebuttons; i < nb; i++, tbw++) {
 	    if (Event.xany.window == tbw->window) {
-		switch (tbw->info->funs[ButtonPressed - 1].func) {
-		    case F_MENU :
-			Context = C_TITLE;
-			ButtonEvent = Event;
-			ButtonWindow = Tmp_win;
-			do_menu (tbw->info->funs[ButtonPressed - 1].menuroot, tbw->window);
-			break;
+		for (tbf = tbw->info->funs; tbf; tbf = tbf->next) {
+		    if (tbf->num == ButtonPressed
+			&& tbf->mods == modifier) {
+			switch (tbf->func) {
+			case F_MENU :
+			    Context = C_TITLE;
+			    ButtonEvent = Event;
+			    ButtonWindow = Tmp_win;
+			    do_menu (tbf->menuroot, tbw->window);
+			    break;
 
-		    default :
-			ExecuteFunction (tbw->info->funs[ButtonPressed - 1].func,
-				tbw->info->funs[ButtonPressed - 1].action,
-				Event.xany.window, Tmp_win, &Event,
-				C_TITLE, FALSE);
+			default :
+			    ExecuteFunction (tbf->func, tbf->action,
+					     Event.xany.window, Tmp_win,
+					     &Event, C_TITLE, FALSE);
+			}
+			return;
+		    }
 		}
-		return;
 	    }
 	}
     }

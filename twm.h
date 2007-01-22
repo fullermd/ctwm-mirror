@@ -205,9 +205,12 @@ struct ColorPair
 typedef enum {on, off} ButtonState;
 
 struct _TitleButtonFunc {
-    int func;                         /* function to execute */
-    char *action;                     /* optional action arg */
-    struct MenuRoot *menuroot;                /* menu to pop on F_MENU */
+    struct _TitleButtonFunc *next; /* next in the list of function buttons */
+    int num;			   /* button number */
+    int mods;			   /* modifiers */
+    int func;			   /* function to execute */
+    char *action;		   /* optional action arg */
+    struct MenuRoot *menuroot;     /* menu to pop on F_MENU */
 };
 
 struct _TitleButton {
@@ -218,7 +221,7 @@ struct _TitleButton {
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
     Bool rightside;			/* t: on right, f: on left */
-    TitleButtonFunc funs[MAX_BUTTONS];  /* funcs assoc'd to each button */
+    TitleButtonFunc *funs;		/* funcs assoc'd to each button */
 };
 
 struct _TBWindow {

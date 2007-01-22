@@ -1662,6 +1662,8 @@ from the left or right side and appear in the titlebar from left\-to\-right
 according to the
 order in which they are specified.  Key and pointer button
 bindings may be given in any order.
+.IP "\fBTitle buttons\fP" 4
+.RS 4
 .PP
 Titlebuttons specifications must include the name of the pixmap to use in
 the button box and the function to be invoked when a pointer button is
@@ -1672,9 +1674,9 @@ pressed within them:
 or
 .EX 0
 \fBLeftTitleButton\fP "\fIbitmapname\fP" {
-    Button\fIi\fP : \fIfunction\fP
+    Button\fIi\fP = \fImodlist\fP : \fIfunction\fP
     ...
-    Button\fIj\fP : \fIfunction\fP
+    Button\fIj\fP = \fIfunction\fP
 }
 .EE
 or
@@ -1684,14 +1686,28 @@ or
 or
 .EX 0
 \fBRightTitleButton\fP "\fIbitmapname\fP" {
-    Button\fIi\fP : \fIfunction\fP
+    Button\fIi\fP = \fImodlist\fP : \fIfunction\fP
     ...
-    Button\fIj\fP : \fIfunction\fP
+    Button\fIj\fP = \fIfunction\fP
 }
 .EE
 The \fIbitmapname\fP may refer to one of the  built\-in bitmaps
 (which are scaled to match \fBTitleFont\fP) by using the appropriate
 colon\-prefixed name described above.
+.PP
+The pointer button specifications come in two forms, with a modifier
+list or without.  When the specification comes without a modifier
+list, it's used for the case when no modifiers are used.  In other
+words, the following two lines are equivalent:
+.EX 0
+    Button\fIi\fP = \fIfunction\fP
+.EE
+.EX 0
+    Button\fIi\fP = : \fIfunction\fP
+.EE
+.RE
+.IP "\fBKey and pointer buttons\fP" 4
+.RS 4
 .PP
 Key and pointer button specifications must give the modifiers that must
 be pressed, over which parts of the screen the pointer must be, and what
@@ -1755,6 +1771,9 @@ bound to key and button strokes.  To do this, \fIctwm\fP associates names
 with each of the primitives and provides \fIuser\-defined functions\fP for
 building higher level primitives and \fImenus\fP for interactively selecting
 among groups of functions.
+.RE
+.IP "\fBFunctions\fP" 4
+.RS 4
 .PP
 User\-defined functions contain the name by which they are referenced in
 calls to \fBf.function\fP and a list of other functions to execute.  For
@@ -2402,6 +2421,7 @@ the corresponding entry will be the default entry for this menu. When a menu
 has a default entry and is used as a submenu of another menu, this default entry
 action will be executed automatically when this submenu is selected without being
 displayed. It's hard to explain, but easy to understand.
+.RE
 .SH ICONS
 \fIctwm\fP supports several different ways of manipulating iconified windows.
 The common pixmap\-and\-text style may be laid out by hand or automatically

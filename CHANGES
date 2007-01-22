@@ -1588,3 +1588,19 @@ VirtualScreens {
    14 - Extend the Info window with the geometry seen from the lower
 	right corner as well.
 	[Richard Levitte]
+
+   15 - Extend the pointer button specification for title buttons
+	to take modifiers.
+	As part of this change, the following title pointer button
+	specification is deprecated:
+
+		Button {j} : {function}
+
+	in favor of the following, for consistency:
+
+		Button {j} = {function}
+
+	The old way still works, but is considered bad form and will
+	be removed in ctwm 4.0.
+	[Richard Levitte]
+

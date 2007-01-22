@@ -240,7 +240,7 @@ extern void SweepWindow (TwmWindow *tmp_win, Window blanket);
 extern int WarpCursorToDefaultEntry (MenuRoot *menu);
 extern void PlaceTransients(TwmWindow *tmp_win, int where);
 extern void PlaceOntop (int ontop, int where);
-extern void ModifyCurrentTB(int button, int func, char *action,
+extern void ModifyCurrentTB(int button, int mods, int func, char *action,
 			    MenuRoot *menuroot);
 extern void Execute(char *s);
 extern void ShowIconManager (void);

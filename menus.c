@@ -321,15 +321,33 @@ Bool AddFuncButton (int num, int cont, int mods, int func,
 
 static TitleButton *cur_tb = NULL;
 
-void ModifyCurrentTB(int button, int func, char *action, MenuRoot *menuroot)
+void ModifyCurrentTB(int button, int mods, int func, char *action,
+		     MenuRoot *menuroot)
 {
+    TitleButtonFunc *tbf;
+
     if (!cur_tb) {
         fprintf (stderr, "%s: can't find titlebutton\n", ProgramName);
-      return;
+	return;
     }
-    cur_tb->funs[button - 1].func = func;
-    cur_tb->funs[button - 1].action = action;
-    cur_tb->funs[button - 1].menuroot = menuroot;
+    for (tbf = cur_tb->funs; tbf; tbf = tbf->next) {
+	if (tbf->num == button && tbf->mods == mods)
+	    break;
+    }
+    if (!tbf) {
+	tbf = (TitleButtonFunc *)malloc(sizeof(TitleButtonFunc));
+	if (!tbf) {
+	    fprintf (stderr, "%s: out of memory\n", ProgramName);
+	    return;
+	}
+	tbf->next = cur_tb->funs;
+	cur_tb->funs = tbf;
+    }
+    tbf->num = button;
+    tbf->mods = mods;
+    tbf->func = func;
+    tbf->action = action;
+    tbf->menuroot = menuroot;
 }
 
 int CreateTitleButton (char *name, int func, char *action, MenuRoot *menuroot,
@@ -351,6 +369,7 @@ int CreateTitleButton (char *name, int func, char *action, MenuRoot *menuroot,
     cur_tb->width = 0;                        /* see InitTitlebarButtons */
     cur_tb->height = 0;                       /* ditto */
     cur_tb->rightside = rightside;
+    cur_tb->funs = NULL;
     if (rightside) {
 	Scr->TBInfo.nright++;
     } else {
@@ -358,9 +377,7 @@ int CreateTitleButton (char *name, int func, char *action, MenuRoot *menuroot,
     }
 
     for(button = 0; button < MAX_BUTTONS; button++){
-	cur_tb->funs[button].func = func;
-	cur_tb->funs[button].action = action;
-	cur_tb->funs[button].menuroot = menuroot;
+	ModifyCurrentTB(button + 1, 0, func, action, menuroot);
     }
 
     /*

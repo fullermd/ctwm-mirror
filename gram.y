@@ -146,7 +146,7 @@ extern int yylex(void);
 %token <ptr> STRING
 
 %type <ptr> string
-%type <num> action button number signed_number full fullkey
+%type <num> action button number signed_number keyaction full fullkey
 
 %start twmrc
 
@@ -501,6 +501,9 @@ narg		: NKEYWORD number	{ if (!do_number_keyword ($1, $2)) {
 
 
 
+keyaction	: EQUALS keys COLON action  { $$ = $4; }
+		;
+
 full		: EQUALS keys COLON contexts COLON action  { $$ = $6; }
 		;
 
@@ -581,7 +584,10 @@ binding_entries : /* Empty */
 		| binding_entries binding_entry
 		;
 
-binding_entry   : button COLON action { ModifyCurrentTB($1, $3, Action, pull);}
+binding_entry   : button keyaction { ModifyCurrentTB($1, mods, $2, Action, pull); mods = 0;}
+		| button EQUALS action { ModifyCurrentTB($1, 0, $3, Action, pull);}
+		/* The following is deprecated! */
+		| button COLON action { ModifyCurrentTB($1, 0, $3, Action, pull);}
 		;
 
 
