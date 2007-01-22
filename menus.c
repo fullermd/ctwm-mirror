@@ -4403,25 +4403,32 @@ static void Identify (TwmWindow *t)
 		      &wwidth, &wheight, &bw, &depth);
 	(void) XTranslateCoordinates (dpy, t->w, Scr->Root, 0, 0,
 				      &x, &y, &junk);
-	(void) sprintf(Info[n++], "Name             = \"%s\"", t->full_name);
-	(void) sprintf(Info[n++], "Class.res_name   = \"%s\"", t->class.res_name);
-	(void) sprintf(Info[n++], "Class.res_class  = \"%s\"", t->class.res_class);
+	(void) sprintf(Info[n++], "Name               = \"%s\"", t->full_name);
+	(void) sprintf(Info[n++], "Class.res_name     = \"%s\"", t->class.res_name);
+	(void) sprintf(Info[n++], "Class.res_class    = \"%s\"", t->class.res_class);
 	Info[n++][0] = '\0';
-	(void) sprintf(Info[n++], "Geometry/root    = %dx%d+%d+%d (Inner: %dx%d+%d+%d)",
+	(void) sprintf(Info[n++], "Geometry/root (UL)  = %dx%d+%d+%d (Inner: %dx%d+%d+%d)",
 		       wwidth + 2 * (bw + t->frame_bw3D),
 		       wheight + 2 * (bw + t->frame_bw3D) + t->title_height,
 		       x - (bw + t->frame_bw3D),
 		       y - (bw + t->frame_bw3D + t->title_height),
 		       wwidth, wheight, x, y);
-	(void) sprintf(Info[n++], "Border width     = %d", bw);
-	(void) sprintf(Info[n++], "3D border width  = %d", t->frame_bw3D);
-	(void) sprintf(Info[n++], "Depth            = %d", depth);
+	(void) sprintf(Info[n++], "Geometry/root (LR)  = %dx%d-%d-%d (Inner: %dx%d-%d-%d)",
+		       wwidth + 2 * (bw + t->frame_bw3D),
+		       wheight + 2 * (bw + t->frame_bw3D) + t->title_height,
+		       Scr->rootw - (x + wwidth + bw + t->frame_bw3D),
+		       Scr->rooth - (y + wheight + bw + t->frame_bw3D),
+		       wwidth, wheight,
+		       Scr->rootw - (x + wwidth), Scr->rooth - (y + wheight));
+	(void) sprintf(Info[n++], "Border width       = %d", bw);
+	(void) sprintf(Info[n++], "3D border width    = %d", t->frame_bw3D);
+	(void) sprintf(Info[n++], "Depth              = %d", depth);
 
 	if (XGetWindowProperty (dpy, t->w, _XA_WM_CLIENT_MACHINE, 0L, 64, False,
 				XA_STRING, &actual_type, &actual_format, &nitems,
 				&bytesafter, &prop) == Success) {
 	    if (nitems && prop) {
-		(void) sprintf(Info[n++], "Client machine   = %s", (char*)prop);
+		(void) sprintf(Info[n++], "Client machine     = %s", (char*)prop);
 		XFree ((char *) prop);
 	    }
 	}
