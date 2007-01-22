@@ -700,8 +700,17 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 
     if (Scr->AutoRaiseIcons || Scr->ShrinkIconTitles)
 	event_mask |= EnterWindowMask | LeaveWindowMask;
-    XSelectInput (dpy, icon->w,
-		  KeyPressMask | ButtonPressMask | ButtonReleaseMask | event_mask);
+    event_mask |= KeyPressMask | ButtonPressMask | ButtonReleaseMask;
+
+    if (tmp_win->icon_not_ours) {
+	XWindowAttributes wattr;
+
+        XGetWindowAttributes(dpy, icon->w, &wattr);
+        if (wattr.all_event_masks & ButtonPressMask) {
+            event_mask &= ~ButtonPressMask;
+	}
+    }
+    XSelectInput (dpy, icon->w, event_mask);
 
     if (icon->width == 0) icon->width = icon->w_width;
     icon->bm_w = None;

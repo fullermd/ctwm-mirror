@@ -833,7 +833,7 @@ static void xpmErrorMessage (int status, char *name, char *fullname)
 
 	case XpmOpenFailed:
 	    if (reportxpmerror && reportfilenotfound)
-		fprintf (stderr, "unable to locate XPM file : %s\n", name);
+		fprintf (stderr, "unable to locate XPM file : %s\n", fullname);
 	    return;
 
 	case XpmFileInvalid:

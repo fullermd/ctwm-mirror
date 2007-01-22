@@ -3890,9 +3890,9 @@ void PlaceTransients (TwmWindow *tmp_win, int where)
     
     sp = tmp_win->frame_width * tmp_win->frame_height;
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	if ((t->transient && t->transientfor == tmp_win->w) ||
-	    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
-	     (tmp_win->group != t->w))) {
+	if (t != tmp_win &&
+	    ((t->transient && t->transientfor == tmp_win->w) ||
+	     t->group == tmp_win->w)) {
 	    if (t->frame) {
 		sc = t->frame_width * t->frame_height;
 		if (sc < ((sp * Scr->TransientOnTop) / 100)) {
@@ -4000,8 +4000,7 @@ void RaiseFrame (Window frame)
 {
     TwmWindow *tmp_win;
 
-    if (XFindContext (dpy, frame, TwmContext, (XPointer *) &tmp_win) == XCNOENT)
-	tmp_win = NULL;
+    tmp_win = GetTwmWindow(frame);
 
     if (tmp_win != NULL) {
 	RaiseWindow(tmp_win);
@@ -4038,13 +4037,10 @@ void DeIconify(TwmWindow *tmp_win)
 	    Zoom(tmp_win->icon->w, tmp_win->frame);
 	else if (tmp_win->group != (Window) 0)
 	{
-	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
+	    t = GetTwmWindow(tmp_win->group);
+	    if (t && t->icon_on && t->icon && t->icon->w)
 	    {
-		if (tmp_win->group == t->w && t->icon_on && t->icon && t->icon->w)
-		{
-		    Zoom(t->icon->w, tmp_win->frame);
-		    break;
-		}
+		Zoom(t->icon->w, tmp_win->frame);
 	    }
 	}
     }
@@ -4076,11 +4072,12 @@ void DeIconify(TwmWindow *tmp_win)
 
 
     /* now de-iconify and window group transients */
+    /* find t such that it is a transient or group member window */
 	for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
 	{
-	  if ((t->transient && t->transientfor == tmp_win->w) ||
-	      ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
-	       (tmp_win->group != t->w) && t->isicon))
+	  if (t != tmp_win &&
+	      ((t->transient && t->transientfor == tmp_win->w) ||
+	       (t->group == tmp_win->w && t->isicon)))
 	    {
 	      if (t->icon_on)
 		Zoom(t->icon->w, t->frame);
@@ -4137,16 +4134,11 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
     t = (TwmWindow*) 0;
     if (tmp_win->transient) {
 	leader = tmp_win->transientfor;
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	    if (t->w == leader) break;
-	}
+	t = GetTwmWindow(leader);
     }
     else
-    if (tmp_win->group != tmp_win->w) {
-	leader = tmp_win->group;
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	    if ((t->w == leader) && (t->group == t->w)) break;
-	}
+    if ((leader = tmp_win->group) != 0 && leader != tmp_win->w) {
+	t = GetTwmWindow(leader);
     }
     if (t && t->icon_on) iconify = False;
     if (iconify)
@@ -4164,9 +4156,11 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
 		XMapRaised(dpy, tmp_win->icon->w);
 	}
     }
-    if (tmp_win->list)
-      for (wl = tmp_win->list; wl != NULL; wl = wl->nextv)
+    if (tmp_win->list) {
+      for (wl = tmp_win->list; wl != NULL; wl = wl->nextv) {
 	XMapWindow(dpy, wl->icon);
+      }
+    }
 
     XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
     eventMask = winattrs.your_event_mask;
@@ -4174,9 +4168,9 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
     /* iconify transients and window group first */
     for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
       {
-	if ((t->transient && (t->transientfor == tmp_win->w)) ||
-	    ((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
-		(tmp_win->group != t->w)))
+	if (t != tmp_win &&
+	    ((t->transient && t->transientfor == tmp_win->w) ||
+	     t->group == tmp_win->w))
 	  {
 	    if (iconify)
 	      {
@@ -4718,7 +4712,7 @@ void WarpAlongRing (XButtonEvent *ev, Bool forward)
 	WarpToWindow (r);
 
 	if (p && p->mapped &&
-	    XFindContext (dpy, ev->window, TwmContext, (XPointer *)&t) == XCSUCCESS &&
+	    (t = GetTwmWindow(ev->window)) &&
 	    p == t) {
 	    p->ring.cursor_valid = True;
 	    p->ring.curs_x = ev->x_root - t->frame_x;

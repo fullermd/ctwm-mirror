@@ -770,16 +770,12 @@ void SetupOccupation (TwmWindow *twm_win,
 
     if (! Scr->TransientHasOccupation) {
 	if (twm_win->transient) {
-	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-		if (twm_win->transientfor == t->w) break;
-	    }
+	    t = GetTwmWindow(twm_win->transientfor);
 	    if (t != NULL) twm_win->occupation = t->occupation;
 	}
 	else
-	if (twm_win->group != twm_win->w) {
-	    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-		if (t->w == twm_win->group) break;
-	    }
+	if (twm_win->group != 0) {
+	    t = GetTwmWindow(twm_win->group);
 	    if (t != NULL) twm_win->occupation = t->occupation;
 	}
     }
@@ -931,7 +927,16 @@ void Occupy (TwmWindow *twm_win)
     if (twm_win->iconmgr) return;
     if (! Scr->TransientHasOccupation) {
 	if (twm_win->transient) return;
-	if ((twm_win->group != (Window) 0) && (twm_win->group != twm_win->w)) return;
+	if (twm_win->group != (Window) 0 && twm_win->group != twm_win->w) {
+	    /*
+	     * When trying to modify a group member window,
+	     * operate on the group leader instead
+	     * (and thereby on all group member windows as well).
+	     */
+	    twm_win = GetTwmWindow(twm_win->group);
+	    if (!twm_win)
+		return;
+	}
     }
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
 	Window obuttonw = Scr->workSpaceMgr.occupyWindow->obuttonw [ws->number];
@@ -1501,9 +1506,9 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
 trans:
     if (! Scr->TransientHasOccupation) {
 	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	    if ((t->transient && t->transientfor == tmp_win->w) ||
-		((tmp_win->group == tmp_win->w) && (tmp_win->group == t->group) &&
-		(tmp_win->group != t->w))) {
+	    if (t != tmp_win &&
+		((t->transient && t->transientfor == tmp_win->w) ||
+		 t->group == tmp_win->w)) {
 		ChangeOccupation (t, newoccupation);
 	    }
 	}
@@ -2487,7 +2492,7 @@ void WMapRestack (WorkSpace *ws)
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
       j = 0;
       for (i = number - 1; i >= 0; i--) {
-	if (XFindContext (dpy, children [i], TwmContext, (XPointer *) &win) == XCNOENT) {
+	if (!(win = GetTwmWindow(children [i]))) {
 	    continue;
 	}
 	if (win->frame != children [i]) continue; /* skip icons */
@@ -3603,5 +3608,6 @@ Window   window;
     XConfigureWindow (display, window, CWStackMode, &changes);
 }
 #endif
+
 
 

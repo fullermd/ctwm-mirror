@@ -343,10 +343,21 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 				is buggy anyway */
     if (tmp_win->wmhints && !(tmp_win->wmhints->flags & InputHint))
 	tmp_win->wmhints->input = True;
-    if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint)) 
-      tmp_win->group = tmp_win->wmhints->window_group;
-    else
-	tmp_win->group = tmp_win->w/* NULL */;
+    if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint)) {
+	if (tmp_win->group = tmp_win->wmhints->window_group) {
+	    /*
+	     * GTK windows often have a spurious "group leader" window which is
+	     * never reported to us and therefore does not really exist.  This
+	     * is annoying because we treat group members a lot like transient
+	     * windows.  Look for that here. It is in fact a duplicate of the
+	     * WM_CLIENT_LEADER property.
+	     */
+	    if (tmp_win->group != w && !GetTwmWindow(tmp_win->group)) {
+		tmp_win->group = 0;
+	    }
+	} 
+    } else
+	tmp_win->group = 0;
 
     /*
      * The July 27, 1988 draft of the ICCCM ignores the size and position
@@ -444,11 +455,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	tmp_win->AlwaysSqueezeToGravity = False;
 
     if (tmp_win->transient || tmp_win->group) {
-	TwmWindow *t;
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
-	    if (tmp_win->transient && (tmp_win->transientfor == t->w)) break;
-	    if (tmp_win->group     && (tmp_win->group        == t->w)) break;
-	}
+	TwmWindow *t = NULL;
+	if (tmp_win->transient) t = GetTwmWindow(tmp_win->transient);
+	if (!t && tmp_win->group) t = GetTwmWindow(tmp_win->group);
 	if (t) tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
     }
     if ((Scr->WindowRingAll && !iswman &&
@@ -1366,23 +1375,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	}
     }
 
-    if (tmp_win->group && tmp_win->group != tmp_win->w) {
-      /*
-       * GTK windows often have a spurious "group leader" window which is
-       * never reported to us and therefore does not really exist. Look for
-       * that here. It is in fact a duplicate of the WM_CLIENT_LEADER
-       * property.
-       */
-
-      TwmWindow *groupleader; /* the current twm window */
-      stat = XFindContext(dpy, tmp_win->group, TwmContext, (XPointer *)&groupleader);
-      if (stat == XCNOENT)
-	groupleader = NULL;
-      if (!groupleader) {
-	tmp_win->group = tmp_win->w;
-      }
-    } 
-
     XUngrabServer(dpy);
 
     /* if we were in the middle of a menu activated function, regrab
@@ -1395,6 +1387,37 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     return (tmp_win);
 }
 
+/***********************************************************************
+ *
+ *  Procedure:
+ *	GetTwmWindow - finds the TwmWindow structure associated with
+ *		a Window (if any), or NULL.
+ *
+ *  Returned Value:
+ *	NULL	- it is not a Window we know about
+ *	otherwise- the TwmWindow *
+ *
+ *  Inputs:
+ *	w	- the window to check
+ *
+ *  Note:
+ *  	This is a relatively cheap function since it does not involve
+ *  	communication with the server. Probably faster than walking
+ *  	the list of TwmWindows, since the lookup is by a hash table.
+ *
+ ***********************************************************************
+ */
+TwmWindow *GetTwmWindow(Window w)
+{
+    TwmWindow *twmwin;
+    int stat;
+
+    stat = XFindContext(dpy, w, TwmContext, (XPointer *)&twmwin);
+    if (stat == XCNOENT)
+	twmwin = NULL;
+
+    return twmwin;
+}
 
 /***********************************************************************
  *

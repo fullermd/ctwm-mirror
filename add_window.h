@@ -72,6 +72,7 @@ extern int  resizeWhenAdd;
 
 extern void GetGravityOffsets (TwmWindow *tmp, int *xp, int *yp);
 extern TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp);
+extern TwmWindow *GetTwmWindow(Window w);
 extern void DeleteHighlightWindows(TwmWindow *tmp_win);
 extern int MappedNotOverride(Window w);
 extern void AddDefaultBindings (void);

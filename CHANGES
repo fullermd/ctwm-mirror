@@ -1607,3 +1607,28 @@ VirtualScreens {
    16 - Fix position of buttons in Occupy window, to make them centered.
 	(and spread the remaining space evenly in 4).
 	[Olaf "Rhialto" Seibert]
+
+   17 - "TwmWindow.group" was once apparently set to 0 when a window had
+	no group leader but this was changed to pointing to its own
+	window.  This resulted however in many places checking for both
+	conditions, and several checking only for 0 which could not
+	occur anymore. Changed it back to 0 (so we can now distinguish
+	again windows that really indicate themselves as group leader,
+	if we wish) and this gave rise to some simplifications.
+
+	Also, there were various loops through all TwmWindows looking
+	for a group leader (or a transientfor), I replaced them with
+	GetTwmWindow() which uses the Xlib function XFindContext() which
+	uses a hash table lookup. This should be more efficient.
+
+	When you change the occupation of a group member window, it is
+	now applied to the group leader (which in turn affects all
+	members).
+
+	I tried this with ExMH, the only program that uses a real group
+	leader that I could find. Iconifying the leader unmaps the
+	members. What should "squeezing" do? ExMH also has an icon
+	window (see ICCCM 4.1.9, 3rd option) which behaves weirdly; this
+	may be a bug in ExMH (see exmh-2.7.2/exmh.BUGS) even though fvwm
+	somehow handles it better.
+	[Olaf "Rhialto" Seibert]

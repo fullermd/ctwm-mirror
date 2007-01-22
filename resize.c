@@ -626,7 +626,7 @@ void EndResize(void)
     MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
     XUnmapWindow(dpy, Scr->SizeWindow);
 
-    XFindContext(dpy, ResizeWindow, TwmContext, (XPointer *)&tmp_win);
+    tmp_win = GetTwmWindow(ResizeWindow);
 
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
 

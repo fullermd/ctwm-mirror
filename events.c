@@ -441,8 +441,7 @@ Bool DispatchEvent2 (void)
     Window w = Event.xany.window;
     StashEventTime (&Event);
 
-    if (XFindContext (dpy, w, TwmContext, (XPointer *) &Tmp_win) == XCNOENT)
-      Tmp_win = NULL;
+    Tmp_win = GetTwmWindow(w);
 
     if (XFindContext (dpy, w, ScreenContext, (XPointer *)&Scr) == XCNOENT) {
 	Scr = FindScreenInfo (WindowOfEvent (&Event));
@@ -479,8 +478,7 @@ Bool DispatchEvent (void)
     Window w = Event.xany.window;
     StashEventTime (&Event);
 
-    if (XFindContext (dpy, w, TwmContext, (XPointer *) &Tmp_win) == XCNOENT)
-      Tmp_win = NULL;
+    Tmp_win = GetTwmWindow(w);
 
     if (XFindContext (dpy, w, ScreenContext, (XPointer *)&Scr) == XCNOENT) {
 	Scr = FindScreenInfo (WindowOfEvent (&Event));
@@ -1204,8 +1202,7 @@ void HandleKeyPress(void)
 	else
 	if (AlternateKeymap && Event.xkey.subwindow) {
 	    w = Event.xkey.subwindow;
-	    if (XFindContext (dpy, w, TwmContext, (XPointer *) &Tmp_win) == XCNOENT)
-		Tmp_win = NULL;
+	    Tmp_win = GetTwmWindow(w);
 	    if (Tmp_win) Event.xany.window = Tmp_win->w;
 	}
 	else Context = C_ROOT;
@@ -1564,8 +1561,11 @@ void HandlePropertyNotify(void)
 	if (Tmp_win->wmhints) XFree ((char *) Tmp_win->wmhints);
 	Tmp_win->wmhints = XGetWMHints(dpy, Event.xany.window);
 
-	if (Tmp_win->wmhints && (Tmp_win->wmhints->flags & WindowGroupHint))
-	  Tmp_win->group = Tmp_win->wmhints->window_group;
+	if (Tmp_win->wmhints && (Tmp_win->wmhints->flags & WindowGroupHint)) {
+	    Tmp_win->group = Tmp_win->wmhints->window_group;
+	    if (Tmp_win->group && !GetTwmWindow(Tmp_win->group))
+		Tmp_win->group = 0;	/* see comment in AddWindow() */
+	}
 
 	if (!Tmp_win->forced && Tmp_win->wmhints &&
 	    Tmp_win->wmhints->flags & IconWindowHint) {
@@ -2331,13 +2331,10 @@ void HandleCreateNotify(void)
 
 void HandleMapRequest(void)
 {
-    int stat;
     int zoom_save;
 
     Event.xany.window = Event.xmaprequest.window;
-    stat = XFindContext(dpy, Event.xany.window, TwmContext, (XPointer *)&Tmp_win);
-    if (stat == XCNOENT)
-	Tmp_win = NULL;
+    Tmp_win = GetTwmWindow(Event.xany.window);
 
     /* If the window has never been mapped before ... */
     if (Tmp_win == NULL)
@@ -2507,9 +2504,7 @@ void HandleUnmapNotify(void)
     if (Tmp_win == NULL)
     {
 	Event.xany.window = Event.xunmap.window;
-	if (XFindContext(dpy, Event.xany.window,
-	    TwmContext, (XPointer *)&Tmp_win) == XCNOENT)
-	    Tmp_win = NULL;
+	Tmp_win = GetTwmWindow(Event.xany.window);
     }
 
     if (Tmp_win == NULL || Event.xunmap.window == Tmp_win->frame ||
@@ -2584,7 +2579,7 @@ void HandleMotionNotify(void)
 	    || abs (Event.xmotion.y - ResizeOrigY) >= Scr->MoveDelta)
 	  WindowMoved = TRUE;
 
-	XFindContext(dpy, ResizeWindow, TwmContext, (XPointer *)&Tmp_win);
+	Tmp_win = GetTwmWindow(ResizeWindow);
 	if (Tmp_win && Tmp_win->winbox) {
 	    XTranslateCoordinates (dpy, Scr->Root, Tmp_win->winbox->window,
 		Event.xmotion.x_root, Event.xmotion.y_root,
@@ -2629,7 +2624,7 @@ void HandleButtonRelease(void)
     {
 	MoveOutline(Scr->XineramaRoot, 0, 0, 0, 0, 0, 0);
 
-	XFindContext(dpy, DragWindow, TwmContext, (XPointer *)&Tmp_win);
+	Tmp_win = GetTwmWindow(DragWindow);
 	if (Tmp_win->winbox) {
 	    XTranslateCoordinates (dpy, Scr->Root, Tmp_win->winbox->window,
 		Event.xbutton.x_root, Event.xbutton.y_root,
@@ -3040,8 +3035,7 @@ void HandleButtonPress(void)
 	    Window child;
 
 	    w = Event.xbutton.subwindow;
-	    if (XFindContext (dpy, w, TwmContext, (XPointer *) &Tmp_win) == XCNOENT)
-		Tmp_win = NULL;
+	    Tmp_win = GetTwmWindow(w);
 	    if (Tmp_win) {
 		Event.xany.window    = Tmp_win->frame;
 		XTranslateCoordinates (dpy, Scr->Root, Tmp_win->frame,
@@ -3120,8 +3114,7 @@ void HandleButtonPress(void)
 		    XTranslateCoordinates (dpy, Tmp_win->w, JunkChild,
 			Event.xbutton.x, Event.xbutton.y,
 			&JunkX, &JunkY, &JunkChild);
-		    if (JunkChild && XFindContext (dpy, JunkChild, TwmContext,
-			    (XPointer*) &Tmp_win) != XCNOENT) {
+		    if (JunkChild && (Tmp_win = GetTwmWindow(JunkChild))) {
 			Event.xany.window = JunkChild;
 			Event.xbutton.x   = JunkX;
 			Event.xbutton.y   = JunkY;
@@ -3174,8 +3167,7 @@ void HandleButtonPress(void)
 		&JunkX, &JunkY, &Event.xany.window);
 
 	    if (Event.xany.window != 0 &&
-		(XFindContext(dpy, Event.xany.window, TwmContext,
-			      (XPointer *)&Tmp_win) != XCNOENT)) {
+		(Tmp_win = GetTwmWindow(Event.xany.window))) {
 		if (Tmp_win->iswinbox) {
 		    XTranslateCoordinates (dpy, Scr->Root, Event.xany.window,
 			JunkX, JunkY,  &JunkX, &JunkY, &win);
@@ -3185,8 +3177,7 @@ void HandleButtonPress(void)
 		}
 	    }
 	    if (Event.xany.window == 0 ||
-		(XFindContext(dpy, Event.xany.window, TwmContext,
-			      (XPointer *)&Tmp_win) == XCNOENT))
+		!(Tmp_win = GetTwmWindow(Event.xany.window)))
 	    {
 		RootFunction = 0;
 		XBell(dpy, 0);
@@ -3869,10 +3860,7 @@ void HandleConfigureRequest(void)
      * be wrong
      */
     Event.xany.window = cre->window;	/* mash parent field */
-    if (XFindContext (dpy, cre->window, TwmContext, (XPointer *) &Tmp_win) ==
-	XCNOENT)
-      Tmp_win = NULL;
-
+    Tmp_win = GetTwmWindow(cre->window);
 
     /*
      * According to the July 27, 1988 ICCCM draft, we should ignore size and
@@ -3897,8 +3885,7 @@ void HandleConfigureRequest(void)
 	TwmWindow *otherwin;
 
 	xwc.sibling = (((cre->value_mask & CWSibling) &&
-			(XFindContext (dpy, cre->above, TwmContext,
-				       (XPointer *) &otherwin) == XCSUCCESS))
+			(otherwin = GetTwmWindow(cre->above)))
 		       ? otherwin->frame : cre->above);
 	xwc.stack_mode = cre->detail;
 	XConfigureWindow (dpy, Tmp_win->frame, 
