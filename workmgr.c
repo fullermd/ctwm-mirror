@@ -1943,17 +1943,17 @@ static void CreateOccupyWindow (void) {
     occupyButtoncp.fore = Scr->White;
     if (!Scr->BeNiceToColormap) GetShadeColors (&occupyButtoncp);
 
-    hspace = (width - 3 * owidth) / 3;
-    x  = hspace / 2;
+    hspace = (width - 3 * owidth) / 4;
+    x  = hspace;
     y  = ((bheight + vspace) * lines) + ((3 * vspace) / 2);
     OK = XCreateSimpleWindow (dpy, w, x, y, owidth, oheight, 0,
 			Scr->Black, occupyButtoncp.back);
     XMapWindow (dpy, OK);
-    x += owidth + vspace;
+    x += owidth + hspace;
     cancel = XCreateSimpleWindow (dpy, w, x, y, owidth, oheight, 0,
 			Scr->Black, occupyButtoncp.back);
     XMapWindow (dpy, cancel);
-    x += owidth + vspace;
+    x += owidth + hspace;
     allworkspc = XCreateSimpleWindow (dpy, w, x, y, owidth, oheight, 0,
 			Scr->Black, occupyButtoncp.back);
     XMapWindow (dpy, allworkspc);

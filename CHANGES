@@ -1604,3 +1604,6 @@ VirtualScreens {
 	be removed in ctwm 4.0.
 	[Richard Levitte]
 
+   16 - Fix position of buttons in Occupy window, to make them centered.
+	(and spread the remaining space evenly in 4).
+	[Olaf "Rhialto" Seibert]
