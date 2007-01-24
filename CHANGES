@@ -1632,3 +1632,7 @@ VirtualScreens {
 	may be a bug in ExMH (see exmh-2.7.2/exmh.BUGS) even though fvwm
 	somehow handles it better.
 	[Olaf "Rhialto" Seibert]
+
+   18 - When Squeezing a window group leader, unmap the member windows,
+	just like happens with iconification.
+	[Olaf "Rhialto" Seibert]
