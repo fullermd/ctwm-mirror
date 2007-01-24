@@ -4024,13 +4024,63 @@ void FocusOnRoot(void)
     if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
 }
 
-void DeIconify(TwmWindow *tmp_win)
+static void ReMapOne(TwmWindow *t, TwmWindow *leader)
+{
+    if (t->icon_on)
+	Zoom(t->icon->w, t->frame);
+    else if (leader->icon)
+	Zoom(leader->icon->w, t->frame);
+
+    if (!t->squeezed)
+	XMapWindow(dpy, t->w);
+    t->mapped = TRUE;
+    if (Scr->Root != Scr->CaptiveRoot)	/* XXX dubious test */
+	XReparentWindow (dpy, t->frame, Scr->Root, t->frame_x, t->frame_y);
+    if (Scr->NoRaiseDeicon)
+	XMapWindow(dpy, t->frame);
+    else
+	MapRaised(t);
+    SetMapStateProp(t, NormalState);
+
+    if (t->icon && t->icon->w) {
+	XUnmapWindow(dpy, t->icon->w);
+	IconDown(t);
+	if (Scr->ShrinkIconTitles)
+	    t->icon->title_shrunk = True;
+    }
+    if (t->list) {
+	WList *wl;
+
+	for (wl = t->list; wl != NULL; wl = wl->nextv)
+	    XUnmapWindow(dpy, t->list->icon);
+    }
+    t->isicon = FALSE;
+    t->icon_on = FALSE;
+    WMapDeIconify(t);
+}
+
+static void ReMapTransients(TwmWindow *tmp_win)
 {
     TwmWindow *t;
+
+    /* find t such that it is a transient or group member window */
+    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+	if (t != tmp_win &&
+		((t->transient && t->transientfor == tmp_win->w) ||
+		 (t->group == tmp_win->w && t->isicon))) {
+	    ReMapOne(t, tmp_win);
+	}
+    }
+}
+
+void DeIconify(TwmWindow *tmp_win)
+{
+    TwmWindow *t = tmp_win;
     WList *wl;
 
     /* de-iconify the main window */
-    if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
+    if (Scr->WindowMask)
+	XRaiseWindow (dpy, Scr->WindowMask);
     if (tmp_win->isicon)
     {
 	if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w)
@@ -4045,67 +4095,16 @@ void DeIconify(TwmWindow *tmp_win)
 	}
     }
 
-    if (!tmp_win->squeezed) XMapWindow(dpy, tmp_win->w);
-    tmp_win->mapped = TRUE;
-    if (Scr->Root != Scr->CaptiveRoot)
-	XReparentWindow (dpy, tmp_win->frame, Scr->Root, tmp_win->frame_x, tmp_win->frame_y);
-    if (Scr->NoRaiseDeicon) {
-      XMapWindow (dpy, tmp_win->frame);
-    } else
-	MapRaised(tmp_win);
-    SetMapStateProp(tmp_win, NormalState);
+    ReMapOne(tmp_win, t);
 
-    if (tmp_win->icon && tmp_win->icon->w) {
-	XUnmapWindow(dpy, tmp_win->icon->w);
-	IconDown (tmp_win);
-	if (Scr->ShrinkIconTitles) tmp_win->icon->title_shrunk = True;
-    }
-    if (tmp_win->list)
-      for (wl = tmp_win->list; wl != NULL; wl = wl->nextv)
-	XUnmapWindow(dpy, wl->icon);
     if ((Scr->WarpCursor ||
 	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)) &&
 	tmp_win->isicon)
       WarpToWindow (tmp_win);
-    tmp_win->isicon = FALSE;
-    tmp_win->icon_on = FALSE;
-
 
     /* now de-iconify and window group transients */
-    /* find t such that it is a transient or group member window */
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
-	{
-	  if (t != tmp_win &&
-	      ((t->transient && t->transientfor == tmp_win->w) ||
-	       (t->group == tmp_win->w && t->isicon)))
-	    {
-	      if (t->icon_on)
-		Zoom(t->icon->w, t->frame);
-	      else
-	      if (tmp_win->icon)
-		Zoom(tmp_win->icon->w, t->frame);
-	      
-	      if (!t->squeezed) XMapWindow(dpy, t->w);
-	      t->mapped = TRUE;
-	      if (Scr->Root != Scr->CaptiveRoot)
-		XReparentWindow (dpy, t->frame, Scr->Root, t->frame_x, t->frame_y);
-	      if (Scr->NoRaiseDeicon)
-		XMapWindow(dpy, t->frame);
-	      else
-		MapRaised(t);
-	      SetMapStateProp(t, NormalState);
-	      
-	      if (t->icon && t->icon->w) {
-		XUnmapWindow(dpy, t->icon->w);
-		IconDown (t);
-	      }
-	      if (t->list) XUnmapWindow(dpy, t->list->icon);
-	      t->isicon = FALSE;
-	      t->icon_on = FALSE;
-	      WMapDeIconify (t);
-	    }
-	}
-    WMapDeIconify (tmp_win);
+    ReMapTransients(tmp_win);
+
     if (! Scr->WindowMask && Scr->DeIconifyFunction.func != 0) {
 	char *action;
 	XEvent event;
@@ -4119,6 +4118,43 @@ void DeIconify(TwmWindow *tmp_win)
 }
 
 
+static void UnmapTransients(TwmWindow *tmp_win, int iconify, unsigned long eventMask)
+{
+    TwmWindow *t;
+
+    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+	if (t != tmp_win &&
+		((t->transient && t->transientfor == tmp_win->w) ||
+		 t->group == tmp_win->w)) {
+	    if (iconify) {
+		if (t->icon_on)
+		    Zoom(t->icon->w, tmp_win->icon->w);
+		else if (tmp_win->icon)
+		    Zoom(t->frame, tmp_win->icon->w);
+	    }
+
+	    /*
+	     * Prevent the receipt of an UnmapNotify, since that would
+	     * cause a transition to the Withdrawn state.
+	     */
+	    t->mapped = FALSE;
+	    XSelectInput(dpy, t->w, eventMask & ~StructureNotifyMask);
+	    XUnmapWindow(dpy, t->w);
+	    XUnmapWindow(dpy, t->frame);
+	    XSelectInput(dpy, t->w, eventMask);
+	    if (t->icon && t->icon->w) XUnmapWindow(dpy, t->icon->w);
+	    SetMapStateProp(t, IconicState);
+	    if (t == Scr->Focus) {
+		SetFocus ((TwmWindow *) NULL, LastTimestamp());
+		if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
+	    }
+	    if (t->list) XMapWindow(dpy, t->list->icon);
+	    t->isicon = TRUE;
+	    t->icon_on = FALSE;
+	    WMapIconify (t);
+	}
+    } 
+}
 
 void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
 {
@@ -4166,43 +4202,7 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
     eventMask = winattrs.your_event_mask;
 
     /* iconify transients and window group first */
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
-      {
-	if (t != tmp_win &&
-	    ((t->transient && t->transientfor == tmp_win->w) ||
-	     t->group == tmp_win->w))
-	  {
-	    if (iconify)
-	      {
-		if (t->icon_on)
-			Zoom(t->icon->w, tmp_win->icon->w);
-		else
-		if (tmp_win->icon)
-		  Zoom(t->frame, tmp_win->icon->w);
-	      }
-	    
-	    /*
-	     * Prevent the receipt of an UnmapNotify, since that would
-	     * cause a transition to the Withdrawn state.
-	     */
-	    t->mapped = FALSE;
-	    XSelectInput(dpy, t->w, eventMask & ~StructureNotifyMask);
-	    XUnmapWindow(dpy, t->w);
-	    XUnmapWindow(dpy, t->frame);
-	    XSelectInput(dpy, t->w, eventMask);
-	    if (t->icon && t->icon->w) XUnmapWindow(dpy, t->icon->w);
-	    SetMapStateProp(t, IconicState);
-	    if (t == Scr->Focus)
-	      {
-		SetFocus ((TwmWindow *) NULL, LastTimestamp());
-		if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
-	      }
-	    if (t->list) XMapWindow(dpy, t->list->icon);
-	    t->isicon = TRUE;
-	    t->icon_on = FALSE;
-	    WMapIconify (t);
-	  }
-      } 
+    UnmapTransients(tmp_win, iconify, eventMask);
     
     if (iconify) Zoom(tmp_win->frame, tmp_win->icon->w);
 
@@ -4297,6 +4297,7 @@ void Squeeze (TwmWindow *tmp_win)
 	if (!tmp_win->isicon) XMapWindow (dpy, tmp_win->w);
 	SetupWindow (tmp_win, tmp_win->actual_frame_x, tmp_win->actual_frame_y,
 		     tmp_win->actual_frame_width, tmp_win->actual_frame_height, -1);
+	ReMapTransients(tmp_win);
 	return;
     }
 
@@ -4348,6 +4349,9 @@ void Squeeze (TwmWindow *tmp_win)
     SetupWindow (tmp_win, fx, fy, neww, newh, -1);
     tmp_win->actual_frame_x = savex;
     tmp_win->actual_frame_y = savey;
+
+    /* Now make the group members disappear */
+    UnmapTransients(tmp_win, 0, eventMask);
 }
 
 static void Identify (TwmWindow *t)
