@@ -1604,6 +1604,13 @@ WorkSpaces
 .IP
 The WorkSpaces declaration should come before the Occupy or OccupyAll
 declarations. The maximum number of workspaces is 32.
+.IP
+Each workspace also has a label, which is displayed in the
+WorkSpaceManager window when it is in button state.
+By moving the mouse cursor over a button and typing letters and/or
+backspace, you may edit the label.
+The name is unaffected.
+Functions that look up workspaces by name also look at the label.
 
 .IP "\fBXMoveGrid\fP \fInumber\fP" 8
 This variable specifies the value to use to constrain window movement.

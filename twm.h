@@ -348,7 +348,7 @@ struct TwmWindow
     XWMHints *wmhints;		/* WM hints */
     Window group;		/* group ID */
     XClassHint class;
-    struct WList *list;
+    struct WList *list;		/* iconmanager subwindows */
     /***********************************************************************
      * color definitions per window
      **********************************************************************/
