@@ -161,6 +161,7 @@ void AddWorkSpace (char *name,
 		   char *background, char *foreground,
 		   char *backback, char *backfore, char *backpix);
 void SetupOccupation (TwmWindow *twm_win, int occupation_hint);
+int CanChangeOccupation(TwmWindow **twm_winp);
 void Occupy (TwmWindow *twm_win);
 void OccupyHandleButtonEvent (XEvent *event);
 void OccupyAll (TwmWindow *twm_win);

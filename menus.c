@@ -4076,7 +4076,6 @@ static void ReMapTransients(TwmWindow *tmp_win)
 void DeIconify(TwmWindow *tmp_win)
 {
     TwmWindow *t = tmp_win;
-    WList *wl;
 
     /* de-iconify the main window */
     if (Scr->WindowMask)

@@ -959,7 +959,6 @@ void Occupy (TwmWindow *twm_win)
     int	       	 xoffset, yoffset;
     Window     	 junkW, w;
     unsigned int junkK;
-    WorkSpace	 *ws;
     struct OccupyWindow    *occupyWindow;
 
     if (!CanChangeOccupation(&twm_win))
@@ -1139,7 +1138,9 @@ void MoveToNextWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
 
     MoveToNextWorkSpace(vs, twm_win);
     GotoNextWorkSpace(vs);
-    /* RaiseWindow(twm_win);	/* XXX really do this? */
+#if 0
+    RaiseWindow(twm_win);	/* XXX really do this? */
+#endif
 }
 
 
@@ -1171,7 +1172,9 @@ void MoveToPrevWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
 
     MoveToPrevWorkSpace(vs, twm_win);
     GotoPrevWorkSpace(vs);
-    /* RaiseWindow(twm_win);		/* XXX really do this? */
+#if 0
+    RaiseWindow(twm_win);		/* XXX really do this? */
+#endif
 }
 
 static WorkSpace *GetWorkspace (char *wname)
@@ -2026,7 +2029,6 @@ static void PaintButton (int which,
     int        bwidth, bheight;
     MyFont     font;
     int        strWid, strHei, hspace, vspace;
-    XFontSetExtents *font_extents;
     XRectangle inc_rect;
     XRectangle logical_rect;
 
@@ -2304,7 +2306,6 @@ int WMapWindowMayBeAdded(TwmWindow *win)
 
 void WMapAddWindow (TwmWindow *win)
 {
-    virtualScreen *vs;
     WorkSpace     *ws;
 
     if (!WMapWindowMayBeAdded(win))
