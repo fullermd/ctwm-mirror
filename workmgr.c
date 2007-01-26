@@ -106,6 +106,8 @@ static void ResizeOccupyWindow		(TwmWindow *win);
 static WorkSpace *GetWorkspace		(char *wname);
 static void WMapRedrawWindow		(Window window, int width, int height,
 					 ColorPair cp, char *label);
+static int CanChangeOccupation          (TwmWindow **twm_winp);
+void safecopy                           (char *dest, char *src, int size);
 
 Atom _XA_WM_OCCUPATION;
 Atom _XA_WM_CURRENTWORKSPACE;
@@ -851,6 +853,12 @@ void SetupOccupation (TwmWindow *twm_win,
     }
 }
 
+void safecopy(char *dest, char *src, int size)
+{
+    strncpy(dest, src, size - 1);
+    dest[size - 1] = '\0';
+}
+
 Bool RedirectToCaptive (Window window)
 {
     unsigned char	*prop;
@@ -880,7 +888,7 @@ Bool RedirectToCaptive (Window window)
     status = XrmGetResource (db, "ctwm.redirect", "Ctwm.Redirect", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
 	char cctwm [64];
-	strncpy (cctwm, value.addr, value.size);
+	safecopy (cctwm, value.addr, 64);
 	atomname = (char*) malloc (strlen ("WM_CTWM_ROOT_") + strlen (cctwm) + 1);
 	sprintf (atomname, "WM_CTWM_ROOT_%s", cctwm);
 	_XA_WM_CTWM_ROOT = XInternAtom (dpy, atomname, False);
@@ -902,8 +910,11 @@ Bool RedirectToCaptive (Window window)
     status = XrmGetResource (db, "ctwm.rootWindow", "Ctwm.RootWindow", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
 	char rootw [32];
-	strncpy (rootw, value.addr, value.size);
-	if (sscanf (rootw, "%x", &newroot) == 1) {
+	unsigned int scanned;
+
+	safecopy (rootw, value.addr, 32);
+	if (sscanf (rootw, "%x", &scanned) == 1) {
+	    newroot = scanned;
 	    if (XGetWindowAttributes (dpy, newroot, &wa)) {
 		XReparentWindow (dpy, window, newroot, 0, 0);
 		XMapWindow (dpy, window);
@@ -921,7 +932,7 @@ Bool RedirectToCaptive (Window window)
  */
 static TwmWindow *occupyWin = (TwmWindow*) 0;
 
-int CanChangeOccupation(TwmWindow **twm_winp)
+static int CanChangeOccupation(TwmWindow **twm_winp)
 {
     TwmWindow *twm_win;
 
@@ -1351,7 +1362,6 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
     unsigned long     eventMask;
     long      gwkspc = 0; /* for gnome - the workspace of this window */
     int changedoccupation;
-    int mask;
 #ifdef GNOME
     unsigned char *prop;
     unsigned long bytesafter, numitems;
@@ -1409,7 +1419,7 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
       }
     }
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	mask = 1 << ws->number;
+	int mask = 1 << ws->number;
 	if (oldoccupation & mask) {
 	    if (!(newoccupation & mask)) {
 		RemoveWindowFromRegion (tmp_win);
@@ -2488,12 +2498,12 @@ void WMapRestack (WorkSpace *ws)
 	if (win->frame != children [i]) continue; /* skip icons */
 	if (! OCCUPY (win, ws)) continue;
 	if (tracefile) {
-	    fprintf (tracefile, "WMapRestack : w = %lx, win = %p\n", children [i], win);
+	    fprintf (tracefile, "WMapRestack : w = %lx, win = %p\n", children [i], (void *)win);
 	    fflush (tracefile);
 	}
 	for (wl = vs->wsw->mswl [ws->number]->wl; wl != NULL; wl = wl->next) {
 	if (tracefile) {
-	    fprintf (tracefile, "WMapRestack : wl = %p, twm_win = %p\n", wl, wl->twm_win);
+	    fprintf (tracefile, "WMapRestack : wl = %p, twm_win = %p\n", (void *)wl, (void *)wl->twm_win);
 	    fflush (tracefile);
 	}
 	    if (win == wl->twm_win) {
@@ -2552,7 +2562,8 @@ void WMgrHandleKeyPressEvent (virtualScreen *vs, XEvent *event)
 {
     WorkSpace *ws;
     int	      len, i, lname;
-    char      key [16], k;
+    char      key [16];
+    unsigned char k;
     char      name [128];
     char      *keyname;
     KeySym    keysym;

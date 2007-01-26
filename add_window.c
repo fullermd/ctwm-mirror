@@ -344,7 +344,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     if (tmp_win->wmhints && !(tmp_win->wmhints->flags & InputHint))
 	tmp_win->wmhints->input = True;
     if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint)) {
-	if (tmp_win->group = tmp_win->wmhints->window_group) {
+	tmp_win->group = tmp_win->wmhints->window_group;
+	if (tmp_win->group) {
 	    /*
 	     * GTK windows often have a spurious "group leader" window which is
 	     * never reported to us and therefore does not really exist.  This
