@@ -1835,7 +1835,6 @@ field of the binding command. For example:
 "o"	= a1	: window|icon	: f.occupy
 "r"	= a1	: window|icon	: f.refresh
 .EE
-.PP
 When using an alternate keymaps, only the root, window, icon and iconmgr
 contexts are allowed.
 
