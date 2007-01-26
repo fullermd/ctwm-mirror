@@ -888,7 +888,7 @@ Bool RedirectToCaptive (Window window)
     status = XrmGetResource (db, "ctwm.redirect", "Ctwm.Redirect", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
 	char cctwm [64];
-	safecopy (cctwm, value.addr, 64);
+	safecopy (cctwm, value.addr, sizeof(cctwm));
 	atomname = (char*) malloc (strlen ("WM_CTWM_ROOT_") + strlen (cctwm) + 1);
 	sprintf (atomname, "WM_CTWM_ROOT_%s", cctwm);
 	_XA_WM_CTWM_ROOT = XInternAtom (dpy, atomname, False);
@@ -912,7 +912,7 @@ Bool RedirectToCaptive (Window window)
 	char rootw [32];
 	unsigned int scanned;
 
-	safecopy (rootw, value.addr, 32);
+	safecopy (rootw, value.addr, sizeof(rootw));
 	if (sscanf (rootw, "%x", &scanned) == 1) {
 	    newroot = scanned;
 	    if (XGetWindowAttributes (dpy, newroot, &wa)) {
