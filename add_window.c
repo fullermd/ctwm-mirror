@@ -457,7 +457,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     if (tmp_win->transient || tmp_win->group) {
 	TwmWindow *t = NULL;
-	if (tmp_win->transient) t = GetTwmWindow(tmp_win->transient);
+	if (tmp_win->transient) t = GetTwmWindow(tmp_win->transientfor);
 	if (!t && tmp_win->group) t = GetTwmWindow(tmp_win->group);
 	if (t) tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
     }
