@@ -414,16 +414,13 @@ struct TwmWindow
     struct virtualScreen *old_parent_vs;
     struct virtualScreen *savevs;
 
-#ifdef X11R6
     Bool nameChanged;	/* did WM_NAME ever change? */
     /* did the user ever change the width/height? {yes, no, or unknown} */
     Bool widthEverChangedByUser;
     Bool heightEverChangedByUser;
-#endif
 
 };
 
-#ifdef X11R6
 struct TWMWinConfigEntry
 {
     struct TWMWinConfigEntry *next;
@@ -449,7 +446,6 @@ struct TWMWinConfigEntry
    /* ====================================================================== */
 
 };
-#endif
 
 #define DoesWmTakeFocus		(1L << 0)
 #define DoesWmSaveYourself	(1L << 1)
@@ -503,9 +499,7 @@ void RestoreWithdrawnLocation (TwmWindow *tmp);
 extern char *ProgramName;
 extern Display *dpy;
 extern char *display_name;
-#ifdef X11R6
-  extern XtAppContext appContext;
-#endif
+extern XtAppContext appContext;
 extern Window ResizeWindow;	/* the window we are resizing */
 extern int HasShape;		/* this server supports Shape extension */
 
@@ -566,11 +560,9 @@ extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
 extern Atom _XA_WM_CLIENT_MACHINE;
-#ifdef X11R6
-  extern Atom _XA_SM_CLIENT_ID;
-  extern Atom _XA_WM_CLIENT_LEADER;
-  extern Atom _XA_WM_WINDOW_ROLE;
-#endif
+extern Atom _XA_SM_CLIENT_ID;
+extern Atom _XA_WM_CLIENT_LEADER;
+extern Atom _XA_WM_WINDOW_ROLE;
 
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
 #define VISIBLE(w) OCCUPY(w, Scr->workSpaceMgr.activeWSPC)

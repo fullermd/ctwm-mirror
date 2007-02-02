@@ -51,7 +51,6 @@
  */
 
 #define VERSION_ID "3.8devel"
-#define VERSION_I18N " + I18N Patch"
 
-char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID VERSION_I18N;
+char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID;
 char *VersionNumber = VERSION_ID;

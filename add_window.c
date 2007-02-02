@@ -95,9 +95,7 @@
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
-#ifdef X11R6
-#  include "session.h"
-#endif
+#include "session.h"
 
 #define gray_width 2
 #define gray_height 2
@@ -212,7 +210,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     int gravx, gravy;			/* gravity signs for positioning */
     int namelen;
     int bw2;
-#ifdef X11R6
     short saved_x, saved_y, restore_icon_x, restore_icon_y;
     unsigned short saved_width, saved_height;
     Bool restore_iconified = 0;
@@ -221,7 +218,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     Bool width_ever_changed_by_user;
     Bool height_ever_changed_by_user;
     int saved_occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
-#endif
     Bool        random_placed = False;
     int		found = 0;
 #ifndef VMS
@@ -277,7 +273,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     FetchWmProtocols (tmp_win);
     FetchWmColormapWindows (tmp_win);
 
-#ifdef X11R6
     if (GetWindowConfig (tmp_win,
 	&saved_x, &saved_y, &saved_width, &saved_height,
 	&restore_iconified, &restore_icon_info_present,
@@ -306,7 +301,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
 	restoredFromPrevSession = 0;
     }
-#endif
 
     /*
      * do initial clip; should look at window gravity
@@ -318,7 +312,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     tmp_win->wmhints = XGetWMHints(dpy, tmp_win->w);
 
-#ifdef X11R6
     if (tmp_win->wmhints)
     {
 	if (restore_iconified)
@@ -334,7 +327,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	    tmp_win->wmhints->flags |= IconPositionHint;
 	}
     }
-#endif
 
     if (tmp_win->wmhints) tmp_win->wmhints->input = True;
 				/* CL: Having with not willing focus
@@ -367,9 +359,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     tmp_win->transient = Transient(tmp_win->w, &tmp_win->transientfor);
 
-#ifdef X11R6
     tmp_win->nameChanged = 0;
-#endif
     if (tmp_win->name == NULL)
 	tmp_win->name = NoName;
     if (tmp_win->class.res_name == NULL)
@@ -556,7 +546,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     GetWindowSizeHints (tmp_win);
 
-#ifdef X11R6
     if (restoredFromPrevSession)
     {
 	/*
@@ -567,7 +556,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	gravx = gravy = -1;
     }
     else
-#endif
     {
 	GetGravityOffsets (tmp_win, &gravx, &gravy);
     }
@@ -598,11 +586,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     /* note, this is where tmp_win->vs get setup, among other things */
 
-#ifdef X11R6
     if (restoredFromPrevSession) {
       SetupOccupation (tmp_win, saved_occupation);
     } else
-#endif      
       SetupOccupation (tmp_win, 0);
     tmp_win->old_parent_vs = vs;
     /*=================================================================*/
@@ -641,11 +627,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
      * do any prompting for position
      */
 
-#ifdef X11R6
     if (HandlingEvents && ask_user && !restoredFromPrevSession) {
-#else
-    if (HandlingEvents && ask_user) {
-#endif
       if ((Scr->RandomPlacement == RP_ALL) ||
           ((Scr->RandomPlacement == RP_UNMAPPED) &&
 	   ((tmp_win->wmhints && (tmp_win->wmhints->initial_state == IconicState)) ||

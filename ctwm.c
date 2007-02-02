@@ -97,9 +97,7 @@
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
-#ifdef X11R6
-#  include "session.h"
-#endif
+#include "session.h"
 #include "cursor.h"
 #include "windowbox.h"
 #ifdef SOUNDS
@@ -111,11 +109,7 @@
 #  include <decw$include/Xatom.h>
 #  include <X11Xmu/Error.h>
 #  include "vms_cmd_services.h"
-
-#  ifdef X11R6
-#    include <X11SM/SMlib.h>
-#  endif /* X11R6 */
-
+#  include <X11SM/SMlib.h>
 #  include <X11/Xlocale.h>
 
 #  ifndef PIXMAP_DIRECTORY
@@ -125,11 +119,7 @@
 #  include <X11/Xproto.h>
 #  include <X11/Xatom.h>
 #  include <X11/Xmu/Error.h>
-
-#  ifdef X11R6
-#    include <X11/SM/SMlib.h>
-#  endif /* X11R6 */
-
+#  include <X11/SM/SMlib.h>
 #  include <X11/Xlocale.h>
 
 #  ifndef PIXMAP_DIRECTORY
@@ -137,10 +127,7 @@
 #  endif /* PIXMAP_DIRECTORY */
 #endif /* VMS */
 
-#ifdef X11R6
 XtAppContext appContext;	/* Xt application context */
-#endif /* X11R6 */
-
 Display *dpy;			/* which display are we talking to */
 char *display_name = NULL;      /* JMO 2/13/90 for m4 */
 #ifdef USEM4
@@ -263,11 +250,9 @@ int main(int argc, char **argv, char **environ)
     unsigned long valuemask;	/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
-#ifdef X11R6
     int zero = 0;
     char *restore_filename = NULL;
     char *client_id = NULL;
-#endif
     char *welcomefile;
     int  screenmasked;
     static int crootx = 100;
@@ -335,19 +320,13 @@ int main(int argc, char **argv, char **environ)
 		    cfgchk	= 1;
 		    continue;
 		}
-#ifdef X11R6
 		if (++i >= argc) goto usage;	/* -clientId */
 		client_id = argv[i];
 		continue;
-#else
-		goto usage;
-#endif
-#ifdef X11R6
 	      case 'r':				/* -restore */
 		if (++i >= argc) goto usage;
 		restore_filename = argv[i];
 		continue;
-#endif
 	      case 'q':				/* -quiet */
 		PrintErrorMessages = False;
 		continue;
@@ -434,16 +413,11 @@ int main(int argc, char **argv, char **environ)
     NoClass.res_name = NoName;
     NoClass.res_class = NoName;
 
-#ifdef X11R6
     XtToolkitInitialize ();
     appContext = XtCreateApplicationContext ();
 
     if (!(dpy = XtOpenDisplay (appContext, display_name, "twm", "twm",
 	NULL, 0, &zero, NULL))) {
-#else
-
-    if (!(dpy = XOpenDisplay(display_name))) {
-#endif
 	fprintf (stderr, "%s:  unable to open display \"%s\"\n",
 		 ProgramName, XDisplayName(display_name));
 	exit (1);
@@ -457,9 +431,7 @@ int main(int argc, char **argv, char **environ)
 	exit (1);
     }
 #endif
-#ifdef X11R6
     if (restore_filename) ReadWinConfigFile (restore_filename);
-#endif
     HasShape = XShapeQueryExtension (dpy, &ShapeEventBase, &ShapeErrorBase);
     TwmContext = XUniqueContext();
     MenuContext = XUniqueContext();
@@ -921,9 +893,7 @@ int main(int argc, char **argv, char **environ)
 		   ProgramName);
 	exit (1);
     }
-#ifdef X11R6
     (void) ConnectToSessionManager (client_id);
-#endif
 #ifdef SOUNDS
     play_startup_sound();
 #endif
@@ -1352,9 +1322,8 @@ SIGNAL_T Restart(int signum)
 
 void DoRestart(Time t)
 {
-#ifdef X11R6
     extern SmcConn smcConn;
-#endif
+
     RestartFlag = 0;
 
     StopAnimation ();
@@ -1362,9 +1331,7 @@ void DoRestart(Time t)
     Reborder (t);
     XSync (dpy, 0);
 
-#ifdef X11R6
     if (smcConn) SmcCloseConnection (smcConn, 0, NULL);
-#endif /* X11R6 */
 
     fprintf (stderr, "%s:  restarting:  %s\n",
 	     ProgramName, *Argv);
@@ -1434,11 +1401,9 @@ Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
 Atom _XA_WM_CLIENT_MACHINE;
-#ifdef X11R6
-  Atom _XA_SM_CLIENT_ID;
-  Atom _XA_WM_CLIENT_LEADER;
-  Atom _XA_WM_WINDOW_ROLE;
-#endif
+Atom _XA_SM_CLIENT_ID;
+Atom _XA_WM_CLIENT_LEADER;
+Atom _XA_WM_WINDOW_ROLE;
 
 void InternUsefulAtoms (void)
 {
@@ -1454,11 +1419,9 @@ void InternUsefulAtoms (void)
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
     _XA_WM_CLIENT_MACHINE = XInternAtom (dpy, "WM_CLIENT_MACHINE", False);
-#ifdef X11R6
     _XA_SM_CLIENT_ID = XInternAtom (dpy, "SM_CLIENT_ID", False);
     _XA_WM_CLIENT_LEADER = XInternAtom (dpy, "WM_CLIENT_LEADER", False);
     _XA_WM_WINDOW_ROLE = XInternAtom (dpy, "WM_WINDOW_ROLE", False);
-#endif
 }
 
 static Window CreateRootWindow (int x, int y,

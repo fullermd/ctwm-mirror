@@ -539,20 +539,15 @@ void HandleEvents(void)
 
 	CtwmNextEvent (dpy, &Event);
 
-#ifdef X11R6
 	if (Event.type < 0 || Event.type >= MAX_X_EVENT)
 	    XtDispatchEvent (&Event);
 	else
-#endif
+
 	(void) DispatchEvent ();
     }
 }
 
-#ifdef X11R6
-#  define nextEvent(event) XtAppNextEvent(appContext, event);
-#else
-#  define nextEvent(event) XNextEvent(dpy, event);
-#endif
+#define nextEvent(event) XtAppNextEvent(appContext, event);
 
 #ifdef VMS
 extern unsigned long timefe;
@@ -1483,9 +1478,7 @@ void HandlePropertyNotify(void)
 
 	Tmp_win->full_name = (char*) prop;
 	Tmp_win->name = (char*) prop;
-#ifdef X11R6
 	Tmp_win->nameChanged = 1;
-#endif
 	XmbTextExtents(Scr->TitleBarFont.font_set,
 		       Tmp_win->name, strlen (Tmp_win->name),
 		       &inc_rect, &logical_rect);

@@ -108,16 +108,6 @@ DEBUGPARSERDEFINES = -DYYDEBUG=1
        SOUNDOBJ = 
 #endif
 
-#ifdef USE_SESSION
- SESSIONDEFINES = -DX11R6
-     SESSIONSRC = session.c
-     SESSIONOBJ = session.o
-#else
- SESSIONDEFINES = 
-     SESSIONSRC = 
-     SESSIONOBJ = 
-#endif
-
 #ifdef DEBUG
     CDEBUGFLAGS = -g -O0
 #endif
@@ -132,19 +122,19 @@ PIXMAPDIR = $(TWMDIR)/images
 CONFDIR = $(TWMDIR)
 
 LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) $(SOUNDLIB)
-        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(GNOMEDEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(JPEGDEFINES) $(SESSIONDEFINES) $(SOUNDDEFINES)  $(DEBUGPARSERDEFINES) $(GNUREGEXDEFS)
+        DEFINES = $(SIGNAL_DEFINES) $(M4DEFINES) $(GNOMEDEFINES) $(IMCONVDEFINES) $(XPMDEFINES) $(JPEGDEFINES) $(SOUNDDEFINES)  $(DEBUGPARSERDEFINES) $(GNUREGEXDEFS)
 
  EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(JPEGINCDIR) $(SOUNDINCDIR)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
-		cursor.c icons.c workmgr.c windowbox.c clicktofocus.c vscreen.c \
-		$(GNOMESRC) ${SESSIONSRC} ${SOUNDSRC}
+		cursor.c icons.c workmgr.c windowbox.c clicktofocus.c \
+		vscreen.c session.c $(GNOMESRC) $(SOUNDSRC)
 
            OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
-		cursor.o icons.o workmgr.o windowbox.o clicktofocus.o vscreen.o \
-		$(GNOMEOBJ) ${SESSIONOBJ} ${SOUNDOBJ}
+		cursor.o icons.o workmgr.o windowbox.o clicktofocus.o \
+		vscreen.o session.o $(GNOMEOBJ) $(SOUNDOBJ)
 
   PIXMAPFILES =	xpm/IslandD.xpm        xpm/mail1.xpm          xpm/xgopher.xpm \
 		xpm/IslandW.xpm        xpm/nothing.xpm        xpm/xgrab.xpm \

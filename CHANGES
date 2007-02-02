@@ -1650,3 +1650,9 @@ VirtualScreens {
 	of workspaces on the fly (what use this is, I'm not sure).
 	Removed some unused variables.
 	[Olaf "Rhialto" Seibert]
+
+   20 - Get rid of the USE_SESSION and X11R6 macros and make them the
+	silent default.
+	THIS WILL BREAK CTWM ON OLDER (PRE-X11R6) ENVIRONMENTS.
+	I strongly recommend an upgrade to a newer X11 release.
+	[Richard Levitte]

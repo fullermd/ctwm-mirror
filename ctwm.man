@@ -305,14 +305,6 @@ Is defined only if \fIctwm\fP was compiled with GNOME.
 Is defined only if \fIctwm\fP was compiled with USE_SOUND.
 
 .TP 16
-.B "SESSION"
-Is defined only if \fIctwm\fP was compiled with USE_SESSION.
-
-.TP 16
-.B "I18N"
-Is defined only if \fIctwm\fP was compiled with I18N.
-
-.TP 16
 .B "TWM_CAPTIVE"
 This will be either \(oqYes\(cq or \(oqNo\(cq. \(oqYes\(cq if the current \fIctwm\fP is captive
 (flag \-w), \(oqNo\(cq in the other case.
