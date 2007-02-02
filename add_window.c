@@ -109,8 +109,8 @@ int AddingY;
 unsigned int AddingW;
 unsigned int AddingH;
 
-static int PlaceX = 50;
-static int PlaceY = 50;
+static int PlaceX = -1;
+static int PlaceY = -1;
 static void CreateWindowTitlebarButtons(TwmWindow *tmp_win);
 void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_win);
 
@@ -643,39 +643,46 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 		PlaceX, PlaceY);
 #endif
 
+	/* Initiallise PlaceX and PlaceY */
+	if (PlaceX < 0 && PlaceY < 0) {
+	  PlaceX = Scr->BorderLeft + 5;
+	  PlaceY = Scr->BorderTop + 5;
+	}
+
 	/* For a positive horizontal displacement, if the right edge
 	   of the window would fall outside of the screen, start over
-	   by placing the left edge of the window 50 pixels inside
+	   by placing the left edge of the window 5 pixels inside
 	   the left edge of the screen.*/
 	if (Scr->RandomDisplacementX >= 0
-	    && (PlaceX + tmp_win->attr.width)  > Scr->rootw)
-	  PlaceX = 50;
+	    && (PlaceX + tmp_win->attr.width
+		> Scr->rootw - Scr->BorderRight - 5))
+	  PlaceX = Scr->BorderLeft + 5;
 
 	/* For a negative horizontal displacement, if the left edge
 	   of the window would fall outside of the screen, start over
-	   by placing the right edge of the window 50 pixels inside
+	   by placing the right edge of the window 5 pixels inside
 	   the right edge of the screen.*/
-	if (Scr->RandomDisplacementX < 0 && PlaceX < 0)
-	  PlaceX = Scr->rootw - tmp_win->attr.width - 50;
+	if (Scr->RandomDisplacementX < 0 && PlaceX < Scr->BorderLeft + 5)
+	  PlaceX = Scr->rootw - tmp_win->attr.width - Scr->BorderRight - 5;
 
 	/* For a positive vertical displacement, if the bottom edge
 	   of the window would fall outside of the screen, start over
-	   by placing the top edge of the window 50 pixels inside the
+	   by placing the top edge of the window 5 pixels inside the
 	   top edge of the screen.  Because we add the title height
 	   further down, we need to count with it here as well.  */
 	if (Scr->RandomDisplacementY >= 0
-	    && (PlaceY + tmp_win->attr.height
-		+ tmp_win->title_height) > Scr->rooth)
-	  PlaceY = 50;
+	    && (PlaceY + tmp_win->attr.height + tmp_win->title_height
+		> Scr->rooth - Scr->BorderBottom - 5))
+	  PlaceY = Scr->BorderTop + 5;
 
 	/* For a negative vertical displacement, if the top edge of
 	   the window would fall outside of the screen, start over by
-	   placing the bottom edge of the window 50 pixels inside the
+	   placing the bottom edge of the window 5 pixels inside the
 	   bottom edge of the screen.  Because we add the title height
 	   further down, we need to count with it here as well.  */
-	if (Scr->RandomDisplacementY < 0 && PlaceY < 0)
-	  PlaceY =
-	    Scr->rooth - tmp_win->attr.height - tmp_win->title_height- 50;
+	if (Scr->RandomDisplacementY < 0 && PlaceY < Scr->BorderTop + 5)
+	  PlaceY = Scr->rooth - tmp_win->attr.height - tmp_win->title_height
+	    - Scr->BorderBottom - 5;
 
 	/* Assign the current random placement to the new window, as
 	   a preliminary measure.  Add the title height so things will
@@ -768,12 +775,12 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	   than 15 pixel either way, change the next "random position"
 	   30 pixels down and right. */
 	if (PlaceX - tmp_win->attr.x < 15
-	    || PlaceY - tmp_win->attr.y < 15) {
+	    || PlaceY - (tmp_win->attr.y - tmp_win->title_height) < 15) {
 	  PlaceX += Scr->RandomDisplacementX;
 	  PlaceY += Scr->RandomDisplacementY;
 	}
 
-        random_placed = True;
+	random_placed = True;
       } else {				/* else prompt */
 	if (!(tmp_win->wmhints && tmp_win->wmhints->flags & StateHint &&
 	      tmp_win->wmhints->initial_state == IconicState))
