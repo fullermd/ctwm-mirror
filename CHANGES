@@ -1652,7 +1652,8 @@ VirtualScreens {
 	[Olaf "Rhialto" Seibert]
 
    20 - Get rid of the USE_SESSION and X11R6 macros and make them the
-	silent default.
+	silent default.  Also cleaned out a few references to the macro
+	X11R4, which hasn't been used for ages.
 	THIS WILL BREAK CTWM ON OLDER (PRE-X11R6) ENVIRONMENTS.
 	I strongly recommend an upgrade to a newer X11 release.
 	[Richard Levitte]
