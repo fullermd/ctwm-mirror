@@ -4077,12 +4077,14 @@ void DeIconify(TwmWindow *tmp_win)
 {
     TwmWindow *t = tmp_win;
     WList *wl;
+    int isicon = FALSE;
 
     /* de-iconify the main window */
     if (Scr->WindowMask)
 	XRaiseWindow (dpy, Scr->WindowMask);
     if (tmp_win->isicon)
     {
+	isicon = TRUE;
 	if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w)
 	    Zoom(tmp_win->icon->w, tmp_win->frame);
 	else if (tmp_win->group != (Window) 0)
@@ -4097,9 +4099,9 @@ void DeIconify(TwmWindow *tmp_win)
 
     ReMapOne(tmp_win, t);
 
-    if ((Scr->WarpCursor ||
-	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)) &&
-	tmp_win->isicon)
+    if (isicon && 
+	(Scr->WarpCursor ||
+	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
       WarpToWindow (tmp_win);
 
     /* now de-iconify and window group transients */
