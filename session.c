@@ -101,8 +101,6 @@
 
 #include <X11/Xos.h>
 
-#ifdef X11R6
-
 #ifndef X_NOT_POSIX
 #ifdef _POSIX_SOURCE
 #include <limits.h>
@@ -129,9 +127,7 @@
 #include "twm.h"
 #include "icons.h"
 #include "screen.h"
-#ifdef X11R6
-#  include "session.h"
-#endif
+#include "session.h"
 
 SmcConn smcConn = NULL;
 XtInputId iceInputId;
@@ -1168,19 +1164,3 @@ void ConnectToSessionManager (char *previous_id)
 	    ProcessIceMsgProc,
 	    (XtPointer) iceConn);
 }
-
-#endif /* X11R6 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -74,18 +74,14 @@
 #include <decw$include/Intrinsic.h>
 #include <decw$include/cursorfont.h>
 #include <decw$include/shape.h>
-#ifndef X11R4
-#    include <decw$include/Xfuncs.h>
-#endif
+#include <decw$include/Xfuncs.h>
 #else
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Intrinsic.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
-#ifndef X11R4
-#    include <X11/Xfuncs.h>
-#endif
+#include <X11/Xfuncs.h>
 #endif
 #include "types.h"
 #include "list.h"
@@ -348,7 +344,7 @@ struct TwmWindow
     XWMHints *wmhints;		/* WM hints */
     Window group;		/* group ID */
     XClassHint class;
-    struct WList *list;
+    struct WList *list;		/* iconmanager subwindows */
     /***********************************************************************
      * color definitions per window
      **********************************************************************/
@@ -414,16 +410,13 @@ struct TwmWindow
     struct virtualScreen *old_parent_vs;
     struct virtualScreen *savevs;
 
-#ifdef X11R6
     Bool nameChanged;	/* did WM_NAME ever change? */
     /* did the user ever change the width/height? {yes, no, or unknown} */
     Bool widthEverChangedByUser;
     Bool heightEverChangedByUser;
-#endif
 
 };
 
-#ifdef X11R6
 struct TWMWinConfigEntry
 {
     struct TWMWinConfigEntry *next;
@@ -449,7 +442,6 @@ struct TWMWinConfigEntry
    /* ====================================================================== */
 
 };
-#endif
 
 #define DoesWmTakeFocus		(1L << 0)
 #define DoesWmSaveYourself	(1L << 1)
@@ -475,12 +467,10 @@ struct TWMWinConfigEntry
 #define TBPM_3DBAR ":xpm:bar"
 #define TBPM_3DVBAR ":xpm:vbar"
 
-#ifndef X11R4
 #ifdef VMS
 #    include <decw$include/Xosdefs.h>
 #else
 #    include <X11/Xosdefs.h>
-#endif
 #endif
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
@@ -503,9 +493,7 @@ void RestoreWithdrawnLocation (TwmWindow *tmp);
 extern char *ProgramName;
 extern Display *dpy;
 extern char *display_name;
-#ifdef X11R6
-  extern XtAppContext appContext;
-#endif
+extern XtAppContext appContext;
 extern Window ResizeWindow;	/* the window we are resizing */
 extern int HasShape;		/* this server supports Shape extension */
 
@@ -566,17 +554,11 @@ extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
 extern Atom _XA_WM_CLIENT_MACHINE;
-#ifdef X11R6
-  extern Atom _XA_SM_CLIENT_ID;
-  extern Atom _XA_WM_CLIENT_LEADER;
-  extern Atom _XA_WM_WINDOW_ROLE;
-#endif
+extern Atom _XA_SM_CLIENT_ID;
+extern Atom _XA_WM_CLIENT_LEADER;
+extern Atom _XA_WM_WINDOW_ROLE;
 
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
 #define VISIBLE(w) OCCUPY(w, Scr->workSpaceMgr.activeWSPC)
-
-#ifdef X11R4
-#define XPointer caddr_t
-#endif
 
 #endif /* _TWM_ */

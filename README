@@ -61,9 +61,6 @@ JPEG		If defined, enables the use of jpeg images.  Disable
 		Defined in Imakefile.local-template.
 GNOME		If defined, build to work with Gnome.
 		Defined in Imakefile.local-template.
-X11R6		If defined, build to work with X11R6 (basically, add
-		session management capabilities)
-		Defined in Imakefile.local-template.
 USE_SOUND	if defined, build with sound support.  Disable if
 		librplay isn't present.
 		Defined in Imakefile.local-template.

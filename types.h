@@ -65,9 +65,7 @@ typedef struct WindowRegion WindowRegion;
 typedef struct WindowEntry WindowEntry;
 typedef struct _WindowBox WindowBox;
 typedef struct TwmWindow TwmWindow;
-#ifdef X11R6
 typedef struct TWMWinConfigEntry TWMWinConfigEntry;
-#endif
 
 /* From util.h */
 typedef struct _Image Image;

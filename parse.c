@@ -2280,9 +2280,6 @@ static char *m4_defs(Display *display, char *host)
 #ifdef SOUNDS
 	fputs(MkDef("SOUNDS", "Yes"), tmpf);
 #endif
-#ifdef X11R6
-	fputs(MkDef("SESSION", "Yes"), tmpf);
-#endif
 	fputs(MkDef("I18N", "Yes"), tmpf);
 	if (captive && captivename) {
             fputs (MkDef ("TWM_CAPTIVE", "Yes"), tmpf);

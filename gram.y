@@ -433,6 +433,7 @@ stmt		: error
 		  wingeom_list
 		| VIRTUAL_SCREENS	{ }
 		  geom_list
+		;
 
 noarg		: KEYWORD		{ if (!do_single_keyword ($1)) {
 					    twmrc_error_prefix();
@@ -884,7 +885,7 @@ occupy_workspc_entries	:   /* Empty */
 occupy_workspc_entry	: string {
 				AddToClientsList ($1, client);
 			  }
-			  ;
+			;
 
 occupy_window_list	: LB occupy_window_entries RB {}
 			;
@@ -896,6 +897,7 @@ occupy_window_entries	:   /* Empty */
 occupy_window_entry	: string {
 				AddToClientsList (workspace, $1);
 			  }
+			;
 
 icon_list	: LB icon_entries RB {}
 		;

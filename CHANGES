@@ -1636,3 +1636,24 @@ VirtualScreens {
    18 - When Squeezing a window group leader, unmap the member windows,
 	just like happens with iconification.
 	[Olaf "Rhialto" Seibert]
+
+   19 - Simplifications c.q. de-duplications of code regarding the
+	WorkSpaceManager and Occupation windows. This includes coding
+	the layout of these windows only once instead of twice (at
+	initialisation and when resizing). If it's wrong now at least it
+	should be consistent.
+	When changing occupation via functions like
+	f.movetonextworkspace, also move complete window groups (just
+	like when you do it via the Occupation window).
+	Also fixed changing the occupation of the Occupation window.
+	Documented (so far) undocumented possibility to edit the labels
+	of workspaces on the fly (what use this is, I'm not sure).
+	Removed some unused variables.
+	[Olaf "Rhialto" Seibert]
+
+   20 - Get rid of the USE_SESSION and X11R6 macros and make them the
+	silent default.  Also cleaned out a few references to the macro
+	X11R4, which hasn't been used for ages.
+	THIS WILL BREAK CTWM ON OLDER (PRE-X11R6) ENVIRONMENTS.
+	I strongly recommend an upgrade to a newer X11 release.
+	[Richard Levitte]

@@ -35,7 +35,6 @@
 #ifndef _SESSION_
 #define _SESSION_
 
-#ifdef X11R6
 extern SmcConn smcConn;
 extern XtInputId iceInputId;
 extern char *twm_clientId;
@@ -69,7 +68,6 @@ void SaveCompleteCB (SmcConn smcCon, SmPointer clientData);
 void ShutdownCancelledCB (SmcConn smcCon, SmPointer clientData);
 void ProcessIceMsgProc (XtPointer client_data, int *source, XtInputId *id);
 void ConnectToSessionManager (char *previous_id);
-#endif /* X11R6 */
 
 #endif /* _SESSION_ */
 

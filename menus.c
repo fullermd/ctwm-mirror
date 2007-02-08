@@ -107,16 +107,12 @@
 #ifdef VMS
 #  include <X11Xmu/CharSet.h>
 #  include <decw$bitmaps/menu12.xbm>
-#  ifdef X11R6
-#    include <X11SM/SMlib.h>
-#  endif
+#  include <X11SM/SMlib.h>
 #  include "vms_cmd_services.h"
 #  include <lib$routines.h>
 #else
 #  include <X11/Xmu/CharSet.h>
-#  ifdef X11R6
-#    include <X11/SM/SMlib.h>
-#  endif
+#  include <X11/SM/SMlib.h>
 #endif
 #include "version.h"
 
@@ -4076,7 +4072,6 @@ static void ReMapTransients(TwmWindow *tmp_win)
 void DeIconify(TwmWindow *tmp_win)
 {
     TwmWindow *t = tmp_win;
-    WList *wl;
     int isicon = FALSE;
 
     /* de-iconify the main window */
@@ -4397,11 +4392,6 @@ static void Identify (TwmWindow *t)
 #ifdef SOUNDS
     if (!first) (void) strcat(Info[n], ", ");
     (void) strcat (Info[n], "SOUNDS");
-    first = False;
-#endif
-#ifdef X11R6
-    if (!first) (void) strcat(Info[n], ", ");
-    (void) strcat (Info[n], "X11R6");
     first = False;
 #endif
 #ifdef DEBUG

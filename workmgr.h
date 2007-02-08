@@ -80,8 +80,8 @@ struct WorkSpaceMgr {
     Image	       *defImage;
     unsigned long	defBorderColor;
     int			hspace, vspace;
-    char		*name;
-    char		*icon_name;
+    char	       *name;
+    char	       *icon_name;
 };
 
 struct WorkSpace {
@@ -99,7 +99,6 @@ struct WorkSpace {
 
 struct MapSubwindow {
   Window  w;
-  Window  blanket;
   int     x, y;
   WinList wl;
 };
@@ -108,15 +107,14 @@ struct ButtonSubwindow {
   Window w;
 };
 
-struct WorkSpaceWindow {
+struct WorkSpaceWindow {		/* There is one per virtual screen */
   virtualScreen   *vs;
   Window	  w;
   TwmWindow       *twm_win;
-  MapSubwindow    **mswl;
-  ButtonSubwindow **bswl;
+  MapSubwindow    **mswl;		/* MapSubWindow List */
+  ButtonSubwindow **bswl;		/* ButtonSubwindow List */
   WorkSpace       *currentwspc;
 
-  int	       	x, y;
   int	       	state;
 
   int	       	width, height;
@@ -130,14 +128,13 @@ struct OccupyWindow {
   char		*geometry;
   Window       	*obuttonw;
   Window       	OK, cancel, allworkspc;
-  int	       	x, y;
   int	       	width, height;
   char		*name;
   char		*icon_name;
   int	       	lines, columns;
-  int	       	hspace, vspace;
+  int	       	hspace, vspace;		/* space between workspaces */
   int	       	bwidth, bheight;
-  int	       	owidth, oheight;
+  int	       	owidth;			/* oheight == bheight */
   ColorPair    	cp;
   MyFont       	font;
   int	       	tmpOccupation;

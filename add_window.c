@@ -95,9 +95,7 @@
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
-#ifdef X11R6
-#  include "session.h"
-#endif
+#include "session.h"
 
 #define gray_width 2
 #define gray_height 2
@@ -111,8 +109,8 @@ int AddingY;
 unsigned int AddingW;
 unsigned int AddingH;
 
-static int PlaceX = 50;
-static int PlaceY = 50;
+static int PlaceX = -1;
+static int PlaceY = -1;
 static void CreateWindowTitlebarButtons(TwmWindow *tmp_win);
 void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_win);
 
@@ -212,7 +210,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     int gravx, gravy;			/* gravity signs for positioning */
     int namelen;
     int bw2;
-#ifdef X11R6
     short saved_x, saved_y, restore_icon_x, restore_icon_y;
     unsigned short saved_width, saved_height;
     Bool restore_iconified = 0;
@@ -221,7 +218,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     Bool width_ever_changed_by_user;
     Bool height_ever_changed_by_user;
     int saved_occupation; /* <== [ Matthew McNeill Feb 1997 ] == */
-#endif
     Bool        random_placed = False;
     int		found = 0;
 #ifndef VMS
@@ -277,7 +273,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     FetchWmProtocols (tmp_win);
     FetchWmColormapWindows (tmp_win);
 
-#ifdef X11R6
     if (GetWindowConfig (tmp_win,
 	&saved_x, &saved_y, &saved_width, &saved_height,
 	&restore_iconified, &restore_icon_info_present,
@@ -306,7 +301,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
 	restoredFromPrevSession = 0;
     }
-#endif
 
     /*
      * do initial clip; should look at window gravity
@@ -318,7 +312,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     tmp_win->wmhints = XGetWMHints(dpy, tmp_win->w);
 
-#ifdef X11R6
     if (tmp_win->wmhints)
     {
 	if (restore_iconified)
@@ -334,7 +327,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	    tmp_win->wmhints->flags |= IconPositionHint;
 	}
     }
-#endif
 
     if (tmp_win->wmhints) tmp_win->wmhints->input = True;
 				/* CL: Having with not willing focus
@@ -344,7 +336,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     if (tmp_win->wmhints && !(tmp_win->wmhints->flags & InputHint))
 	tmp_win->wmhints->input = True;
     if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint)) {
-	if (tmp_win->group = tmp_win->wmhints->window_group) {
+	tmp_win->group = tmp_win->wmhints->window_group;
+	if (tmp_win->group) {
 	    /*
 	     * GTK windows often have a spurious "group leader" window which is
 	     * never reported to us and therefore does not really exist.  This
@@ -366,9 +359,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     tmp_win->transient = Transient(tmp_win->w, &tmp_win->transientfor);
 
-#ifdef X11R6
     tmp_win->nameChanged = 0;
-#endif
     if (tmp_win->name == NULL)
 	tmp_win->name = NoName;
     if (tmp_win->class.res_name == NULL)
@@ -456,7 +447,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     if (tmp_win->transient || tmp_win->group) {
 	TwmWindow *t = NULL;
-	if (tmp_win->transient) t = GetTwmWindow(tmp_win->transient);
+	if (tmp_win->transient) t = GetTwmWindow(tmp_win->transientfor);
 	if (!t && tmp_win->group) t = GetTwmWindow(tmp_win->group);
 	if (t) tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
     }
@@ -555,7 +546,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     GetWindowSizeHints (tmp_win);
 
-#ifdef X11R6
     if (restoredFromPrevSession)
     {
 	/*
@@ -566,7 +556,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	gravx = gravy = -1;
     }
     else
-#endif
     {
 	GetGravityOffsets (tmp_win, &gravx, &gravy);
     }
@@ -597,11 +586,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     /* note, this is where tmp_win->vs get setup, among other things */
 
-#ifdef X11R6
     if (restoredFromPrevSession) {
       SetupOccupation (tmp_win, saved_occupation);
     } else
-#endif      
       SetupOccupation (tmp_win, 0);
     tmp_win->old_parent_vs = vs;
     /*=================================================================*/
@@ -640,11 +627,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
      * do any prompting for position
      */
 
-#ifdef X11R6
     if (HandlingEvents && ask_user && !restoredFromPrevSession) {
-#else
-    if (HandlingEvents && ask_user) {
-#endif
       if ((Scr->RandomPlacement == RP_ALL) ||
           ((Scr->RandomPlacement == RP_UNMAPPED) &&
 	   ((tmp_win->wmhints && (tmp_win->wmhints->initial_state == IconicState)) ||
@@ -660,39 +643,46 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 		PlaceX, PlaceY);
 #endif
 
+	/* Initiallise PlaceX and PlaceY */
+	if (PlaceX < 0 && PlaceY < 0) {
+	  PlaceX = Scr->BorderLeft + 5;
+	  PlaceY = Scr->BorderTop + 5;
+	}
+
 	/* For a positive horizontal displacement, if the right edge
 	   of the window would fall outside of the screen, start over
-	   by placing the left edge of the window 50 pixels inside
+	   by placing the left edge of the window 5 pixels inside
 	   the left edge of the screen.*/
 	if (Scr->RandomDisplacementX >= 0
-	    && (PlaceX + tmp_win->attr.width)  > Scr->rootw)
-	  PlaceX = 50;
+	    && (PlaceX + tmp_win->attr.width
+		> Scr->rootw - Scr->BorderRight - 5))
+	  PlaceX = Scr->BorderLeft + 5;
 
 	/* For a negative horizontal displacement, if the left edge
 	   of the window would fall outside of the screen, start over
-	   by placing the right edge of the window 50 pixels inside
+	   by placing the right edge of the window 5 pixels inside
 	   the right edge of the screen.*/
-	if (Scr->RandomDisplacementX < 0 && PlaceX < 0)
-	  PlaceX = Scr->rootw - tmp_win->attr.width - 50;
+	if (Scr->RandomDisplacementX < 0 && PlaceX < Scr->BorderLeft + 5)
+	  PlaceX = Scr->rootw - tmp_win->attr.width - Scr->BorderRight - 5;
 
 	/* For a positive vertical displacement, if the bottom edge
 	   of the window would fall outside of the screen, start over
-	   by placing the top edge of the window 50 pixels inside the
+	   by placing the top edge of the window 5 pixels inside the
 	   top edge of the screen.  Because we add the title height
 	   further down, we need to count with it here as well.  */
 	if (Scr->RandomDisplacementY >= 0
-	    && (PlaceY + tmp_win->attr.height
-		+ tmp_win->title_height) > Scr->rooth)
-	  PlaceY = 50;
+	    && (PlaceY + tmp_win->attr.height + tmp_win->title_height
+		> Scr->rooth - Scr->BorderBottom - 5))
+	  PlaceY = Scr->BorderTop + 5;
 
 	/* For a negative vertical displacement, if the top edge of
 	   the window would fall outside of the screen, start over by
-	   placing the bottom edge of the window 50 pixels inside the
+	   placing the bottom edge of the window 5 pixels inside the
 	   bottom edge of the screen.  Because we add the title height
 	   further down, we need to count with it here as well.  */
-	if (Scr->RandomDisplacementY < 0 && PlaceY < 0)
-	  PlaceY =
-	    Scr->rooth - tmp_win->attr.height - tmp_win->title_height- 50;
+	if (Scr->RandomDisplacementY < 0 && PlaceY < Scr->BorderTop + 5)
+	  PlaceY = Scr->rooth - tmp_win->attr.height - tmp_win->title_height
+	    - Scr->BorderBottom - 5;
 
 	/* Assign the current random placement to the new window, as
 	   a preliminary measure.  Add the title height so things will
@@ -785,12 +775,12 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	   than 15 pixel either way, change the next "random position"
 	   30 pixels down and right. */
 	if (PlaceX - tmp_win->attr.x < 15
-	    || PlaceY - tmp_win->attr.y < 15) {
+	    || PlaceY - (tmp_win->attr.y - tmp_win->title_height) < 15) {
 	  PlaceX += Scr->RandomDisplacementX;
 	  PlaceY += Scr->RandomDisplacementY;
 	}
 
-        random_placed = True;
+	random_placed = True;
       } else {				/* else prompt */
 	if (!(tmp_win->wmhints && tmp_win->wmhints->flags & StateHint &&
 	      tmp_win->wmhints->initial_state == IconicState))

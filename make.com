@@ -161,7 +161,7 @@ $!
 $!  Get the compiler options via the logical name COPTS
 $!
 $ cc_options = COPTS + -
-	       "/define=(VMS,XPM,X11R6,C_ALLOCA,""emacs"",BLOCK_INPUT," + -
+	       "/define=(VMS,XPM,C_ALLOCA,""emacs"",BLOCK_INPUT," + -
 	       "EXIT_ENDSESSION=''EXIT_ENDSESSION'''extra_defs')" + -
 	       "/OBJ=.''EXT'OBJ"
 $!

@@ -82,12 +82,6 @@ XCOMM
 #define GNOME
 
 XCOMM ----------------------------------------------------------------------
-XCOMM Feature: Use session management features
-XCOMM If you want to use X11R6 session management, define USE_SESSION.
-XCOMM
-#define USE_SESSION
-
-XCOMM ----------------------------------------------------------------------
 XCOMM Feature: Use GNU regex
 XCOMM If you want to build with GNU regex instead of the internal regex
 XCOMM functions, define USE_GNU_REGEX.
