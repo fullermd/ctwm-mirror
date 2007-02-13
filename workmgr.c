@@ -1654,12 +1654,6 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 
     vs->wsw->width   = Dummy;
     vs->wsw->height  = Dummy;
-    /*vs->wsw->width   = width;
-    vs->wsw->height  = height;*/
-    /*vs->wsw->bwidth  = bwidth;
-    vs->wsw->bheight = bheight;
-    vs->wsw->wwidth  = wwidth;
-    vs->wsw->wheight = wheight;*/
     vs->wsw->bswl    = (ButtonSubwindow**)
       malloc (Scr->workSpaceMgr.count * sizeof (ButtonSubwindow*));
     vs->wsw->mswl    = (MapSubwindow**)
@@ -1922,6 +1916,7 @@ static void CreateOccupyWindow (void) {
     occwin->obuttonw = (Window*) malloc (Scr->workSpaceMgr.count * sizeof (Window));
     i = 0; j = 0;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
+	Window bw =
 	occwin->obuttonw [j * columns + i] =
 	  XCreateSimpleWindow(dpy, w,
 			      Dummy /* x */,
@@ -1929,7 +1924,7 @@ static void CreateOccupyWindow (void) {
 			      Dummy /* width */,
 			      Dummy /* height */,
 			      0, Scr->Black, ws->cp.back);
-	XMapWindow (dpy, occwin->obuttonw [j * columns + i]);
+	XMapWindow (dpy, bw);
 	i++;
 	if (i == columns) {i = 0; j++;}
     }
@@ -1983,17 +1978,17 @@ static void CreateOccupyWindow (void) {
 
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
         Window bw = occwin->obuttonw [ws->number];
-	XSelectInput (dpy, bw, ButtonPressMask | ButtonReleaseMask);
+	XSelectInput (dpy, bw, ButtonPressMask | ButtonReleaseMask | ExposureMask);
 	XSaveContext (dpy, bw, TwmContext,    (XPointer) tmp_win);
 	XSaveContext (dpy, bw, ScreenContext, (XPointer) Scr);
     }
-    XSelectInput (dpy, occwin->OK, ButtonPressMask | ButtonReleaseMask);
+    XSelectInput (dpy, occwin->OK, ButtonPressMask | ButtonReleaseMask | ExposureMask);
     XSaveContext (dpy, occwin->OK, TwmContext,    (XPointer) tmp_win);
     XSaveContext (dpy, occwin->OK, ScreenContext, (XPointer) Scr);
-    XSelectInput (dpy, occwin->cancel, ButtonPressMask | ButtonReleaseMask);
+    XSelectInput (dpy, occwin->cancel, ButtonPressMask | ButtonReleaseMask | ExposureMask);
     XSaveContext (dpy, occwin->cancel, TwmContext,    (XPointer) tmp_win);
     XSaveContext (dpy, occwin->cancel, ScreenContext, (XPointer) Scr);
-    XSelectInput (dpy, occwin->allworkspc, ButtonPressMask | ButtonReleaseMask);
+    XSelectInput (dpy, occwin->allworkspc, ButtonPressMask | ButtonReleaseMask | ExposureMask);
     XSaveContext (dpy, occwin->allworkspc, TwmContext,    (XPointer) tmp_win);
     XSaveContext (dpy, occwin->allworkspc, ScreenContext, (XPointer) Scr);
 
