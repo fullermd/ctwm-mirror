@@ -3230,7 +3230,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	if (DeferExecution(context, func, Scr->DestroyCursor))
 	    return TRUE;
 
-	if (tmp_win->iconmgr || tmp_win->iswinbox || tmp_win->wspmgr) {
+	if (tmp_win->iconmgr || tmp_win->iswinbox || tmp_win->wspmgr
+	    || (Scr->workSpaceMgr.occupyWindow
+		&& tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    XBell(dpy, 0);
 	    break;
 	}
@@ -3252,7 +3254,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    HideIconManager ();
 	    break;
 	}
-	if (tmp_win->iconmgr || tmp_win->iswinbox || tmp_win->wspmgr) {
+	if (tmp_win->iswinbox || tmp_win->wspmgr
+	    || (Scr->workSpaceMgr.occupyWindow
+		&& tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    XBell (dpy, 0);
 	    break;
 	}
@@ -3277,7 +3281,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    HideIconManager ();
 	    break;
 	}
-	if (tmp_win->iswinbox || tmp_win->wspmgr) {
+	if (tmp_win->iswinbox || tmp_win->wspmgr
+	    || (Scr->workSpaceMgr.occupyWindow
+		&& tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    XBell (dpy, 0);
 	    break;
 	}
