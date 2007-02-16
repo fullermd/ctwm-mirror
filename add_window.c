@@ -1761,16 +1761,9 @@ void DeleteHighlightWindows(TwmWindow *tmp_win)
 	     */
 	} else {
 	    XFreePixmap (dpy, tmp_win->HiliteImage->pixmap);
+	    free(tmp_win->HiliteImage);
 	}
-#if 1
-	/* 
-	 * XXX - this was being free'd twice for some reason.   Commenting
-	 * this out almost certainly introduces a memory leak, but they're
-	 * better than core dumps.  :)
-	 */
-	free(tmp_win->HiliteImage);
 	tmp_win->HiliteImage = NULL;
-#endif
     }
 }
 
