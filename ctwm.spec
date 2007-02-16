@@ -1,6 +1,6 @@
 Summary: Ctwm is a window manager for the X Window System.
 Name: ctwm
-Version: 3.8devel
+Version: 3.8
 Release: 1
 Source: http://ctwm.free.lp.se/preview/%{name}-%{version}.tar.gz
 Copyright: MIT
@@ -69,6 +69,8 @@ rm -fr $RPM_BUILD_ROOT
 %attr(0644,root,root) /usr/X11R6/include/X11/pixmaps/*
 
 %changelog
+* Fri Feb 16 2006 Richard Levitte <richard@levitte.org>
+- Release ctwm 3.8.
 * Wed May  4 2005 Rudolph T Maceyko <rm55@pobox.com>
 - Tweaks.  Added all .ctwmrc files as well as sound and VMS docs.
 * Wed May  4 2005 Richard Levitte <richard@levitte.org>
