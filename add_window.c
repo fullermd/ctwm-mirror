@@ -645,8 +645,15 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
 	/* Initiallise PlaceX and PlaceY */
 	if (PlaceX < 0 && PlaceY < 0) {
-	  PlaceX = Scr->BorderLeft + 5;
-	  PlaceY = Scr->BorderTop + 5;
+	  if (Scr->RandomDisplacementX >= 0)
+	    PlaceX = Scr->BorderLeft + 5;
+	  else
+	    PlaceX = Scr->rootw - tmp_win->attr.width - Scr->BorderRight - 5;
+	  if (Scr->RandomDisplacementY >= 0)
+	    PlaceY = Scr->BorderTop + 5;
+	  else
+	    PlaceY = Scr->rooth - tmp_win->attr.height - tmp_win->title_height
+	      - Scr->BorderBottom - 5;
 	}
 
 	/* For a positive horizontal displacement, if the right edge

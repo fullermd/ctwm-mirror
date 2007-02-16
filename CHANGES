@@ -1657,3 +1657,10 @@ VirtualScreens {
 	THIS WILL BREAK CTWM ON OLDER (PRE-X11R6) ENVIRONMENTS.
 	I strongly recommend an upgrade to a newer X11 release.
 	[Richard Levitte]
+
+   21 - Modified the random placement so a negative X displacement has
+	the first "random" window start near the right edge instead of
+	the right and a negative Y displacement has the first "random"
+	window start near the bottom edge instead of the top.
+	[Richard Levitte]
+
