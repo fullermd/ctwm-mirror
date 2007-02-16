@@ -70,7 +70,7 @@ rm -fr $RPM_BUILD_ROOT
 
 %changelog
 * Fri Feb 16 2006 Richard Levitte <richard@levitte.org>
-- Release ctwm 3.8.
+- Release ctwm 3.8a.
 * Wed May  4 2005 Rudolph T Maceyko <rm55@pobox.com>
 - Tweaks.  Added all .ctwmrc files as well as sound and VMS docs.
 * Wed May  4 2005 Richard Levitte <richard@levitte.org>
