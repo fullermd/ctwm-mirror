@@ -50,8 +50,7 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
-#define VERSION_ID "3.8devel"
-#define VERSION_I18N " + I18N Patch"
+#define VERSION_ID "3.9devel"
 
-char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID VERSION_I18N;
+char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID;
 char *VersionNumber = VERSION_ID;

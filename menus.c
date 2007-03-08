@@ -107,16 +107,12 @@
 #ifdef VMS
 #  include <X11Xmu/CharSet.h>
 #  include <decw$bitmaps/menu12.xbm>
-#  ifdef X11R6
-#    include <X11SM/SMlib.h>
-#  endif
+#  include <X11SM/SMlib.h>
 #  include "vms_cmd_services.h"
 #  include <lib$routines.h>
 #else
 #  include <X11/Xmu/CharSet.h>
-#  ifdef X11R6
-#    include <X11/SM/SMlib.h>
-#  endif
+#  include <X11/SM/SMlib.h>
 #endif
 #include "version.h"
 
@@ -3234,7 +3230,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	if (DeferExecution(context, func, Scr->DestroyCursor))
 	    return TRUE;
 
-	if (tmp_win->iconmgr || tmp_win->iswinbox || tmp_win->wspmgr) {
+	if (tmp_win->iconmgr || tmp_win->iswinbox || tmp_win->wspmgr
+	    || (Scr->workSpaceMgr.occupyWindow
+		&& tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    XBell(dpy, 0);
 	    break;
 	}
@@ -3256,7 +3254,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    HideIconManager ();
 	    break;
 	}
-	if (tmp_win->iconmgr || tmp_win->iswinbox || tmp_win->wspmgr) {
+	if (tmp_win->iswinbox || tmp_win->wspmgr
+	    || (Scr->workSpaceMgr.occupyWindow
+		&& tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    XBell (dpy, 0);
 	    break;
 	}
@@ -3281,7 +3281,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    HideIconManager ();
 	    break;
 	}
-	if (tmp_win->iswinbox || tmp_win->wspmgr) {
+	if (tmp_win->iswinbox || tmp_win->wspmgr
+	    || (Scr->workSpaceMgr.occupyWindow
+		&& tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    XBell (dpy, 0);
 	    break;
 	}
@@ -4076,13 +4078,14 @@ static void ReMapTransients(TwmWindow *tmp_win)
 void DeIconify(TwmWindow *tmp_win)
 {
     TwmWindow *t = tmp_win;
-    WList *wl;
+    int isicon = FALSE;
 
     /* de-iconify the main window */
     if (Scr->WindowMask)
 	XRaiseWindow (dpy, Scr->WindowMask);
     if (tmp_win->isicon)
     {
+	isicon = TRUE;
 	if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w)
 	    Zoom(tmp_win->icon->w, tmp_win->frame);
 	else if (tmp_win->group != (Window) 0)
@@ -4097,9 +4100,9 @@ void DeIconify(TwmWindow *tmp_win)
 
     ReMapOne(tmp_win, t);
 
-    if ((Scr->WarpCursor ||
-	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)) &&
-	tmp_win->isicon)
+    if (isicon && 
+	(Scr->WarpCursor ||
+	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
       WarpToWindow (tmp_win);
 
     /* now de-iconify and window group transients */
@@ -4395,11 +4398,6 @@ static void Identify (TwmWindow *t)
 #ifdef SOUNDS
     if (!first) (void) strcat(Info[n], ", ");
     (void) strcat (Info[n], "SOUNDS");
-    first = False;
-#endif
-#ifdef X11R6
-    if (!first) (void) strcat(Info[n], ", ");
-    (void) strcat (Info[n], "X11R6");
     first = False;
 #endif
 #ifdef DEBUG

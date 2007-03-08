@@ -99,12 +99,15 @@ static void PaintButton			(int which,
 					 char *label,
 					 ColorPair cp, int state);
 static void WMapRemoveFromList		(TwmWindow *win, WorkSpace *ws);
+static int WMapWindowMayBeAdded         (TwmWindow *win);
 static void WMapAddToList		(TwmWindow *win, WorkSpace *ws);
 static void ResizeWorkSpaceManager	(virtualScreen *vs, TwmWindow *win);
 static void ResizeOccupyWindow		(TwmWindow *win);
 static WorkSpace *GetWorkspace		(char *wname);
 static void WMapRedrawWindow		(Window window, int width, int height,
 					 ColorPair cp, char *label);
+static int CanChangeOccupation          (TwmWindow **twm_winp);
+void safecopy                           (char *dest, char *src, int size);
 
 Atom _XA_WM_OCCUPATION;
 Atom _XA_WM_CURRENTWORKSPACE;
@@ -261,16 +264,10 @@ void CreateWorkSpaceManager (void)
 void GotoWorkSpaceByName (virtualScreen *vs, char *wname)
 {
     WorkSpace *ws;
+
     if (! Scr->workSpaceManagerActive) return;
     if (!vs) return;
-    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-      if (strcmp (ws->label, wname) == 0) break;
-    }
-    if (ws == NULL) {
-      for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	if (strcmp (ws->name, wname) == 0) break;
-      }
-    }
+    ws = GetWorkspace(wname);
     if (ws == NULL) return;
     GotoWorkSpace (vs, ws);
 }
@@ -320,79 +317,90 @@ void GotoNextWorkSpace (virtualScreen *vs)
 void GotoRightWorkSpace (virtualScreen *vs)
 {
     WorkSpace *ws;
-    int number, columns, count, i;
+    int number, columns, count;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (!vs) return;
+    if (!Scr->workSpaceManagerActive)
+	return;
+    if (!vs)
+	return;
 
     ws      = vs->wsw->currentwspc;
     number  = ws->number;
     columns = Scr->workSpaceMgr.columns;
     count   = Scr->workSpaceMgr.count;
-    number += ((number + 1) % columns) ? 1 : (1 - columns);
-    if (number >= count) number = (number / columns) * columns;
-    ws = Scr->workSpaceMgr.workSpaceList;
-    for (i = 0; i < number; i++) ws = ws->next;
-    GotoWorkSpace (vs, ws);
+    number++;
+    if ((number % columns) == 0)
+	number -= columns;
+    else if (number >= count)
+	number = (number / columns) * columns;
+
+    GotoWorkSpaceByNumber(vs, number);
 }
 
 void GotoLeftWorkSpace (virtualScreen *vs)
 {
     WorkSpace *ws;
-    int number, columns, count, i;
+    int number, columns, count;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (!vs) return;
+    if (!Scr->workSpaceManagerActive)
+	return;
+    if (!vs)
+	return;
 
     ws      = vs->wsw->currentwspc;
     number  = ws->number;
     columns = Scr->workSpaceMgr.columns;
     count   = Scr->workSpaceMgr.count;
     number += (number % columns) ? -1 : (columns - 1);
-    if (number >= count) number = count - 1;
-    ws = Scr->workSpaceMgr.workSpaceList;
-    for (i = 0; i < number; i++) ws = ws->next;
-    GotoWorkSpace (vs, ws);
+    if (number >= count)
+	number = count - 1;
+    GotoWorkSpaceByNumber(vs, number);
 }
 
 void GotoUpWorkSpace (virtualScreen *vs)
 {
     WorkSpace *ws;
-    int number, lines, columns, count, i;
+    int number, lines, columns, count;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (!vs) return;
+    if (!Scr->workSpaceManagerActive)
+	return;
+    if (!vs)
+	return;
 
     ws      = vs->wsw->currentwspc;
     number  = ws->number;
     lines   = Scr->workSpaceMgr.lines;
     columns = Scr->workSpaceMgr.columns;
     count   = Scr->workSpaceMgr.count;
-    number += (number >= columns) ? - columns : ((lines - 1) * columns);
-    while (number >= count) number -= columns;
-    ws = Scr->workSpaceMgr.workSpaceList;
-    for (i = 0; i < number; i++) ws = ws->next;
-    GotoWorkSpace (vs, ws);
+    number -=  columns;
+    if (number < 0) {
+	number += lines * columns;
+	/* If the number of workspaces is not a multiple of nr of columns */
+	if (number >= count)
+	    number -= columns;
+    }
+    GotoWorkSpaceByNumber(vs, number);
 }
 
 void GotoDownWorkSpace (virtualScreen *vs)
 {
     WorkSpace *ws;
-    int number, lines, columns, count, i;
+    int number, columns, count;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (!vs) return;
+    if (!Scr->workSpaceManagerActive)
+	return;
+    if (!vs)
+	return;
 
     ws      = vs->wsw->currentwspc;
     number  = ws->number;
-    lines   = Scr->workSpaceMgr.lines;
     columns = Scr->workSpaceMgr.columns;
     count   = Scr->workSpaceMgr.count;
-    number += (number < ((lines - 1) * columns)) ? columns : ((1 - lines) * columns);
-    if (number >= count) number = number % columns;
-    ws = Scr->workSpaceMgr.workSpaceList;
-    for (i = 0; i < number; i++) ws = ws->next;
-    GotoWorkSpace (vs, ws);
+    number +=  columns;
+    if (number >= count) {
+	number %= columns;
+    }
+    GotoWorkSpaceByNumber(vs, number);
 }
 
 void ShowBackground (virtualScreen *vs)
@@ -845,6 +853,12 @@ void SetupOccupation (TwmWindow *twm_win,
     }
 }
 
+void safecopy(char *dest, char *src, int size)
+{
+    strncpy(dest, src, size - 1);
+    dest[size - 1] = '\0';
+}
+
 Bool RedirectToCaptive (Window window)
 {
     unsigned char	*prop;
@@ -874,7 +888,7 @@ Bool RedirectToCaptive (Window window)
     status = XrmGetResource (db, "ctwm.redirect", "Ctwm.Redirect", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
 	char cctwm [64];
-	strncpy (cctwm, value.addr, value.size);
+	safecopy (cctwm, value.addr, sizeof(cctwm));
 	atomname = (char*) malloc (strlen ("WM_CTWM_ROOT_") + strlen (cctwm) + 1);
 	sprintf (atomname, "WM_CTWM_ROOT_%s", cctwm);
 	_XA_WM_CTWM_ROOT = XInternAtom (dpy, atomname, False);
@@ -896,8 +910,11 @@ Bool RedirectToCaptive (Window window)
     status = XrmGetResource (db, "ctwm.rootWindow", "Ctwm.RootWindow", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
 	char rootw [32];
-	strncpy (rootw, value.addr, value.size);
-	if (sscanf (rootw, "%x", &newroot) == 1) {
+	unsigned int scanned;
+
+	safecopy (rootw, value.addr, sizeof(rootw));
+	if (sscanf (rootw, "%x", &scanned) == 1) {
+	    newroot = scanned;
 	    if (XGetWindowAttributes (dpy, newroot, &wa)) {
 		XReparentWindow (dpy, window, newroot, 0, 0);
 		XMapWindow (dpy, window);
@@ -910,7 +927,40 @@ Bool RedirectToCaptive (Window window)
     return (ret);
 }
 
+/*
+ * The window whose occupation is being manipulated.
+ */
 static TwmWindow *occupyWin = (TwmWindow*) 0;
+
+static int CanChangeOccupation(TwmWindow **twm_winp)
+{
+    TwmWindow *twm_win;
+
+    if (!Scr->workSpaceManagerActive)
+	return 0;
+    if (occupyWin != NULL)
+	return 0;
+    twm_win = *twm_winp;
+    if (twm_win->iconmgr)
+	return 0;
+    if (!Scr->TransientHasOccupation) {
+	if (twm_win->transient)
+	    return 0;
+	if (twm_win->group != (Window) 0 && twm_win->group != twm_win->w) {
+	    /*
+	     * When trying to modify a group member window,
+	     * operate on the group leader instead
+	     * (and thereby on all group member windows as well).
+	     * If we can't find the group leader, pretend it isn't set.
+	     */
+	    twm_win = GetTwmWindow(twm_win->group);
+	    if (!twm_win)
+		return 1;
+	    *twm_winp = twm_win;
+	}
+    }
+    return 1;
+}
 
 void Occupy (TwmWindow *twm_win)
 {
@@ -920,37 +970,15 @@ void Occupy (TwmWindow *twm_win)
     int	       	 xoffset, yoffset;
     Window     	 junkW, w;
     unsigned int junkK;
-    WorkSpace	 *ws;
+    struct OccupyWindow    *occupyWindow;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (occupyWin != (TwmWindow*) 0) return;
-    if (twm_win->iconmgr) return;
-    if (! Scr->TransientHasOccupation) {
-	if (twm_win->transient) return;
-	if (twm_win->group != (Window) 0 && twm_win->group != twm_win->w) {
-	    /*
-	     * When trying to modify a group member window,
-	     * operate on the group leader instead
-	     * (and thereby on all group member windows as well).
-	     */
-	    twm_win = GetTwmWindow(twm_win->group);
-	    if (!twm_win)
-		return;
-	}
-    }
-    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	Window obuttonw = Scr->workSpaceMgr.occupyWindow->obuttonw [ws->number];
-	if (OCCUPY (twm_win, ws)) {
-	    PaintButton (OCCUPYWINDOW, NULL, obuttonw, ws->label, ws->cp, on);
-	    Scr->workSpaceMgr.occupyWindow->tmpOccupation |= (1 << ws->number);
-	}
-	else {
-	    PaintButton (OCCUPYWINDOW, NULL, obuttonw, ws->label, ws->cp, off);
-	    Scr->workSpaceMgr.occupyWindow->tmpOccupation &= ~(1 << ws->number);
-	}
-    }
-    w = Scr->workSpaceMgr.occupyWindow->w;
-    XGetGeometry  (dpy, w, &junkW, &x, &y, &width, &height, &junkB, &junkD);
+    if (!CanChangeOccupation(&twm_win))
+	return;
+
+    occupyWindow = Scr->workSpaceMgr.occupyWindow;
+    occupyWindow->tmpOccupation = twm_win->occupation;
+    w = occupyWindow->w;
+    XGetGeometry  (dpy, w, &junkW, &junkX, &junkY, &width, &height, &junkB, &junkD);
     XQueryPointer (dpy, Scr->Root, &junkW, &junkW, &junkX, &junkY, &x, &y, &junkK);
     x -= (width  / 2);
     y -= (height / 2);
@@ -961,18 +989,17 @@ void Occupy (TwmWindow *twm_win)
     if ((x + xoffset) > Scr->rootw) x = Scr->rootw - xoffset;
     if ((y + yoffset) > Scr->rooth) y = Scr->rooth - yoffset;
 
-    Scr->workSpaceMgr.occupyWindow->twm_win->occupation = twm_win->occupation;
-    if (Scr->Root != Scr->CaptiveRoot)
-      XReparentWindow  (dpy, Scr->workSpaceMgr.occupyWindow->twm_win->frame, Scr->Root, x, y);
-    else
-      XMoveWindow  (dpy, Scr->workSpaceMgr.occupyWindow->twm_win->frame, x, y);
+    occupyWindow->twm_win->occupation = twm_win->occupation;
+    if (occupyWindow->twm_win->vs != Scr->currentvs) {
+	XReparentWindow(dpy, occupyWindow->twm_win->frame, Scr->Root, x, y);
+	occupyWindow->twm_win->vs = Scr->currentvs;
+    } else
+	XMoveWindow(dpy, occupyWindow->twm_win->frame, x, y);
 
-    SetMapStateProp (Scr->workSpaceMgr.occupyWindow->twm_win, NormalState);
-    XMapWindow      (dpy, Scr->workSpaceMgr.occupyWindow->w);
-    XMapRaised      (dpy, Scr->workSpaceMgr.occupyWindow->twm_win->frame);
-    Scr->workSpaceMgr.occupyWindow->twm_win->mapped = TRUE;
-    Scr->workSpaceMgr.occupyWindow->x = x;
-    Scr->workSpaceMgr.occupyWindow->y = y;
+    SetMapStateProp (occupyWindow->twm_win, NormalState);
+    XMapWindow      (dpy, occupyWindow->w);
+    XMapRaised      (dpy, occupyWindow->twm_win->frame);
+    occupyWindow->twm_win->mapped = TRUE;
     occupyWin = twm_win;
 }
 
@@ -998,16 +1025,15 @@ void OccupyHandleButtonEvent (XEvent *event)
 	if (occupyW->obuttonw [ws->number] == buttonW) break;
     }
     if (ws != NULL) {
-	if ((occupyW->tmpOccupation & (1 << ws->number)) == 0) {
+	int mask = 1 << ws->number;
+	if ((occupyW->tmpOccupation & mask) == 0) {
 	    PaintButton (OCCUPYWINDOW, NULL, occupyW->obuttonw [ws->number],
 			 ws->label, ws->cp, on);
-	    occupyW->tmpOccupation |= (1 << ws->number);
-	}
-	else {
+	} else {
 	    PaintButton (OCCUPYWINDOW, NULL, occupyW->obuttonw [ws->number],
 			 ws->label, ws->cp, off);
-	    occupyW->tmpOccupation &= ~(1 << ws->number);
 	}
+	occupyW->tmpOccupation ^= mask;
     }
     else
     if (buttonW == occupyW->OK) {
@@ -1042,9 +1068,8 @@ void OccupyAll (TwmWindow *twm_win)
 {
     IconMgr *save;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (twm_win->iconmgr)   return;
-    if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
+    if (!CanChangeOccupation(&twm_win))
+	return;
     save = Scr->iconmgr;
     Scr->iconmgr = Scr->workSpaceMgr.workSpaceList->iconmgr;
     ChangeOccupation (twm_win, fullOccupation);
@@ -1056,13 +1081,14 @@ void AddToWorkSpace (char *wname, TwmWindow *twm_win)
     WorkSpace *ws;
     int newoccupation;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (twm_win->iconmgr)   return;
-    if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
+    if (!CanChangeOccupation(&twm_win))
+	return;
     ws = GetWorkspace (wname);
-    if (!ws) return;
+    if (!ws)
+	return;
 
-    if (twm_win->occupation & (1 << ws->number)) return;
+    if (twm_win->occupation & (1 << ws->number))
+	return;
     newoccupation = twm_win->occupation | (1 << ws->number);
     ChangeOccupation (twm_win, newoccupation);
 }
@@ -1072,11 +1098,11 @@ void RemoveFromWorkSpace (char *wname, TwmWindow *twm_win)
     WorkSpace *ws;
     int newoccupation;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (twm_win->iconmgr)   return;
-    if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
+    if (!CanChangeOccupation(&twm_win))
+	return;
     ws = GetWorkspace (wname);
-    if (!ws) return;
+    if (!ws)
+	return;
 
     newoccupation = twm_win->occupation & ~(1 << ws->number);
     if (!newoccupation) return;
@@ -1088,124 +1114,78 @@ void ToggleOccupation (char *wname, TwmWindow *twm_win)
     WorkSpace *ws;
     int newoccupation;
 
-    if (! Scr->workSpaceManagerActive) return;
-    if (twm_win->iconmgr)   return;
-    if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
+    if (!CanChangeOccupation(&twm_win))
+	return;
     ws = GetWorkspace (wname);
     if (!ws) return;
 
-    if (twm_win->occupation & (1 << ws->number)) {
-	newoccupation = twm_win->occupation & ~(1 << ws->number);
-    } else {
-	newoccupation = twm_win->occupation | (1 << ws->number);
-    }
+    newoccupation = twm_win->occupation ^ (1 << ws->number);
     if (!newoccupation) return;
     ChangeOccupation (twm_win, newoccupation);
 }
 
 void MoveToNextWorkSpace (virtualScreen *vs, TwmWindow *twm_win)
 {
-  WorkSpace *wlist1, *wlist2;
+    WorkSpace *wlist1, *wlist2;
+    int newoccupation;
 
-  if (! Scr->workSpaceManagerActive) return;
-  wlist1 = Scr->vScreenList->wsw->currentwspc;
-  wlist2 = Scr->vScreenList->wsw->currentwspc;
+    if (!CanChangeOccupation(&twm_win))
+	return;
 
-  if (twm_win->iconmgr)   return;
-  if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
-   
-  wlist1 = (wlist1->next != NULL) ? wlist1->next : 
-    Scr->workSpaceMgr.workSpaceList;
-  if (!(twm_win->occupation & (1 << wlist1->number)))
-    {
-      /*      add to new workspace */
-      ToggleOccupation(wlist1->name, twm_win);
-      /*      remove from old workspace */
-      ToggleOccupation(wlist2->name, twm_win);
-    }
+    wlist1 = vs->wsw->currentwspc;
+    wlist2 = wlist1->next;
+    wlist2 = wlist2 ? wlist2 : Scr->workSpaceMgr.workSpaceList;
+
+    newoccupation = (twm_win->occupation ^ (1 << wlist1->number))
+				         | (1 << wlist2->number);
+    ChangeOccupation (twm_win, newoccupation);
 }
 
 
 void MoveToNextWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
 {
-  WorkSpace *wlist1, *wlist2;
+    if (!CanChangeOccupation(&twm_win))
+	return;
 
-  if (! Scr->workSpaceManagerActive) return;
-  wlist1 = Scr->vScreenList->wsw->currentwspc;
-  wlist2 = Scr->vScreenList->wsw->currentwspc;
-
-
-  if (twm_win->iconmgr)   return;
-  if ((! Scr->TransientHasOccupation) && twm_win->transient) return;
-   
-  wlist1 = (wlist1->next != NULL) ? wlist1->next : 
-    Scr->workSpaceMgr.workSpaceList;
-   
-  if (!(twm_win->occupation & (1 << wlist1->number)))
-    {
-      /*      add to new workspace */
-      ToggleOccupation(wlist1->name, twm_win);
-      /*      remove from old workspace */
-      ToggleOccupation(wlist2->name, twm_win);
-    }
-
-  GotoWorkSpace(vs, wlist1);
-
-  RaiseWindow(twm_win);
+    MoveToNextWorkSpace(vs, twm_win);
+    GotoNextWorkSpace(vs);
+#if 0
+    RaiseWindow(twm_win);	/* XXX really do this? */
+#endif
 }
 
 
 void MoveToPrevWorkSpace (virtualScreen *vs, TwmWindow *twm_win)
 {
-  WorkSpace *wlist1, *wlist2;
-    
-  if (! Scr->workSpaceManagerActive) return;
-  wlist1 = Scr->workSpaceMgr.workSpaceList;
-  if (wlist1 == NULL) return;
-   
-  wlist2 = wlist1->next;
-  while ((wlist2 != Scr->vScreenList->wsw->currentwspc/*Scr->workSpaceMgr.activeWSPC*/) && (wlist2 != NULL)) {
-    wlist1 = wlist2;
-    wlist2 = wlist2->next;
-  }
-  wlist2 = Scr->vScreenList->wsw->currentwspc;
-  /*Scr->workSpaceMgr.activeWSPC;*/
-   
-  if (!(twm_win->occupation & (1 << wlist1->number)))
-    {
-      /*      add to new workspace */
-      ToggleOccupation(wlist1->name, twm_win);
-      /*      remove from old workspace */
-      ToggleOccupation(wlist2->name, twm_win);
+    WorkSpace *wlist1, *wlist2;
+    int newoccupation;
+
+    if (!CanChangeOccupation(&twm_win))
+	return;
+
+    wlist1 = Scr->workSpaceMgr.workSpaceList;
+    wlist2 = vs->wsw->currentwspc;
+    if (wlist1 == NULL) return;
+
+    while (wlist1->next != wlist2 && wlist1->next != NULL) {
+	wlist1 = wlist1->next;
     }
+
+    newoccupation = (twm_win->occupation ^ (1 << wlist2->number))
+					 | (1 << wlist1->number);
+    ChangeOccupation (twm_win, newoccupation);
 }
 
 void MoveToPrevWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
 {
-  WorkSpace *wlist1, *wlist2;
-    
-  if (! Scr->workSpaceManagerActive) return;
-  wlist1 = Scr->workSpaceMgr.workSpaceList;
-  if (wlist1 == NULL) return;
-   
-  wlist2 = wlist1->next;
-  while ((wlist2 != Scr->vScreenList->wsw->currentwspc/*Scr->workSpaceMgr.activeWSPC*/) && (wlist2 != NULL)) {
-    wlist1 = wlist2;
-    wlist2 = wlist2->next;
-  }
-  wlist2 = Scr->vScreenList->wsw->currentwspc;
-  /*Scr->workSpaceMgr.activeWSPC;*/
-   
-  if (!(twm_win->occupation & (1 << wlist1->number)))
-    {
-      /*      add to new workspace */
-      ToggleOccupation(wlist1->name, twm_win);
-      /*      remove from old workspace */
-      ToggleOccupation(wlist2->name, twm_win);
-    }
-  GotoWorkSpace(vs,wlist1);
-  RaiseWindow(twm_win);
+    if (!CanChangeOccupation(&twm_win))
+	return;
 
+    MoveToPrevWorkSpace(vs, twm_win);
+    GotoPrevWorkSpace(vs);
+#if 0
+    RaiseWindow(twm_win);		/* XXX really do this? */
+#endif
 }
 
 static WorkSpace *GetWorkspace (char *wname)
@@ -1381,6 +1361,7 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
     XWindowAttributes winattrs;
     unsigned long     eventMask;
     long      gwkspc = 0; /* for gnome - the workspace of this window */
+    int changedoccupation;
 #ifdef GNOME
     unsigned char *prop;
     unsigned long bytesafter, numitems;
@@ -1438,8 +1419,9 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
       }
     }
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	if (oldoccupation & (1 << ws->number)) {
-	    if (!(newoccupation & (1 << ws->number))) {
+	int mask = 1 << ws->number;
+	if (oldoccupation & mask) {
+	    if (!(newoccupation & mask)) {
 		RemoveWindowFromRegion (tmp_win);
 		if (PlaceWindowInRegion (tmp_win, &final_x, &final_y))
 		    XMoveWindow (dpy, tmp_win->frame, final_x, final_y);
@@ -1473,43 +1455,35 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
 #endif /* GNOME */
     XSelectInput(dpy, tmp_win->w, eventMask);
 
+    if (!WMapWindowMayBeAdded(tmp_win)) {
+	newoccupation = 0;
+    }
     if (Scr->workSpaceMgr.noshowoccupyall) {
-	if (newoccupation == fullOccupation) {
-	    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-		if ((oldoccupation & (1 << ws->number)) != 0) {
-		    WMapRemoveFromList (tmp_win, ws);
-		}
-	    }
-	    goto trans;
-	}
-	else
-	if (oldoccupation == fullOccupation) {
-	    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-		if ((newoccupation & (1 << ws->number)) != 0) {
-		    WMapAddToList (tmp_win, ws);
-		}
-	    }
-	    goto trans;
-	}
+	/* We can safely change new/oldoccupation here, it's only used
+	 * for WMapAddToList()/WMapRemoveFromList() from here on.
+	 */
+	/* if (newoccupation == fullOccupation)
+	    newoccupation = 0; */
+	if (oldoccupation == fullOccupation)
+	    oldoccupation = 0;
     }
+    changedoccupation = oldoccupation ^ newoccupation;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	if (((oldoccupation & (1 << ws->number)) != 0) &&
-	    ((newoccupation & (1 << ws->number)) == 0)) {
-	    WMapRemoveFromList (tmp_win, ws);
-	}
-	else
-	if (((newoccupation & (1 << ws->number)) != 0) &&
-	    ((oldoccupation & (1 << ws->number)) == 0)) {
-	    WMapAddToList (tmp_win, ws);
+	int mask = 1 << ws->number;
+	if (changedoccupation & mask) {
+	    if (newoccupation & mask)
+		WMapAddToList (tmp_win, ws);
+	    else
+		WMapRemoveFromList (tmp_win, ws);
 	}
     }
-trans:
+
     if (! Scr->TransientHasOccupation) {
 	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 	    if (t != tmp_win &&
 		((t->transient && t->transientfor == tmp_win->w) ||
 		 t->group == tmp_win->w)) {
-		ChangeOccupation (t, newoccupation);
+		ChangeOccupation (t, tmp_win->occupation);
 	    }
 	}
     }
@@ -1676,12 +1650,10 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
     wwidth  = width  / columns;
     wheight = height / lines;
 
-    vs->wsw->width   = width;
-    vs->wsw->height  = height;
-    vs->wsw->bwidth  = bwidth;
-    vs->wsw->bheight = bheight;
-    vs->wsw->wwidth  = wwidth;
-    vs->wsw->wheight = wheight;
+#define Dummy	1
+
+    vs->wsw->width   = Dummy;
+    vs->wsw->height  = Dummy;
     vs->wsw->bswl    = (ButtonSubwindow**)
       malloc (Scr->workSpaceMgr.count * sizeof (ButtonSubwindow*));
     vs->wsw->mswl    = (MapSubwindow**)
@@ -1692,21 +1664,25 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
     i = 0; j = 0;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
         Window mapsw, butsw;
+        MapSubwindow *msw;
+        ButtonSubwindow *bsw;
 
-	vs->wsw->bswl [ws->number] = (ButtonSubwindow*) malloc (sizeof (ButtonSubwindow));
-	vs->wsw->mswl [ws->number] = (MapSubwindow*)    malloc (sizeof (MapSubwindow));
+	vs->wsw->bswl [ws->number] = bsw = 
+	    (ButtonSubwindow*) malloc (sizeof (ButtonSubwindow));
+        vs->wsw->mswl [ws->number] = msw =
+	    (MapSubwindow*)    malloc (sizeof (MapSubwindow));
 
-        butsw = vs->wsw->bswl [ws->number]->w =
+        butsw = bsw->w =
 	  XCreateSimpleWindow (dpy, vs->wsw->w,
-			       i * (bwidth  + hspace) + (hspace / 2),
-			       j * (bheight + vspace) + (vspace / 2),
-			       bwidth, bheight, 0, Scr->Black, ws->cp.back);
+			       Dummy /* x */, Dummy /* y */,
+			       Dummy /* width */, Dummy /* height */,
+			       0, Scr->Black, ws->cp.back);
 
-	vs->wsw->mswl [ws->number]->x = i * wwidth;
-	vs->wsw->mswl [ws->number]->y = j * wheight;
-	mapsw = vs->wsw->mswl [ws->number]->w = XCreateSimpleWindow (dpy, vs->wsw->w,
-				       i * wwidth, j * wheight,
-				       wwidth - 2, wheight - 2, 1, border, ws->cp.back);
+	mapsw = msw->w =
+	    XCreateSimpleWindow (dpy, vs->wsw->w,
+				 Dummy /* x */, Dummy /* y */,
+				 Dummy /* width */, Dummy /* height */,
+				 1, border, ws->cp.back);
 
 	if (vs->wsw->state == BUTTONSSTATE)
 	    XMapWindow (dpy, butsw);
@@ -1758,6 +1734,9 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
     }
     tmp_win->occupation = fullOccupation;
     tmp_win->vs = vs;
+    tmp_win->attr.width = width;
+    tmp_win->attr.height = height;
+    ResizeWorkSpaceManager(vs, tmp_win);
 
     attrmask = 0;
     attr.cursor = Scr->ButtonCursor;
@@ -1854,8 +1833,15 @@ char *ok_string		= "OK",
      *cancel_string	= "Cancel",
      *everywhere_string	= "All";
 
+/*
+ * Create the Occupy window. Do not do the layout of the parts, only
+ * calculate the inial total size. For the layout, call ResizeOccupyWindow()
+ * at the end.
+ * There is only one Occupy window (per Screen), it is reparented to each
+ * virtual screen as needed.
+ */
 static void CreateOccupyWindow (void) {
-    int		  width, height, lines, columns, x, y;
+    int		  width, height, lines, columns;
     int		  bwidth, bheight, owidth, oheight, hspace, vspace;
     int		  min_bwidth, min_width;
     int		  i, j;
@@ -1891,7 +1877,7 @@ static void CreateOccupyWindow (void) {
     columns   = Scr->workSpaceMgr.columns;
     bwidth    = vs->wsw->bwidth;
     bheight   = vs->wsw->bheight;
-    oheight   = vs->wsw->bheight;
+    oheight   = bheight;
     vspace    = occwin->vspace;
     hspace    = occwin->hspace;
     cp        = occwin->cp;
@@ -1923,24 +1909,22 @@ static void CreateOccupyWindow (void) {
     }
     occwin->lines   = lines;
     occwin->columns = columns;
-    occwin->width   = width;
-    occwin->height  = height;
-    occwin->bwidth  = bwidth;
-    occwin->bheight = bheight;
     occwin->owidth  = owidth;
-    occwin->oheight = oheight;
 
     w = occwin->w = XCreateSimpleWindow (dpy, Scr->Root, 0, 0, width, height,
 					 1, Scr->Black, cp.back);
     occwin->obuttonw = (Window*) malloc (Scr->workSpaceMgr.count * sizeof (Window));
     i = 0; j = 0;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
+	Window bw =
 	occwin->obuttonw [j * columns + i] =
 	  XCreateSimpleWindow(dpy, w,
-			      i * (bwidth  + hspace) + (hspace / 2),
-			      j * (bheight + vspace) + (vspace / 2), bwidth, bheight, 0,
-			      Scr->Black, ws->cp.back);
-	XMapWindow (dpy, occwin->obuttonw [j * columns + i]);
+			      Dummy /* x */,
+			      Dummy /* y */,
+			      Dummy /* width */,
+			      Dummy /* height */,
+			      0, Scr->Black, ws->cp.back);
+	XMapWindow (dpy, bw);
 	i++;
 	if (i == columns) {i = 0; j++;}
     }
@@ -1948,18 +1932,13 @@ static void CreateOccupyWindow (void) {
     occupyButtoncp.fore = Scr->White;
     if (!Scr->BeNiceToColormap) GetShadeColors (&occupyButtoncp);
 
-    hspace = (width - 3 * owidth) / 4;
-    x  = hspace;
-    y  = ((bheight + vspace) * lines) + ((3 * vspace) / 2);
-    OK = XCreateSimpleWindow (dpy, w, x, y, owidth, oheight, 0,
+    OK = XCreateSimpleWindow (dpy, w, Dummy, Dummy, Dummy, Dummy, 0,
 			Scr->Black, occupyButtoncp.back);
     XMapWindow (dpy, OK);
-    x += owidth + hspace;
-    cancel = XCreateSimpleWindow (dpy, w, x, y, owidth, oheight, 0,
+    cancel = XCreateSimpleWindow (dpy, w, Dummy, Dummy, Dummy, Dummy, 0,
 			Scr->Black, occupyButtoncp.back);
     XMapWindow (dpy, cancel);
-    x += owidth + hspace;
-    allworkspc = XCreateSimpleWindow (dpy, w, x, y, owidth, oheight, 0,
+    allworkspc = XCreateSimpleWindow (dpy, w, Dummy, Dummy, Dummy, Dummy, 0,
 			Scr->Black, occupyButtoncp.back);
     XMapWindow (dpy, allworkspc);
 
@@ -1999,23 +1978,27 @@ static void CreateOccupyWindow (void) {
 
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
         Window bw = occwin->obuttonw [ws->number];
-	XSelectInput (dpy, bw, ButtonPressMask | ButtonReleaseMask);
+	XSelectInput (dpy, bw, ButtonPressMask | ButtonReleaseMask | ExposureMask);
 	XSaveContext (dpy, bw, TwmContext,    (XPointer) tmp_win);
 	XSaveContext (dpy, bw, ScreenContext, (XPointer) Scr);
     }
-    XSelectInput (dpy, occwin->OK, ButtonPressMask | ButtonReleaseMask);
+    XSelectInput (dpy, occwin->OK, ButtonPressMask | ButtonReleaseMask | ExposureMask);
     XSaveContext (dpy, occwin->OK, TwmContext,    (XPointer) tmp_win);
     XSaveContext (dpy, occwin->OK, ScreenContext, (XPointer) Scr);
-    XSelectInput (dpy, occwin->cancel, ButtonPressMask | ButtonReleaseMask);
+    XSelectInput (dpy, occwin->cancel, ButtonPressMask | ButtonReleaseMask | ExposureMask);
     XSaveContext (dpy, occwin->cancel, TwmContext,    (XPointer) tmp_win);
     XSaveContext (dpy, occwin->cancel, ScreenContext, (XPointer) Scr);
-    XSelectInput (dpy, occwin->allworkspc, ButtonPressMask | ButtonReleaseMask);
+    XSelectInput (dpy, occwin->allworkspc, ButtonPressMask | ButtonReleaseMask | ExposureMask);
     XSaveContext (dpy, occwin->allworkspc, TwmContext,    (XPointer) tmp_win);
     XSaveContext (dpy, occwin->allworkspc, ScreenContext, (XPointer) Scr);
 
     SetMapStateProp (tmp_win, WithdrawnState);
     occwin->twm_win = tmp_win;
     Scr->workSpaceMgr.occupyWindow = occwin;
+
+    tmp_win->attr.width = width;
+    tmp_win->attr.height = height;
+    ResizeOccupyWindow(tmp_win);	/* place all parts in the right place */
 }
 
 void PaintOccupyWindow (void)
@@ -2051,7 +2034,6 @@ static void PaintButton (int which,
     int        bwidth, bheight;
     MyFont     font;
     int        strWid, strHei, hspace, vspace;
-    XFontSetExtents *font_extents;
     XRectangle inc_rect;
     XRectangle logical_rect;
 
@@ -2070,7 +2052,7 @@ static void PaintButton (int which,
     else
     if (which == OCCUPYBUTTON) {
 	bwidth  = occwin->owidth;
-	bheight = occwin->oheight;
+	bheight = occwin->bheight;
 	font    = occwin->font;
     }
     else return;
@@ -2305,18 +2287,35 @@ void WMapSetButtonsState (virtualScreen *vs)
     vs->wsw->state = BUTTONSSTATE;
 }
 
+/*
+ * Verify if a window may be added to the workspace map.
+ * This is not allowed for
+ * - icon managers
+ * - the occupy window
+ * - workspace manager windows
+ * - or, optionally, windows with full occupation.
+ */
+int WMapWindowMayBeAdded(TwmWindow *win)
+{
+    if (win->iconmgr)
+	return 0;
+    if (win == Scr->workSpaceMgr.occupyWindow->twm_win)
+	return 0;
+    if (win->wspmgr)
+	return 0;
+    if (Scr->workSpaceMgr.noshowoccupyall &&
+	win->occupation == fullOccupation)
+	return 0;
+    return 1;
+}
+
 void WMapAddWindow (TwmWindow *win)
 {
-    virtualScreen *vs;
     WorkSpace     *ws;
 
-    if (win->iconmgr) return;
-    if (strcmp (win->name, Scr->workSpaceMgr.occupyWindow->name) == 0) return;
-    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-      if (win == vs->wsw->twm_win) return;
-    }
-    if ((Scr->workSpaceMgr.noshowoccupyall) &&
-	(win->occupation == fullOccupation)) return;
+    if (!WMapWindowMayBeAdded(win))
+	return;
+
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
 	if (OCCUPY (win, ws)) WMapAddToList (win, ws);
     }
@@ -2368,15 +2367,11 @@ void WMapSetupWindow (TwmWindow *win, int x, int y, int w, int h)
     if (!win->vs) return;
 
     if (win->wspmgr) {
-	win->vs->wsw->x = x;
-	win->vs->wsw->y = y;
 	if (w == -1) return;
 	ResizeWorkSpaceManager (win->vs, win);
 	return;
     }
     if (win == Scr->workSpaceMgr.occupyWindow->twm_win) {
-	Scr->workSpaceMgr.occupyWindow->x = x;
-	Scr->workSpaceMgr.occupyWindow->y = y;
 	if (w == -1) return;
 	ResizeOccupyWindow (win);
 	return;
@@ -2498,10 +2493,14 @@ void WMapRestack (WorkSpace *ws)
 	if (win->frame != children [i]) continue; /* skip icons */
 	if (! OCCUPY (win, ws)) continue;
 	if (tracefile) {
-	    fprintf (tracefile, "WMapRestack : w = %lx, win = %p\n", children [i], win);
+	    fprintf (tracefile, "WMapRestack : w = %lx, win = %p\n", children [i], (void *)win);
 	    fflush (tracefile);
 	}
 	for (wl = vs->wsw->mswl [ws->number]->wl; wl != NULL; wl = wl->next) {
+	if (tracefile) {
+	    fprintf (tracefile, "WMapRestack : wl = %p, twm_win = %p\n", (void *)wl, (void *)wl->twm_win);
+	    fflush (tracefile);
+	}
 	    if (win == wl->twm_win) {
 		smallws [j++] = wl->w;
 		break;
@@ -2558,7 +2557,8 @@ void WMgrHandleKeyPressEvent (virtualScreen *vs, XEvent *event)
 {
     WorkSpace *ws;
     int	      len, i, lname;
-    char      key [16], k;
+    char      key [16];
+    unsigned char k;
     char      name [128];
     char      *keyname;
     KeySym    keysym;
@@ -3068,35 +3068,24 @@ static void WMapAddToList (TwmWindow *win, WorkSpace *ws)
 static void WMapRemoveFromList (TwmWindow *win, WorkSpace *ws)
 {
     virtualScreen *vs;
-    WinList wl, wl1;
+    WinList wl, *prev;
 
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-      wl = vs->wsw->mswl [ws->number]->wl;
-      if (wl == NULL) continue;
-      if (win == wl->twm_win) {
-	vs->wsw->mswl [ws->number]->wl = wl->next;
-	XDeleteContext (dpy, wl->w, TwmContext);
-	XDeleteContext (dpy, wl->w, ScreenContext);
-	XDeleteContext (dpy, wl->w, MapWListContext);
-	XDestroyWindow (dpy, wl->w);
-	free (wl);
-	continue;
-      }
-      wl1 = wl;
-      wl  = wl->next;
-      while (wl != NULL) {
-	if (win == wl->twm_win) {
-	  wl1->next = wl->next;
-	  XDeleteContext (dpy, wl->w, TwmContext);
-	  XDeleteContext (dpy, wl->w, ScreenContext);
-	  XDeleteContext (dpy, wl->w, MapWListContext);
-	  XDestroyWindow (dpy, wl->w);
-	  free (wl);
-	  break;
+	prev = &vs->wsw->mswl [ws->number]->wl;
+	wl = *prev;
+	while (wl != NULL) {
+	    if (win == wl->twm_win) {
+		*prev = wl->next;
+		XDeleteContext (dpy, wl->w, TwmContext);
+		XDeleteContext (dpy, wl->w, ScreenContext);
+		XDeleteContext (dpy, wl->w, MapWListContext);
+		XDestroyWindow (dpy, wl->w);
+		free (wl);
+		break;
+	    }
+	    prev = &wl->next;
+	    wl   = *prev;
 	}
-	wl1 = wl;
-	wl  = wl->next;
-      }
     }
 }
 
@@ -3111,14 +3100,12 @@ static void ResizeWorkSpaceManager (virtualScreen *vs, TwmWindow *win)
     TwmWindow	  *tmp_win;
     WinList	  wl;
     int           i, j;
-    static int    oldw = 0;
-    static int    oldh = 0;
     float	  wf, hf;
 
     neww = win->attr.width;
     newh = win->attr.height;
-    if ((neww == oldw) && (newh == oldh)) return;
-    oldw = neww; oldh = newh;
+    if (neww == vs->wsw->width && newh == vs->wsw->height)
+	return;
 
     hspace  = Scr->workSpaceMgr.hspace;
     vspace  = Scr->workSpaceMgr.vspace;
@@ -3170,14 +3157,12 @@ static void ResizeOccupyWindow (TwmWindow *win)
     int        neww, newh;
     WorkSpace  *ws;
     int        i, j, x, y;
-    static int oldw = 0;
-    static int oldh = 0;
     OccupyWindow *occwin = Scr->workSpaceMgr.occupyWindow;
 
     neww = win->attr.width;
     newh = win->attr.height;
-    if ((neww == oldw) && (newh == oldh)) return;
-    oldw = neww; oldh = newh;
+    if (occwin->width == neww && occwin->height == newh)
+	return;
 
     hspace  = occwin->hspace;
     vspace  = occwin->vspace;
@@ -3191,27 +3176,27 @@ static void ResizeOccupyWindow (TwmWindow *win)
     i = 0;
     j = 0;
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	XMoveResizeWindow (dpy, occwin->w,
+	XMoveResizeWindow (dpy, occwin->obuttonw [j * columns + i],
 			   i * (bwidth  + hspace) + (hspace / 2),
 			   j * (bheight + vspace) + (vspace / 2),
 			   bwidth, bheight);
 	i++;
 	if (i == columns) {i = 0; j++;}
     }
-    hspace = (neww - 3 * owidth) / 3;
-    x = hspace / 2;
+    hspace = (neww - 3 * owidth) / 4;
+    x = hspace;
     y = ((bheight + vspace) * lines) + ((3 * vspace) / 2);
     XMoveResizeWindow (dpy, occwin->OK, x, y, owidth, oheight);
     x += owidth + hspace;
     XMoveResizeWindow (dpy, occwin->cancel, x, y, owidth, oheight);
     x += owidth + hspace;
     XMoveResizeWindow (dpy, occwin->allworkspc, x, y, owidth, oheight);
+
     occwin->width   = neww;
     occwin->height  = newh;
     occwin->bwidth  = bwidth;
     occwin->bheight = bheight;
     occwin->owidth  = owidth;
-    occwin->oheight = oheight;
     PaintOccupyWindow ();
 }
 

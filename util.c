@@ -163,10 +163,6 @@
 #   include "sdsc.h"
 #endif
 
-#if defined(X11R4) && defined(ultrix)
-    typedef struct XWDColor XWDColor;
-#endif
-
 #define MAXANIMATIONSPEED 20
 
 extern int captive;

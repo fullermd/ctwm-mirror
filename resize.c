@@ -934,13 +934,12 @@ void SetupFrame (TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
 	
 	XConfigureWindow(dpy, tmp_win->title_w, xwcm, &xwc);
     }
-#ifdef X11R6
     if (tmp_win->attr.width != w)
 	tmp_win->widthEverChangedByUser = True;
 
     if (tmp_win->attr.height != (h - tmp_win->title_height))
 	tmp_win->heightEverChangedByUser = True;
-#endif
+
     if (!tmp_win->squeezed) {
 	tmp_win->attr.width  = w - (2 * tmp_win->frame_bw3D);
 	tmp_win->attr.height = h - tmp_win->title_height - (2 * tmp_win->frame_bw3D);

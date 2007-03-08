@@ -14,6 +14,14 @@ X11XMU=sys$sysroot:[decw$include.xmu]
 # X11XMULIB=X11LIB:XMU.OLB
 X11XMULIB=SYS$SHARE:DECW$XMULIBSHR/SHARE
 
+# Xsm include files
+# X11SM=X11LIB:
+X11SM=sys$sysroot:[decw$include.sm]
+
+# Xsm library to use
+# X11SMLIB=X11LIB:SM.OLB
+X11SMLIB=SYS$SHARE:DECW$SMSHR/SHARE
+
 # ctwm exit style:
 #	0 - Just exit with error code 20.
 #	1 - run sys$system:decw$endsession.exe on exit
@@ -117,30 +125,6 @@ USE_M4 =
 # If you want to build with Gnome extensions, define GNOME.
 #
 GNOME = 1
-
-# ----------------------------------------------------------------------
-# Feature: Use session management features
-# If you want to use X11R6 session management, define USE_SESSION.
-#
-# The make variables USER_SMLIBDIR and USER_SMINCDIR can be
-# used to configure library search paths and include file search paths
-# to find the rplay libraries and header files.
-#
-# Example:
-#
-# USE_SESSION = 1
-# USER_SESSIONLIBDIR = LOCAL_LIBRARIES:
-# USER_SESSIONINCDIR = LOCAL_INCLUDE:
-#
-USE_SESSION = 1
-USER_SESSIONLIBDIR=SYS$SHARE:
-USER_SESSIONINCDIR=sys$sysroot:[decw$include.sm]
-
-# ----------------------------------------------------------------------
-# Feature: I18n support
-# If you want to build with i18n support, define I18N.
-#
-I18N = 1
 
 # ----------------------------------------------------------------------
 # Feature: Use GNU regex

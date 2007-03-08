@@ -305,14 +305,6 @@ Is defined only if \fIctwm\fP was compiled with GNOME.
 Is defined only if \fIctwm\fP was compiled with USE_SOUND.
 
 .TP 16
-.B "SESSION"
-Is defined only if \fIctwm\fP was compiled with USE_SESSION.
-
-.TP 16
-.B "I18N"
-Is defined only if \fIctwm\fP was compiled with I18N.
-
-.TP 16
 .B "TWM_CAPTIVE"
 This will be either \(oqYes\(cq or \(oqNo\(cq. \(oqYes\(cq if the current \fIctwm\fP is captive
 (flag \-w), \(oqNo\(cq in the other case.
@@ -1604,6 +1596,13 @@ WorkSpaces
 .IP
 The WorkSpaces declaration should come before the Occupy or OccupyAll
 declarations. The maximum number of workspaces is 32.
+.IP
+Each workspace also has a label, which is displayed in the
+WorkSpaceManager window when it is in button state.
+By moving the mouse cursor over a button and typing letters and/or
+backspace, you may edit the label.
+The name is unaffected.
+Functions that look up workspaces by name also look at the label.
 
 .IP "\fBXMoveGrid\fP \fInumber\fP" 8
 This variable specifies the value to use to constrain window movement.
@@ -1828,7 +1827,6 @@ field of the binding command. For example:
 "o"	= a1	: window|icon	: f.occupy
 "r"	= a1	: window|icon	: f.refresh
 .EE
-.PP
 When using an alternate keymaps, only the root, window, icon and iconmgr
 contexts are allowed.
 

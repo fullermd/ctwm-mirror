@@ -1393,12 +1393,14 @@ int do_string_string_keyword (int keyword, char *s1, char *s2)
 	    } else {
 		Scr->RandomPlacement = rp;
 	    }
-       }
-       {
-	   if (strcmp (s2, "default") == 0) return 1;
+	}
+	{
+	    if (strcmp (s2, "default") == 0) return 1;
 	    JunkMask = XParseGeometry (s2, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+#ifdef DEBUG
 	    fprintf (stderr, "DEBUG:: JunkMask = %x, WidthValue = %x, HeightValue = %x\n", JunkMask, WidthValue, HeightValue);
 	    fprintf (stderr, "DEBUG:: JunkX = %d, JunkY = %d\n", JunkX, JunkY);
+#endif
 	    if ((JunkMask & (XValue | YValue)) !=
 		(XValue | YValue)) {
 		twmrc_error_prefix();
@@ -2279,9 +2281,6 @@ static char *m4_defs(Display *display, char *host)
 #endif
 #ifdef SOUNDS
 	fputs(MkDef("SOUNDS", "Yes"), tmpf);
-#endif
-#ifdef X11R6
-	fputs(MkDef("SESSION", "Yes"), tmpf);
 #endif
 	fputs(MkDef("I18N", "Yes"), tmpf);
 	if (captive && captivename) {
