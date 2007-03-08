@@ -4054,7 +4054,7 @@ static void ReMapOne(TwmWindow *t, TwmWindow *leader)
 	WList *wl;
 
 	for (wl = t->list; wl != NULL; wl = wl->nextv)
-	    XUnmapWindow(dpy, t->list->icon);
+	    XUnmapWindow(dpy, wl->icon);
     }
     t->isicon = FALSE;
     t->icon_on = FALSE;
