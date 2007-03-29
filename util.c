@@ -1579,16 +1579,13 @@ void GetFont(MyFont *font)
 
 void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus)
 {
-    Bool hil;
-
     if (! tmp_win) return;
 
     if (focus && tmp_win->hasfocusvisible) return;
     if (! focus && ! tmp_win->hasfocusvisible) return;
     if (tmp_win->highlight) {
 	if (Scr->use3Dborders) {
-	    if (focus && ! tmp_win->hasfocusvisible) PaintBorders (tmp_win, True);
-	    if (! focus && tmp_win->hasfocusvisible) PaintBorders (tmp_win, False);
+	    PaintBorders (tmp_win, focus);
 	}
 	else {
 	    if (focus) {
@@ -1604,7 +1601,8 @@ void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus)
     }
 
     if (focus) {
-	hil = False;
+	Bool hil = False;
+
 	if (tmp_win->lolite_wl) XUnmapWindow (dpy, tmp_win->lolite_wl);
 	if (tmp_win->lolite_wr) XUnmapWindow (dpy, tmp_win->lolite_wr);
 	if (tmp_win->hilite_wl) {
@@ -1618,14 +1616,16 @@ void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus)
 	if (hil && tmp_win->HiliteImage && tmp_win->HiliteImage->next) {
 	    MaybeAnimate = True;
 	}
-	if (tmp_win->list) ActiveIconManager (tmp_win->list);
+	if (tmp_win->iconmanagerlist)
+	    ActiveIconManager (tmp_win->iconmanagerlist);
     }
     else {
 	if (tmp_win->hilite_wl) XUnmapWindow (dpy, tmp_win->hilite_wl);
 	if (tmp_win->hilite_wr) XUnmapWindow (dpy, tmp_win->hilite_wr);
 	if (tmp_win->lolite_wl) XMapWindow (dpy, tmp_win->lolite_wl);
 	if (tmp_win->lolite_wr) XMapWindow (dpy, tmp_win->lolite_wr);
-	if (tmp_win->list) NotActiveIconManager (tmp_win->list);
+	if (tmp_win->iconmanagerlist)
+	    NotActiveIconManager (tmp_win->iconmanagerlist);
     }
     if (Scr->use3Dtitles && Scr->SunkFocusWindowTitle && tmp_win->title_height) {
 	ButtonState bs;

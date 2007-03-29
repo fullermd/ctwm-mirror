@@ -82,7 +82,7 @@
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
 #include <X11/Xfuncs.h>
-#endif
+#endif	/* VMS */
 #include "types.h"
 #include "list.h"
 
@@ -344,7 +344,7 @@ struct TwmWindow
     XWMHints *wmhints;		/* WM hints */
     Window group;		/* group ID */
     XClassHint class;
-    struct WList *list;		/* iconmanager subwindows */
+    struct WList *iconmanagerlist;/* iconmanager subwindows */
     /***********************************************************************
      * color definitions per window
      **********************************************************************/
