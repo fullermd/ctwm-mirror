@@ -1664,3 +1664,10 @@ VirtualScreens {
 	window start near the bottom edge instead of the top.
 	[Richard Levitte]
 
+
+    Changes from version 3.8 to 3.9
+    -------------------------------
+
+    1 - Increased the number of supported mouse buttons again, having
+	just heard of a mouse with 9 possible buttons...
+	[Richard Levitte]
