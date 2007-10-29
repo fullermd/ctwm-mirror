@@ -115,6 +115,8 @@ DEBUGPARSERDEFINES = -DYYDEBUG=1
 #ifdef GCC_PEDANTIC
       CCOPTIONS = -pedantic -ansi -Wall \
 		-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef \
+		-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts \
+		-Winline -Wnested-externs -Wmissing-declarations -Wsign-compare \
 		-aux-info $@.info
 #endif
 
