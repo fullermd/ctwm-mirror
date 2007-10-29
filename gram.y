@@ -115,6 +115,7 @@ unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 extern void twmrc_error_prefix(void);
 
 extern int yylex(void);
+extern int yyparse(void);
 %}
 
 %union
