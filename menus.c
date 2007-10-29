@@ -3083,17 +3083,17 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	     * Keep within [ -denom, -1] or [ 0, denom >.
 	     */
 	    {
-		int w = tmp_win->frame_width; /* or si->denom; if it were != 0 */
+		int wtmp = tmp_win->frame_width; /* or si->denom; if it were != 0 */
 		if (origNum < 0) {
 		    if (newx >= 0)
 			newx = -1;
-		    else if (newx < -w)
-			newx = -w;
+		    else if (newx < -wtmp)
+			newx = -wtmp;
 		} else if (origNum >= 0) {
 		    if (newx < 0)
 			newx = 0;
-		    else if (newx >= w) 
-			newx = w - 1;
+		    else if (newx >= wtmp) 
+			newx = wtmp - 1;
 		}
 	    }
 
