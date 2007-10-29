@@ -2529,6 +2529,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	else
 	    Scr->OpaqueMove = FALSE;
 
+	dragroot = Scr->XineramaRoot;
+
 	if (tmp_win->winbox) {
 	    XTranslateCoordinates (dpy, dragroot, tmp_win->winbox->window,
 		eventp->xbutton.x_root, eventp->xbutton.y_root,
@@ -2624,8 +2626,6 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		&JunkX, &JunkY, &DragX, &DragY, &JunkMask);
 	}
 	last_time = eventp->xbutton.time;
-
-	dragroot = Scr->XineramaRoot;
 
 	if (!Scr->OpaqueMove)
 	{
