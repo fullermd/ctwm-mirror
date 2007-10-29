@@ -128,7 +128,6 @@ char NoName[] = "Untitled"; /* name if no name is specified */
 int  resizeWhenAdd;
 
 extern Atom _OL_WIN_ATTR;
-extern int captive;
 
 #if defined(__hpux) && !defined(_XPG4_EXTENDED)
 #   define FDSET int*
