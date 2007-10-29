@@ -3880,7 +3880,7 @@ unsigned char *GetWMPropertyString(Window w, Atom prop)
     return stringptr;
 }
 
-void FreeWMPropertyString(unsigned char *prop)
+void FreeWMPropertyString(char *prop)
 {
     if (prop && (char *)prop != NoName) {
 	free(prop);

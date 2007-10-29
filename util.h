@@ -141,7 +141,7 @@ struct _Image {
 extern Image *GetImage (char *name, ColorPair cp);
 
 extern unsigned char *GetWMPropertyString(Window w, Atom prop);
-extern void FreeWMPropertyString(unsigned char *prop);
+extern void FreeWMPropertyString(char *prop);
 extern void ConstrainByBorders1 (int *left, int width, int *top, int height);
 extern void ConstrainByBorders (TwmWindow *twmwin,
 				int *left, int width,
