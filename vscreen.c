@@ -184,6 +184,6 @@ Bool CtwmSetVScreenMap(Display *display, Window rootw,
     if(! tally) return(False);
 
     XChangeProperty(display, rootw, _XA_WM_CTWM_VSCREENMAP, XA_STRING, 8,
-	PropModeReplace, buf, strlen(buf));
+	PropModeReplace, (unsigned char *)buf, strlen(buf));
     return(True);
 }
