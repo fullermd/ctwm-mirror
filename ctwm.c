@@ -338,7 +338,8 @@ int main(int argc, char **argv, char **environ)
 		MultiScreen = False;
 		if ((i + 1) >= argc) continue;
 		if (*(argv [i + 1]) == '-') continue;
-		if (sscanf (argv [i + 1], "%x", &capwin) != 1) continue;
+		if (sscanf (argv [i + 1], "%x", (unsigned int *)&capwin) != 1)
+		    continue;
 		i++;
 		continue;
 #ifdef USEM4
