@@ -72,6 +72,7 @@
 #include "screen.h"
 #include "resize.h"
 #include "add_window.h"
+#define __WANT_SICONIFY_BITS
 #include "siconify.bm"
 #ifdef VMS
 #include <decw$include/Xos.h>
