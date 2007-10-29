@@ -1156,8 +1156,8 @@ void TryToAnimate (void)
     gettimeofday (&tp, &tzp);
     gap = ((tp.tv_sec - lastsec) * 1000000) + (tp.tv_usec - lastusec);
     if (tracefile) {
-	fprintf (tracefile, "Time = %lu, %ld, %u, %d, %lu\n", lastsec, lastusec,
-		tp.tv_sec, tp.tv_usec, gap);
+	fprintf (tracefile, "Time = %lu, %ld, %ld, %ld, %lu\n", lastsec,
+		lastusec, (long)tp.tv_sec, (long)tp.tv_usec, gap);
 	fflush (tracefile);
     }
     gap *= AnimationSpeed;
