@@ -2539,7 +2539,7 @@ void RemoveWindowFromRegion (TwmWindow *tmp_win)
  * this approach assumes screens that are next to each other horizontally,
  * Other possibilities need to be investigated and accounted for.
  */
-void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_win)
+void DealWithNonSensicalGeometries(Display *mydpy, Window vroot, TwmWindow *tmp_win)
 {
     Window		vvroot;
     int			x,y;
@@ -2551,7 +2551,7 @@ void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_wi
     if(! vroot)
 	return;
 
-    if(!(XGetGeometry(dpy, vroot, &vvroot, &x, &y, &w, &h, &j, &j)))
+    if(!(XGetGeometry(mydpy, vroot, &vvroot, &x, &y, &w, &h, &j, &j)))
 	return;
 
     myvs = findIfVScreenOf(x, y);
