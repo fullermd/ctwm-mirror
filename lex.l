@@ -83,6 +83,7 @@ extern void twmrc_error_prefix(void);
 #endif
 
 int twmrc_lineno;
+extern int yylex(void);
 %}
 
 string				\"([^"]|\\.)*\"
