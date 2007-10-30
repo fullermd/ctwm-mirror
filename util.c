@@ -165,7 +165,6 @@
 
 #define MAXANIMATIONSPEED 20
 
-extern int captive;
 extern Atom _XA_WM_WORKSPACESLIST;
 
 static Image *LoadBitmapImage (char  *name, ColorPair cp);
