@@ -105,6 +105,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
+extern int GoThroughM4;
+extern char *keepM4_filename;
+extern int KeepTmpFile;
 #endif
 
 #if defined(ultrix)
@@ -202,7 +206,6 @@ int ParseTwmrc (char *filename)
     char tmpfilename[257];
 #ifdef USEM4
     static FILE *raw;
-    extern int GoThroughM4;
 #endif
 
     /*
@@ -462,7 +465,6 @@ static int twmFileInput()
 static int m4twmFileInput(void)
 {
     int line;
-    extern char *keepM4_filename;
     static FILE *cp = NULL;
 
     if ( cp == NULL && keepM4_filename ) {
@@ -2196,7 +2198,6 @@ char *str;
 
 static char *m4_defs(Display *display, char *host)
 {
-        extern int KeepTmpFile;
         Screen *screen;
         Visual *visual;
         char client[MAXHOSTNAME], server[MAXHOSTNAME], *colon;
