@@ -150,12 +150,10 @@ static int twmFileInput(void);
 #else
 static int m4twmFileInput (void);
 #endif
-void twmUnput(int c);
 int (*twmInputFunc)(void);
 
 extern char *defTwmrc[];		/* default bindings */
 
-extern int captive;
 extern char *captivename;
 
 /***********************************************************************
