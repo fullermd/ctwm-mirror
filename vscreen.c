@@ -30,6 +30,8 @@
 #include "cursor.h"
 #include "screen.h"
 
+extern void twmrc_error_prefix(void);
+
 void InitVirtualScreens (ScreenInfo *scr) {
   Cursor cursor;
   unsigned long valuemask, attrmask;
@@ -37,7 +39,6 @@ void InitVirtualScreens (ScreenInfo *scr) {
   name_list *nptr;
   Atom _XA_WM_VIRTUALROOT = XInternAtom (dpy, "WM_VIRTUALROOT", False);
   Bool userealroot = True;
-  extern void twmrc_error_prefix(void);
 
   NewFontCursor (&cursor, "X_cursor");
 
