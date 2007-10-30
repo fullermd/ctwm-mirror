@@ -63,7 +63,7 @@ static void fakeRaiseLower ();
    extern Atom _XA_WIN_STATE;
 #endif /* GNOME */
 
-extern void twmrc_error_prefix (void); /* in ctwm.c */
+extern void twmrc_error_prefix (void); /* in gram.c */
 extern char *captivename;
 
 /***********************************************************************
