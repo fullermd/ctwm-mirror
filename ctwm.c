@@ -1160,7 +1160,6 @@ void CreateFonts (void)
 }
 
 
-void RestoreWithdrawnLocation (TwmWindow *tmp);
 void RestoreWithdrawnLocation (TwmWindow *tmp)
 {
     int gravx, gravy;
@@ -1323,8 +1322,6 @@ SIGNAL_T Restart(int signum)
 
 void DoRestart(Time t)
 {
-    extern SmcConn smcConn;
-
     RestartFlag = 0;
 
     StopAnimation ();
