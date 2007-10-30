@@ -82,7 +82,6 @@ extern void twmrc_error_prefix(void);
 #  define YY_INPUT(buf,result,max_size) {buf[0]=twmInputFunc();result=(buf[0] != 0);}
 #endif
 
-int twmrc_lineno;
 extern int yylex(void);
 %}
 

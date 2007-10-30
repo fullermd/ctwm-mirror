@@ -138,7 +138,6 @@ static FILE *start_m4(FILE *fraw);
 static char *m4_defs(Display *display, char *host);
 #endif
 
-extern int twmrc_lineno;
 extern int mods;
 
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
