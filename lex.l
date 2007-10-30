@@ -77,7 +77,6 @@ extern char *ProgramName;
 extern int ParseError;
 extern void twmrc_error_prefix(void);
 #ifdef FLEX_SCANNER
-   int yylineno;
 #  undef YY_INPUT
 #  define YY_INPUT(buf,result,max_size) {buf[0]=twmInputFunc();result=(buf[0] != 0);}
 #endif
