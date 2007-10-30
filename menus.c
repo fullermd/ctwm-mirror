@@ -129,8 +129,6 @@
 #endif
 #define ABS(x) ((x)<0?-(x):(x))
 
-extern XEvent Event;
-
 int RootFunction = 0;
 MenuRoot *ActiveMenu = NULL;		/* the active menu */
 MenuItem *ActiveItem = NULL;		/* the active menu item */
@@ -141,7 +139,6 @@ char *CurrentSelectedWorkspace;
 int AlternateKeymap;
 Bool AlternateContext;
 
-extern int captive;
 extern char *captivename;
 
 int ConstMove = FALSE;		/* constrained move variables */
@@ -172,8 +169,9 @@ void waitamoment (float timeout);
 extern char *Action;
 extern int Context;
 extern TwmWindow *ButtonWindow, *Tmp_win;
-extern XEvent Event, ButtonEvent;
+extern XEvent ButtonEvent;
 extern char *InitFile;
+extern int ConstrainedMoveTime;
 static void Identify (TwmWindow *t);
 
 #define SHADOWWIDTH 5			/* in pixels */
@@ -1898,7 +1896,6 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
     int moving_icon = FALSE;
     Bool fromtitlebar = False;
     Bool from3dborder = False;
-    extern int ConstrainedMoveTime;
     TwmWindow *t;
 
     RootFunction = 0;
