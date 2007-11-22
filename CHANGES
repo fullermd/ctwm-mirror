@@ -1664,3 +1664,17 @@ VirtualScreens {
 	window start near the bottom edge instead of the top.
 	[Richard Levitte]
 
+
+    Changes from version 3.8 to xxx
+    -------------------------------
+
+    1 - Fix bug causing [de]iconified status of windows to not be
+        maintained across workspaces.
+        [Matthew Fuller]
+
+    2 - Quite a bunch of compiler warnings.
+        [Matthew Fuller]
+
+    3 - Make sure we fully initialize our WorkSpaceWindow structure so
+        we don't try to dereference uninitialized pointers later on.
+        [Matthew Fuller]
