@@ -926,7 +926,7 @@ IconRegion geomstring vgrav hgrav gridwidth gridheight [iconjust] [iconregjust] 
 
     6 - f.toggleworkspacemgr
 	Toggle the presence of the WorkSpaceManager. If it is mapped, it will
-	be unmapped and vice verça.
+	be unmapped and vice verÃ§a.
 
     7 - OpenWindowTimeout number
 	number is an integer representing a number of second. When a window
@@ -1054,7 +1054,7 @@ TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
 	window to the specified geometry. The width and height are to be given
 	in pixel, no base size or resize increment are used.
 
-    2 - AutoLower et f.autolower : from Kai Großjohann
+    2 - AutoLower et f.autolower : from Kai GroÃŸjohann
 	(Kai.Grossjohann@CS.Uni-Dortmund.DE). Same as autoraise but with lower.
 
     3 - WindowRingExclude : Takes a window list as argument. All listed windows
@@ -1137,7 +1137,7 @@ WindowGeometries {
     1 - Workspace context (bkctwmws.patch)
 
 	Makes it possible to bind keys specific to the workspace manager
-	(by Björn Knutsson). Use the event context 'workspace' for this.
+	(by BjÃ¶rn Knutsson). Use the event context 'workspace' for this.
 
     2 - New keyword : AlwaysSqueezeToGravity
 
@@ -1212,7 +1212,7 @@ VirtualScreens {
 
 	This was contributed by Matthew D. Fuller.
 
-   14 - DontMoveOff patch (by Björn Knutsson)
+   14 - DontMoveOff patch (by BjÃ¶rn Knutsson)
 
 	Change the behavior of DontMoveOff/MoveOffResistance so that
 	when you attempt to move a window off screen, it will not move
@@ -1223,17 +1223,17 @@ VirtualScreens {
 	ability to move a window off screen less that
 	#MoveOffResistance pixels.
 
-   15 - Random placement and DontMoveOff patch (by Björn Knutsson, changed)
+   15 - Random placement and DontMoveOff patch (by BjÃ¶rn Knutsson, changed)
 
 	When random placement was used, DontMoveOff wasn't honored.
 	This behavior has now changed so a window will be kept within
 	the screen when at all possible.  When the window is too
 	large, it's top or left edge (or both) will be placed in
 	coordinate 0.
-	This change differs a little bit from Björns contribution by
+	This change differs a little bit from BjÃ¶rns contribution by
 	not using rand() at all.
 
-   16 - f.warpring patch (by Björn Knutsson)
+   16 - f.warpring patch (by BjÃ¶rn Knutsson)
 
 	If IconManagerFocus is set, there's no reason why the icon
 	manager should get enter and leave events.  This fixes some
@@ -1242,13 +1242,13 @@ VirtualScreens {
    17 - f.movetoprevworkspace,
 	f.movetonextworkspace,
 	f.movetoprevworkspaceandfollow,
-	f.movetonextworkspaceandfollow patch (by Daniel Holmström)
+	f.movetonextworkspaceandfollow patch (by Daniel HolmstrÃ¶m)
 
 	Makes it possible to move a window to the previous or next  
 	workspace and, if you like, go to that workspace and focus 
 	the moved window.
 
-   18 - f.fill "vertical" patch (by Daniel Holmström)
+   18 - f.fill "vertical" patch (by Daniel HolmstrÃ¶m)
 
 	Expands the window vertically without overlapping any other window, 
 	much like { f.fill "top" f.fill "bottom" } but with the exception 
@@ -1256,13 +1256,13 @@ VirtualScreens {
 	windows 'zoomed' to F_FULLZOOM, so one can toggle between this 
 	size, original and maximized.
 
-   19 - RESIZEKEEPSFOCUS bugfix patch (by Daniel Holmström)
+   19 - RESIZEKEEPSFOCUS bugfix patch (by Daniel HolmstrÃ¶m)
 
 	If a window is maximized with togglemaximize and then restored 
 	it might loose focus if the cursor is outside the restored window. 
 	This hack puts the cursor at the left-top corner of the window.
 
-   20 - f.zoom bugfix patch (by Daniel Holmström)
+   20 - f.zoom bugfix patch (by Daniel HolmstrÃ¶m)
 
 	f.zoom now doesn't move the window up (as it sometimes did before)
 
@@ -1678,3 +1678,7 @@ VirtualScreens {
     3 - Make sure we fully initialize our WorkSpaceWindow structure so
         we don't try to dereference uninitialized pointers later on.
         [Matthew Fuller]
+
+    4 - Increased the number of supported mouse buttons again, having
+	just heard of a mouse with 9 possible buttons...
+	[Richard Levitte]
