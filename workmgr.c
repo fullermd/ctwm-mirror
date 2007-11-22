@@ -168,8 +168,14 @@ void ConfigureWorkSpaceManager (void) {
     virtualScreen *vs;
 
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-	WorkSpaceWindow *wsw = (WorkSpaceWindow*) malloc (sizeof (WorkSpaceWindow));
-	wsw->twm_win	     = (TwmWindow*) 0;
+	/*
+	 * Make sure this is all properly initialized to nothing.  Otherwise
+	 * bad and undefined behavior can show up in certain cases (e.g.,
+	 * with no Workspaces {} defined in .ctwmrc, the only defined
+	 * workspace will be random memory bytes, which can causes crashes on
+	 * e.g.  f.menu "TwmWindows".)
+	 */
+	WorkSpaceWindow *wsw = (WorkSpaceWindow*) calloc (1, sizeof (WorkSpaceWindow));
 	wsw->state = Scr->workSpaceMgr.initialstate; /* BUTTONSSTATE */
 	vs->wsw = wsw;
     }
