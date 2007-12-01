@@ -1688,3 +1688,10 @@ VirtualScreens {
 	"next"' does nothing.
 	[Martin Blais]
 
+    6 - Introduce a new feature called "SaveWorkspaceFocus", which when
+	enabled, makes ctwm remember which window has the focus within
+	each virtual workspace. As you switch workspaces, the cursor is
+	automatically warped to the window previous in focus in the
+	workspace. This significantly reduces the amount of mouse use.
+	[Martin Blais]
+

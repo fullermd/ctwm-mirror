@@ -93,6 +93,7 @@ struct WorkSpace {
   IconMgr             *iconmgr;
   ColorPair           cp;
   ColorPair           backcp;
+  TwmWindow	      *save_focus;  /* Used by SaveWorkspaceFocus feature */
   struct WindowRegion *FirstWindowRegion;
   struct WorkSpace *next;
 };

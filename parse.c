@@ -635,6 +635,7 @@ typedef struct _TwmKeyword {
 #define kw0_SloppyFocus                 63
 #define kw0_NoImagesInWorkSpaceManager  64
 #define kw0_NoWarpToMenuTitle           65
+#define kw0_SaveWorkspaceFocus          66 /* blais */
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -1023,6 +1024,7 @@ static TwmKeyword keytable[] = {
     { "root",			ROOT, 0 },
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
+    { "saveworkspacefocus",     KEYWORD, kw0_SaveWorkspaceFocus },
     { "schrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
@@ -1364,6 +1366,10 @@ int do_single_keyword (int keyword)
 
       case kw0_SloppyFocus:
 	Scr->SloppyFocus = TRUE;
+	return 1;
+
+      case kw0_SaveWorkspaceFocus:
+	Scr->SaveWorkspaceFocus = TRUE;
 	return 1;
 
       case kw0_NoImagesInWorkSpaceManager:

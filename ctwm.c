@@ -1029,6 +1029,7 @@ void InitVariables(void)
     Scr->WarpToDefaultMenuEntry = FALSE;
     Scr->ClickToFocus = FALSE;
     Scr->SloppyFocus = FALSE;
+    Scr->SaveWorkspaceFocus = FALSE;
     Scr->NoIconTitlebar = FALSE;
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;

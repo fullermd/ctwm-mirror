@@ -1281,6 +1281,13 @@ This variable specifies that the WorkSpaceManager should be visible.
 .IP "\fBSloppyFocus\fP" 8
 Use sloppy focus.
 
+.IP "\fBSaveWorkspaceFocus\fP" 8
+When changing to a workspace, restore the focus to the last window
+that had the focus when you left the workspace by warping the mouse
+into it. This essentially saves the focus window with the workspace
+and restores it automatically when you switch. In many cases, it
+avoids having to reach for the mouse after moving to a new workspace.
+
 .IP "\fBSortIconManager\fP" 8
 This variable indicates that entries in the icon manager should be
 sorted alphabetically rather than by simply appending new windows to
