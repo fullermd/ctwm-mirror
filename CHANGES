@@ -1682,3 +1682,9 @@ VirtualScreens {
     4 - Increased the number of supported mouse buttons again, having
 	just heard of a mouse with 9 possible buttons...
 	[Richard Levitte]
+
+    5 - Fix a bug in the warping "next" function, where if there is a
+	single window and the cursor is not on it, invoking 'f.warpring
+	"next"' does nothing.
+	[Martin Blais]
+

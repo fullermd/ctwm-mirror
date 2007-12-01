@@ -4704,7 +4704,9 @@ void WarpAlongRing (XButtonEvent *ev, Bool forward)
 	}
     }
 
-    if (r && r != head) {
+    /* Note: (Scr->Focus != r) is necessary when we move to a workspace that
+       has a single window and we want warping to warp to it. */
+    if (r && (r != head || Scr->Focus != r)) {
 	TwmWindow *p = Scr->RingLeader, *t;
 
 	Scr->RingLeader = r;
