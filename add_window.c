@@ -128,7 +128,6 @@ char NoName[] = "Untitled"; /* name if no name is specified */
 int  resizeWhenAdd;
 
 extern Atom _OL_WIN_ATTR;
-extern int captive;
 
 #if defined(__hpux) && !defined(_XPG4_EXTENDED)
 #   define FDSET int*
@@ -2539,7 +2538,7 @@ void RemoveWindowFromRegion (TwmWindow *tmp_win)
  * this approach assumes screens that are next to each other horizontally,
  * Other possibilities need to be investigated and accounted for.
  */
-void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_win)
+void DealWithNonSensicalGeometries(Display *mydpy, Window vroot, TwmWindow *tmp_win)
 {
     Window		vvroot;
     int			x,y;
@@ -2551,7 +2550,7 @@ void DealWithNonSensicalGeometries(Display *dpy, Window vroot, TwmWindow *tmp_wi
     if(! vroot)
 	return;
 
-    if(!(XGetGeometry(dpy, vroot, &vvroot, &x, &y, &w, &h, &j, &j)))
+    if(!(XGetGeometry(mydpy, vroot, &vvroot, &x, &y, &w, &h, &j, &j)))
 	return;
 
     myvs = findIfVScreenOf(x, y);

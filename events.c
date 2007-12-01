@@ -111,8 +111,7 @@ extern int iconifybox_width, iconifybox_height;
 extern unsigned int mods_used;
 extern int menuFromFrameOrWindowOrTitlebar;
 extern char *CurrentSelectedWorkspace;
-
-extern int captive;
+extern int RaiseDelay;
 
 #ifdef USE_SIGNALS
 extern Bool AnimationPending;
@@ -131,6 +130,7 @@ static void RedoIcon(void);
 static void do_key_menu (MenuRoot *menu,	/* menu to pop up */
 			 Window w);		/* invoking window or None */
 void RedoIconName(void);
+extern void twmrc_error_prefix(void);
 
 #ifdef SOUNDS
 extern void play_sound(int snd);
@@ -3335,7 +3335,6 @@ void HandleEnterNotify(void)
     XEnterWindowEvent *ewp = &Event.xcrossing;
     HENScanArgs scanArgs;
     XEvent dummy;
-    extern int RaiseDelay;
     virtualScreen *vs;
 
     /*
@@ -4247,7 +4246,6 @@ void ConfigureRootWindow (XEvent *ev)
     Window       root, child;
     int          x, y;
     unsigned int w, h, bw, d, oldw, oldh;
-    extern void twmrc_error_prefix(void);
 
     XGetGeometry (dpy, Scr->CaptiveRoot, &root, &x, &y, &w, &h, &bw, &d);
     XTranslateCoordinates (dpy, Scr->CaptiveRoot, root, 0, 0, &Scr->crootx, &Scr->crooty, &child);

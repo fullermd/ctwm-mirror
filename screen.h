@@ -428,6 +428,7 @@ struct ScreenInfo
     short WarpToDefaultMenuEntry; /* warp cursor to default menu entry, if any  */
     short ClickToFocus;		/* click to focus */
     short SloppyFocus;		/* "sloppy" focus */
+    short SaveWorkspaceFocus;	/* Save and restore focus on workspace change. */
     short NoIconManagers;	/* Don't create any icon managers */
     short ClientBorderWidth;	/* respect client window border width */
     short SqueezeTitle;		/* make title as small as possible */

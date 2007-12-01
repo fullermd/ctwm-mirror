@@ -338,7 +338,8 @@ int main(int argc, char **argv, char **environ)
 		MultiScreen = False;
 		if ((i + 1) >= argc) continue;
 		if (*(argv [i + 1]) == '-') continue;
-		if (sscanf (argv [i + 1], "%x", &capwin) != 1) continue;
+		if (sscanf (argv [i + 1], "%x", (unsigned int *)&capwin) != 1)
+		    continue;
 		i++;
 		continue;
 #ifdef USEM4
@@ -1028,6 +1029,7 @@ void InitVariables(void)
     Scr->WarpToDefaultMenuEntry = FALSE;
     Scr->ClickToFocus = FALSE;
     Scr->SloppyFocus = FALSE;
+    Scr->SaveWorkspaceFocus = FALSE;
     Scr->NoIconTitlebar = FALSE;
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;
@@ -1159,7 +1161,6 @@ void CreateFonts (void)
 }
 
 
-void RestoreWithdrawnLocation (TwmWindow *tmp);
 void RestoreWithdrawnLocation (TwmWindow *tmp)
 {
     int gravx, gravy;
@@ -1322,8 +1323,6 @@ SIGNAL_T Restart(int signum)
 
 void DoRestart(Time t)
 {
-    extern SmcConn smcConn;
-
     RestartFlag = 0;
 
     StopAnimation ();

@@ -1,6 +1,6 @@
 Summary: Ctwm is a window manager for the X Window System.
 Name: ctwm
-Version: 3.8a
+Version: 3.9devel
 Release: 1
 Source: http://ctwm.free.lp.se/preview/%{name}-%{version}.tar.gz
 Copyright: MIT

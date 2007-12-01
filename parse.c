@@ -105,6 +105,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
+extern int GoThroughM4;
+extern char *keepM4_filename;
+extern int KeepTmpFile;
 #endif
 
 #if defined(ultrix)
@@ -138,7 +142,6 @@ static FILE *start_m4(FILE *fraw);
 static char *m4_defs(Display *display, char *host);
 #endif
 
-extern int twmrc_lineno;
 extern int mods;
 
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
@@ -151,12 +154,10 @@ static int twmFileInput(void);
 #else
 static int m4twmFileInput (void);
 #endif
-void twmUnput(int c);
 int (*twmInputFunc)(void);
 
 extern char *defTwmrc[];		/* default bindings */
 
-extern int captive;
 extern char *captivename;
 
 /***********************************************************************
@@ -205,7 +206,6 @@ int ParseTwmrc (char *filename)
     char tmpfilename[257];
 #ifdef USEM4
     static FILE *raw;
-    extern int GoThroughM4;
 #endif
 
     /*
@@ -465,7 +465,6 @@ static int twmFileInput()
 static int m4twmFileInput(void)
 {
     int line;
-    extern char *keepM4_filename;
     static FILE *cp = NULL;
 
     if ( cp == NULL && keepM4_filename ) {
@@ -636,6 +635,7 @@ typedef struct _TwmKeyword {
 #define kw0_SloppyFocus                 63
 #define kw0_NoImagesInWorkSpaceManager  64
 #define kw0_NoWarpToMenuTitle           65
+#define kw0_SaveWorkspaceFocus          66 /* blais */
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -1024,6 +1024,7 @@ static TwmKeyword keytable[] = {
     { "root",			ROOT, 0 },
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
+    { "saveworkspacefocus",     KEYWORD, kw0_SaveWorkspaceFocus },
     { "schrinkicontitles",	KEYWORD, kw0_ShrinkIconTitles },
     { "select",			SELECT, 0 },
     { "shift",			SHIFT, 0 },
@@ -1365,6 +1366,10 @@ int do_single_keyword (int keyword)
 
       case kw0_SloppyFocus:
 	Scr->SloppyFocus = TRUE;
+	return 1;
+
+      case kw0_SaveWorkspaceFocus:
+	Scr->SaveWorkspaceFocus = TRUE;
 	return 1;
 
       case kw0_NoImagesInWorkSpaceManager:
@@ -2199,7 +2204,6 @@ char *str;
 
 static char *m4_defs(Display *display, char *host)
 {
-        extern int KeepTmpFile;
         Screen *screen;
         Visual *visual;
         char client[MAXHOSTNAME], server[MAXHOSTNAME], *colon;

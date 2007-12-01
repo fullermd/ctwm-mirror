@@ -63,7 +63,7 @@ static void fakeRaiseLower ();
    extern Atom _XA_WIN_STATE;
 #endif /* GNOME */
 
-extern void twmrc_error_prefix (void); /* in ctwm.c */
+extern void twmrc_error_prefix (void); /* in gram.c */
 extern char *captivename;
 
 /***********************************************************************
@@ -168,8 +168,14 @@ void ConfigureWorkSpaceManager (void) {
     virtualScreen *vs;
 
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-	WorkSpaceWindow *wsw = (WorkSpaceWindow*) malloc (sizeof (WorkSpaceWindow));
-	wsw->twm_win	     = (TwmWindow*) 0;
+	/*
+	 * Make sure this is all properly initialized to nothing.  Otherwise
+	 * bad and undefined behavior can show up in certain cases (e.g.,
+	 * with no Workspaces {} defined in .ctwmrc, the only defined
+	 * workspace will be random memory bytes, which can causes crashes on
+	 * e.g.  f.menu "TwmWindows".)
+	 */
+	WorkSpaceWindow *wsw = (WorkSpaceWindow*) calloc (1, sizeof (WorkSpaceWindow));
 	wsw->state = Scr->workSpaceMgr.initialstate; /* BUTTONSSTATE */
 	vs->wsw = wsw;
     }
@@ -472,6 +478,12 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	    XSetWindowBackgroundPixmap (dpy, vs->window, newws->image->pixmap);
 	XClearWindow (dpy, vs->window);
     }
+
+    /* If SaveWorkspaceFocus is on, save the focus of the last window. */
+    if ( Scr->SaveWorkspaceFocus ) {
+        oldws->save_focus = Scr->Focus;
+    }
+
     focuswindow = (TwmWindow*)0;
     for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
 	if (twmWin->vs == vs) {
@@ -485,11 +497,12 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 		break;
 	      }
 	    }
-	  } else
+	  } /*else
 	    if (twmWin->hasfocusvisible) {
 	      focuswindow = twmWin;
 	      SetFocusVisualAttributes (focuswindow, False);
 	    }
+            */
 	}
     }
     /* Move to the end of the twmWin list */
@@ -528,9 +541,11 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	}
     }	
     CurrentIconManagerEntry (wl);
+    /*
     if (focuswindow) {
 	SetFocusVisualAttributes (focuswindow, True);
     }
+    */
     vs->wsw->currentwspc = newws;
     if (Scr->ReverseCurrentWorkspace && vs->wsw->state == MAPSTATE) {
         MapSubwindow *msw = vs->wsw->mswl [oldws->number];
@@ -611,10 +626,20 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 			   (Window) 0, (TwmWindow*) 0, &event, C_ROOT, FALSE);
     }
 
-    /* keep track of the order of the workspaces across restarts */
-    CtwmSetVScreenMap(dpy, Scr->Root, Scr->vScreenList);
+    /* If SaveWorkspaceFocus is on, try to restore the focus to the last
+       window which was focused when we left this workspace. */
+    if ( Scr->SaveWorkspaceFocus && newws->save_focus) {
+        for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
+            if (twmWin == newws->save_focus) {
+                WarpToWindow(twmWin);
+            }
+        }
+    }
 
-    XSync (dpy, 0);
+/*     /\* keep track of the order of the workspaces across restarts *\/ */
+/*     CtwmSetVScreenMap(dpy, Scr->Root, Scr->vScreenList); */
+
+/*     XSync (dpy, 0); */
     if (Scr->ClickToFocus || Scr->SloppyFocus) set_last_window (newws);
     MaybeAnimate = True;
 }
@@ -652,6 +677,7 @@ void AddWorkSpace (char *name, char *background, char *foreground,
     ws->label = (char*) strdup (name);
 #endif
     ws->clientlist = NULL;
+    ws->save_focus = NULL;
 
     if (background == NULL)
 	ws->cp.back = Scr->IconManagerC.back;

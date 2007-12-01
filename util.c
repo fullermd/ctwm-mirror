@@ -165,7 +165,6 @@
 
 #define MAXANIMATIONSPEED 20
 
-extern int captive;
 extern Atom _XA_WM_WORKSPACESLIST;
 
 static Image *LoadBitmapImage (char  *name, ColorPair cp);
@@ -1156,8 +1155,8 @@ void TryToAnimate (void)
     gettimeofday (&tp, &tzp);
     gap = ((tp.tv_sec - lastsec) * 1000000) + (tp.tv_usec - lastusec);
     if (tracefile) {
-	fprintf (tracefile, "Time = %lu, %ld, %u, %d, %lu\n", lastsec, lastusec,
-		tp.tv_sec, tp.tv_usec, gap);
+	fprintf (tracefile, "Time = %lu, %ld, %ld, %ld, %lu\n", lastsec,
+		lastusec, (long)tp.tv_sec, (long)tp.tv_usec, gap);
 	fflush (tracefile);
     }
     gap *= AnimationSpeed;
@@ -3880,7 +3879,7 @@ unsigned char *GetWMPropertyString(Window w, Atom prop)
     return stringptr;
 }
 
-void FreeWMPropertyString(unsigned char *prop)
+void FreeWMPropertyString(char *prop)
 {
     if (prop && (char *)prop != NoName) {
 	free(prop);

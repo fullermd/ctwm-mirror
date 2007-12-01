@@ -65,7 +65,8 @@ char **CtwmListWorkspaces (Display *display, int scrnum)
     int			actual_format;
     char		**ret;
     int			count;
-    int			i, l;
+    int			i;
+    unsigned long	l;
 
     _XA_WM_WORKSPACESLIST = XInternAtom (display, "_WIN_WORKSPACE_NAMES", True);
 
@@ -133,7 +134,8 @@ char **CtwmCurrentOccupation (Display *display, Window window)
     unsigned long	len;
     Atom		actual_type;
     int			actual_format;
-    int			count, l, i;
+    int			count, i;
+    unsigned long	l;
     char		**ret;
 
     _XA_WM_OCCUPATION = XInternAtom (display, "WM_OCCUPATION", True);

@@ -129,8 +129,6 @@
 #endif
 #define ABS(x) ((x)<0?-(x):(x))
 
-extern XEvent Event;
-
 int RootFunction = 0;
 MenuRoot *ActiveMenu = NULL;		/* the active menu */
 MenuItem *ActiveItem = NULL;		/* the active menu item */
@@ -141,7 +139,6 @@ char *CurrentSelectedWorkspace;
 int AlternateKeymap;
 Bool AlternateContext;
 
-extern int captive;
 extern char *captivename;
 
 int ConstMove = FALSE;		/* constrained move variables */
@@ -172,8 +169,9 @@ void waitamoment (float timeout);
 extern char *Action;
 extern int Context;
 extern TwmWindow *ButtonWindow, *Tmp_win;
-extern XEvent Event, ButtonEvent;
+extern XEvent ButtonEvent;
 extern char *InitFile;
+extern int ConstrainedMoveTime;
 static void Identify (TwmWindow *t);
 
 #define SHADOWWIDTH 5			/* in pixels */
@@ -1898,7 +1896,6 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
     int moving_icon = FALSE;
     Bool fromtitlebar = False;
     Bool from3dborder = False;
-    extern int ConstrainedMoveTime;
     TwmWindow *t;
 
     RootFunction = 0;
@@ -2529,6 +2526,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	else
 	    Scr->OpaqueMove = FALSE;
 
+	dragroot = Scr->XineramaRoot;
+
 	if (tmp_win->winbox) {
 	    XTranslateCoordinates (dpy, dragroot, tmp_win->winbox->window,
 		eventp->xbutton.x_root, eventp->xbutton.y_root,
@@ -2624,8 +2623,6 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		&JunkX, &JunkY, &DragX, &DragY, &JunkMask);
 	}
 	last_time = eventp->xbutton.time;
-
-	dragroot = Scr->XineramaRoot;
 
 	if (!Scr->OpaqueMove)
 	{
@@ -3083,17 +3080,17 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	     * Keep within [ -denom, -1] or [ 0, denom >.
 	     */
 	    {
-		int w = tmp_win->frame_width; /* or si->denom; if it were != 0 */
+		int wtmp = tmp_win->frame_width; /* or si->denom; if it were != 0 */
 		if (origNum < 0) {
 		    if (newx >= 0)
 			newx = -1;
-		    else if (newx < -w)
-			newx = -w;
+		    else if (newx < -wtmp)
+			newx = -wtmp;
 		} else if (origNum >= 0) {
 		    if (newx < 0)
 			newx = 0;
-		    else if (newx >= w) 
-			newx = w - 1;
+		    else if (newx >= wtmp) 
+			newx = wtmp - 1;
 		}
 	    }
 
@@ -4707,7 +4704,9 @@ void WarpAlongRing (XButtonEvent *ev, Bool forward)
 	}
     }
 
-    if (r && r != head) {
+    /* Note: (Scr->Focus != r) is necessary when we move to a workspace that
+       has a single window and we want warping to warp to it. */
+    if (r && (r != head || Scr->Focus != r)) {
 	TwmWindow *p = Scr->RingLeader, *t;
 
 	Scr->RingLeader = r;

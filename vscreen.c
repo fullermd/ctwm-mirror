@@ -30,6 +30,8 @@
 #include "cursor.h"
 #include "screen.h"
 
+extern void twmrc_error_prefix(void);
+
 void InitVirtualScreens (ScreenInfo *scr) {
   Cursor cursor;
   unsigned long valuemask, attrmask;
@@ -37,7 +39,6 @@ void InitVirtualScreens (ScreenInfo *scr) {
   name_list *nptr;
   Atom _XA_WM_VIRTUALROOT = XInternAtom (dpy, "WM_VIRTUALROOT", False);
   Bool userealroot = True;
-  extern void twmrc_error_prefix(void);
 
   NewFontCursor (&cursor, "X_cursor");
 
@@ -184,6 +185,6 @@ Bool CtwmSetVScreenMap(Display *display, Window rootw,
     if(! tally) return(False);
 
     XChangeProperty(display, rootw, _XA_WM_CTWM_VSCREENMAP, XA_STRING, 8,
-	PropModeReplace, buf, strlen(buf));
+	PropModeReplace, (unsigned char *)buf, strlen(buf));
     return(True);
 }
