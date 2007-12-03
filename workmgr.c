@@ -497,12 +497,10 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 		break;
 	      }
 	    }
-	  } /*else
-	    if (twmWin->hasfocusvisible) {
+	  } else if (twmWin->hasfocusvisible) {
 	      focuswindow = twmWin;
 	      SetFocusVisualAttributes (focuswindow, False);
-	    }
-            */
+	  }
 	}
     }
     /* Move to the end of the twmWin list */
@@ -541,11 +539,9 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	}
     }	
     CurrentIconManagerEntry (wl);
-    /*
     if (focuswindow) {
 	SetFocusVisualAttributes (focuswindow, True);
     }
-    */
     vs->wsw->currentwspc = newws;
     if (Scr->ReverseCurrentWorkspace && vs->wsw->state == MAPSTATE) {
         MapSubwindow *msw = vs->wsw->mswl [oldws->number];
@@ -639,7 +635,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 /*     /\* keep track of the order of the workspaces across restarts *\/ */
 /*     CtwmSetVScreenMap(dpy, Scr->Root, Scr->vScreenList); */
 
-/*     XSync (dpy, 0); */
+    XSync (dpy, 0);
     if (Scr->ClickToFocus || Scr->SloppyFocus) set_last_window (newws);
     MaybeAnimate = True;
 }
