@@ -632,8 +632,8 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
         }
     }
 
-/*     /\* keep track of the order of the workspaces across restarts *\/ */
-/*     CtwmSetVScreenMap(dpy, Scr->Root, Scr->vScreenList); */
+    /* keep track of the order of the workspaces across restarts */
+    CtwmSetVScreenMap(dpy, Scr->Root, Scr->vScreenList);
 
     XSync (dpy, 0);
     if (Scr->ClickToFocus || Scr->SloppyFocus) set_last_window (newws);
