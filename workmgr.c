@@ -756,7 +756,14 @@ void SetupOccupation (TwmWindow *twm_win,
     long gwkspc = 0; /* for GNOME - which workspace we occupy */
 
     if (! Scr->workSpaceManagerActive) {
-	twm_win->occupation = 1;
+	twm_win->occupation = 1 << 0;   /* occupy workspace #0 */
+	/*
+	 * Choose some valid virtual screen.
+	 * InitVirtualScreens() always seems to set this to non-NULL.
+	 */
+	twm_win->vs = Scr->vScreenList; /* only one virtual screen */
+	/* more?... */
+
 	return;
     }
     if (twm_win->wspmgr) return;
