@@ -2317,11 +2317,15 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    break;
 	}
 	if (tmp_win->OpaqueResize) {
-	    int sw, ss;
+	    /*
+	     * scrsz will hold the number of pixels in your resolution,
+	     * which can get big.  [signed] int may not cut it.
+	     */
+	    unsigned long winsz, scrsz;
 
-	    sw = tmp_win->frame_width * tmp_win->frame_height;
-	    ss = Scr->rootw  * Scr->rooth;
-	    if (sw > ((ss * Scr->OpaqueResizeThreshold) / 100))
+	    winsz = tmp_win->frame_width * tmp_win->frame_height;
+	    scrsz = Scr->rootw  * Scr->rooth;
+	    if (winsz > (scrsz * (Scr->OpaqueResizeThreshold / 100.0)))
 		Scr->OpaqueResize = FALSE;
 	    else
 		Scr->OpaqueResize = TRUE;
