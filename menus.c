@@ -2320,6 +2320,10 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    /*
 	     * scrsz will hold the number of pixels in your resolution,
 	     * which can get big.  [signed] int may not cut it.
+	     *
+	     * Note: Rework this to also allow a config directive (or special
+	     * value for Threshold) to just always OpaqueResize.  That's
+	     * likely far and away the common case.
 	     */
 	    unsigned long winsz, scrsz;
 
