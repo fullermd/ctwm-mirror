@@ -2318,21 +2318,24 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	}
 	if (tmp_win->OpaqueResize) {
 	    /*
-	     * scrsz will hold the number of pixels in your resolution,
-	     * which can get big.  [signed] int may not cut it.
-	     *
-	     * Note: Rework this to also allow a config directive (or special
-	     * value for Threshold) to just always OpaqueResize.  That's
-	     * likely far and away the common case.
+	     * OpaqueResize defaults to a thousand.  Assume that any number
+	     * >= 1000 is "infinity" and don't bother calculating.
 	     */
-	    unsigned long winsz, scrsz;
-
-	    winsz = tmp_win->frame_width * tmp_win->frame_height;
-	    scrsz = Scr->rootw  * Scr->rooth;
-	    if (winsz > (scrsz * (Scr->OpaqueResizeThreshold / 100.0)))
-		Scr->OpaqueResize = FALSE;
-	    else
+	    if (Scr->OpaqueResizeThreshold >= 1000)
 		Scr->OpaqueResize = TRUE;
+	    else {
+		/*
+		 * scrsz will hold the number of pixels in your resolution,
+		 * which can get big.  [signed] int may not cut it.
+		 */
+		unsigned long winsz, scrsz;
+		winsz = tmp_win->frame_width * tmp_win->frame_height;
+		scrsz = Scr->rootw  * Scr->rooth;
+		if (winsz > (scrsz * (Scr->OpaqueResizeThreshold / 100.0)))
+		    Scr->OpaqueResize = FALSE;
+		else
+		    Scr->OpaqueResize = TRUE;
+	    }
 	}
 	else
 	    Scr->OpaqueResize = FALSE;
