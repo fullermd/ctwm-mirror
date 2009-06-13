@@ -143,6 +143,8 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.occupyWindow->geometry  = NULL;
     Scr->workSpaceMgr.occupyWindow->columns   = 0;
     Scr->workSpaceMgr.occupyWindow->twm_win   = (TwmWindow*) 0;
+    Scr->workSpaceMgr.occupyWindow->vspace    = Scr->WMgrVertButtonIndent;
+    Scr->workSpaceMgr.occupyWindow->hspace    = Scr->WMgrHorizButtonIndent;
 
     Scr->workSpaceMgr.curColors.back  = Scr->Black;
     Scr->workSpaceMgr.curColors.fore  = Scr->White;
