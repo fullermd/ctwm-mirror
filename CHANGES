@@ -1695,3 +1695,14 @@ VirtualScreens {
 	workspace. This significantly reduces the amount of mouse use.
 	[Martin Blais]
 
+    7 - From Matthias Kretschmer <kretschm@cs.uni-bonn.de>:
+	f.fill patch.
+	Without the patch, you might get windows which are increased by
+	two times the border width more than it should be.  Additionally
+	if you place a window with no/not much size contrainst like
+	firefox in the upper left corner and perform f.fill "top" or
+	f.fill "left" the size of the window will increase by two times
+	the border width in width and height without changing the
+	top-left coordinate without the patch.  Of course in such a
+	situation the size should not change at all...                 
+	[via Olaf Seibert]

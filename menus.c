@@ -5167,6 +5167,8 @@ void fillwindow (TwmWindow *tmp_win, char *direction)
 	newy = tmp_win->frame_y;
 	neww = winw + winx - newx;
 	newh = winh;
+	neww -= 2 * tmp_win->frame_bw;
+	newh -= 2 * tmp_win->frame_bw;
 	ConstrainSize (tmp_win, &neww, &newh);
     } else
     if (!strcmp (direction, "right")) {
@@ -5178,6 +5180,8 @@ void fillwindow (TwmWindow *tmp_win, char *direction)
     	    neww = cons - winx;
 	    newh = winh;
 	    save = neww;
+	    neww -= 2 * tmp_win->frame_bw;
+	    newh -= 2 * tmp_win->frame_bw;
 	    ConstrainSize (tmp_win, &neww, &newh);
 	    if ((neww != winw) || (newh != winh) ||
                 (cons == Scr->rootw - Scr->BorderRight))
@@ -5193,6 +5197,8 @@ void fillwindow (TwmWindow *tmp_win, char *direction)
 	newy = cons;
 	neww = winw;
 	newh = winh + winy - newy;
+	neww -= 2 * tmp_win->frame_bw;
+	newh -= 2 * tmp_win->frame_bw;
 	ConstrainSize (tmp_win, &neww, &newh);
     } else
     if (!strcmp (direction, "bottom")) {
@@ -5204,6 +5210,8 @@ void fillwindow (TwmWindow *tmp_win, char *direction)
     	    neww = winw;
 	    newh = cons - winy;
 	    save = newh;
+	    neww -= 2 * tmp_win->frame_bw;
+	    newh -= 2 * tmp_win->frame_bw;
 	    ConstrainSize (tmp_win, &neww, &newh);
 	    if ((neww != winw) || (newh != winh) ||
                 (cons == Scr->rooth - Scr->BorderBottom))
@@ -5223,13 +5231,9 @@ void fillwindow (TwmWindow *tmp_win, char *direction)
 
 			tmp_win->frame_y++;
 			newy = FindConstraint (tmp_win, J_TOP);
+			tmp_win->frame_y--;
 			newh = FindConstraint (tmp_win, J_BOTTOM) - newy;
-
-			/* FindConstraint 'grows' over borders 
-			 * the window is next to,
-			 * so make the window a bit smaller. */
-			if (!Scr->use3Dborders)
-			  newh -= tmp_win->frame_bw * 2;
+			newh -= 2 * tmp_win->frame_bw;
 
 			newx = tmp_win->frame_x;
 			neww = tmp_win->frame_width;
