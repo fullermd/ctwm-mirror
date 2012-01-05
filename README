@@ -102,7 +102,7 @@ minimalist@free.lp.se.
 Repository:
 
 CTWM development uses monotone (see http://www.venge.net/monotone) for
-version control.  The current central server is guardian.lp.se, and the
+version control.  The current central server is free.lp.se, and the
 branch to pull is "free.lp.se:X.ctwm".
 
 Further information:
