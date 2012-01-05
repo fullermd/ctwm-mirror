@@ -219,6 +219,8 @@ dist:	clean Makefile gram.h gram.c lex.c deftwmrc.c
 	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
 	       \! -name Makefile \
 	       \! -name Imakefile.local \! -name descrip.local \
+	       \! -name '*.o.info' \! -name '*.flc' \! -name semantic.cache \
+	       \! -name y.output \
 		| sort > ../ctwm-$$version.list; \
 	tar --no-recursion --files-from ../ctwm-$$version.list -cvf - | \
 	tardy --user_number=0  --user_name=ctwm \
