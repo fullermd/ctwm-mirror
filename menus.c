@@ -352,8 +352,8 @@ int CreateTitleButton (char *name, int func, char *action, MenuRoot *menuroot,
 
     if (!cur_tb) {
 	fprintf (stderr,
-		 "%s:  unable to allocate %d bytes for title button\n",
-		 ProgramName, sizeof(TitleButton));
+		 "%s:  unable to allocate %lu bytes for title button\n",
+		 ProgramName, (unsigned long) sizeof(TitleButton));
 	return 0;
     }
 

@@ -1350,8 +1350,8 @@ void InsertRGBColormap (Atom a, XStandardColormap *maps, int nmaps,
     if (!sc) {				/* no existing, allocate new */
 	sc = (StdCmap *) malloc (sizeof (StdCmap));
 	if (!sc) {
-	    fprintf (stderr, "%s:  unable to allocate %d bytes for StdCmap\n",
-		     ProgramName, sizeof (StdCmap));
+	    fprintf (stderr, "%s:  unable to allocate %lu bytes for StdCmap\n",
+		     ProgramName, (unsigned long) sizeof(StdCmap));
 	    return;
 	}
     }

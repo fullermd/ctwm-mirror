@@ -118,8 +118,8 @@ void AddToList(name_list **list_head, char *name, char *ptr)
     if (nptr == NULL)
     {
 	twmrc_error_prefix();
-	fprintf (stderr, "unable to allocate %d bytes for name_list\n",
-		 sizeof(name_list));
+	fprintf (stderr, "unable to allocate %lu bytes for name_list\n",
+		 (unsigned long) sizeof(name_list));
 	Done(0);
     }
 
