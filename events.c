@@ -440,6 +440,7 @@ Bool DispatchEvent2 (void)
 {
     Window w = Event.xany.window;
     StashEventTime (&Event);
+    ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
 
     Tmp_win = GetTwmWindow(w);
 
@@ -449,7 +450,10 @@ Bool DispatchEvent2 (void)
 
     dumpevent(&Event);
 
-    if (!Scr) return False;
+    if (!Scr) {
+	Scr = lastScr;	    /* XXX_MIKE - try not to leave Scr NULL */
+	return False;
+    }
     FixRootEvent (&Event);
 
 #ifdef SOUNDS
@@ -477,6 +481,7 @@ Bool DispatchEvent (void)
 {
     Window w = Event.xany.window;
     StashEventTime (&Event);
+    ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
 
     Tmp_win = GetTwmWindow(w);
 
@@ -486,7 +491,10 @@ Bool DispatchEvent (void)
 
     dumpevent(&Event);
 
-    if (!Scr) return False;
+    if (!Scr) {
+	Scr = lastScr;	    /* XXX_MIKE - try not to leave Scr NULL */
+	return False;
+    }
 
     if (captive) {
       if ((Event.type == ConfigureNotify) && (Event.xconfigure.window == Scr->CaptiveRoot)) {
