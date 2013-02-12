@@ -592,7 +592,7 @@ WList *AddIconManager(TwmWindow *tmp_win)
     }
 
   tmp = NULL;
-  old = tmp_win->list;
+  old = tmp_win->iconmanagerlist;
   while (ip != NULL) {
     if ((tmp_win->occupation & ip->twm_win->occupation) == 0) {
       ip = ip->nextv;
@@ -687,7 +687,7 @@ WList *AddIconManager(TwmWindow *tmp_win)
     ip = ip->nextv;
   }
     if (tmp == NULL) return NULL;
-    tmp_win->list = tmp;
+    tmp_win->iconmanagerlist = tmp;
     if (! visible (tmp->iconmgr->twm_win)) {
 	old = tmp;
 	tmp = tmp->nextv;
@@ -698,11 +698,11 @@ WList *AddIconManager(TwmWindow *tmp_win)
 	}
 	if (tmp != NULL) {
 	    old->nextv = tmp->nextv;
-	    tmp->nextv = tmp_win->list;
-	    tmp_win->list = tmp;
+	    tmp->nextv = tmp_win->iconmanagerlist;
+	    tmp_win->iconmanagerlist = tmp;
 	}
     }
-    return (tmp_win->list);
+    return tmp_win->iconmanagerlist;
 }
 
 /***********************************************************************
@@ -796,10 +796,10 @@ void RemoveIconManager(TwmWindow *tmp_win)
     IconMgr *ip;
     WList *tmp, *tmp1, *save;
 
-    if (tmp_win->list == NULL)
+    if (tmp_win->iconmanagerlist == NULL)
 	return;
 
-    tmp  = tmp_win->list;
+    tmp  = tmp_win->iconmanagerlist;
     tmp1 = NULL;
 
   while (tmp != NULL) {
@@ -827,8 +827,10 @@ void RemoveIconManager(TwmWindow *tmp_win)
 	XUnmapWindow(dpy, ip->twm_win->frame);
 	ip->twm_win->mapped = FALSE;
     }
-    if (tmp1 == NULL) tmp_win->list = tmp_win->list->nextv;
-    else tmp1->nextv = tmp->nextv;
+    if (tmp1 == NULL)
+	tmp_win->iconmanagerlist = tmp_win->iconmanagerlist->nextv;
+    else
+	tmp1->nextv = tmp->nextv;
 
     save = tmp;
     tmp = tmp->nextv;

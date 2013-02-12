@@ -514,10 +514,10 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	if (OCCUPY (twmWin, newws) && !twmWin->vs) DisplayWin (vs, twmWin);
     }
 /*
-   Reorganize window lists
+   Reorganize icon manager window lists
 */
     for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
-	wl = twmWin->list;
+	wl = twmWin->iconmanagerlist;
 	if (wl == NULL) continue;
 	if (OCCUPY (wl->iconmgr->twm_win, newws)) continue;
 	wl1 = wl;
@@ -529,8 +529,8 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	}
 	if (wl != NULL) {
 	    wl1->nextv = wl->nextv;
-	    wl->nextv  = twmWin->list;
-	    twmWin->list = wl;
+	    wl->nextv  = twmWin->iconmanagerlist;
+	    twmWin->iconmanagerlist = wl;
 	}
     }
     wl = (WList*)0;

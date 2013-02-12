@@ -3454,9 +3454,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 	    len = strlen(action);
 	    if (len == 0) {
-		if (tmp_win && tmp_win->list) {
-		    raisewin = tmp_win->list->iconmgr->twm_win->frame;
-		    iconwin = tmp_win->list->icon;
+		if (tmp_win && tmp_win->iconmanagerlist) {
+		    raisewin = tmp_win->iconmanagerlist->iconmgr->twm_win->frame;
+		    iconwin = tmp_win->iconmanagerlist->icon;
 		} else if (Scr->iconmgr->active) {
 		    raisewin = Scr->iconmgr->twm_win->frame;
 		    iconwin = Scr->iconmgr->active->w;
@@ -3464,9 +3464,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    } else {
 		for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
 		    if (strncmp (action, tw->icon_name, len) == 0) {
-			if (tw->list && tw->list->iconmgr->twm_win->mapped) {
-			    raisewin = tw->list->iconmgr->twm_win->frame;
-			    iconwin = tw->list->icon;
+			if (tw->iconmanagerlist &&
+			    tw->iconmanagerlist->iconmgr->twm_win->mapped) {
+			    raisewin = tw->iconmanagerlist->iconmgr->twm_win->frame;
 			    break;
 			}
 		    }
@@ -4057,10 +4057,10 @@ static void ReMapOne(TwmWindow *t, TwmWindow *leader)
 	if (Scr->ShrinkIconTitles)
 	    t->icon->title_shrunk = True;
     }
-    if (t->list) {
+    if (t->iconmanagerlist) {
 	WList *wl;
 
-	for (wl = t->list; wl != NULL; wl = wl->nextv)
+	for (wl = t->iconmanagerlist; wl != NULL; wl = wl->nextv)
 	    XUnmapWindow(dpy, wl->icon);
     }
     t->isicon = FALSE;
@@ -4158,7 +4158,8 @@ static void UnmapTransients(TwmWindow *tmp_win, int iconify, unsigned long event
 		SetFocus ((TwmWindow *) NULL, LastTimestamp());
 		if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
 	    }
-	    if (t->list) XMapWindow(dpy, t->list->icon);
+	    if (t->iconmanagerlist)
+		XMapWindow(dpy, t->iconmanagerlist->icon);
 	    t->isicon = TRUE;
 	    t->icon_on = FALSE;
 	    WMapIconify (t);
@@ -4202,8 +4203,8 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
 		XMapRaised(dpy, tmp_win->icon->w);
 	}
     }
-    if (tmp_win->list) {
-      for (wl = tmp_win->list; wl != NULL; wl = wl->nextv) {
+    if (tmp_win->iconmanagerlist) {
+      for (wl = tmp_win->iconmanagerlist; wl != NULL; wl = wl->nextv) {
 	XMapWindow(dpy, wl->icon);
       }
     }

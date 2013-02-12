@@ -427,6 +427,19 @@ void FixRootEvent (XEvent *e)
 
 
 
+/* Move this next to GetTwmWindow()? */
+static ScreenInfo *GetTwmScreen(XEvent *event)
+{
+    ScreenInfo *scr;
+
+    if (XFindContext(dpy, event->xany.window, ScreenContext,
+					(XPointer *)&scr) == XCNOENT) {
+	scr = FindScreenInfo(WindowOfEvent(event));
+    }
+
+    return scr;
+}
+
 /***********************************************************************
  *
  *  Procedure:
@@ -443,10 +456,7 @@ Bool DispatchEvent2 (void)
     ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
 
     Tmp_win = GetTwmWindow(w);
-
-    if (XFindContext (dpy, w, ScreenContext, (XPointer *)&Scr) == XCNOENT) {
-	Scr = FindScreenInfo (WindowOfEvent (&Event));
-    }
+    Scr = GetTwmScreen(&Event);
 
     dumpevent(&Event);
 
@@ -460,11 +470,12 @@ Bool DispatchEvent2 (void)
     play_sound(Event.type);
 #endif
 
-    if (menuFromFrameOrWindowOrTitlebar && Event.type == Expose)
-      HandleExpose();
-
-    if (!menuFromFrameOrWindowOrTitlebar && Event.type>= 0 && Event.type < MAX_X_EVENT) {
-	(*EventHandler[Event.type])();
+    if (menuFromFrameOrWindowOrTitlebar) {
+	if (Event.type == Expose)
+	    HandleExpose();
+    } else {
+	if (Event.type>= 0 && Event.type < MAX_X_EVENT)
+	    (*EventHandler[Event.type])();
     }
 
     return True;
@@ -484,10 +495,7 @@ Bool DispatchEvent (void)
     ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
 
     Tmp_win = GetTwmWindow(w);
-
-    if (XFindContext (dpy, w, ScreenContext, (XPointer *)&Scr) == XCNOENT) {
-	Scr = FindScreenInfo (WindowOfEvent (&Event));
-    }
+    Scr = GetTwmScreen(&Event);
 
     dumpevent(&Event);
 
@@ -1220,10 +1228,11 @@ void HandleKeyPress(void)
 	    Context = C_ICON;
 	if (Event.xany.window == Tmp_win->frame)
 	    Context = C_FRAME;
-	if (Tmp_win->list && Event.xany.window == Tmp_win->list->w)
-	    Context = C_ICONMGR;
-	if (Tmp_win->list && Event.xany.window == Tmp_win->list->icon)
-	    Context = C_ICONMGR;
+	if (Tmp_win->iconmanagerlist) {
+	    if (Event.xany.window == Tmp_win->iconmanagerlist->w ||
+		Event.xany.window == Tmp_win->iconmanagerlist->icon)
+		Context = C_ICONMGR;
+	}
 	if (Tmp_win->wspmgr)
 	    Context = C_WORKSPACE;
     }
@@ -1243,6 +1252,7 @@ void HandleKeyPress(void)
 	{
 	    /* weed out the functions that don't make sense to execute
 	     * from a key press 
+	     * TODO: add keyboard moving/resizing of windows.
 	     */
 	    if (key->func == F_MOVE || key->func == F_RESIZE)
 		return;
@@ -1321,14 +1331,16 @@ void HandleKeyPress(void)
      */
     if (Tmp_win)
     {
-        if (Tmp_win == Scr->currentvs->wsw->twm_win) {
+        /* if (Tmp_win == Scr->currentvs->wsw->twm_win) */
+	if (Tmp_win->wspmgr) {
 	  WMgrHandleKeyPressEvent (Scr->currentvs, &Event);
 	  return;
         }
         if (Tmp_win->icon && ((Event.xany.window == Tmp_win->icon->w) ||
 	    (Event.xany.window == Tmp_win->frame) ||
 	    (Event.xany.window == Tmp_win->title_w) ||
-	    (Tmp_win->list && (Event.xany.window == Tmp_win->list->w))))
+	    (Tmp_win->iconmanagerlist &&
+	     (Event.xany.window == Tmp_win->iconmanagerlist->w))))
         {
             Event.xkey.window = Tmp_win->w;
             XSendEvent(dpy, Tmp_win->w, False, KeyPressMask, &Event);
@@ -1822,13 +1834,13 @@ void RedoIconName(void)
     if (Scr->NoIconTitlebar || 
 	LookInNameList (Scr->NoIconTitle, Tmp_win->icon_name) ||
 	LookInList (Scr->NoIconTitle, Tmp_win->full_name, &Tmp_win->class)) goto wmapupd;
-    if (Tmp_win->list)
+    if (Tmp_win->iconmanagerlist)
     {
 	/* let the expose event cause the repaint */
-	XClearArea(dpy, Tmp_win->list->w, 0,0,0,0, True);
+	XClearArea(dpy, Tmp_win->iconmanagerlist->w, 0,0,0,0, True);
 
 	if (Scr->SortIconMgr)
-	    SortIconManager(Tmp_win->list->iconmgr);
+	    SortIconManager(Tmp_win->iconmanagerlist->iconmgr);
     }
 
     if (!Tmp_win->icon  || !Tmp_win->icon->w) goto wmapupd;
@@ -2080,14 +2092,16 @@ void HandleExpose(void)
 	    PaintOccupyWindow ();
 	    flush_expose (Event.xany.window);
 	    return;
-	} else 	if (Tmp_win->list) {
-	    if (Event.xany.window == Tmp_win->list->w)
+	} else 	if (Tmp_win->iconmanagerlist) {
+	    WList *iconmanagerlist = Tmp_win->iconmanagerlist;
+
+	    if (Event.xany.window == iconmanagerlist->w)
 	    {
 		int offs;
 
-		DrawIconManagerBorder(Tmp_win->list, True);
+		DrawIconManagerBorder(iconmanagerlist, True);
 
-		FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
+		FB(iconmanagerlist->cp.fore, iconmanagerlist->cp.back);
 		offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
 		if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
 		    XmbDrawImageString(dpy, Event.xany.window,
@@ -2107,17 +2121,19 @@ void HandleExpose(void)
 		flush_expose (Event.xany.window);
 		return;
 	    }
-	    if (Event.xany.window == Tmp_win->list->icon)
+	    if (Event.xany.window == iconmanagerlist->icon)
 	    {
-		if (Scr->use3Diconmanagers && Tmp_win->list->iconifypm) {
-		    XCopyArea (dpy, Tmp_win->list->iconifypm, Tmp_win->list->icon,
+		if (Scr->use3Diconmanagers && iconmanagerlist->iconifypm) {
+		    XCopyArea(dpy, iconmanagerlist->iconifypm,
+				iconmanagerlist->icon,
 				Scr->NormalGC, 0, 0,
 				iconifybox_width, iconifybox_height, 0, 0);
 		}
 		else {
-		    FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
-		    XCopyPlane(dpy, Scr->siconifyPm, Tmp_win->list->icon, Scr->NormalGC,
-			0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
+		    FB(iconmanagerlist->cp.fore, iconmanagerlist->cp.back);
+		    XCopyPlane(dpy, Scr->siconifyPm, iconmanagerlist->icon,
+			    Scr->NormalGC, 0,0,
+			    iconifybox_width, iconifybox_height, 0, 0, 1);
 		}
 		flush_expose (Event.xany.window);
 		return;
@@ -2360,7 +2376,7 @@ void HandleMapRequest(void)
 	 * If the window has been unmapped by the client, it won't be listed
 	 * in the icon manager.  Add it again, if requested.
 	 */
-	if (Tmp_win->list == NULL)
+	if (Tmp_win->iconmanagerlist == NULL)
 	    (void) AddIconManager (Tmp_win);
     }
 
@@ -3058,10 +3074,10 @@ void HandleButtonPress(void)
     }
     if (Tmp_win)
     {
-	if (Tmp_win->list && (RootFunction != 0) &&
-		((Event.xany.window == Tmp_win->list->icon) ||
-		 (Event.xany.window == Tmp_win->list->w))) {
-	    Tmp_win = Tmp_win->list->iconmgr->twm_win;
+	if (Tmp_win->iconmanagerlist && (RootFunction != 0) &&
+		((Event.xany.window == Tmp_win->iconmanagerlist->icon) ||
+		 (Event.xany.window == Tmp_win->iconmanagerlist->w))) {
+	    Tmp_win = Tmp_win->iconmanagerlist->iconmgr->twm_win;
 	    XTranslateCoordinates(dpy, Event.xany.window, Tmp_win->w,
 		Event.xbutton.x, Event.xbutton.y, 
 		&JunkX, &JunkY, &JunkChild);
@@ -3145,15 +3161,15 @@ void HandleButtonPress(void)
 		 (Tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
 	    Context = C_WINDOW;
 	}
-	else if (Tmp_win->list) {
-	    if ((Event.xany.window == Tmp_win->list->icon) ||
-		(Event.xany.window == Tmp_win->list->w))
-	  {
-	    Tmp_win->list->down = TRUE;
-	    if (Scr->Highlight) DrawIconManagerBorder(Tmp_win->list, False);
-	    DownIconManager = Tmp_win->list;
-	    Context = C_ICONMGR;
-	  }
+	else if (Tmp_win->iconmanagerlist) {
+	    if ((Event.xany.window == Tmp_win->iconmanagerlist->icon) ||
+		(Event.xany.window == Tmp_win->iconmanagerlist->w)) {
+		Tmp_win->iconmanagerlist->down = TRUE;
+		if (Scr->Highlight)
+		    DrawIconManagerBorder(Tmp_win->iconmanagerlist, False);
+		DownIconManager = Tmp_win->iconmanagerlist;
+		Context = C_ICONMGR;
+	    }
 	}
     }
 
@@ -3405,8 +3421,9 @@ void HandleEnterNotify(void)
 	/* Handle RaiseDelay, if any.....
 	 */
 	if (RaiseDelay > 0) {
-	    if (Tmp_win && Tmp_win->auto_raise
-		&& (!Tmp_win->list || Tmp_win->list->w != ewp->window)) {
+	    if (Tmp_win && Tmp_win->auto_raise &&
+		    (!Tmp_win->iconmanagerlist ||
+		      Tmp_win->iconmanagerlist->w != ewp->window)) {
 		ColormapWindow *cwin;
 #ifdef VMS
 		float timeout = 0.0125;
@@ -3501,14 +3518,17 @@ void HandleEnterNotify(void)
 		    return;
 		}
 
-		if (Tmp_win->list) CurrentIconManagerEntry (Tmp_win->list);
+		if (Tmp_win->iconmanagerlist)
+		    CurrentIconManagerEntry (Tmp_win->iconmanagerlist);
 
 		accinput = Tmp_win->mapped && Tmp_win->wmhints && Tmp_win->wmhints->input;
-		if (Tmp_win->list &&
-		    ewp->window == Tmp_win->list->w && ! accinput &&
-		    Tmp_win->list->iconmgr &&
-		    Tmp_win->list->iconmgr->twm_win) {
-			SetFocus (Tmp_win->list->iconmgr->twm_win, CurrentTime);
+		if (Tmp_win->iconmanagerlist &&
+		    ewp->window == Tmp_win->iconmanagerlist->w &&
+		    !accinput &&
+		    Tmp_win->iconmanagerlist->iconmgr &&
+		    Tmp_win->iconmanagerlist->iconmgr->twm_win) {
+			SetFocus(Tmp_win->iconmanagerlist->iconmgr->twm_win,
+				 CurrentTime);
 			return;
 		}
 
@@ -3533,7 +3553,8 @@ void HandleEnterNotify(void)
 		    }
 		    if (ewp->window == Tmp_win->frame ||
 			(Scr->IconManagerFocus &&
-			(Tmp_win->list && ewp->window == Tmp_win->list->w))) {
+			 Tmp_win->iconmanagerlist &&
+			 ewp->window == Tmp_win->iconmanagerlist->w)) {
 
 			if (!scanArgs.leaves && !scanArgs.enters)
 			    InstallWindowColormaps (EnterNotify,	/* 2 */
@@ -3556,8 +3577,8 @@ void HandleEnterNotify(void)
 				
 				/* if 4 or 4a, focus on the window */
 				if (Scr->TitleFocus ||  
-				    (Tmp_win->list && 
-				     (Tmp_win->list->w == ewp->window))) {
+				    (Tmp_win->iconmanagerlist && 
+				     (Tmp_win->iconmanagerlist->w == ewp->window))) {
 				  SetFocus (Tmp_win, ewp->time);
 				}
 			}
@@ -3758,8 +3779,8 @@ void HandleLeaveNotify(void)
 	    return;
 	}
 
-	inicon = (Tmp_win->list &&
-		  Tmp_win->list->w == Event.xcrossing.window);
+	inicon = (Tmp_win->iconmanagerlist &&
+		  Tmp_win->iconmanagerlist->w == Event.xcrossing.window);
 
 	if (Scr->RingLeader && Scr->RingLeader == Tmp_win &&
 	    (Event.xcrossing.detail != NotifyInferior &&

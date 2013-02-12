@@ -252,4 +252,5 @@ $(OBJS): Makefile
 #define IHaveSpecialMakefileTarget
 Makefile: Imakefile Imakefile.local
 	echo "You need to run 'xmkmf'"
-	exit 1
+	xmkmf && ${MAKE} ${MAKEFLAGS}
+#	exit 1
