@@ -626,12 +626,13 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 
     /* If SaveWorkspaceFocus is on, try to restore the focus to the last
        window which was focused when we left this workspace. */
-    if ( Scr->SaveWorkspaceFocus && newws->save_focus) {
-        for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
-            if (twmWin == newws->save_focus) {
-                WarpToWindow(twmWin);
-            }
-        }
+    if (Scr->SaveWorkspaceFocus && newws->save_focus) {
+	twmWin = newws->save_focus;
+	if (OCCUPY(twmWin, newws)) {	/* check should not even be needed anymore */
+	    WarpToWindow(twmWin, 0);
+	} else {
+	    newws->save_focus = NULL;
+	}
     }
 
     /* keep track of the order of the workspaces across restarts */
@@ -1502,10 +1503,14 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
 	int mask = 1 << ws->number;
 	if (changedoccupation & mask) {
-	    if (newoccupation & mask)
+	    if (newoccupation & mask) {
 		WMapAddToList (tmp_win, ws);
-	    else
+	    } else {
 		WMapRemoveFromList (tmp_win, ws);
+                if (Scr->SaveWorkspaceFocus && ws->save_focus == tmp_win) {
+                    ws->save_focus = NULL;
+                }
+	    }
 	}
     }
 
@@ -1585,8 +1590,7 @@ void WMgrAddToCurrentWorkSpaceAndWarp (virtualScreen *vs, char *winname)
     }
 
     if (! tw->mapped) DeIconify (tw);
-    if (! Scr->NoRaiseWarp) RaiseWindow (tw);
-    WarpToWindow (tw);
+    WarpToWindow (tw, Scr->RaiseOnWarp);
 }
 
 static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
@@ -2900,7 +2904,7 @@ move:		XMoveWindow (dpy, w, newX - XW, newY - YW);
 	XMapWindow (dpy, sw);
 	XDestroyWindow (dpy, w);
 	GotoWorkSpace (vs, ws);
-	if (!Scr->DontWarpCursorInWMap) WarpToWindow (win);
+	if (!Scr->DontWarpCursorInWMap) WarpToWindow (win, Scr->RaiseOnWarp);
 	control_L_sym  = XStringToKeysym  ("Control_L");
 	control_R_sym  = XStringToKeysym  ("Control_R");
 	control_L_code = XKeysymToKeycode (dpy, control_L_sym);

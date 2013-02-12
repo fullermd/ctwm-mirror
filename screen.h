@@ -388,7 +388,7 @@ struct ScreenInfo
     short NoRaiseMove;		/* don't raise window following move */
     short NoRaiseResize;	/* don't raise window following resize */
     short NoRaiseDeicon;	/* don't raise window on deiconify */
-    short NoRaiseWarp;		/* don't raise window on warp */
+    short RaiseOnWarp;		/* do raise window on warp */
     short DontMoveOff;		/* don't allow windows to be moved off */
     int MoveOffResistance;	/* nb of pixel before moveOff gives up */
     int MovePackResistance;	/* nb of pixel before f.movepack gives up */

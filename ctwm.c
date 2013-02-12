@@ -151,7 +151,11 @@ ScreenInfo *Scr = NULL;		/* the cur and prev screens */
 int PreviousScreen;		/* last screen that we were on */
 int FirstScreen;		/* TRUE ==> first screen of display */
 Bool PrintErrorMessages = False;	/* controls error messages */
+#ifdef DEBUG
+Bool ShowWelcomeWindow = False;
+#else
 Bool ShowWelcomeWindow = True;
+#endif
 static int RedirectError;	/* TRUE ==> another window manager running */
 /* for settting RedirectError */
 static int CatchRedirectError(Display *display, XErrorEvent *event);
@@ -1020,7 +1024,7 @@ void InitVariables(void)
     Scr->NoRaiseMove = FALSE;
     Scr->NoRaiseResize = FALSE;
     Scr->NoRaiseDeicon = FALSE;
-    Scr->NoRaiseWarp = FALSE;
+    Scr->RaiseOnWarp = TRUE;
     Scr->DontMoveOff = FALSE;
     Scr->DoZoom = FALSE;
     Scr->TitleFocus = TRUE;

@@ -2186,6 +2186,13 @@ void HandleDestroyNotify(void)
 	Scr->Focus = (TwmWindow*) NULL;
 	FocusOnRoot();
     }
+    if (Scr->SaveWorkspaceFocus) {
+	struct WorkSpace *ws;
+	for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
+	    if (ws->save_focus == Tmp_win)
+		ws->save_focus = NULL;
+	}
+    }
     XDeleteContext(dpy, Tmp_win->w, TwmContext);
     XDeleteContext(dpy, Tmp_win->w, ScreenContext);
     XDeleteContext(dpy, Tmp_win->frame, TwmContext);
@@ -3757,15 +3764,24 @@ void HandleLeaveNotify(void)
 	if (Scr->RingLeader && Scr->RingLeader == Tmp_win &&
 	    (Event.xcrossing.detail != NotifyInferior &&
 	     Event.xcrossing.window != Tmp_win->w)) {
+#ifdef DEBUG
+	     fprintf(stderr, "HandleLeaveNotify: Event.xcrossing.window %x != Tmp_win->w %x\n", Event.xcrossing.window, Tmp_win->w);
+#endif
 	    if (!inicon) {
-		if (Tmp_win->mapped) {
+		if (Event.xcrossing.window != Tmp_win->frame /*was: Tmp_win->mapped*/) {
 		    Tmp_win->ring.cursor_valid = False;
-		} else {
+#ifdef DEBUG
+		    fprintf(stderr, "HandleLeaveNotify: cursor_valid = False\n");
+#endif
+		} else {	/* Event.xcrossing.window == Tmp_win->frame */
 		    Tmp_win->ring.cursor_valid = True;
 		    Tmp_win->ring.curs_x = (Event.xcrossing.x_root -
 					    Tmp_win->frame_x);
 		    Tmp_win->ring.curs_y = (Event.xcrossing.y_root -
 					    Tmp_win->frame_y);
+#ifdef DEBUG
+		    fprintf(stderr, "HandleLeaveNotify: cursor_valid = True; x = %d (%d-%d), y = %d (%d-%d)\n", Tmp_win->ring.curs_x, Event.xcrossing.x_root, Tmp_win->frame_x, Tmp_win->ring.curs_y, Event.xcrossing.y_root, Tmp_win->frame_y);
+#endif
 		}
 	    }
 	    Scr->RingLeader = (TwmWindow *) NULL;

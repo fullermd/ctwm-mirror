@@ -257,7 +257,7 @@ extern void TryToPush (TwmWindow *tmp_win, int x, int y, int dir);
 extern void TryToGrid (TwmWindow *tmp_win, int *x, int *y);
 extern void resizeFromCenter(Window w, TwmWindow *tmp_win);
 extern void WarpAlongRing (XButtonEvent *ev, Bool forward);
-extern void WarpToWindow (TwmWindow *t);
+extern void WarpToWindow (TwmWindow *t, int must_raise);
 extern void DisplayPosition (TwmWindow *tmp_win, int x, int y);
 extern void packwindow (TwmWindow *tmp_win, char *direction);
 extern void fillwindow (TwmWindow *tmp_win, char *direction);

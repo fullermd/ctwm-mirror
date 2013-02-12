@@ -636,6 +636,7 @@ typedef struct _TwmKeyword {
 #define kw0_NoImagesInWorkSpaceManager  64
 #define kw0_NoWarpToMenuTitle           65
 #define kw0_SaveWorkspaceFocus          66 /* blais */
+#define kw0_RaiseOnWarp			67
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -1012,6 +1013,7 @@ static TwmKeyword keytable[] = {
     { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
     { "raiseonclick",		KEYWORD, kw0_RaiseOnClick },
     { "raiseonclickbutton",	NKEYWORD, kwn_RaiseOnClickButton },
+    { "raiseonwarp",		KEYWORD, kw0_RaiseOnWarp },
     { "raisewhenautounsqueeze",	KEYWORD, kw0_RaiseWhenAutoUnSqueeze },
     { "randomplacement",	SSKEYWORD, kwss_RandomPlacement },
     { "reallymoveinworkspacemanager",	KEYWORD, kw0_ReallyMoveInWorkspaceManager },
@@ -1276,7 +1278,11 @@ int do_single_keyword (int keyword)
 	return 1;
 
       case kw0_NoRaiseOnWarp:
-	Scr->NoRaiseWarp = TRUE;
+	Scr->RaiseOnWarp = FALSE;
+	return 1;
+
+      case kw0_RaiseOnWarp:
+	Scr->RaiseOnWarp = TRUE;
 	return 1;
 
       case kw0_WarpUnmapped:

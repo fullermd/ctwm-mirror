@@ -2281,6 +2281,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
     case F_POPUP:
 	tmp_win = (TwmWindow *)action;
+	if (! tmp_win) break;
 	if (Scr->WindowFunction.func != 0)
 	{
 	   ExecuteFunction(Scr->WindowFunction.func,
@@ -2300,8 +2301,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	if (! tmp_win) break;
 	if (Scr->WarpUnmapped || tmp_win->mapped) {
 	    if (!tmp_win->mapped) DeIconify (tmp_win);
-	    if (!Scr->NoRaiseWarp) RaiseWindow (tmp_win);
-	    WarpToWindow (tmp_win);
+	    WarpToWindow (tmp_win, Scr->RaiseOnWarp);
 	}
 	break;
 
@@ -3438,8 +3438,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    if (tw) {
 		if (Scr->WarpUnmapped || tw->mapped) {
 		    if (!tw->mapped) DeIconify (tw);
-		    if (!Scr->NoRaiseWarp) RaiseWindow (tw);
-		    WarpToWindow (tw);
+		    WarpToWindow (tw, Scr->RaiseOnWarp);
 		}
 	    } else {
 		XBell (dpy, 0);
@@ -3514,7 +3513,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		tmp_win->ring.next = tmp_win->ring.prev = Scr->Ring = tmp_win;
 	    }
 	}
-	tmp_win->ring.cursor_valid = False;
+	/*tmp_win->ring.cursor_valid = False;*/
 	break;
 
     case F_WARPRING:
@@ -4111,7 +4110,7 @@ void DeIconify(TwmWindow *tmp_win)
     if (isicon && 
 	(Scr->WarpCursor ||
 	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
-      WarpToWindow (tmp_win);
+      WarpToWindow (tmp_win, 0);
 
     /* now de-iconify and window group transients */
     ReMapTransients(tmp_win);
@@ -4721,7 +4720,7 @@ void WarpAlongRing (XButtonEvent *ev, Bool forward)
 	TwmWindow *p = Scr->RingLeader, *t;
 
 	Scr->RingLeader = r;
-	WarpToWindow (r);
+	WarpToWindow (r, 1);
 
 	if (p && p->mapped &&
 	    (t = GetTwmWindow(ev->window)) &&
@@ -4729,32 +4728,72 @@ void WarpAlongRing (XButtonEvent *ev, Bool forward)
 	    p->ring.cursor_valid = True;
 	    p->ring.curs_x = ev->x_root - t->frame_x;
 	    p->ring.curs_y = ev->y_root - t->frame_y;
-	    if (p->ring.curs_x < -p->frame_bw || 
-		p->ring.curs_x >= p->frame_width + p->frame_bw ||
-		p->ring.curs_y < -p->frame_bw || 
-		p->ring.curs_y >= p->frame_height + p->frame_bw) {
-		/* somehow out of window */
-		p->ring.curs_x = p->frame_width / 2;
-		p->ring.curs_y = p->frame_height / 2;
-	    }
+#ifdef DEBUG
+	    fprintf(stderr, "WarpAlongRing: cursor_valid := True; x := %d (%d-%d), y := %d (%d-%d)\n", Tmp_win->ring.curs_x, ev->x_root, t->frame_x, Tmp_win->ring.curs_y, ev->y_root, t->frame_y);
+#endif
+	    /*
+	     * The check if the cursor position is inside the window is now
+	     * done in WarpToWindow().
+	     */
 	}
     }
 }
 
 
 
-void WarpToWindow (TwmWindow *t)
+void WarpToWindow (TwmWindow *t, int must_raise)
 {
     int x, y;
 
-    if (t->auto_raise || !Scr->NoRaiseWarp) AutoRaiseWindow (t);
     if (t->ring.cursor_valid) {
 	x = t->ring.curs_x;
 	y = t->ring.curs_y;
+#ifdef DEBUG
+	fprintf(stderr, "WarpToWindow: cursor_valid; x == %d, y == %d\n", x, y);
+#endif
+
+	/*
+	 * XXX is this correct with 3D borders? Easier check possible?
+	 * frame_bw is for the left border.
+	 */
+	if (x < t->frame_bw)
+	    x = t->frame_bw;
+	if (x >= t->frame_width + t->frame_bw)
+	    x  = t->frame_width + t->frame_bw - 1;	
+	if (y < t->title_height + t->frame_bw)
+	    y = t->title_height + t->frame_bw;
+	if (y >= t->frame_height + t->frame_bw)
+	    y  = t->frame_height + t->frame_bw - 1;
+#ifdef DEBUG
+	fprintf(stderr, "WarpToWindow: adjusted    ; x := %d, y := %d\n", x, y);
+#endif
     } else {
 	x = t->frame_width / 2;
 	y = t->frame_height / 2;
+#ifdef DEBUG
+	fprintf(stderr, "WarpToWindow: middle; x := %d, y := %d\n", x, y);
+#endif
     }
+#if 0
+    int dest_x, dest_y;
+    Window child;
+
+    /*
+     * Check if the proposed position actually is visible. If not, raise the window.
+     * "If the coordinates are contained in a mapped
+     * child of dest_w, that child is returned to child_return."
+     * We'll need to check for the right child window; the frame probably.
+     * (What about XXX window boxes?)
+     *
+     * Alternatively, use XQueryPointer() which returns the root window
+     * the pointer is in, but XXX that won't work for VirtualScreens.
+     */
+    if (XTranslateCoordinates(dpy, t->frame, Scr->Root, x, y, &dest_x, &dest_y, &child)) {
+	if (child != t->frame)
+	    must_raise = 1;
+    }
+#endif
+    if (t->auto_raise || must_raise) AutoRaiseWindow (t);
     if (! visible (t)) {
 	WorkSpace *wlist;
 
@@ -4763,7 +4802,22 @@ void WarpToWindow (TwmWindow *t)
 	}
 	if (wlist != NULL) GotoWorkSpace (Scr->currentvs, wlist);
     }
-    XWarpPointer (dpy, None, t->frame, 0, 0, 0, 0, x, y);
+    XWarpPointer (dpy, None, Scr->Root, 0, 0, 0, 0, x + t->frame_x, y + t->frame_y);
+#ifdef DEBUG
+    {
+	Window root_return;
+	Window child_return;
+	int root_x_return;
+	int root_y_return;
+	int win_x_return;
+	int win_y_return;
+	unsigned int mask_return;
+
+	if (XQueryPointer(dpy, t->frame, &root_return, &child_return, &root_x_return, &root_y_return, &win_x_return, &win_y_return, &mask_return)) {
+	    fprintf(stderr, "XQueryPointer: root_return=%x, child_return=%x, root_x_return=%d, root_y_return=%d, win_x_return=%d, win_y_return=%d\n", root_return, child_return, root_x_return, root_y_return, win_x_return, win_y_return);
+	}
+    }
+#endif
 }
 
 

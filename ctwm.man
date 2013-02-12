@@ -1223,6 +1223,8 @@ left and down) is used.
 This keyword tells \fIctwm\fP to move the actual window when the user is
 moving the small windows in the WorkSpaceMap window. If not present the
 WorkSpaceMap can be used only to modify the occupation of a window.
+Pressing the \fIshift\fP key while dragging a window in the workspace manager
+temporarily toggles this option.
 
 .IP "\fBResizeFont\fP \fIstring\fP" 8
 This variable specifies the font to be used for in the dimensions window when
@@ -1512,6 +1514,9 @@ WindowGeometries {
     "jpilot*"        "800x600\-0\-0"
 }
 .EE
+
+.IP "\fBWindowRegion\fP \fIgeomstring\fP \fIvgrav\fP fIhgrav\fP [{ \fIwin\-list\fP }]" 8
+Similar to IconRegion, but for windows.
 
 .IP "\fBWindowRing\fP [{ \fIwin\-list\fP }]" 8
 This variable specifies a list of windows along which the \fBf.warpring\fP
@@ -2201,6 +2206,7 @@ rubber band until the invoking button is released.  To abort a resize,
 press another button before releasing the first button.
 
 .IP "\fBf.restart\fP" 8
+.IP "\fBf.twmrc\fP" 8
 This function kills and restarts \fIctwm\fP.
 
 .IP "\fBf.restoregeometry\fP" 8
@@ -2506,8 +2512,6 @@ Shutdown
 .SH BUGS
 The resource manager should have been used instead of all of the window
 lists.
-.PP
-The \fBIconRegion\fP variable should take a list.
 .PP
 Double clicking very fast to get the constrained move function will sometimes
 cause the window to move, even though the pointer is not moved.

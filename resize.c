@@ -627,6 +627,7 @@ void EndResize(void)
     XUnmapWindow(dpy, Scr->SizeWindow);
 
     tmp_win = GetTwmWindow(ResizeWindow);
+    if (!tmp_win) return;
 
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
 
@@ -873,6 +874,8 @@ void SetupFrame (TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
     fprintf (stderr, "SetupWindow: x=%d, y=%d, w=%d, h=%d, bw=%d\n",
 	     x, y, w, h, bw);
 #endif
+    if (!tmp_win)		/* should not happen */
+	return;
 
     if (x >= Scr->rootw)
       x = Scr->rootw - 16;	/* one "average" cursor width */
