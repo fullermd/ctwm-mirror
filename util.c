@@ -1580,8 +1580,7 @@ void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus)
 {
     if (! tmp_win) return;
 
-    if (focus && tmp_win->hasfocusvisible) return;
-    if (! focus && ! tmp_win->hasfocusvisible) return;
+    if (focus == tmp_win->hasfocusvisible) return;
     if (tmp_win->highlight) {
 	if (Scr->use3Dborders) {
 	    PaintBorders (tmp_win, focus);
