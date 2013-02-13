@@ -1706,3 +1706,22 @@ VirtualScreens {
 	top-left coordinate without the patch.  Of course in such a
 	situation the size should not change at all...                 
 	[via Olaf Seibert]
+
+    Changes from version 3.8.1 to 3.8.2
+    -----------------------------------
+
+    1 - Various code cleanups.
+	Cleanup re: raising and warping to windows (previous location of
+	pointer in windows), SaveWorkspaceFocus. A few extra NULL
+	pointer checks.
+	Logical hasfocusvisible cleanup.
+	Rename TwmWindow.list to iconmanagerlist, and various smaller
+	cleanups.
+	Eliminated TwmWindow TwmRoot from struct ScreenInfo. Mostly a
+	mechanical change.
+	I found some cases where the dummy TwmWindow was apparently
+	mistakenly included in a loop. Replaced .next with TwmWindow
+	*FirstWindow and .cmaps witn Colormaps RootColormaps. Other
+	members were not used.
+
+
