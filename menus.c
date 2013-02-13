@@ -1103,7 +1103,7 @@ int MakeMenu(MenuRoot *mr)
     int width, borderwidth;
     unsigned long valuemask;
     XSetWindowAttributes attributes;
-    Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap cmap = Scr->RootColormaps.cwins[0]->colormap->c;
     XRectangle ink_rect;
     XRectangle logical_rect;
 
@@ -1356,7 +1356,7 @@ int MakeMenu(MenuRoot *mr)
 
 Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
 {
-    int WindowNameOffset, WindowNameCount;
+    int WindowNameCount;
     TwmWindow **WindowNames;
     TwmWindow *tmp_win2,*tmp_win3;
     int i;
@@ -1424,11 +1424,9 @@ Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
 	if (!Scr->currentvs) return False;
 	if (!ws) ws = Scr->currentvs->wsw->currentwspc;
 
-        WindowNameOffset=(char *)Scr->TwmRoot.next->name -
-                               (char *)Scr->TwmRoot.next;
-        for(tmp_win = Scr->TwmRoot.next , WindowNameCount=0;
-            tmp_win != NULL;
-            tmp_win = tmp_win->next) {
+        for (tmp_win = Scr->FirstWindow, WindowNameCount = 0;
+             tmp_win != NULL;
+             tmp_win = tmp_win->next) {
 	  if (tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win) continue;
 	  if (Scr->ShortAllWindowsMenus && (tmp_win->wspmgr || tmp_win->iconmgr)) continue;
 
@@ -1440,9 +1438,9 @@ Bool PopUpMenu (MenuRoot *menu, int x, int y, Bool center)
 	}
         WindowNames = (TwmWindow **)malloc(sizeof(TwmWindow *)*WindowNameCount);
 	WindowNameCount = 0;
-        for(tmp_win = Scr->TwmRoot.next;
-            tmp_win != NULL;
-            tmp_win = tmp_win->next)
+        for (tmp_win = Scr->FirstWindow;
+             tmp_win != NULL;
+             tmp_win = tmp_win->next)
         {
 	    if (LookInList (Scr->IconMenuDontShow, tmp_win->full_name, &tmp_win->class)) continue;
 
@@ -3208,7 +3206,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	break;
 
     case F_RAISEICONS:
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+	for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	    if (t->icon && t->icon->w) {
 		XRaiseWindow (dpy, t->icon->w);	
 	    }
@@ -3418,17 +3416,17 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 			printf ("curren iconmgr entry: %s", tmp_win->iconmgr->Current);
 		}
 #endif /* #ifdef WARPTO_FROM_ICONMGR */
-	    for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+	    for (tw = Scr->FirstWindow; tw != NULL; tw = tw->next) {
 		if (!strncmp(action, tw->full_name, len)) break;
 		if (match (action, tw->full_name)) break;
 	    }
 	    if (!tw) {
-		for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+		for (tw = Scr->FirstWindow; tw != NULL; tw = tw->next) {
 		    if (!strncmp(action, tw->class.res_name, len)) break;
 		    if (match (action, tw->class.res_name)) break;
 		}
 		if (!tw) {
-		    for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+		    for (tw = Scr->FirstWindow; tw != NULL; tw = tw->next) {
 			if (!strncmp(action, tw->class.res_class, len)) break;
 			if (match (action, tw->class.res_class)) break;
 		    }
@@ -3462,7 +3460,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		    iconwin = Scr->iconmgr->active->w;
 		}
 	    } else {
-		for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+		for (tw = Scr->FirstWindow; tw != NULL; tw = tw->next) {
 		    if (strncmp (action, tw->icon_name, len) == 0) {
 			if (tw->iconmanagerlist &&
 			    tw->iconmanagerlist->iconmgr->twm_win->mapped) {
@@ -3898,7 +3896,7 @@ void PlaceTransients (TwmWindow *tmp_win, int where)
     xwc.stack_mode = where;
     
     sp = tmp_win->frame_width * tmp_win->frame_height;
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t != tmp_win &&
 	    ((t->transient && t->transientfor == tmp_win->w) ||
 	     t->group == tmp_win->w)) {
@@ -3926,7 +3924,7 @@ void PlaceOntop (int ontop, int where)
 
     lowerontop = (Window)-1;
 
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t->ontoppriority > ontop) {
 	    XConfigureWindow(dpy, t->frame, CWStackMode, &xwc);
 	    PlaceTransients(t, Above);
@@ -4029,7 +4027,7 @@ void RaiseFrame (Window frame)
 void FocusOnRoot(void)
 {
     SetFocus ((TwmWindow *) NULL, LastTimestamp());
-    InstallWindowColormaps(0, &Scr->TwmRoot);
+    InstallColormaps(0, &Scr->RootColormaps);
     if (! Scr->ClickToFocus) Scr->FocusRoot = TRUE;
 }
 
@@ -4073,7 +4071,7 @@ static void ReMapTransients(TwmWindow *tmp_win)
     TwmWindow *t;
 
     /* find t such that it is a transient or group member window */
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t != tmp_win &&
 		((t->transient && t->transientfor == tmp_win->w) ||
 		 (t->group == tmp_win->w && t->isicon))) {
@@ -4132,7 +4130,7 @@ static void UnmapTransients(TwmWindow *tmp_win, int iconify, unsigned long event
 {
     TwmWindow *t;
 
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t != tmp_win &&
 		((t->transient && t->transientfor == tmp_win->w) ||
 		 t->group == tmp_win->w)) {
@@ -4615,8 +4613,9 @@ int BumpWindowColormap (TwmWindow *tmp, int inc)
 		memset (tmp->cmaps.scoreboard, 0, 
 		       ColormapsScoreboardLength(&tmp->cmaps));
 
-	    if (previously_installed)
-		InstallWindowColormaps(PropertyNotify, (TwmWindow *) NULL);
+	    if (previously_installed) {
+		InstallColormaps(PropertyNotify, NULL);
+	    }
 	}
     } else
 	FetchWmColormapWindows (tmp);
@@ -5388,7 +5387,7 @@ int FindConstraint (TwmWindow *tmp_win, int direction)
 			ret = Scr->rooth - Scr->BorderBottom; break;
 	default       : return -1;
     }
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t == tmp_win) continue;
 	if (!visible (t)) continue;
 	if (!t->mapped) continue;
@@ -5435,7 +5434,7 @@ void TryToPack (TwmWindow *tmp_win, int *x, int *y)
 
     newx = *x;
     newy = *y;
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t == tmp_win) continue;
 	if (t->winbox != tmp_win->winbox) continue;
 	if (t->vs != tmp_win->vs) continue;
@@ -5478,7 +5477,7 @@ void TryToPush (TwmWindow *tmp_win, int x, int y, int dir)
     int		winw = tmp_win->frame_width  + 2 * tmp_win->frame_bw;
     int		winh = tmp_win->frame_height + 2 * tmp_win->frame_bw;
 
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t == tmp_win) continue;
 	if (t->winbox != tmp_win->winbox) continue;
 	if (t->vs != tmp_win->vs) continue;

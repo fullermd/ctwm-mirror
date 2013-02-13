@@ -549,7 +549,7 @@ void HandleEvents(void)
 	    }
 	}
 	if (ColortableThrashing && !QLength(dpy) && Scr) {
-	    InstallWindowColormaps(ColormapNotify, (TwmWindow *) NULL);
+	    InstallColormaps(ColormapNotify, NULL);
 	}
 	WindowMoved = FALSE;
 
@@ -706,8 +706,9 @@ void HandleColormapNotify(void)
 	else
 	    cmap->state |= CM_INSTALLED;
 
-	if (cmap->state & CM_INSTALLABLE)
-	    InstallWindowColormaps(ColormapNotify, (TwmWindow *) NULL);
+	if (cmap->state & CM_INSTALLABLE) {
+	    InstallColormaps(ColormapNotify, NULL);
+	}
 
 	if (cmap->refcnt == 0)
 	{
@@ -787,7 +788,7 @@ void HandleColormapNotify(void)
 	    **		the colormaps which are believed to be correct.
 	    */
 
-	    if (won != -1)
+	    if (won != -1) {
 		if (lost != -1)
 		{
 		    /* lower diagonal index calculation */
@@ -809,10 +810,11 @@ void HandleColormapNotify(void)
 		    */
 		    cmap->state |= CM_INSTALLED;
 		}
-	    else if (lost != -1)
-		InstallWindowColormaps(ColormapNotify, (TwmWindow *) NULL);
-	    else
+	    } else if (lost != -1) {
+		InstallColormaps(ColormapNotify, NULL);
+	    } else {
 		ColortableThrashing = FALSE; /* Gross Hack for HP WABI. CL. */
+	    }
 	}
     }
 
@@ -1278,7 +1280,7 @@ void HandleKeyPress(void)
 		len = strlen(key->win_name);
 
 		/* try and match the name first */
-		for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+		for (Tmp_win = Scr->FirstWindow; Tmp_win != NULL;
 		    Tmp_win = Tmp_win->next)
 		{
 		    if (!strncmp(key->win_name, Tmp_win->name, len))
@@ -1293,7 +1295,7 @@ void HandleKeyPress(void)
 
 		/* now try the res_name */
 		if (!matched)
-		    for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+		    for (Tmp_win = Scr->FirstWindow; Tmp_win != NULL;
 			 Tmp_win = Tmp_win->next)
 		    {
 			if (!strncmp(key->win_name, Tmp_win->class.res_name, len))
@@ -1308,7 +1310,7 @@ void HandleKeyPress(void)
 
 		/* now try the res_class */
 		if (!matched)
-		    for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+		    for (Tmp_win = Scr->FirstWindow; Tmp_win != NULL;
 			 Tmp_win = Tmp_win->next)
 		    {
 			if (!strncmp(key->win_name, Tmp_win->class.res_class, len))
@@ -1966,7 +1968,7 @@ void HandleClientMessage(void)
       unsigned long new_stuff = (unsigned long) Event.xclient.data.l [1];
       unsigned long old_stuff = (unsigned long) Event.xclient.data.l [0];
       Window	      tmp_win = Event.xclient.window;
-      for (twm_win = (Scr->TwmRoot).next; twm_win != NULL; twm_win = twm_win->next)
+      for (twm_win = Scr->FirstWindow; twm_win != NULL; twm_win = twm_win->next)
 	if (twm_win->w == tmp_win) break;
       if (twm_win == NULL) return;
       for (i = 1; i < (1 << 10); i <<= 1){
@@ -2255,8 +2257,9 @@ void HandleDestroyNotify(void)
 	 */
     }
 
-    if (Scr->cmapInfo.cmaps == &Tmp_win->cmaps)
-	InstallWindowColormaps(DestroyNotify, &Scr->TwmRoot);
+    if (Scr->cmapInfo.cmaps == &Tmp_win->cmaps) {
+	InstallColormaps(DestroyNotify, &Scr->RootColormaps);
+    }
 
     /*
      * TwmWindows contain the following pointers
@@ -2296,7 +2299,10 @@ void HandleDestroyNotify(void)
     }
     Tmp_win->occupation = 0;
     RemoveIconManager(Tmp_win);					/* 7 */
-    Tmp_win->prev->next = Tmp_win->next;
+    if (Scr->FirstWindow == Tmp_win)
+	Scr->FirstWindow = Tmp_win->next;
+    if (Tmp_win->prev != NULL)
+	Tmp_win->prev->next = Tmp_win->next;
     if (Tmp_win->next != NULL)
 	Tmp_win->next->prev = Tmp_win->prev;
     if (Tmp_win->auto_raise) Scr->NumAutoRaises--;
@@ -3395,8 +3401,9 @@ void HandleEnterNotify(void)
 	    Window forus_ret;
 	    int focus_rev;
 
-	    if (!scanArgs.leaves && !scanArgs.enters)
-		InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
+	    if (!scanArgs.leaves && !scanArgs.enters) {
+		InstallColormaps(EnterNotify, &Scr->RootColormaps);
+	    }
 	    if (! Scr->FocusRoot) return;
 	    XGetInputFocus (dpy, &forus_ret, &focus_rev);
 	    if ((forus_ret != PointerRoot) && (forus_ret != None)) {
@@ -3491,8 +3498,9 @@ void HandleEnterNotify(void)
 	     * titlebars are legible
 	     */
 	    if (ewp->window == Scr->Root) {
-		if (!scanArgs.leaves && !scanArgs.enters)
-		    InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
+		if (!scanArgs.leaves && !scanArgs.enters) {
+		    InstallColormaps(EnterNotify, &Scr->RootColormaps);
+		}
 		return;
 	    }
 	}
@@ -3556,9 +3564,10 @@ void HandleEnterNotify(void)
 			 Tmp_win->iconmanagerlist &&
 			 ewp->window == Tmp_win->iconmanagerlist->w)) {
 
-			if (!scanArgs.leaves && !scanArgs.enters)
-			    InstallWindowColormaps (EnterNotify,	/* 2 */
-						    &Scr->TwmRoot);
+			if (!scanArgs.leaves && !scanArgs.enters) {
+			    InstallColormaps (EnterNotify,	/* 2 */
+					      &Scr->RootColormaps);
+			}
 
 			/*
 			 * Event is in the frame or the icon mgr:
@@ -3602,10 +3611,11 @@ void HandleEnterNotify(void)
 			 * its colormap(s).
 			 */
 			if (Scr->BorderCursors) SetBorderCursor (Tmp_win, -1000, -1000);
-			if (!scanArgs.leaves || scanArgs.inferior)
+			if (!scanArgs.leaves || scanArgs.inferior) {
 			    InstallWindowColormaps(EnterNotify, Tmp_win);
+			}
 
-			if (Event.xcrossing.focus){
+			if (Event.xcrossing.focus) {
 				SynthesiseFocusIn(Tmp_win->w);
 			}
 
@@ -3630,8 +3640,9 @@ void HandleEnterNotify(void)
 		}			/* end if Tmp_win->mapped */
 		if (Tmp_win->wmhints != NULL &&
 			ewp->window == Tmp_win->wmhints->icon_window &&
-			(!scanArgs.leaves || scanArgs.inferior))
+			(!scanArgs.leaves || scanArgs.inferior)) {
 			    InstallWindowColormaps(EnterNotify, Tmp_win);
+		}
 	    }				/* end if FocusRoot */
 	    else
 	    if (Scr->BorderCursors && (ewp->window == Tmp_win->w)) {
@@ -3841,7 +3852,7 @@ void HandleLeaveNotify(void)
 			if (Event.xcrossing.focus) SynthesiseFocusOut (Tmp_win->w);
 		} else if (Event.xcrossing.window == Tmp_win->w &&
 				!scanArgs.enters) {
-		    InstallWindowColormaps (LeaveNotify, &Scr->TwmRoot);
+		    InstallColormaps(LeaveNotify, &Scr->RootColormaps);
 		}
 	    }
 	}
@@ -4124,6 +4135,15 @@ static void flush_expose (Window w)
 
 int InstallWindowColormaps (int type, TwmWindow *tmp)
 {
+    if (tmp) {
+	return InstallColormaps (type, &tmp->cmaps);
+    } else {
+	return InstallColormaps (type, NULL);
+    }
+}
+
+int InstallColormaps (int type, Colormaps *cmaps)
+{
     int i, j, n, number_cwins, state;
     ColormapWindow **cwins, *cwin, **maxcwin = NULL;
     TwmColormap *cmap;
@@ -4137,21 +4157,23 @@ int InstallWindowColormaps (int type, TwmWindow *tmp)
 	/* Save the colormap to be loaded for when force loading of
 	 * root colormap(s) ends.
 	 */
-	Scr->cmapInfo.pushed_window = tmp;
+	Scr->cmapInfo.pushed_cmaps = cmaps;
 	/* Don't load any new colormap if root colormap(s) has been
 	 * force loaded.
 	 */
 	if (Scr->cmapInfo.root_pushes)
 	    return (0);
-	/* Don't reload the currend window colormap list.
-	if (Scr->cmapInfo.cmaps == &tmp->cmaps)
+	/* Don't reload the current window colormap list.
+	if (Scr->cmapInfo.cmaps == cmaps)
 	    return (0);
 	 */
-	if (Scr->cmapInfo.cmaps)
+	if (Scr->cmapInfo.cmaps) {
 	    for (i = Scr->cmapInfo.cmaps->number_cwins,
-		 cwins = Scr->cmapInfo.cmaps->cwins; i-- > 0; cwins++)
+		 cwins = Scr->cmapInfo.cmaps->cwins; i-- > 0; cwins++) {
 		(*cwins)->colormap->state &= ~CM_INSTALLABLE;
-	Scr->cmapInfo.cmaps = &tmp->cmaps;
+	    }
+	}
+	Scr->cmapInfo.cmaps = cmaps;
 	break;
     
     case PropertyNotify:
@@ -4230,16 +4252,16 @@ int InstallWindowColormaps (int type, TwmWindow *tmp)
 
 void InstallRootColormap(void)
 {
-    TwmWindow *tmp;
+    Colormaps *tmp;
     if (Scr->cmapInfo.root_pushes == 0) {
 	/*
 	 * The saving and restoring of cmapInfo.pushed_window here
 	 * is a slimy way to remember the actual pushed list and
 	 * not that of the root window.
 	 */
-	tmp = Scr->cmapInfo.pushed_window;
-	InstallWindowColormaps(0, &Scr->TwmRoot);
-	Scr->cmapInfo.pushed_window = tmp;
+	tmp = Scr->cmapInfo.pushed_cmaps;
+	InstallColormaps(0, &Scr->RootColormaps);
+	Scr->cmapInfo.pushed_cmaps = tmp;
     }
     Scr->cmapInfo.root_pushes++;
 }
@@ -4282,7 +4304,7 @@ void UninstallRootColormap(void)
 	(void) XCheckIfEvent(dpy, &dummy, UninstallRootColormapQScanner, &args);
 
 	if (!args)
-	    InstallWindowColormaps(0, Scr->cmapInfo.pushed_window);
+	    InstallColormaps(0, Scr->cmapInfo.pushed_cmaps);
     }
 }
 

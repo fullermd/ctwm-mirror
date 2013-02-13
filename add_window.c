@@ -1132,11 +1132,11 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     }
 
     /* add the window into the twm list */
-    tmp_win->next = Scr->TwmRoot.next;
-    if (Scr->TwmRoot.next != NULL)
-	Scr->TwmRoot.next->prev = tmp_win;
-    tmp_win->prev = &Scr->TwmRoot;
-    Scr->TwmRoot.next = tmp_win;
+    tmp_win->next = Scr->FirstWindow;
+    if (Scr->FirstWindow != NULL)
+	Scr->FirstWindow->prev = tmp_win;
+    tmp_win->prev = NULL;
+    Scr->FirstWindow = tmp_win;
 
     /* get all the colors for the window */
 
@@ -2237,8 +2237,9 @@ int FetchWmColormapWindows (TwmWindow *tmp)
 	tmp->cmaps.scoreboard = 
 	  (char *) calloc(1, ColormapsScoreboardLength(&tmp->cmaps));
 		
-    if (previously_installed)
-	InstallWindowColormaps(PropertyNotify, (TwmWindow *) NULL);
+    if (previously_installed) {
+	InstallColormaps(PropertyNotify, NULL);
+    }
 
   done:
     if (cmap_windows) {

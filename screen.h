@@ -119,7 +119,8 @@ struct ScreenInfo
     int MaxWindowWidth;		/* largest window to allow */
     int MaxWindowHeight;	/* ditto */
 
-    TwmWindow TwmRoot;		/* the head of the twm window list */
+    TwmWindow *FirstWindow;	/* the head of the twm window list */
+    Colormaps RootColormaps;	/* the colormaps of the root window */
 
     Window Root;		/* the root window: the current virual screen */
     Window XineramaRoot;	/* the root window, may be CaptiveRoot or otherwise RealRoot */
@@ -196,8 +197,8 @@ struct ScreenInfo
 				   pass thru loading a colortable list */
       int root_pushes;		/* current push level to install root
 				   colormap windows */
-      TwmWindow *pushed_window;	/* saved window to install when pushes drops
-				   to zero */
+      Colormaps *pushed_cmaps;	/* saved colormaps to install when pushes
+				   drops to zero */
     } cmapInfo;
 
     struct {

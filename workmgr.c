@@ -417,7 +417,7 @@ void ShowBackground (virtualScreen *vs)
   TwmWindow *twmWin;
 
   if (state) {
-    for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
+    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
       if (twmWin->savevs == vs) {
 	DisplayWin (vs, twmWin);
       }
@@ -425,7 +425,7 @@ void ShowBackground (virtualScreen *vs)
     }
     state = 0;
   } else {
-    for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
+    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
       if (twmWin->vs == vs) {
 	twmWin->savevs = twmWin->vs;
 	Vanish (vs, twmWin);
@@ -486,8 +486,8 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
         oldws->save_focus = Scr->Focus;
     }
 
-    focuswindow = (TwmWindow*)0;
-    for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
+    focuswindow = (TwmWindow *)NULL;
+    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
 	if (twmWin->vs == vs) {
 	  if (!OCCUPY (twmWin, newws)) {
 	    virtualScreen *tvs;
@@ -506,7 +506,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 	}
     }
     /* Move to the end of the twmWin list */
-    for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
+    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
 	last_twmWin = twmWin;
     }
     /* Iconise in reverse order */
@@ -516,7 +516,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
 /*
    Reorganize icon manager window lists
 */
-    for (twmWin = &(Scr->TwmRoot); twmWin != NULL; twmWin = twmWin->next) {
+    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
 	wl = twmWin->iconmanagerlist;
 	if (wl == NULL) continue;
 	if (OCCUPY (wl->iconmgr->twm_win, newws)) continue;
@@ -1515,7 +1515,7 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
     }
 
     if (! Scr->TransientHasOccupation) {
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+	for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	    if (t != tmp_win &&
 		((t->transient && t->transientfor == tmp_win->w) ||
 		 t->group == tmp_win->w)) {
@@ -1563,15 +1563,15 @@ void WMgrAddToCurrentWorkSpaceAndWarp (virtualScreen *vs, char *winname)
     TwmWindow *tw;
     int       newoccupation;
 
-    for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+    for (tw = Scr->FirstWindow; tw != NULL; tw = tw->next) {
 	if (match (winname, tw->full_name)) break;
     }
     if (!tw) {
-	for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+	for (tw = Scr->FirstWindow; tw != NULL; tw = tw->next) {
 	    if (match (winname, tw->class.res_name)) break;
 	}
 	if (!tw) {
-	    for (tw = Scr->TwmRoot.next; tw != NULL; tw = tw->next) {
+	    for (tw = Scr->FirstWindow; tw != NULL; tw = tw->next) {
 		if (match (winname, tw->class.res_class)) break;
 	    }
 	}

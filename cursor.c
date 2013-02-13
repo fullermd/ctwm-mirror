@@ -182,7 +182,7 @@ int NewBitmapCursor(Cursor *cp, char *source, char *mask)
     int sx, sy, mx, my;
     unsigned int sw, sh, mw, mh;
     Pixmap spm, mpm;
-    Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap cmap = Scr->RootColormaps.cwins[0]->colormap->c;
 
     fore.pixel = Scr->Black;
     XQueryColor(dpy, cmap, &fore);
@@ -216,7 +216,7 @@ Cursor MakeStringCursor (char *string)
     Pixmap	bitmap;
     unsigned int width, height, middle;
     GC		gc;
-    Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap	cmap = Scr->RootColormaps.cwins[0]->colormap->c;
     MyFont	myfont = Scr->TitleBarFont;
     XRectangle inc_rect;
     XRectangle logical_rect;

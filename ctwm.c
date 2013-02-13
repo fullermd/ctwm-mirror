@@ -609,15 +609,15 @@ int main(int argc, char **argv, char **environ)
 	} else {
 	    captivename = "Root";
 	}
-	Scr->TwmRoot.cmaps.number_cwins = 1;
-	Scr->TwmRoot.cmaps.cwins = (ColormapWindow **) malloc(sizeof(ColormapWindow *));
-	Scr->TwmRoot.cmaps.cwins[0] = CreateColormapWindow(Scr->Root, True, False);
-	Scr->TwmRoot.cmaps.cwins[0]->visibility = VisibilityPartiallyObscured;
+	Scr->RootColormaps.number_cwins = 1;
+	Scr->RootColormaps.cwins = (ColormapWindow **) malloc(sizeof(ColormapWindow *));
+	Scr->RootColormaps.cwins[0] = CreateColormapWindow(Scr->Root, True, False);
+	Scr->RootColormaps.cwins[0]->visibility = VisibilityPartiallyObscured;
 
 	Scr->cmapInfo.cmaps = NULL;
 	Scr->cmapInfo.maxCmaps = MaxCmapsOfScreen(ScreenOfDisplay(dpy, Scr->screen));
 	Scr->cmapInfo.root_pushes = 0;
-	InstallWindowColormaps(0, &Scr->TwmRoot);
+	InstallColormaps(0, &Scr->RootColormaps);
 
 	Scr->StdCmapInfo.head = Scr->StdCmapInfo.tail =  Scr->StdCmapInfo.mru = NULL;
 	Scr->StdCmapInfo.mruindex = 0;
@@ -1267,8 +1267,8 @@ void Reborder (Time time)
 	if ((Scr = ScreenList[scrnum]) == NULL)
 	    continue;
 
-	InstallWindowColormaps (0, &Scr->TwmRoot);	/* force reinstall */
-	for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
+	InstallColormaps(0, &Scr->RootColormaps);	/* force reinstall */
+	for (tmp = Scr->FirstWindow; tmp != NULL; tmp = tmp->next)
 	{
 	    RestoreWithdrawnLocation (tmp);
 	    XMapWindow (dpy, tmp->w);

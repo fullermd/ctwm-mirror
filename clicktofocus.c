@@ -7,21 +7,21 @@
 TwmWindow * get_last_window(WorkSpace *current)
 {
     TwmWindow		*t;
-    TwmWindow  * first = NULL;
+    TwmWindow  *first = NULL;
 
     if (! current) return NULL;
 
-    for (t = &(Scr->TwmRoot); t != NULL; t = t->next) {
-      if ((!first) && (!t->iconmgr) && (OCCUPY (t, current)) && (t->mapped))
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
+      if (!first && !t->iconmgr && OCCUPY (t, current) && t->mapped)
 	first = t;
-      if ((t->hasfocusvisible)  && (OCCUPY (t, current)))
+      if (t->hasfocusvisible && OCCUPY (t, current))
 	return t;
     }
 
     return first;
 }
 
-void set_last_window(WorkSpace * current)
+void set_last_window(WorkSpace *current)
 {
   TwmWindow * t;
 

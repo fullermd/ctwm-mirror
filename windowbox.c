@@ -139,7 +139,7 @@ void fittocontent (TwmWindow *twmwin)
     miny = Scr->rooth;
     maxx = 0;
     maxy = 0;
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t->winbox && (t->winbox->twmwin == twmwin)) {
 	    if (t->frame_x < minx) minx = t->frame_x;
 	    if (t->frame_y < miny) miny = t->frame_y;
@@ -154,7 +154,7 @@ void fittocontent (TwmWindow *twmwin)
     w = maxx - minx + 2 * twmwin->frame_bw3D;
     h = maxy - miny + 2 * twmwin->frame_bw3D;
     SetupWindow (twmwin, x, y, w, h, -1);
-    for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
+    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	if (t->winbox && (t->winbox->twmwin == twmwin)) {
 	    SetupWindow (t, t->frame_x - minx, t->frame_y - miny,
 			t->frame_width, t->frame_height, -1);

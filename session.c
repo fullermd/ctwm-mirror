@@ -958,7 +958,7 @@ void SaveYourselfPhase2CB (SmcConn smcCon, SmPointer clientData)
 	if (ScreenList[scrnum] != NULL)
 	{
 	    theScreen = ScreenList[scrnum];
-	    theWindow = theScreen->TwmRoot.next;
+	    theWindow = theScreen->FirstWindow;
 
 	    while (theWindow && success)
 	    {

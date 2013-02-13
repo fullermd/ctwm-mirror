@@ -731,7 +731,7 @@ static Image *LoadXpmImage (char *name, ColorPair cp)
     char	*fullname;
     Image	*image;
     int		status;
-    Colormap	stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap    stdcmap = Scr->RootColormaps.cwins[0]->colormap->c;
     XpmAttributes attributes;
     static XpmColorSymbol overrides[] = {
 	{"Foreground", NULL, 0},
@@ -935,7 +935,7 @@ void UnmaskScreen (void)
     struct timeval	timeout;
 #endif
     Pixel		stdpixels [256];
-    Colormap		stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap            stdcmap = Scr->RootColormaps.cwins[0]->colormap->c;
     Colormap		cmap;
     XColor		colors [256], stdcolors [256];
     int			i, j, usec;
@@ -1304,7 +1304,7 @@ void Animate (void)
     for (scrnum = 0; scrnum < NumScreens; scrnum++) {
 	if ((scr = ScreenList [scrnum]) == NULL) continue;
 
-	for (t = scr->TwmRoot.next; t != NULL; t = t->next) {
+	for (t = scr->FirstWindow; t != NULL; t = t->next) {
 	    if (! visible (t)) continue;
 	    if (t->icon_on && t->icon && t->icon->bm_w && t->icon->image &&
 		t->icon->image->next) {
@@ -1417,7 +1417,7 @@ void LocateStandardColormaps(void)
 void GetColor(int kind, Pixel *what, char *name)
 {
     XColor color;
-    Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap cmap = Scr->RootColormaps.cwins[0]->colormap->c;
 
 #ifndef TOM
     if (!Scr->FirstTime)
@@ -1493,7 +1493,7 @@ void GetColor(int kind, Pixel *what, char *name)
 void GetShadeColors (ColorPair *cp)
 {
     XColor	xcol;
-    Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap	cmap = Scr->RootColormaps.cwins[0]->colormap->c;
     int		save;
     float	clearfactor;
     float	darkfactor;
@@ -1641,13 +1641,16 @@ void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus)
 static void move_to_head (TwmWindow *t)
 {
     if (t == NULL) return;
+    if (Scr->FirstWindow == t) return;
+
     if (t->prev) t->prev->next = t->next;
     if (t->next) t->next->prev = t->prev;
 
-    t->next = Scr->TwmRoot.next;
-    if (Scr->TwmRoot.next != NULL) Scr->TwmRoot.next->prev = t;
-    t->prev = &Scr->TwmRoot;
-    Scr->TwmRoot.next = t;
+    t->next = Scr->FirstWindow;
+    if (Scr->FirstWindow != NULL)
+	Scr->FirstWindow->prev = t;
+    t->prev = NULL;
+    Scr->FirstWindow = t;
 }
  
 /*
@@ -2669,7 +2672,7 @@ void PaintAllDecoration (void)
     TwmWindow *tmp_win;
     virtualScreen *vs;
 
-    for (tmp_win = Scr->TwmRoot.next; tmp_win != NULL; tmp_win = tmp_win->next) {
+    for (tmp_win = Scr->FirstWindow; tmp_win != NULL; tmp_win = tmp_win->next) {
 	if (! visible (tmp_win)) continue;
 	if (tmp_win->mapped == TRUE) {
 	    if (tmp_win->frame_bw3D) {
@@ -3283,7 +3286,7 @@ static Image *LoadXwdImage (char *filename, ColorPair cp)
     int		w, h, depth, ncolors;
     int		scrn;
     Colormap	cmap;
-    Colormap	stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap	stdcmap = Scr->RootColormaps.cwins[0]->colormap->c;
     GC		gc;
     XGCValues   gcvalues;
     XWDFileHeader header;
@@ -3567,7 +3570,7 @@ static Image *GetImconvImage (char *filename,
     int			w, h, depth, ncolors;
     int			scrn;
     Colormap		cmap;
-    Colormap		stdcmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    Colormap		stdcmap = Scr->RootColormaps.cwins[0]->colormap->c;
     GC			gc;
     unsigned char	red, green, blue;
     int			icol;

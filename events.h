@@ -109,6 +109,7 @@ extern int Transient(Window w, Window *propw);
 extern ScreenInfo *FindScreenInfo(Window w);
 
 extern int InstallWindowColormaps (int type, TwmWindow *tmp);
+extern int InstallColormaps (int type, Colormaps *cmaps);
 extern void InstallRootColormap(void);
 extern void UninstallRootColormap(void);
 extern void ConfigureRootWindow (XEvent *ev);
