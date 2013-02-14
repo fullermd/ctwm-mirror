@@ -725,8 +725,9 @@ void ConstrainSize (TwmWindow *tmp_win,
     } else if (tmp_win->hints.flags & PBaseSize) {
         minWidth = tmp_win->hints.base_width;
         minHeight = tmp_win->hints.base_height;
-    } else
+    } else {
         minWidth = minHeight = 1;
+    }
 
     if (tmp_win->hints.flags & PBaseSize) {
 	baseWidth = tmp_win->hints.base_width;
@@ -734,8 +735,9 @@ void ConstrainSize (TwmWindow *tmp_win,
     } else if (tmp_win->hints.flags & PMinSize) {
 	baseWidth = tmp_win->hints.min_width;
 	baseHeight = tmp_win->hints.min_height;
-    } else
+    } else {
 	baseWidth = baseHeight = 0;
+    }
 
 
     if (tmp_win->hints.flags & PMaxSize) {
@@ -749,8 +751,11 @@ void ConstrainSize (TwmWindow *tmp_win,
     if (tmp_win->hints.flags & PResizeInc) {
         xinc = tmp_win->hints.width_inc;
         yinc = tmp_win->hints.height_inc;
-    } else
+	if (xinc == 0) xinc = 1;
+	if (yinc == 0) yinc = 1;
+    } else {
         xinc = yinc = 1;
+    }
 
     /*
      * First, clamp to min and max values
@@ -772,10 +777,6 @@ void ConstrainSize (TwmWindow *tmp_win,
     /*
      * Third, adjust for aspect ratio
      */
-#define maxAspectX tmp_win->hints.max_aspect.x
-#define maxAspectY tmp_win->hints.max_aspect.y
-#define minAspectX tmp_win->hints.min_aspect.x
-#define minAspectY tmp_win->hints.min_aspect.y
     /*
      * The math looks like this:
      *
@@ -791,33 +792,41 @@ void ConstrainSize (TwmWindow *tmp_win,
      * 
      */
     
-    if (tmp_win->hints.flags & PAspect)
-    {
-        if (minAspectX * dheight > minAspectY * dwidth)
-        {
-            delta = makemult(minAspectX * dheight / minAspectY - dwidth,
-                             xinc);
-            if (dwidth + delta <= maxWidth) dwidth += delta;
-            else
-            {
-                delta = makemult(dheight - dwidth*minAspectY/minAspectX,
-                                 yinc);
-                if (dheight - delta >= minHeight) dheight -= delta;
-            }
-        }
+    if (tmp_win->hints.flags & PAspect) {
+	int minAspectX = tmp_win->hints.min_aspect.x;
+	int minAspectY = tmp_win->hints.min_aspect.y;
+	int maxAspectX = tmp_win->hints.max_aspect.x;
+	int maxAspectY = tmp_win->hints.max_aspect.y;
 
-        if (maxAspectX * dheight < maxAspectY * dwidth)
-        {
-            delta = makemult(dwidth * maxAspectY / maxAspectX - dheight,
-                             yinc);
-            if (dheight + delta <= maxHeight) dheight += delta;
-            else
-            {
-                delta = makemult(dwidth - maxAspectX*dheight/maxAspectY,
-                                 xinc);
-                if (dwidth - delta >= minWidth) dwidth -= delta;
-            }
-        }
+	if (minAspectX && minAspectY && maxAspectX && maxAspectY) {
+	    if (minAspectX * dheight > minAspectY * dwidth) {
+		delta = makemult(minAspectX * dheight / minAspectY - dwidth,
+				 xinc);
+		if (dwidth + delta <= maxWidth) {
+		    dwidth += delta;
+		} else {
+		    delta = makemult(dheight - dwidth*minAspectY/minAspectX,
+				     yinc);
+		    if (dheight - delta >= minHeight) {
+			dheight -= delta;
+		    }
+		}
+	    }
+
+	    if (maxAspectX * dheight < maxAspectY * dwidth) {
+		delta = makemult(dwidth * maxAspectY / maxAspectX - dheight,
+				 yinc);
+		if (dheight + delta <= maxHeight) {
+		    dheight += delta;
+		} else {
+		    delta = makemult(dwidth - maxAspectX*dheight/maxAspectY,
+				     xinc);
+		    if (dwidth - delta >= minWidth) {
+			dwidth -= delta;
+		    }
+		}
+	    }
+	}
     }
 
 
@@ -874,8 +883,6 @@ void SetupFrame (TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
     fprintf (stderr, "SetupWindow: x=%d, y=%d, w=%d, h=%d, bw=%d\n",
 	     x, y, w, h, bw);
 #endif
-    if (!tmp_win)		/* should not happen */
-	return;
 
     if (x >= Scr->rootw)
       x = Scr->rootw - 16;	/* one "average" cursor width */

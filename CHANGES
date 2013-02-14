@@ -1724,4 +1724,5 @@ VirtualScreens {
 	*FirstWindow and .cmaps witn Colormaps RootColormaps. Other
 	members were not used.
 
-
+    2 - Fix a bug where insufficient validation of the size hints
+        resulted in a division by zero when considering aspect ratio.
