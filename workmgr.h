@@ -82,6 +82,7 @@ struct WorkSpaceMgr {
     int			hspace, vspace;
     char	       *name;
     char	       *icon_name;
+    int			switchWorkspacesOrdered;
 };
 
 struct WorkSpace {

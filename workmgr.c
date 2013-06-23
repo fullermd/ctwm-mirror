@@ -161,6 +161,7 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.windowFont.basename =
       "-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1";
     /*"-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1";*/
+    Scr->workSpaceMgr.switchWorkspacesOrdered = 0;
 
     XrmInitialize ();
     if (MapWListContext == (XContext) 0) MapWListContext = XUniqueContext ();
@@ -486,32 +487,92 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
         oldws->save_focus = Scr->Focus;
     }
 
+    /*
+     * Organize the twmWin list back-to-front, to reduce window exposures
+     * when switching workspaces.
+     */
+    if (Scr->workSpaceMgr.switchWorkspacesOrdered) {
+	Window	root, parent, *children;
+	unsigned int number, i;
+	TwmWindow *prev = NULL;
+
+	/*
+	 * XQueryTree() returns the child windows in back-to-front order.
+	 * Exactly the order we want to unmap windows in.
+	 *
+	 * TODO: somehow keep track of this information without needing
+	 * to do an XQueryTree() (which involves a round-trip to the
+	 * server). This might be fairly difficult to do right.
+	 */
+	number = 0;
+	XQueryTree (dpy, Scr->Root, &root, &parent, &children, &number);
+
+	for (i = 0; i < number; i++) {
+	    TwmWindow *win = GetTwmWindow(children[i]);
+	    if (win == NULL)			/* skip unmanaged windows */
+		continue;
+	    if (win->frame != children [i]) {	/* skip icons */
+#ifdef DEBUG
+		fprintf(stderr, "Icon? Child %d: %p, id %x, frame id %x\n",
+			i, win, children[i], win->frame);
+#endif
+		continue;
+	    }
+	    move_to_after(win, prev);
+	    prev = win;
+	}
+
+#ifdef DEBUG
+	/*
+	 * Any remaining TwmWindows following 'prev' must have been
+	 * un-found. Maybe that is Weird? No, the IconManager could be here.
+	 */
+	if (prev && prev->next) {
+	    fprintf(stderr, "Windows left after the last one!\n");
+	    while (prev) {
+		fprintf(stderr, "TwmWindow %p frame %x\n", prev, prev->frame);
+		prev = prev->next;
+	    }
+
+	}
+#endif	/* DEBUG */
+
+	XFree(children);
+    }
+
+    /* Start by making unwanted windows invisible */
     focuswindow = (TwmWindow *)NULL;
     for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
 	if (twmWin->vs == vs) {
-	  if (!OCCUPY (twmWin, newws)) {
-	    virtualScreen *tvs;
-	    Vanish (vs, twmWin);
-	    for (tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
-	      if (tvs == vs) continue;
-	      if (OCCUPY (twmWin, tvs->wsw->currentwspc)) {
-		DisplayWin (tvs, twmWin);
-		break;
-	      }
+	    if (!OCCUPY (twmWin, newws)) {
+		virtualScreen *tvs;
+
+		Vanish (vs, twmWin);
+		/*
+		 * Now that the window has Vanished from one virtual screen,
+		 * check to see if it is wanted on another one.
+		 */
+		for (tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
+		    if (tvs == vs)
+			continue;
+		    if (OCCUPY (twmWin, tvs->wsw->currentwspc)) {
+			DisplayWin (tvs, twmWin);
+			break;
+		    }
+		}
+	    } else if (twmWin->hasfocusvisible) {
+		focuswindow = twmWin;
+		SetFocusVisualAttributes (focuswindow, False);
 	    }
-	  } else if (twmWin->hasfocusvisible) {
-	      focuswindow = twmWin;
-	      SetFocusVisualAttributes (focuswindow, False);
-	  }
 	}
-    }
-    /* Move to the end of the twmWin list */
-    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
 	last_twmWin = twmWin;
     }
-    /* Iconise in reverse order */
+
+    /* Make visible in reverse order */
     for (twmWin = last_twmWin; twmWin != NULL; twmWin = twmWin->prev) {
-	if (OCCUPY (twmWin, newws) && !twmWin->vs) DisplayWin (vs, twmWin);
+	if (OCCUPY (twmWin, newws) && !twmWin->vs) {
+	    DisplayWin (vs, twmWin);
+	}
     }
 /*
    Reorganize icon manager window lists

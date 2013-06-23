@@ -1643,14 +1643,45 @@ static void move_to_head (TwmWindow *t)
     if (t == NULL) return;
     if (Scr->FirstWindow == t) return;
 
+    /* Unlink t from current position */
     if (t->prev) t->prev->next = t->next;
     if (t->next) t->next->prev = t->prev;
 
+    /* Re-link t at head */
     t->next = Scr->FirstWindow;
     if (Scr->FirstWindow != NULL)
 	Scr->FirstWindow->prev = t;
     t->prev = NULL;
     Scr->FirstWindow = t;
+}
+
+/*
+ * Moves window 't' after window 'after'.
+ *
+ * If 'after' == NULL, puts it at the head.
+ * If 't' == NULL, does nothing.
+ * If the 't' is already after 'after', does nothing.
+ */
+ 
+void move_to_after (TwmWindow *t, TwmWindow *after)
+{
+    if (after == NULL) {
+	move_to_head(t);
+	return;
+    }
+    if (t == NULL) return;
+    if (after->next == t) return;
+
+    /* Unlink t from current position */
+    if (t->prev) t->prev->next = t->next;
+    if (t->next) t->next->prev = t->prev;
+
+    /* Re-link t after 'after' */
+    t->next = after->next;
+    if (after->next)
+	after->next->prev = t;
+    t->prev = after;
+    after->next = t;
 }
  
 /*
@@ -1681,10 +1712,16 @@ void SetFocus (TwmWindow *tmp_win, Time	tim)
 	SetFocusVisualAttributes (tmp_win, True);
     }
     Scr->Focus = tmp_win;
+#if 0
+    /*
+     * Not wanted if we sort-of want to keep the window list in
+     * stacking order.
+     */
     move_to_head (tmp_win);
+#endif
 }
 
-#
+
 #ifdef NOPUTENV
 /*
  * define our own putenv() if the system doesn't have one.
