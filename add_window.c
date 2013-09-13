@@ -198,7 +198,7 @@ void GetGravityOffsets (TwmWindow *tmp,	/* window from which to get gravity */
 
 TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs = NULL;
     TwmWindow *tmp_win;			/* new twm window structure */
     int stat;
     XEvent event;
@@ -1714,7 +1714,7 @@ static void CreateHighlightWindows (TwmWindow *tmp_win)
 	gc = XCreateGC (dpy, pm, (GCForeground|GCBackground|GCGraphicsExposures), &gcv);
 	if (gc) {
 	    XCopyPlane (dpy, bm, pm, gc, 0, 0, gray_width, gray_height, 0, 0, 1);
-	    tmp_win->HiliteImage = (Image*) malloc (sizeof (struct _Image));
+	    tmp_win->HiliteImage = (Image *) malloc (sizeof (Image));
 	    tmp_win->HiliteImage->pixmap = pm;
 	    tmp_win->HiliteImage->width  = gray_width;
 	    tmp_win->HiliteImage->height = gray_height;
@@ -2123,7 +2123,7 @@ ColormapWindow *CreateColormapWindow(Window w,
     return (cwin);
 }
 
-int FetchWmColormapWindows (TwmWindow *tmp)
+void FetchWmColormapWindows (TwmWindow *tmp)
 {
     register int i, j;
     Window *cmap_windows = NULL;
@@ -2248,8 +2248,6 @@ int FetchWmColormapWindows (TwmWindow *tmp)
 	else
 	  XFree ((char *) cmap_windows);
     }
-
-    return (0);
 }
 
 
@@ -2545,7 +2543,7 @@ void DealWithNonSensicalGeometries(Display *mydpy, Window vroot, TwmWindow *tmp_
     int			x,y;
     unsigned int	w,h;
     unsigned int	j;
-    virtualScreen	*myvs, *vs;
+    VirtualScreen	*myvs, *vs;
     int			dropx = 0;
 
     if(! vroot)

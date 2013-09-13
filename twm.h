@@ -84,7 +84,6 @@
 #include <X11/Xfuncs.h>
 #endif	/* VMS */
 #include "types.h"
-#include "list.h"
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
@@ -185,12 +184,16 @@ typedef SIGNAL_T (*SigProc)(int); /* type of function returned by signal() */
 
 struct MyFont
 {
-    char *basename;			/* name of the font */
+    char       *basename;	/* name of the font */
     XFontSet	font_set;
     int         ascent;
     int         descent;
-    int height;			/* height of the font */
-    int y;			/* Y coordinate to draw characters */
+    int		height;		/* height of the font */
+    int		y;		/* Y coordinate to draw characters */
+    /* Average height, maintained using the extra two auxiliary fields.  */
+    unsigned int avg_height;
+    float	avg_fheight;
+    unsigned int avg_count;
 };
 
 struct ColorPair
@@ -200,8 +203,8 @@ struct ColorPair
 
 typedef enum {on, off} ButtonState;
 
-struct _TitleButtonFunc {
-    struct _TitleButtonFunc *next; /* next in the list of function buttons */
+struct TitleButtonFunc {
+    struct TitleButtonFunc *next;  /* next in the list of function buttons */
     int num;			   /* button number */
     int mods;			   /* modifiers */
     int func;			   /* function to execute */
@@ -209,8 +212,8 @@ struct _TitleButtonFunc {
     struct MenuRoot *menuroot;     /* menu to pop on F_MENU */
 };
 
-struct _TitleButton {
-    struct _TitleButton *next;		/* next link in chain */
+struct TitleButton {
+    struct TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
     Image *image;			/* image to display in button */
     int srcx, srcy;			/* from where to start copying */
@@ -220,13 +223,13 @@ struct _TitleButton {
     TitleButtonFunc *funs;		/* funcs assoc'd to each button */
 };
 
-struct _TBWindow {
+struct TBWindow {
     Window window;			/* which window in this frame */
     Image *image;			/* image to display in button */
     TitleButton *info;			/* description of this window */
 };
 
-struct _SqueezeInfo {
+struct SqueezeInfo {
     int justify;			/* left, center, right */
     int num;				/* signed pixel count or numerator */
     int denom;				/* 0 for pix count or denominator */
@@ -289,8 +292,8 @@ struct WindowEntry {
     short 		used;
 };
 
-struct _WindowBox {
-    struct _WindowBox	*next;
+struct WindowBox {
+    struct WindowBox	*next;
     char		*name;
     char		*geometry;
     name_list           *winlist;
@@ -406,9 +409,9 @@ struct TwmWindow
 	int x, y;
 	unsigned int width, height;
     } savegeometry;
-    struct virtualScreen *vs;
-    struct virtualScreen *old_parent_vs;
-    struct virtualScreen *savevs;
+    struct VirtualScreen *vs;
+    struct VirtualScreen *old_parent_vs;
+    struct VirtualScreen *savevs;
 
     Bool nameChanged;	/* did WM_NAME ever change? */
     /* did the user ever change the width/height? {yes, no, or unknown} */
@@ -489,6 +492,7 @@ void ComputeWindowTitleOffsets(TwmWindow *tmp_win, unsigned int width,
 			       Bool squeeze);
 void ComputeTitleLocation(register TwmWindow *tmp);
 void CreateFonts(void);
+
 void RestoreWithdrawnLocation (TwmWindow *tmp);
 extern char *ProgramName;
 extern Display *dpy;
@@ -496,6 +500,7 @@ extern char *display_name;
 extern XtAppContext appContext;
 extern Window ResizeWindow;	/* the window we are resizing */
 extern int HasShape;		/* this server supports Shape extension */
+extern int ShapeEventBase, ShapeErrorBase;
 
 extern int PreviousScreen;
 
@@ -518,6 +523,8 @@ extern int HomeLen;
 extern int ParseError;
 
 extern int HandlingEvents;
+extern Cursor TopCursor, TopLeftCursor, LeftCursor, BottomLeftCursor,
+	BottomCursor, BottomRightCursor, RightCursor, TopRightCursor;
 
 extern Window JunkRoot;
 extern Window JunkChild;
@@ -553,10 +560,17 @@ extern Atom _XA_WM_PROTOCOLS;
 extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
+extern Atom _XA_WM_END_OF_ANIMATION;
 extern Atom _XA_WM_CLIENT_MACHINE;
 extern Atom _XA_SM_CLIENT_ID;
 extern Atom _XA_WM_CLIENT_LEADER;
 extern Atom _XA_WM_WINDOW_ROLE;
+extern Atom _XA_WM_WORKSPACESLIST;
+extern Atom _XA_WM_CURRENTWORKSPACE;
+extern Atom _XA_WM_OCCUPATION;
+extern Atom _XA_WM_CTWM_VSCREENMAP;
+extern Atom _OL_WIN_ATTR;
+extern Atom _XA_WM_NOREDIRECT;
 
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
 #define VISIBLE(w) OCCUPY(w, Scr->workSpaceMgr.activeWSPC)

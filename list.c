@@ -72,18 +72,17 @@
 #ifdef VMS
 #include <string.h>
 #endif
-#include "twm.h"
 #include "screen.h"
 #include "gram.h"
 #include "list.h"
 #include "util.h"
+#include "parse.h"
 
 #ifdef USE_GNU_REGEX
 # include <regex.h>
 #endif /* USE_GNU_REGEX */
 
 
-extern void twmrc_error_prefix(void);
 
 /***********************************************************************
  *
@@ -103,10 +102,6 @@ extern void twmrc_error_prefix(void);
  *
  ***********************************************************************
  */
-
-#if 0				/* appears not to be used anywhere */
-static int is_pattern (char *p);
-#endif
 
 void AddToList(name_list **list_head, char *name, char *ptr)
 {

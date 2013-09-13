@@ -133,6 +133,7 @@ extern int yyparse(void);
 %token <num> NO_BORDER NO_ICON_TITLE NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION
 %token <num> WINDOW_REGION META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME
 %token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
+%token <num> WARP_ON_DEICONIFY
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
 %token <num> MOVE RESIZE WAITC SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
@@ -353,6 +354,8 @@ stmt		: error
 		| AUTO_RAISE		{ list = &Scr->AutoRaise; }
 		  win_list
 		| AUTO_RAISE		{ Scr->AutoRaiseDefault = TRUE; }
+		| WARP_ON_DEICONIFY	{ list = &Scr->WarpOnDeIconify; }
+		  win_list
 		| AUTO_LOWER		{ list = &Scr->AutoLower; }
 		  win_list
 		| AUTO_LOWER		{ Scr->AutoLowerDefault = TRUE; }

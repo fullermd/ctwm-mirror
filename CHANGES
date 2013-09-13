@@ -1726,3 +1726,11 @@ VirtualScreens {
 
     2 - Fix a bug where insufficient validation of the size hints
         resulted in a division by zero when considering aspect ratio.
+
+    3 - Selected a number of cleanups from Stefan Monnier
+	<monnier@IRO.UMontreal.CA>, including rate-limiting of
+	animations using a new _XA_WM_END_OF_ANIMATION message.
+	Added some similar changes, improved the prevention of
+	placing windows off-screen, the "f.rescuewindows" function
+	for emergencies, a hack-fix for f.adoptwindow. More virtual
+	screen tweaks/fixes.

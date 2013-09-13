@@ -44,34 +44,34 @@ typedef struct WList WList;
 typedef struct IconMgr IconMgr;
 
 /* From list.h */
-typedef struct name_list_struct name_list;
+typedef struct name_list name_list;
 
 /* From screen.h */
-typedef struct _StdCmap StdCmap;
-typedef struct _TitlebarPixmaps TitlebarPixmaps;
+typedef struct StdCmap StdCmap;
+typedef struct TitlebarPixmaps TitlebarPixmaps;
 typedef struct ScreenInfo ScreenInfo;
 
 /* from twm.h */
 typedef struct MyFont MyFont;
 typedef struct ColorPair ColorPair;
-typedef struct _TitleButtonFunc TitleButtonFunc;
-typedef struct _TitleButton TitleButton;
-typedef struct _TBWindow TBWindow;
-typedef struct _SqueezeInfo SqueezeInfo;
+typedef struct TitleButtonFunc TitleButtonFunc;
+typedef struct TitleButton TitleButton;
+typedef struct TBWindow TBWindow;
+typedef struct SqueezeInfo SqueezeInfo;
 typedef struct TwmColormap TwmColormap;
 typedef struct ColormapWindow ColormapWindow;
 typedef struct Colormaps Colormaps;
 typedef struct WindowRegion WindowRegion;
 typedef struct WindowEntry WindowEntry;
-typedef struct _WindowBox WindowBox;
+typedef struct WindowBox WindowBox;
 typedef struct TwmWindow TwmWindow;
 typedef struct TWMWinConfigEntry TWMWinConfigEntry;
 
 /* From util.h */
-typedef struct _Image Image;
+typedef struct Image Image;
 
 /* From vscreen.h */
-typedef struct virtualScreen virtualScreen;
+typedef struct VirtualScreen VirtualScreen;
 
 /* From workmgr.h */
 typedef struct winList *WinList;

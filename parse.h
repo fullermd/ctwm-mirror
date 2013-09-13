@@ -66,6 +66,15 @@
 #ifndef _PARSE_
 #define _PARSE_
 
+extern unsigned int mods_used;
+extern int mods;
+extern int ConstrainedMoveTime;
+extern int RaiseDelay;
+extern void twmrc_error_prefix (void);
+extern int ParseError;			/* error parsing the .twmrc file */
+extern int twmrc_lineno;
+extern char *defTwmrc[];		/* From deftwmrc.c.  */
+
 extern int ParseTwmrc(char *filename);
 extern int ParseStringList(char **sl);
 extern int (*twmInputFunc)(void);
@@ -195,6 +204,10 @@ extern void TwmOutput(int c);
 #define F_CHANGESIZE		128     /* string */
 #define F_MOVETITLEBAR		129
 
+#define F_UNSQUEEZE		156
+#define F_RAISEORSQUEEZE	157
+#define F_RESCUE_WINDOWS	158
+
 #define D_NORTH			1
 #define D_SOUTH			2
 #define D_EAST			3
@@ -220,6 +233,5 @@ int do_squeeze_entry(name_list **list,	/* squeeze or dont-squeeze list */
 		     int num,		/* signed num */
 		     int denom		/* 0 or indicates fraction denom */
 		     );
-int twmrc_lineno;
 
 #endif /* _PARSE_ */

@@ -64,7 +64,7 @@
 #ifndef _LIST_
 #define _LIST_
 
-struct name_list_struct
+struct name_list
 {
     name_list *next;		/* pointer to the next name */
     char *name;			/* the name of the window */

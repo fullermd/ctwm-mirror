@@ -80,10 +80,11 @@
 #define ICONIFY_MOSAIC  1
 #define ICONIFY_ZOOMIN  2
 #define ICONIFY_ZOOMOUT 3
-#define ICONIFY_SWEEP   4
+#define ICONIFY_FADE    4
+#define ICONIFY_SWEEP   5
 
-struct _StdCmap {
-    struct _StdCmap *next;		/* next link in chain */
+struct StdCmap {
+    struct StdCmap *next;		/* next link in chain */
     Atom atom;				/* property from which this came */
     int nmaps;				/* number of maps below */
     XStandardColormap *maps;		/* the actual maps */
@@ -92,7 +93,7 @@ struct _StdCmap {
 #define SIZE_HINDENT 10
 #define SIZE_VINDENT 2
 
-struct _TitlebarPixmaps {
+struct TitlebarPixmaps {
     Pixmap xlogo;
     Pixmap resize;
     Pixmap question;
@@ -122,7 +123,7 @@ struct ScreenInfo
     TwmWindow *FirstWindow;	/* the head of the twm window list */
     Colormaps RootColormaps;	/* the colormaps of the root window */
 
-    Window Root;		/* the root window: the current virual screen */
+    Window Root;		/* the root window: the current virtual screen */
     Window XineramaRoot;	/* the root window, may be CaptiveRoot or otherwise RealRoot */
     Window CaptiveRoot;		/* the captive root window, if any, or 0 */
     Window RealRoot;		/* the actual root window of the display */
@@ -135,7 +136,7 @@ struct ScreenInfo
  *  |   | when captive window is used (most uses are likely incorrect!) | |
  *  |   |                                                               | |
  *  |   | +--XineramaRoot---------------------------------------------+ | |
- *  |   | | the root that encompasses all virual screens              | | |
+ *  |   | | the root that encompasses all virtual screens             | | |
  *  |   | |                                                           | | |
  *  |   | | +--Root-----------+ +--Root--------+ +--Root------------+ | | |
  *  |   | | | one or more     | | Most cases   | |                  | | | |
@@ -254,8 +255,8 @@ struct ScreenInfo
     WorkSpaceMgr workSpaceMgr;
     short	workSpaceManagerActive;
 
-    virtualScreen *vScreenList;
-    virtualScreen *currentvs;
+    VirtualScreen *vScreenList;
+    VirtualScreen *currentvs;
     name_list     *VirtualScreens;
 
     name_list	*OccupyAll;	/* list of window names occupying all workspaces at startup */
@@ -280,6 +281,11 @@ struct ScreenInfo
     short	TitleShadowDepth;
     short	MenuShadowDepth;
     short	IconManagerShadowDepth;
+/* Spacing between the text and the outer border.  */
+#define ICON_MGR_IBORDER 3
+/* Thickness of the outer border (3d or not).  */
+#define ICON_MGR_OBORDER \
+    (Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2)
     short	ReallyMoveInWorkspaceManager;
     short	ShowWinWhenMovingInWmgr;
     short	ReverseCurrentWorkspace;
@@ -308,6 +314,7 @@ struct ScreenInfo
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
     name_list *AutoRaise;	/* list of window names to auto-raise */
+    name_list *WarpOnDeIconify;	/* list of window names to warp on deiconify */ 
     name_list *AutoLower;	/* list of window names to auto-lower */
     name_list *IconNames;	/* list of window names and icon names */
     name_list *NoHighlight;	/* list of windows to not highlight */

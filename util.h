@@ -72,6 +72,26 @@
 #   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
 #endif
 
+#ifndef MAX
+#define MAX(x,y) ((x)>(y)?(x):(y))
+#endif
+#ifndef MIN
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
+#ifndef ABS
+#define ABS(x) ((x)<0?-(x):(x))
+#endif
+
+extern int Animating;
+extern Bool AnimationActive;
+extern Bool MaybeAnimate;
+extern int AnimationSpeed;
+#ifdef USE_SIGNALS
+extern Bool AnimationPending;
+#else
+extern struct timeval AnimateTimeout;
+#endif /* USE_SIGNALS */
+
 extern void	Zoom(Window wf, Window wt);
 extern void	MoveOutline(Window root,
 			    int x, int y, int width, int height,
@@ -99,6 +119,7 @@ void LocateStandardColormaps (void);
 void GetColor (int kind, Pixel *what, char *name);
 void GetShadeColors (ColorPair *cp);
 void GetFont(MyFont *font);
+Bool UpdateFont(MyFont *font, int height);
 void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus);
 void move_to_after (TwmWindow *t, TwmWindow *after);
 void SetFocus (TwmWindow *tmp_win, Time tim);
@@ -116,27 +137,21 @@ void Draw3DCorner (Window w,
 		   ColorPair cp,
 		   int type);
 void PaintBorders (TwmWindow *tmp_win, Bool focus);
-void PaintAllDecoration (void);
 void PaintTitle (TwmWindow *tmp_win);
 void PaintIcon (TwmWindow *tmp_win);
 void PaintTitleButton (TwmWindow *tmp_win, TBWindow  *tbw);
-void PaintTitleButtons (TwmWindow *tmp_win);
-void adoptWindow (void);
+void AdoptWindow (void);
 void DebugTrace (char *file);
 void SetBorderCursor (TwmWindow *tmp_win, int x, int y);
-#if 0 /* These aren't implemented anywhere! */
-void ChangeFocusGrab ();
-Cursor CalculateBorderCursor ();
-#endif
 
 extern int HotX, HotY;
 
-struct _Image {
+struct Image {
     Pixmap pixmap;
     Pixmap mask;
     int    width;
     int    height;
-    struct _Image *next;
+    Image *next;
 };
 
 extern Image *GetImage (char *name, ColorPair cp);

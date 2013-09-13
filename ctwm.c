@@ -168,8 +168,8 @@ char *InitFile = NULL;
 static Window CreateRootWindow (int x, int y,
 				unsigned int width, unsigned int height);
 static void DisplayInfo (void);
-void InternUsefulAtoms (void);
-void InitVariables(void);
+static void InternUsefulAtoms (void);
+static void InitVariables(void);
 
 Cursor	UpperLeftCursor;
 Cursor	TopRightCursor,
@@ -199,7 +199,6 @@ XGCValues Gcv;
 Window captiveroot;
 char *Home;			/* the HOME environment variable */
 int HomeLen;			/* length of Home */
-int ParseError;			/* error parsing the .twmrc file */
 
 int HandlingEvents = FALSE;	/* are we handling events yet? */
 
@@ -231,8 +230,6 @@ SIGNAL_T Crash(int signum);
 #ifdef __WAIT_FOR_CHILDS
   SIGNAL_T ChildExit(int signum);
 #endif
-
-extern Atom _XA_WM_WORKSPACESLIST;
 
 /***********************************************************************
  *
@@ -558,6 +555,7 @@ int main(int argc, char **argv, char **environ)
 	Scr->AlwaysSqueezeToGravityL = NULL;
 	Scr->MakeTitle = NULL;
 	Scr->AutoRaise = NULL;
+	Scr->WarpOnDeIconify = NULL;
 	Scr->AutoLower = NULL;
 	Scr->IconNames = NULL;
 	Scr->NoHighlight = NULL;
@@ -826,7 +824,7 @@ int main(int argc, char **argv, char **environ)
 	}
 	if (Scr->ShowWorkspaceManager && Scr->workSpaceManagerActive)
 	{
-	    virtualScreen *vs;
+	    VirtualScreen *vs;
 	    if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
 	    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
 		SetMapStateProp (vs->wsw->twm_win, NormalState);
@@ -919,7 +917,7 @@ int main(int argc, char **argv, char **environ)
  ***********************************************************************
  */
 
-void InitVariables(void)
+static void InitVariables(void)
 {
     FreeList(&Scr->BorderColorL);
     FreeList(&Scr->IconBorderColorL);
@@ -938,6 +936,7 @@ void InitVariables(void)
     FreeList(&Scr->OccupyAll);
     FreeList(&Scr->MakeTitle);
     FreeList(&Scr->AutoRaise);
+    FreeList(&Scr->WarpOnDeIconify);
     FreeList(&Scr->AutoLower);
     FreeList(&Scr->IconNames);
     FreeList(&Scr->NoHighlight);
@@ -1403,10 +1402,20 @@ Atom _XA_WM_PROTOCOLS;
 Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
+Atom _XA_WM_END_OF_ANIMATION;	/* Used to throttle animation.  */
 Atom _XA_WM_CLIENT_MACHINE;
 Atom _XA_SM_CLIENT_ID;
 Atom _XA_WM_CLIENT_LEADER;
 Atom _XA_WM_WINDOW_ROLE;
+Atom _XA_WM_WORKSPACESLIST;
+Atom _XA_WM_CURRENTWORKSPACE;
+Atom _XA_WM_NOREDIRECT;
+Atom _XA_WM_OCCUPATION;
+Atom _XA_WM_CURRENTWORKSPACE;
+Atom _XA_WM_CTWMSLIST;
+Atom _XA_WM_CTWM_VSCREENMAP;
+Atom _OL_WIN_ATTR;
+
 
 void InternUsefulAtoms (void)
 {
@@ -1421,10 +1430,23 @@ void InternUsefulAtoms (void)
     _XA_WM_TAKE_FOCUS = XInternAtom (dpy, "WM_TAKE_FOCUS", False);
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
+    _XA_WM_END_OF_ANIMATION = XInternAtom (dpy, "WM_END_OF_ANIMATION", False);
     _XA_WM_CLIENT_MACHINE = XInternAtom (dpy, "WM_CLIENT_MACHINE", False);
     _XA_SM_CLIENT_ID = XInternAtom (dpy, "SM_CLIENT_ID", False);
     _XA_WM_CLIENT_LEADER = XInternAtom (dpy, "WM_CLIENT_LEADER", False);
     _XA_WM_WINDOW_ROLE = XInternAtom (dpy, "WM_WINDOW_ROLE", False);
+    _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", False);
+    _XA_WM_OCCUPATION = XInternAtom (dpy, "WM_OCCUPATION", False);
+
+    _XA_WM_CTWM_VSCREENMAP  = XInternAtom (dpy, "WM_CTWM_VSCREENMAP", False);
+#ifdef GNOME
+    _XA_WM_WORKSPACESLIST   = XInternAtom (dpy, "_WIN_WORKSPACE_NAMES", False);
+#else /* GNOME */
+    _XA_WM_WORKSPACESLIST   = XInternAtom (dpy, "WM_WORKSPACESLIST", False);
+#endif /* GNOME */
+    _OL_WIN_ATTR            = XInternAtom (dpy, "_OL_WIN_ATTR",      False);
+    _XA_WM_NOREDIRECT = XInternAtom (dpy, "WM_NOREDIRECT", False);
+
 }
 
 static Window CreateRootWindow (int x, int y,

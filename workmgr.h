@@ -110,7 +110,7 @@ struct ButtonSubwindow {
 };
 
 struct WorkSpaceWindow {		/* There is one per virtual screen */
-  virtualScreen   *vs;
+  VirtualScreen   *vs;
   Window	  w;
   TwmWindow       *twm_win;
   MapSubwindow    **mswl;		/* MapSubWindow List */
@@ -150,15 +150,15 @@ struct CaptiveCTWM {
 void InitWorkSpaceManager (void);
 void ConfigureWorkSpaceManager (void);
 void CreateWorkSpaceManager (void);
-void GotoWorkSpaceByName (virtualScreen *vs, char *wname);
-void GotoWorkSpaceByNumber (virtualScreen *vs, int workspacenum);
-void GotoPrevWorkSpace (virtualScreen *vs);
-void GotoNextWorkSpace (virtualScreen *vs);
-void GotoRightWorkSpace (virtualScreen *vs);
-void GotoLeftWorkSpace (virtualScreen *vs);
-void GotoUpWorkSpace (virtualScreen *vs);
-void GotoDownWorkSpace (virtualScreen *vs);
-void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws);
+void GotoWorkSpaceByName (VirtualScreen *vs, char *wname);
+void GotoWorkSpaceByNumber (VirtualScreen *vs, int workspacenum);
+void GotoPrevWorkSpace (VirtualScreen *vs);
+void GotoNextWorkSpace (VirtualScreen *vs);
+void GotoRightWorkSpace (VirtualScreen *vs);
+void GotoLeftWorkSpace (VirtualScreen *vs);
+void GotoUpWorkSpace (VirtualScreen *vs);
+void GotoDownWorkSpace (VirtualScreen *vs);
+void GotoWorkSpace (VirtualScreen *vs, WorkSpace *ws);
 void AddWorkSpace (char *name,
 		   char *background, char *foreground,
 		   char *backback, char *backfore, char *backpix);
@@ -172,19 +172,19 @@ void ToggleOccupation (char *wname, TwmWindow *twm_win);
 void AllocateOthersIconManagers (void);
 void ChangeOccupation (TwmWindow *tmp_win, int newoccupation);
 void WmgrRedoOccupation (TwmWindow *win);
-void WMgrRemoveFromCurrentWorkSpace (virtualScreen *vs, TwmWindow *win);
+void WMgrRemoveFromCurrentWorkSpace (VirtualScreen *vs, TwmWindow *win);
 #ifdef VMS /* Because that name is longer than 31 characters */
 #define WMgrAddToCurrentWorkSpaceAndWarp WMgrAddToCurrWorkSpaceAndWarp
 #endif
-void WMgrAddToCurrentWorkSpaceAndWarp (virtualScreen *vs, char *winname);
-void WMgrHandleExposeEvent (virtualScreen *vs, XEvent *event);
-void PaintWorkSpaceManager (virtualScreen *vs);
+void WMgrAddToCurrentWorkSpaceAndWarp (VirtualScreen *vs, char *winname);
+void WMgrHandleExposeEvent (VirtualScreen *vs, XEvent *event);
+void PaintWorkSpaceManager (VirtualScreen *vs);
 void PaintOccupyWindow (void);
 unsigned int GetMaskFromProperty (unsigned char *prop, unsigned long len);
 void AddToClientsList (char *workspace, char *client);
-void WMapToggleState (virtualScreen *vs);
-void WMapSetMapState (virtualScreen *vs);
-void WMapSetButtonsState (virtualScreen *vs);
+void WMapToggleState (VirtualScreen *vs);
+void WMapSetMapState (VirtualScreen *vs);
+void WMapSetButtonsState (VirtualScreen *vs);
 void WMapAddWindow (TwmWindow *win);
 void WMapDestroyWindow (TwmWindow *win);
 void WMapMapWindow (TwmWindow *win);
@@ -196,18 +196,18 @@ void WMapLower (TwmWindow *win);
 void WMapRaise (TwmWindow *win);
 void WMapRestack (WorkSpace *ws);
 void WMapUpdateIconName (TwmWindow *win);
-void WMgrHandleKeyReleaseEvent (virtualScreen *vs, XEvent *event);
-void WMgrHandleKeyPressEvent (virtualScreen *vs, XEvent *event);
-void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event);
+void WMgrHandleKeyReleaseEvent (VirtualScreen *vs, XEvent *event);
+void WMgrHandleKeyPressEvent (VirtualScreen *vs, XEvent *event);
+void WMgrHandleButtonEvent (VirtualScreen *vs, XEvent *event);
 void InvertColorPair (ColorPair *cp);
-void WMapRedrawName (virtualScreen *vs, WinList   wl);
+void WMapRedrawName (VirtualScreen *vs, WinList   wl);
 void WMapCreateCurrentBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap);
 void WMapCreateDefaultBackGround (char *border,
 				  char *background, char *foreground,
 				  char *pixmap);
-char *GetCurrentWorkSpaceName (virtualScreen *vs);
+char *GetCurrentWorkSpaceName (VirtualScreen *vs);
 Bool AnimateRoot (void);
 void AddToCaptiveList (void);
 void RemoveFromCaptiveList (void);
@@ -215,15 +215,15 @@ Bool RedirectToCaptive (Window window);
 void SetPropsIfCaptiveCtwm (TwmWindow *win);
 Window CaptiveCtwmRootWindow (Window window);
 
-void MoveToNextWorkSpace (virtualScreen *vs, TwmWindow *twm_win);
-void MoveToPrevWorkSpace (virtualScreen *vs, TwmWindow *twm_win);
-void MoveToNextWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win);
-void MoveToPrevWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win);
+void MoveToNextWorkSpace (VirtualScreen *vs, TwmWindow *twm_win);
+void MoveToPrevWorkSpace (VirtualScreen *vs, TwmWindow *twm_win);
+void MoveToNextWorkSpaceAndFollow (VirtualScreen *vs, TwmWindow *twm_win);
+void MoveToPrevWorkSpaceAndFollow (VirtualScreen *vs, TwmWindow *twm_win);
 
 CaptiveCTWM GetCaptiveCTWMUnderPointer (void);
 void SetNoRedirect (Window window);
 
-extern void ShowBackground (virtualScreen *vs);
+extern void ShowBackground (VirtualScreen *vs);
 
 Bool visible (TwmWindow *tmp_win);
 

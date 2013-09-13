@@ -44,7 +44,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
 
   if (scr->VirtualScreens == NULL) {
     if (userealroot) {
-      virtualScreen *vs = (virtualScreen*) malloc (sizeof (virtualScreen));
+      VirtualScreen *vs = (VirtualScreen*) malloc (sizeof (VirtualScreen));
 
       vs->x      = 0;
       vs->y      = 0;
@@ -52,6 +52,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
       vs->h      = scr->rooth;
       vs->window = scr->Root;
       vs->next   = NULL;
+      vs->wsw	 = 0;
       scr->vScreenList = vs;
       scr->currentvs   = vs;
       return;
@@ -78,7 +79,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
 
   scr->vScreenList = NULL;
   for (nptr = Scr->VirtualScreens; nptr != NULL; nptr = nptr->next) {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     char *geometry = (char*) nptr->name;
     int x = 0, y = 0;
     unsigned int w = 0, h = 0;
@@ -90,7 +91,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
       fprintf (stderr, "InitVirtualScreens : invalid geometry : %s\n", geometry);
       continue;
     }
-    vs = (virtualScreen*) malloc (sizeof (virtualScreen));
+    vs = (VirtualScreen*) malloc (sizeof (VirtualScreen));
     vs->x = x;
     vs->y = y;
     vs->w = w;
@@ -98,6 +99,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
     vs->window = XCreateWindow (dpy, Scr->Root, x, y, w, h,
 			       0, CopyFromParent, (unsigned int) CopyFromParent,
 			       (Visual *) CopyFromParent, valuemask, &attributes);
+    vs->wsw = 0;
 
     XSync (dpy, 0);
     XMapWindow (dpy, vs->window);
@@ -113,12 +115,17 @@ void InitVirtualScreens (ScreenInfo *scr) {
     fprintf (stderr, "no valid VirtualScreens found, exiting...\n");
     exit (1);
   }
+  /* XXX Should setup scr->{currentvs,Root{,x,y,w,h}} as if the
+   * _correct_ virtual screen is entered with the mouse.
+   * See HandleEnterNotify().
+   */
 }
 
-virtualScreen *findIfVScreenOf (int x, int y)
+VirtualScreen *findIfVScreenOf (int x, int y)
 {
-  virtualScreen *vs;
+  VirtualScreen *vs;
   for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+
     if ((x >= vs->x) && ((x - vs->x) < vs->w) &&
 	(y >= vs->y) && ((y - vs->y) < vs->h)) {
         return vs;
@@ -127,9 +134,9 @@ virtualScreen *findIfVScreenOf (int x, int y)
   return NULL;
 }
 
-virtualScreen *getVScreenOf (int x, int y)
+VirtualScreen *getVScreenOf (int x, int y)
 {
-  virtualScreen *vs;
+  VirtualScreen *vs;
   if ((vs = findIfVScreenOf(x, y)))
 	return vs;
   return Scr->vScreenList;
@@ -143,14 +150,12 @@ virtualScreen *getVScreenOf (int x, int y)
 Bool CtwmGetVScreenMap (Display *display, Window rootw,
 			char *outbuf, int *outbuf_len)
 {
-    Atom		_XA_WM_CTWM_VSCREENMAP;
     unsigned char       *prop;
     unsigned long       bytesafter;
     unsigned long       len;
     Atom                actual_type;
     int                 actual_format;
 
-    _XA_WM_CTWM_VSCREENMAP = XInternAtom (display, "WM_CTWM_VSCREENMAP", True);
     if (_XA_WM_CTWM_VSCREENMAP == None) return (False);
     if (XGetWindowProperty (display, rootw, _XA_WM_CTWM_VSCREENMAP, 0L, 512, 
                         False, XA_STRING, &actual_type, &actual_format, &len,
@@ -163,20 +168,18 @@ Bool CtwmGetVScreenMap (Display *display, Window rootw,
 }
 
 Bool CtwmSetVScreenMap(Display *display, Window rootw,
-		       struct virtualScreen *firstvs)
+		       struct VirtualScreen *firstvs)
 {
     char			buf[1024];
     int				tally = 0;
-    Atom			_XA_WM_CTWM_VSCREENMAP;
-    struct virtualScreen	*vs;
+    struct VirtualScreen	*vs;
 
-    _XA_WM_CTWM_VSCREENMAP = XInternAtom (display, "WM_CTWM_VSCREENMAP", True);
     if(_XA_WM_CTWM_VSCREENMAP == None) return(False);
 
     memset(buf, 0, sizeof(buf));
-    for(vs = firstvs; vs; vs = vs->next) {
-	if(tally) strcat(buf, ",");
-	if(vs->wsw&&vs->wsw->currentwspc&&vs->wsw->currentwspc->name) {
+    for (vs = firstvs; vs; vs = vs->next) {
+	if (tally) strcat(buf, ",");
+	if (vs->wsw && vs->wsw->currentwspc && vs->wsw->currentwspc->name) {
 	    strcat(buf, vs->wsw->currentwspc->name);
 	    tally++;
 	}

@@ -64,6 +64,7 @@
 #ifndef _EVENTS_
 #define _EVENTS_
 
+#include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
 
@@ -127,6 +128,8 @@ extern unsigned int DragHeight;
 extern unsigned int DragBW;
 extern int CurrentDragX;
 extern int CurrentDragY;
+extern int Context;
+extern FILE *tracefile;
 
 extern int ButtonPressed;
 extern int Cancel;

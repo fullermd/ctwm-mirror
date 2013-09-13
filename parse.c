@@ -84,6 +84,7 @@
 #include <X11/Xmu/SysUtil.h>
 #endif
 #include "twm.h"
+#include "ctwm.h"
 #include "screen.h"
 #include "menus.h"
 #include "util.h"
@@ -105,10 +106,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-
-extern int GoThroughM4;
-extern char *keepM4_filename;
-extern int KeepTmpFile;
 #endif
 
 #if defined(ultrix)
@@ -142,11 +139,10 @@ static FILE *start_m4(FILE *fraw);
 static char *m4_defs(Display *display, char *host);
 #endif
 
-extern int mods;
-
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
-
+int ParseError;				/* error parsing the .twmrc file */
 int RaiseDelay = 0;			/* msec, for AutoRaise */
+int twmrc_lineno;
 
 static int twmStringListInput(void);
 #ifndef USEM4
@@ -155,10 +151,6 @@ static int twmFileInput(void);
 static int m4twmFileInput (void);
 #endif
 int (*twmInputFunc)(void);
-
-extern char *defTwmrc[];		/* default bindings */
-
-extern char *captivename;
 
 /***********************************************************************
  *
@@ -406,7 +398,7 @@ static struct incl {
 static int include_file = 0;
 
 
-static int twmFileInput()
+static int twmFileInput(void)
 {
     if (overflowlen) return (int) overflowbuff[--overflowlen];
 
@@ -699,7 +691,7 @@ typedef struct _TwmKeyword {
 #define kwn_BorderBottom		34
 #define kwn_BorderLeft			35
 #define kwn_BorderRight			36
-#define kwn_SwitchWorspacesOrdered	37
+#define kwn_SwitchWorkspacesOrdered	37
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -860,11 +852,13 @@ static TwmKeyword keytable[] = {
     { "f.raise",		FKEYWORD, F_RAISE },
     { "f.raiseicons",		FKEYWORD, F_RAISEICONS },
     { "f.raiselower",		FKEYWORD, F_RAISELOWER },
+    { "f.raiseorsqueeze",	FKEYWORD, F_RAISEORSQUEEZE },
     { "f.refresh",		FKEYWORD, F_REFRESH },
     { "f.removefromworkspace",	FSKEYWORD, F_REMOVEFROMWORKSPACE },
 #ifdef SOUNDS
     { "f.rereadsounds",		FKEYWORD, F_REREADSOUNDS },
 #endif
+    { "f.rescuewindows",	FKEYWORD, F_RESCUE_WINDOWS },
     { "f.resize",		FKEYWORD, F_RESIZE },
     { "f.restart",		FKEYWORD, F_RESTART },
     { "f.restoregeometry",	FKEYWORD, F_RESTOREGEOMETRY },
@@ -898,6 +892,7 @@ static TwmKeyword keytable[] = {
     { "f.trace",		FSKEYWORD, F_TRACE },
     { "f.twmrc",		FKEYWORD, F_RESTART },
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
+    { "f.unsqueeze",		FKEYWORD, F_UNSQUEEZE },
     { "f.upiconmgr",		FKEYWORD, F_UPICONMGR },
     { "f.upworkspace",		FKEYWORD, F_UPWORKSPACE },
     { "f.vanish",		FKEYWORD, F_VANISH },
@@ -1047,7 +1042,7 @@ static TwmKeyword keytable[] = {
     { "startsqueezed",		STARTSQUEEZED, 0 },
     { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
     { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
-    { "switchworkspacesordered",NKEYWORD, kwn_SwitchWorspacesOrdered },
+    { "switchworkspacesordered",NKEYWORD, kwn_SwitchWorkspacesOrdered },
     { "t",			TITLE, 0 },
     { "threedborderwidth",	NKEYWORD, kwn_ThreeDBorderWidth },
     { "title",			TITLE, 0 },
@@ -1076,6 +1071,7 @@ static TwmKeyword keytable[] = {
     { "w",			WINDOW, 0 },
     { "wait",			WAITC, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
+    { "warpondeiconify",	WARP_ON_DEICONIFY, 0 },
     { "warpringonscreen",	KEYWORD, kw0_WarpRingOnScreen },
     { "warptodefaultmenuentry",	KEYWORD, kw0_WarpToDefaultMenuEntry },
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
@@ -1584,6 +1580,7 @@ int do_string_keyword (int keyword, char *s)
 	  if (strcmp (s,  "mosaic") == 0) Scr->IconifyStyle = ICONIFY_MOSAIC;
 	  if (strcmp (s,  "zoomin") == 0) Scr->IconifyStyle = ICONIFY_ZOOMIN;
 	  if (strcmp (s, "zoomout") == 0) Scr->IconifyStyle = ICONIFY_ZOOMOUT;
+	  if (strcmp (s,    "fade") == 0) Scr->IconifyStyle = ICONIFY_FADE;
 	  if (strcmp (s,   "sweep") == 0) Scr->IconifyStyle = ICONIFY_SWEEP;
 	  return 1;
 	}
@@ -1770,7 +1767,7 @@ int do_number_keyword (int keyword, int num)
 	if (Scr->RaiseOnClickButton > MAX_BUTTONS) Scr->RaiseOnClickButton = MAX_BUTTONS;
 	return 1;
 
-      case kwn_SwitchWorspacesOrdered:
+      case kwn_SwitchWorkspacesOrdered:
 	Scr->workSpaceMgr.switchWorkspacesOrdered  = num;
 	return 1;
 
@@ -2140,8 +2137,8 @@ static FILE *start_m4(FILE *fraw)
                 char *tmp_file;
 
                 /* Child */
-                close(0);                       /* stdin */
-                close(1);                       /* stdout */
+                close(0);               /* stdin */
+                close(1);               /* stdout */
                 dup2(fno, 0);           /* stdin = fraw */
                 dup2(fids[1], 1);       /* stdout = pipe to parent */
                 /* get_defs("m4", dpy, display_name) */

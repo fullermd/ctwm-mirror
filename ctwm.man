@@ -1522,6 +1522,17 @@ Similar to IconRegion, but for windows.
 This variable specifies a list of windows along which the \fBf.warpring\fP
 function cycles. If no argument is given, all the windows are in the ring.
 
+.IP "\fBWarpOnDeIconify\fP { \fIwin-list\fP }" 8
+When \fIctwm\fP receives a request to map a window, it normally just deiconifies
+it, but if the window is in \fIwin-list\fP, it will additionally bring it
+into the current workspace, if necessary. For example
+.EX
+WarpOnDeIconify { "Emacs" }
+.EE
+will make sure emacs windows will always popup in the current workspace when
+necessary (typically when the minibuffer or the *Help* frame is in another
+workspace).
+
 .IP "\fBWarpRingOnScreen\fP" 8
 Tells \fIctwm\fP that f.warpring warps pointer only to windows visible in
 the current workspace.
@@ -2188,6 +2199,9 @@ This function raises the selected window.
 This function raises the selected window to the top of the stacking order if
 it is occluded by any windows, otherwise the window will be lowered.
 
+.IP "\fBf.raiseorsqueeze\fP" 8
+Raise the window or squeeze it if it's a double click.
+
 .IP "\fBf.removefromworkspace\fP \fIstring\fP" 8
 This function removes the selected window from the workspace whose name
 is \fIstring\fP.
@@ -2198,6 +2212,12 @@ This function causes all windows to be refreshed.
 .IP "\fBf.rereadsounds\fP" 8
 This function causes the \fI.ctwm-sounds\fP file to be re-read.  See
 the SOUNDS section.
+
+.IP "\fBf.rescuewindows\fP" 8
+If you somehow managed to move a window out of sight, calling this
+function will check all windows and icons on currently visible virtual
+screens, and those that are (nearly) out of the bounds of their virtual
+screen will be brought completely inside (if that fits).
 
 .IP "\fBf.resize\fP" 8
 This function displays an outline of the selected window.  Crossing a border
@@ -2324,6 +2344,9 @@ the selected window is only resized to the top half of the display.
 .IP "\fBf.unfocus\fP" 8
 This function resets the focus back to pointer\-driven.  This should be used
 when a focused window is no longer desired.
+
+.IP "\fBf.unsqueeze\fP" 8
+Is to \fBf.squeeze\fP what \fBf.deiconify\fP is to \fBf.iconify\fP.
 
 .IP "\fBf.upiconmgr\fI" 8
 This function warps the pointer to the previous row in the current icon

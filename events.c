@@ -101,39 +101,16 @@
 #include <ssdef.h>
 #include <lib$routines.h>
 #define USE_SIGNALS
-#else
-#define MAX(x,y) ((x)>(y)?(x):(y))
-#define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
-#define ABS(x) ((x)<0?-(x):(x))
-
-extern int iconifybox_width, iconifybox_height;
-extern unsigned int mods_used;
-extern int menuFromFrameOrWindowOrTitlebar;
-extern char *CurrentSelectedWorkspace;
-extern int RaiseDelay;
-
-#ifdef USE_SIGNALS
-extern Bool AnimationPending;
-#else /* USE_SIGNALS */
-extern struct timeval AnimateTimeout;
-#endif /* USE_SIGNALS */
-extern int  AnimationSpeed;
-extern Bool AnimationActive;
-extern Bool MaybeAnimate;
-
-extern int  AlternateKeymap;
-extern Bool AlternateContext;
 
 static void CtwmNextEvent (Display *display, XEvent  *event);
 static void RedoIcon(void);
 static void do_key_menu (MenuRoot *menu,	/* menu to pop up */
 			 Window w);		/* invoking window or None */
 void RedoIconName(void);
-extern void twmrc_error_prefix(void);
 
 #ifdef SOUNDS
-extern void play_sound(int snd);
+#include "sounds.h"
 #endif
 FILE *tracefile = NULL;
 
@@ -173,14 +150,9 @@ int Cancel = FALSE;
 void HandleCreateNotify(void);
 void HandleShapeNotify (void);
 void HandleFocusChange (void);
-extern int ShapeEventBase, ShapeErrorBase;
-
-extern Window lowerontop;
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
-  extern Atom _XA_WIN_WORKSPACE;
-  extern Atom _XA_WIN_STATE;
 #endif /* GNOME */
 
 extern Atom _XA_WM_OCCUPATION;
@@ -1558,9 +1530,10 @@ void HandlePropertyNotify(void)
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_ICON_NAME);
 	if (prop == NULL) return;
 #ifdef CLAUDE
-	if (strstr (prop, " - Mozilla")) {
+	{
 	  char *moz = strstr (prop, " - Mozilla");
-	  *moz = '\0';
+	  if (moz)
+	      *moz = '\0';
 	}
 #endif
 	icon_change = strcmp (Tmp_win->icon_name, (char*) prop);
@@ -1853,26 +1826,26 @@ void RedoIconName(void)
 		   Tmp_win->icon_name, strlen(Tmp_win->icon_name),
 		   &ink_rect, &logical_rect);
     Tmp_win->icon->w_width = logical_rect.width;
-    Tmp_win->icon->w_width += 2 * Scr->IconManagerShadowDepth + 6;
+    Tmp_win->icon->w_width += 2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER);
     if (Tmp_win->icon->w_width > Scr->MaxIconTitleWidth)
 	Tmp_win->icon->w_width = Scr->MaxIconTitleWidth;
 
     if (Tmp_win->icon->w_width < Tmp_win->icon->width)
     {
 	Tmp_win->icon->x = (Tmp_win->icon->width - Tmp_win->icon->w_width)/2;
-	Tmp_win->icon->x += Scr->IconManagerShadowDepth + 3;
+	Tmp_win->icon->x += Scr->IconManagerShadowDepth + ICON_MGR_IBORDER;
 	Tmp_win->icon->w_width = Tmp_win->icon->width;
     }
     else
     {
-	Tmp_win->icon->x = Scr->IconManagerShadowDepth + 3;
+	Tmp_win->icon->x = Scr->IconManagerShadowDepth + ICON_MGR_IBORDER;
     }
 
     x = GetIconOffset (Tmp_win->icon);
     Tmp_win->icon->y = Tmp_win->icon->height + Scr->IconFont.height +
 				Scr->IconManagerShadowDepth;
     Tmp_win->icon->w_height = Tmp_win->icon->height + Scr->IconFont.height +
-				2 * Scr->IconManagerShadowDepth + 6;
+				2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER);
 
     XResizeWindow(dpy, Tmp_win->icon->w, Tmp_win->icon->w_width, Tmp_win->icon->w_height);
     if (Tmp_win->icon->bm_w)
@@ -2000,6 +1973,13 @@ void HandleClientMessage(void)
       }
     }
 #endif /* GNOME */
+   else if ((Event.xclient.message_type == _XA_WM_PROTOCOLS) &&
+             (Event.xclient.data.l[0] == _XA_WM_END_OF_ANIMATION)) {
+      if (Animating > 0)
+          Animating--;
+      else
+           fprintf(stderr, "!! end of unknown animation !!\n");
+   }
 }
 
 
@@ -2017,7 +1997,7 @@ static void flush_expose(Window w);
 void HandleExpose(void)
 {
     MenuRoot *tmp;
-    virtualScreen *vs;
+    VirtualScreen *vs;
 
     if (XFindContext(dpy, Event.xany.window, MenuContext, (XPointer *)&tmp) == 0)
     {
@@ -2099,27 +2079,30 @@ void HandleExpose(void)
 
 	    if (Event.xany.window == iconmanagerlist->w)
 	    {
-		int offs;
+		XRectangle ink_rect, logical_rect;
+		XmbTextExtents(Scr->IconManagerFont.font_set,
+			       Tmp_win->icon_name, strlen (Tmp_win->icon_name),
+			       &ink_rect, &logical_rect);
+ 
+		if (UpdateFont (&Scr->IconManagerFont, logical_rect.height))
+		    PackIconManagers();
 
 		DrawIconManagerBorder(iconmanagerlist, True);
 
 		FB(iconmanagerlist->cp.fore, iconmanagerlist->cp.back);
-		offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
-		if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
-		    XmbDrawImageString(dpy, Event.xany.window,
-				       Scr->IconManagerFont.font_set,
-				       Scr->NormalGC, 
-				       iconmgr_textx,
-				       Scr->IconManagerFont.y + offs + 2,
-				       Tmp_win->icon_name,
-				       strlen(Tmp_win->icon_name));
-		else
-		    XmbDrawString(dpy, Event.xany.window,
-				  Scr->IconManagerFont.font_set, Scr->NormalGC,
-				  iconmgr_textx,
-				  Scr->IconManagerFont.y + offs + 2,
-				  Tmp_win->icon_name,
-				  strlen(Tmp_win->icon_name));
+		((Scr->use3Diconmanagers && (Scr->Monochrome != COLOR)) ?
+		    XmbDrawImageString : XmbDrawString)
+				    (dpy,
+				     Event.xany.window,
+				     Scr->IconManagerFont.font_set,
+				     Scr->NormalGC, 
+				     iconmgr_textx,
+				     (Scr->IconManagerFont.avg_height - logical_rect.height) / 2
+					 + (- logical_rect.y)
+					 + ICON_MGR_OBORDER
+					 + ICON_MGR_IBORDER,
+				     Tmp_win->icon_name,
+				     strlen(Tmp_win->icon_name));
 		flush_expose (Event.xany.window);
 		return;
 	    }
@@ -2307,7 +2290,7 @@ void HandleDestroyNotify(void)
 	Tmp_win->next->prev = Tmp_win->prev;
     if (Tmp_win->auto_raise) Scr->NumAutoRaises--;
     if (Tmp_win->auto_lower) Scr->NumAutoLowers--;
-    if (Tmp_win->frame == lowerontop) lowerontop = -1;
+    if (Tmp_win->frame == Lowerontop) Lowerontop = (Window)-1;
 
     free_window_names (Tmp_win, True, True, True);		/* 1, 2, 3 */
     if (Tmp_win->wmhints)					/* 4 */
@@ -2428,6 +2411,15 @@ void HandleMapRequest(void)
 		break;
 
 	    case InactiveState:
+                if (!OCCUPY (Tmp_win, Scr->currentvs->wsw->currentwspc) &&
+                    HandlingEvents && /* to avoid warping during startup */
+                    LookInList(Scr->WarpOnDeIconify, Tmp_win->full_name, &Tmp_win->class)) {
+                    if (!Scr->NoRaiseDeicon) {
+			XMapRaised(dpy, Tmp_win->frame);
+                        //OtpRaise(Tmp_win, WinWin);
+		    }
+                    AddToWorkSpace(Scr->currentvs->wsw->currentwspc->name, Tmp_win);
+                }
 		Tmp_win->mapped = TRUE;
 		if (Tmp_win->UnmapByMovingFarAway) {
 		    XMoveWindow (dpy, Tmp_win->frame, Scr->rootw + 1, Scr->rooth + 1);
@@ -2448,6 +2440,10 @@ void HandleMapRequest(void)
     /* If no hints, or currently an icon, just "deiconify" */
     else
     {
+      if (!OCCUPY (Tmp_win, Scr->currentvs->wsw->currentwspc) &&
+	  LookInList(Scr->WarpOnDeIconify, Tmp_win->full_name, &Tmp_win->class)) {
+	  AddToWorkSpace(Scr->currentvs->wsw->currentwspc->name, Tmp_win);
+      }
       if (1/*OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC)*/) {
 	if (Tmp_win->StartSqueezed) Squeeze (Tmp_win);
 	DeIconify(Tmp_win);
@@ -2708,18 +2704,27 @@ void HandleButtonRelease(void)
 	/*
 	 * sometimes getScreenOf() replies with the wrong window when moving
 	 * y to a negative number.  Need to figure out why... [XXX]
+	 * It seems to be because the first XTranslateCoordinates() doesn't
+	 * translate the coordinates to be relative to XineramaRoot.
+	 * That in turn is probably because a window is visible in a ws or
+	 * vs where it shouldn't (inconsistent with its occupation).
+	 * A problem of this kind was fixed with f.adoptwindow but remains
+	 * with f.hypermove.
+	 * As a result, the window remains in the original vs/ws and
+	 * is irretrievably moved out of view. [Rhialto]
 	 */
 	if(xl < 0 || yt < 0 || xl > Scr->rootw || yt > Scr->rooth) {
 		int odestx, odesty;
 		int destx, desty;
 		Window cr;
-		virtualScreen *newvs;
+		VirtualScreen *newvs;
 
 		XTranslateCoordinates(dpy, Tmp_win->vs->window, 
 			Scr->XineramaRoot, xl, yt, &odestx, &odesty, &cr);
 
 		newvs = findIfVScreenOf(odestx, odesty);
-		if(newvs && newvs->wsw && newvs->wsw->currentwspc) {
+
+		if (newvs && newvs->wsw && newvs->wsw->currentwspc) {
 			XTranslateCoordinates(dpy, Scr->XineramaRoot, 
 				newvs->window, odestx, odesty, 
 				&destx, &desty, &cr);
@@ -2728,16 +2733,21 @@ void HandleButtonRelease(void)
 			xl = destx;
 			yt = desty;
 		}
-
 	}
-	if (DragWindow == Tmp_win->frame)
+	if (DragWindow == Tmp_win->frame) {
 	    SetupWindow (Tmp_win, xl, yt,
 		       Tmp_win->frame_width, Tmp_win->frame_height, -1);
-	else
+	} else {
 	    XMoveWindow (dpy, DragWindow, xl, yt);
+            if (DragWindow == Tmp_win->icon->w) {
+                Tmp_win->icon->w_x = xl;
+                Tmp_win->icon->w_y = yt;
+	    }
+	}
 
-	if (!Scr->NoRaiseMove) /* && !Scr->OpaqueMove)    opaque already did */
+	if (!Scr->NoRaiseMove) { /* && !Scr->OpaqueMove)    opaque already did */
 	    RaiseFrame(DragWindow);
+	}
 
 	if (!Scr->OpaqueMove)
 	    UninstallRootColormap();
@@ -3372,7 +3382,7 @@ void HandleEnterNotify(void)
     XEnterWindowEvent *ewp = &Event.xcrossing;
     HENScanArgs scanArgs;
     XEvent dummy;
-    virtualScreen *vs;
+    VirtualScreen *vs;
 
     /*
      * if we aren't in the middle of menu processing
