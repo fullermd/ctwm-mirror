@@ -116,8 +116,7 @@ DEBUGPARSERDEFINES = -DYYDEBUG=1
       CCOPTIONS = -pedantic -ansi -Wall \
 		-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef \
 		-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts \
-		-Winline -Wnested-externs -Wmissing-declarations \
-		-aux-info $@.info
+		-Winline -Wnested-externs -Wmissing-declarations
 #endif
 
 PIXMAPDIR = $(TWMDIR)/images
