@@ -101,6 +101,7 @@
 #include "windowbox.h"
 #include "workmgr.h"
 #include "cursor.h"
+#include "otp.h"
 #ifdef SOUNDS
 #  include "sound.h"
 #endif
@@ -579,12 +580,10 @@ static void Paint3DEntry(MenuRoot *mr, MenuItem *mi, int exposure)
 	    /* create the pull right pixmap if needed */
 	    if (Scr->pullPm == None)
 	    {
-		//Scr->pullPm = Create3DMenuIcon (Scr->MenuFont.height, &Scr->pullW,
 		Scr->pullPm = Create3DMenuIcon (Scr->EntryHeight - ENTRY_SPACING, &Scr->pullW,
 				&Scr->pullH, Scr->MenuC);
 	    }
 	    x = mr->width - Scr->pullW - Scr->MenuShadowDepth - 2;
-	    //y = y_offset + ((Scr->MenuFont.height - Scr->pullH) / 2) + 2;
 	    y = y_offset + ((Scr->EntryHeight - ENTRY_SPACING - Scr->pullH) / 2) + 2;
 	    XCopyArea (dpy, Scr->pullPm, mr->w, gc, 0, 0, Scr->pullW, Scr->pullH, x, y);
 	}
@@ -2023,7 +2022,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
     case F_SHOWWORKMGR:
 	if (! Scr->workSpaceManagerActive) break;
 	DeIconify (Scr->currentvs->wsw->twm_win);
-	RaiseWindow(Scr->currentvs->wsw->twm_win);
+	OtpRaise(Scr->currentvs->wsw->twm_win, WinWin);
 	break;
 
     case F_HIDEWORKMGR:
@@ -2039,7 +2038,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		     eventp->xbutton.y_root - 5);
 	else {
 	    DeIconify (Scr->currentvs->wsw->twm_win);
-	    RaiseWindow(Scr->currentvs->wsw->twm_win);
+	    OtpRaise(Scr->currentvs->wsw->twm_win, WinWin);
 	}
 	break;
 
@@ -2311,7 +2310,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	else
 	{
 	    DeIconify(tmp_win);
-	    RaiseWindow (tmp_win);
+	    OtpRaise (tmp_win, WinWin);
 	}
 	break;
 
@@ -2813,8 +2812,27 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 	    DragWindow = w;
 
-	    if (!Scr->NoRaiseMove && Scr->OpaqueMove && !WindowMoved)
-	      RaiseFrame(DragWindow);
+	    if (!Scr->NoRaiseMove && Scr->OpaqueMove && !WindowMoved) {
+		if (XFindContext(dpy, DragWindow, TwmContext, (caddr_t *) &t) == XCNOENT)
+		    fprintf(stderr, "ERROR: menus.c:2822\n");
+
+		if (t != tmp_win) {
+		    fprintf(stderr, "DragWindow isn't tmp_win!\n");
+		}
+		if (DragWindow == t->frame) {
+		    if (moving_icon) {
+			fprintf(stderr, "moving_icon is TRUE incorrectly!\n");
+		    }
+		    OtpRaise(t, WinWin);
+		} else if (t->icon && DragWindow == t->icon->w) {
+		    if (!moving_icon) {
+			fprintf(stderr, "moving_icon is FALSE incorrectly!\n");
+		    }
+		    OtpRaise(t, IconWin);
+		} else {
+		    fprintf(stderr, "ERROR: menus.c:2838\n");
+		}
+	    }
 
 	    WindowMoved = TRUE;
 
@@ -2959,6 +2977,39 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    UninstallRootColormap();
         break;
     }
+
+    case F_PRIORITYSWITCHING:
+    case F_SWITCHPRIORITY:
+    case F_SETPRIORITY:
+    case F_CHANGEPRIORITY:
+	{
+            WinType wintype;
+
+	    if (DeferExecution(context, func, Scr->SelectCursor))
+		return TRUE;
+
+	    if (tmp_win->icon && w == tmp_win->icon->w) {
+                wintype = IconWin;
+            } else {
+                wintype = WinWin;
+            }
+	    switch (func) {
+	    case F_PRIORITYSWITCHING:
+		OtpToggleSwitching(tmp_win, wintype);
+		break;
+	    case F_SETPRIORITY:
+		OtpSetPriority(tmp_win, wintype, atoi(action));
+		break;
+	    case F_CHANGEPRIORITY:
+		OtpChangePriority(tmp_win, wintype, atoi(action));
+		break;
+	    case F_SWITCHPRIORITY:
+		OtpSwitchPriority(tmp_win, wintype);
+		break;
+	    }
+	}
+	break;
+
     case F_MOVETITLEBAR:
     {
         Window grabwin;
@@ -3110,8 +3161,9 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		    &eventp->xmotion.x_root, &eventp->xmotion.y_root, &JunkChild);
 	    }
 
-	    if (!Scr->NoRaiseMove && Scr->OpaqueMove && !WindowMoved)
-	      RaiseFrame(w);
+	    if (!Scr->NoRaiseMove && Scr->OpaqueMove && !WindowMoved) {
+		OtpRaise(tmp_win, WinWin);
+	    }
 
 	    deltax = eventp->xmotion.x_root - origX;
 	    newx = origNum + deltax;
@@ -3214,14 +3266,40 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
 	if (!WindowMoved) {
 	    if (tmp_win->icon && w == tmp_win->icon->w) {
-		RaiseLowerFrame(w, ONTOP_DEFAULT);
+		OtpRaiseLower(tmp_win, IconWin);
 	    } else {
-		RaiseLower(tmp_win);
+		OtpRaiseLower(tmp_win, WinWin);
 		WMapRaiseLower (tmp_win);
 	    }
 	}
 	break;
 	
+    case F_TINYRAISE:
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	    return TRUE;
+
+	/* check to make sure raise is not from the WindowFunction */
+	if (tmp_win->icon && (w == tmp_win->icon->w) && Context != C_ROOT) 
+	    OtpTinyRaise(tmp_win, IconWin);
+	else {
+	    OtpTinyRaise(tmp_win, WinWin);
+	    WMapRaise   (tmp_win);
+	}
+	break;
+
+    case F_TINYLOWER:
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	    return TRUE;
+
+	/* check to make sure raise is not from the WindowFunction */
+	if (tmp_win->icon && (w == tmp_win->icon->w) && Context != C_ROOT) 
+	    OtpTinyLower(tmp_win, IconWin);
+	else {
+	    OtpTinyLower(tmp_win, WinWin);
+	    WMapRaise   (tmp_win);
+	}
+	break;
+
     case F_RAISEORSQUEEZE:
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
@@ -3240,11 +3318,11 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    return TRUE;
 
 	/* check to make sure raise is not from the WindowFunction */
-	if (tmp_win->icon && (w == tmp_win->icon->w) && Context != C_ROOT) 
-	    XRaiseWindow(dpy, tmp_win->icon->w);
-	else {
-	    RaiseWindow (tmp_win);
-	    WMapRaise   (tmp_win);
+	if (tmp_win->icon && (w == tmp_win->icon->w) && Context != C_ROOT)  {
+	    OtpRaise(tmp_win, IconWin);
+	} else {
+	    OtpRaise(tmp_win, WinWin);
+	    WMapRaise(tmp_win);
 	}
 	break;
 
@@ -3252,10 +3330,10 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
-	if (tmp_win->icon && (w == tmp_win->icon->w))
-	    XLowerWindow(dpy, tmp_win->icon->w);
-	else {
-	    LowerWindow(tmp_win);
+	if (tmp_win->icon && (w == tmp_win->icon->w)) {
+	    OtpLower(tmp_win, IconWin);
+	} else {
+	    OtpLower(tmp_win, WinWin);
 	    WMapLower (tmp_win);
 	}
 	break;
@@ -3263,7 +3341,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
     case F_RAISEICONS:
 	for (t = Scr->FirstWindow; t != NULL; t = t->next) {
 	    if (t->icon && t->icon->w) {
-		XRaiseWindow (dpy, t->icon->w);	
+		OtpRaise(t, IconWin);
 	    }
 	}
 	break;
@@ -3501,17 +3579,17 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
     case F_WARPTOICONMGR:
 	{
-	    TwmWindow *tw;
+	    TwmWindow *tw, *raisewin = NULL;
 	    int len;
-	    Window raisewin = None, iconwin = None;
+	    Window iconwin = None;
 
 	    len = strlen(action);
 	    if (len == 0) {
 		if (tmp_win && tmp_win->iconmanagerlist) {
-		    raisewin = tmp_win->iconmanagerlist->iconmgr->twm_win->frame;
+		    raisewin = tmp_win->iconmanagerlist->iconmgr->twm_win;
 		    iconwin = tmp_win->iconmanagerlist->icon;
 		} else if (Scr->iconmgr->active) {
-		    raisewin = Scr->iconmgr->twm_win->frame;
+		    raisewin = Scr->iconmgr->twm_win;
 		    iconwin = Scr->iconmgr->active->w;
 		}
 	    } else {
@@ -3519,7 +3597,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 		    if (strncmp (action, tw->icon_name, len) == 0) {
 			if (tw->iconmanagerlist &&
 			    tw->iconmanagerlist->iconmgr->twm_win->mapped) {
-			    raisewin = tw->iconmanagerlist->iconmgr->twm_win->frame;
+			    raisewin = tw->iconmanagerlist->iconmgr->twm_win;
 			    break;
 			}
 		    }
@@ -3527,7 +3605,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	    }
 
 	    if (raisewin) {
-		RaiseFrame(raisewin);
+		OtpRaise(raisewin, WinWin);
 		XWarpPointer (dpy, None, iconwin, 0,0,0,0, 5, 5);
 	    } else {
 		XBell (dpy, 0);
@@ -3948,136 +4026,6 @@ static void Execute(char *s)
 
 
 
-Window Lowerontop = -1;
-
-void PlaceTransients (TwmWindow *tmp_win, int where)
-{
-    int	sp, sc;
-    TwmWindow *t;
-    XWindowChanges xwc;
-    xwc.stack_mode = where;
-    
-    sp = tmp_win->frame_width * tmp_win->frame_height;
-    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
-	if (t != tmp_win &&
-	    ((t->transient && t->transientfor == tmp_win->w) ||
-	     t->group == tmp_win->w)) {
-	    if (t->frame) {
-		sc = t->frame_width * t->frame_height;
-		if (sc < ((sp * Scr->TransientOnTop) / 100)) {
-		    xwc.sibling = tmp_win->frame;
-		    XConfigureWindow(dpy, t->frame, CWSibling | CWStackMode, &xwc);
-		    if (Lowerontop == t->frame) {
-			Lowerontop = (Window)-1;
-		    }
-		}
-	    }
-	}
-    }
-}
-
-#include <assert.h>
-
-void PlaceOntop (int ontop, int where)
-{
-    TwmWindow *t;
-    XWindowChanges xwc;
-    xwc.stack_mode = where;
-
-    Lowerontop = (Window)-1;
-
-    for (t = Scr->FirstWindow; t != NULL; t = t->next) {
-	if (t->ontoppriority > ontop) {
-	    XConfigureWindow(dpy, t->frame, CWStackMode, &xwc);
-	    PlaceTransients(t, Above);
-	    if (Lowerontop == (Window)-1) {
-		Lowerontop = t->frame;
-	    }
-	}
-    }
-}
-
-void MapRaised (TwmWindow *tmp_win)
-{
-    XMapWindow(dpy, tmp_win->frame);
-    RaiseWindow(tmp_win);
-}
-
-void RaiseWindow (TwmWindow *tmp_win)
-{
-    XWindowChanges xwc;
-    int xwcm;
-
-    if (tmp_win->ontoppriority == ONTOP_MAX) {
-	XRaiseWindow(dpy, tmp_win->frame);
-	if (Lowerontop == (Window)-1) {
-	    Lowerontop = tmp_win->frame;
-	} else if (Lowerontop == tmp_win->frame) {
-	    Lowerontop = (Window)-1;
-	}
-    } else {
-	if (Lowerontop == (Window)-1) {
-	    PlaceOntop(tmp_win->ontoppriority, Above);
-	}
-	xwcm = CWStackMode;
-	if (Lowerontop != (Window)-1) {
-	    xwc.stack_mode = Below;
-	    xwc.sibling = Lowerontop;
-	    xwcm |= CWSibling;
-	} else {
-	    xwc.stack_mode = Above;
-	}
-	XConfigureWindow(dpy, tmp_win->frame, xwcm, &xwc);
-    }
-    PlaceTransients(tmp_win, Above);
-}
-
-void RaiseLower (TwmWindow *tmp_win)
-{
-    XWindowChanges xwc;
-
-    PlaceOntop(tmp_win->ontoppriority, Below);
-    PlaceTransients(tmp_win, Below);
-    Lowerontop = (Window)-1;
-    xwc.stack_mode = Opposite;
-    XConfigureWindow(dpy, tmp_win->frame, CWStackMode, &xwc);
-    PlaceOntop(tmp_win->ontoppriority, Above);
-    PlaceTransients(tmp_win, Above);
-}
-
-void RaiseLowerFrame (Window frame, int ontop)
-{
-    XWindowChanges xwc;
-
-    PlaceOntop(ontop, Below);
-    Lowerontop = (Window)-1;
-    xwc.stack_mode = Opposite;
-    XConfigureWindow(dpy, frame, CWStackMode, &xwc);
-    PlaceOntop(ontop, Above);
-}
-
-void LowerWindow (TwmWindow *tmp_win)
-{
-    XLowerWindow(dpy, tmp_win->frame);
-    if (tmp_win->frame == Lowerontop) {
-	Lowerontop = (Window)-1;
-    }
-    PlaceTransients(tmp_win, Above);
-}
-
-void RaiseFrame (Window frame)
-{
-    TwmWindow *tmp_win;
-
-    tmp_win = GetTwmWindow(frame);
-
-    if (tmp_win != NULL) {
-	RaiseWindow(tmp_win);
-    } else {
-	XRaiseWindow(dpy, frame);
-    }
-}
-  
 /***********************************************************************
  *
  *  Procedure:
@@ -4104,12 +4052,11 @@ static void ReMapOne(TwmWindow *t, TwmWindow *leader)
 	XMapWindow(dpy, t->w);
     t->mapped = TRUE;
     if (False && Scr->Root != Scr->CaptiveRoot) {	/* XXX dubious test */
-	XReparentWindow (dpy, t->frame, Scr->Root, t->frame_x, t->frame_y);
+	ReparentWindow (dpy, t, WinWin, Scr->Root, t->frame_x, t->frame_y);
     }
-    if (Scr->NoRaiseDeicon)
-	XMapWindow(dpy, t->frame);
-    else
-	MapRaised(t);
+    if (!Scr->NoRaiseDeicon)
+	OtpRaise(t, WinWin);
+    XMapWindow(dpy, t->frame);
     SetMapStateProp(t, NormalState);
 
     if (t->icon && t->icon->w) {
@@ -4257,11 +4204,12 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
 	    IconUp(tmp_win);
 	if (visible (tmp_win)) {
 	    if (Scr->WindowMask) {
-		XRaiseWindow (dpy, Scr->WindowMask);
+		OtpRaise(tmp_win, IconWin);
+		XMapWindow(dpy, tmp_win->icon->w);
+	    } else {
+		OtpRaise(tmp_win, IconWin);
 		XMapWindow(dpy, tmp_win->icon->w);
 	    }
-	    else
-		XMapRaised(dpy, tmp_win->icon->w);
 	}
     }
     if (tmp_win->iconmanagerlist) {
@@ -4332,7 +4280,9 @@ void Iconify(TwmWindow *tmp_win, int def_x, int def_y)
 void AutoSqueeze (TwmWindow *tmp_win)
 {
     if (tmp_win->iconmgr) return;
-    if (Scr->RaiseWhenAutoUnSqueeze && tmp_win->squeezed) XRaiseWindow (dpy, tmp_win->frame);
+    if (Scr->RaiseWhenAutoUnSqueeze && tmp_win->squeezed) {
+	OtpRaise (tmp_win, WinWin);
+    }
     Squeeze (tmp_win);
 }
 
@@ -4490,13 +4440,13 @@ static void Identify (TwmWindow *t)
 	(void) sprintf(Info[n++], "Class.res_name     = \"%s\"", t->class.res_name);
 	(void) sprintf(Info[n++], "Class.res_class    = \"%s\"", t->class.res_class);
 	Info[n++][0] = '\0';
-	(void) sprintf(Info[n++], "Geometry/root (UL)  = %dx%d+%d+%d (Inner: %dx%d+%d+%d)",
+	(void) sprintf(Info[n++], "Geometry/root (UL) = %dx%d+%d+%d (Inner: %dx%d+%d+%d)",
 		       wwidth + 2 * (bw + t->frame_bw3D),
 		       wheight + 2 * (bw + t->frame_bw3D) + t->title_height,
 		       x - (bw + t->frame_bw3D),
 		       y - (bw + t->frame_bw3D + t->title_height),
 		       wwidth, wheight, x, y);
-	(void) sprintf(Info[n++], "Geometry/root (LR)  = %dx%d-%d-%d (Inner: %dx%d-%d-%d)",
+	(void) sprintf(Info[n++], "Geometry/root (LR) = %dx%d-%d-%d (Inner: %dx%d-%d-%d)",
 		       wwidth + 2 * (bw + t->frame_bw3D),
 		       wheight + 2 * (bw + t->frame_bw3D) + t->title_height,
 		       Scr->rootw - (x + wwidth + bw + t->frame_bw3D),
@@ -4511,18 +4461,19 @@ static void Identify (TwmWindow *t)
 	    t->vs->wsw->currentwspc) {
 	    (void) sprintf(Info[n++], "Virtual Workspace  = %s", t->vs->wsw->currentwspc->name);
 	}
+	(void) sprintf(Info[n++], "OnTopPriority      = %d", OtpGetPriority(t));
 
         if (t->icon != NULL) {
             XGetGeometry (dpy, t->icon->w, &JunkRoot, &JunkX, &JunkY,
                           &wwidth, &wheight, &bw, &depth);
             Info[n++][0] = '\0';
-            (void) sprintf(Info[n++], "IconGeom/root    = %dx%d+%d+%d",
+            (void) sprintf(Info[n++], "IconGeom/root     = %dx%d+%d+%d",
                            wwidth, wheight, JunkX, JunkY);
-            (void) sprintf(Info[n++], "IconGeom/intern  = %dx%d+%d+%d",
+            (void) sprintf(Info[n++], "IconGeom/intern   = %dx%d+%d+%d",
                            t->icon->w_width, t->icon->w_height,
                            t->icon->w_x, t->icon->w_y);
-            (void) sprintf(Info[n++], "IconBorder width = %d", bw);
-            (void) sprintf(Info[n++], "IconDepth        = %d", depth);
+            (void) sprintf(Info[n++], "IconBorder width  = %d", bw);
+            (void) sprintf(Info[n++], "IconDepth         = %d", depth);
         }
 
 	if (XGetWindowProperty (dpy, t->w, _XA_WM_CLIENT_MACHINE, 0L, 64, False,
@@ -4720,7 +4671,8 @@ void ShowIconManager (void)
 	    if (visible (i->twm_win)) {
 		SetMapStateProp (i->twm_win, NormalState);
 		XMapWindow (dpy, i->twm_win->w);
-		MapRaised (i->twm_win);
+		OtpRaise(i->twm_win, WinWin);
+		XMapWindow (dpy, i->twm_win->frame);
 		if (i->twm_win->icon && i->twm_win->icon->w)
 		    XUnmapWindow (dpy, i->twm_win->icon->w);
 	    }
@@ -4741,7 +4693,8 @@ void HideIconManager (void)
 	for (i = wl->iconmgr; i != NULL; i = i->next) {
 	    SetMapStateProp (i->twm_win, WithdrawnState);
 	    XUnmapWindow(dpy, i->twm_win->frame);
-	    if (i->twm_win->icon && i->twm_win->icon->w) XUnmapWindow (dpy, i->twm_win->icon->w);
+	    if (i->twm_win->icon && i->twm_win->icon->w)
+		XUnmapWindow (dpy, i->twm_win->icon->w);
 	    i->twm_win->mapped = FALSE;
 	    i->twm_win->isicon = TRUE;
 	}
@@ -5287,7 +5240,7 @@ static void packwindow (TwmWindow *tmp_win, char *direction)
     px = x - tmp_win->frame_x + newx;
     py = y - tmp_win->frame_y + newy;
     XWarpPointer (dpy, Scr->Root, Scr->Root, 0, 0, 0, 0, px, py);
-    XRaiseWindow(dpy, tmp_win->frame);
+    OtpRaise(tmp_win, WinWin);
     XMoveWindow (dpy, tmp_win->frame, newx, newy);
     SetupWindow (tmp_win, newx, newy, tmp_win->frame_width, tmp_win->frame_height, -1);
 }
@@ -5449,8 +5402,9 @@ static void jump (TwmWindow *tmp_win, int  direction, char *action)
     }
     /* Pebl Fixme: don't warp if jump happens through iconmgr */
     XWarpPointer (dpy, Scr->Root, Scr->Root, 0, 0, 0, 0, fx + px, fy + py);
-    if (!Scr->NoRaiseMove)
-        XRaiseWindow (dpy, tmp_win->frame);
+    if (!Scr->NoRaiseMove) {
+	OtpRaise (tmp_win, WinWin);
+    }
     SetupWindow (tmp_win, fx, fy, tmp_win->frame_width, tmp_win->frame_height, -1);
 }
 

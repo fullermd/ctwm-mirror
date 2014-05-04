@@ -73,6 +73,7 @@
 #include "parse.h"
 #include "events.h"
 #include "util.h"
+#include "otp.h"
 #include "resize.h"
 #include "add_window.h"
 #include "screen.h"
@@ -649,9 +650,10 @@ void EndResize(void)
     }
 
     if (!Scr->NoRaiseResize) {
-        RaiseWindow(tmp_win);
+	OtpRaise(tmp_win, WinWin);
 	WMapRaise (tmp_win);
     }
+
     UninstallRootColormap();
 
     ResizeWindow = None;
@@ -980,6 +982,7 @@ void SetupFrame (TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
     frame_mask = 0;
     if (bw != tmp_win->frame_bw) {
 	frame_wc.border_width = tmp_win->frame_bw = bw;
+	if (bw == 0) tmp_win->frame_bw3D = 0;
 	frame_mask |= CWBorderWidth;
     }
     tmp_win->frame_x = x;
@@ -1203,8 +1206,9 @@ void fullzoom(TwmWindow *tmp_win, int flag)
          }
       }
 
-    if (!Scr->NoRaiseResize)
-        RaiseWindow(tmp_win);
+    if (!Scr->NoRaiseResize) {
+	OtpRaise(tmp_win, WinWin);
+    }
 
     ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 #ifdef BETTERZOOM 

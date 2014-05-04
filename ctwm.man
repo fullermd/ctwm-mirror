@@ -410,6 +410,17 @@ This variable specifies that clients will automatically change their occupation
 when their name or icon name changes. The new occupation will be recalculated
 from the Occupy and OccupyAll fields in the \fI.ctwmrc\fP file.
 
+.IP "\fBAutoPopup\fP [{ "\fIwin\-list\fP }]" 8
+This variables specifies a list of windows which will be deiconified whenever
+their name changes. Can be used for xconsole, for instance,which adds a "*" to
+its name whenever something gets displayed on the console, or for various mail
+readers who change their icons depending on the presence of unread mail.
+
+.IP "\fBAutoPriority\fP" 8
+This variable specifies that \fIctwm\fP should automatically recompute the
+priority of a window (and its associated icon) when its name changes.
+See also \fBOnTopPriority\fP.
+
 .IP "\fBAutoRaise\fP { \fIwin\-list\fP }" 8
 This variable specifies a list of windows (all windows if the list is defaulted)
 to be automatically raised whenever the pointer has come to rest in a window for
@@ -1034,6 +1045,7 @@ in the WorkSpaceMap.
 This variable indicates that menus should not have drop shadows drawn behind
 them.  This is typically used with slower servers since it speeds up menu
 drawing at the expense of making the menu slightly harder to read.
+
 .IP "\fBNoOpaqueMove\fP [{ \fIwindow\-list\fP }]" 8
 The counterpart of \fBOpaqueMove\fP. See \fBOpaqueMove\fP.
 .IP "\fBNoOpaqueResize\fP [{ \fIwindow\-list\fP }]" 8
@@ -1126,6 +1138,30 @@ OccupyAll
 .EE
 Note : The OccupyAll declaration should come after the WorkSpaces declaration.
 
+.IP "\fBOnTopPriority\fP [\fBIcons\fP] \fIpriority\fP [ { \fIwin\-list\fP } ]" 8
+\fICtwm\fP allows you to put windows in several overlapping priority planes
+going from -8 to +8, which makes it possible to have windows that stay on
+top or that are kept in the background. If \fIwin-list\fP is present, it
+specifies which windows should be put in the \fIpriority\fP plane.
+Else the \fIpriority\fP sets the default value to use (the default default
+is 0). The \fBIcons\fP parameter, if present, indicates that the preference
+described applies to icons rather than to windows.
+.IP
+Example:
+.EX
+OnTopPriority Icons -1  # place icons a little in the background
+OnTopPriority Icons 1
+{
+    "Exmh" "xbiff"      # place mail icons on top of normal windows
+}
+
+OnTopPriority 8         # keep these always on top of other windows
+{
+    "Emacs Icon Manager" "WorkSpaceManager"
+    "TWM Icon Manager" "XDaliClock"
+}
+.EE
+
 .IP "\fBOpaqueMove\fP [{ \fIwindow\-list\fP }]" 8
 This variable indicates that the \fBf.move\fP function should actually move
 the window instead of just an outline so that the user can immediately see
@@ -1187,6 +1223,18 @@ Icons
 .EE
 N.B This is only valid if your version of \fIctwm\fP has been compiled with the
 right extension (XPM, JPEG or IMCONV options).
+
+.IP "\fBPrioritySwitching\fP [\fBIcons\fP] { \fIwin-list\fP }" 8
+Specifies that the windows in \fIwin-list\fP can switch priority. This means
+that they can be in plane \fIpriority\fP or \fI-priority\fP depending on the
+situation. For instance a window whose \fIpriority\fP is 2 will be put into
+plane 2 when raised and plane -2 when lowered, which means that it will usually
+stay on top if you raise another window, but can still be lowered if its
+priority is temporarily too high for your liking. If \fBIcons\fP is specified,
+it means that the preference applies to icons rather than windows.
+.IP "\fBPriorityNotSwitching\fP [\fBIcons\fP] { \fIwin-list\fP }" 8
+As above except that it declares that the default should be for windows to be
+able to switch priority except for the windows in \fIwin-list\fP which can't.
 
 .IP "\fBRaiseDelay\fP \fImilliseconds\fP" 8
 For windows that are to be automatically raised when the pointer enters
@@ -1515,7 +1563,7 @@ WindowGeometries {
 }
 .EE
 
-.IP "\fBWindowRegion\fP \fIgeomstring\fP \fIvgrav\fP fIhgrav\fP [{ \fIwin\-list\fP }]" 8
+.IP "\fBWindowRegion\fP \fIgeomstring\fP \fIvgrav\fP \fIhgrav\fP [{ \fIwin\-list\fP }]" 8
 Similar to IconRegion, but for windows.
 
 .IP "\fBWindowRing\fP [{ \fIwin\-list\fP }]" 8
@@ -1877,6 +1925,11 @@ This function sounds the keyboard bell.
 This function is similar to the \fBf.fullzoom\fP function, but
 resizes the window to fill only the bottom half of the screen.
 
+.IP "\fBf.changepriority \fIrel-value\fP" 8
+Change the priority of a window by \fIrel-value\fP (enclosed within double
+quotes). For instance, to bury a window one level down, you would use
+f.changepriority "-1".
+
 .IP "\fBf.changesize\fP \fIstring\fP" 8
 This function allows you to change the size of the focused window. The
 format of the string must be either \fB"<border> <+|\-><sizechange>"\fP
@@ -2184,6 +2237,9 @@ Valid only in a root menu. Make a menu permanent on the screen. This is a toggle
 function, if you select it while the menu is already permanent, it becomes
 non\-permanent.
 
+.IP "\fBf.priorityswitching" 8
+Toggle the window's switching ability.
+
 .IP "\fBf.quit\fP" 8
 This function causes \fIctwm\fP to restore the window's borders and exit.  If
 \fIctwm\fP is the first client invoked from \fIxdm\fP, this will result in a
@@ -2275,6 +2331,9 @@ Set the WorkSpace manager in button state.
 .IP "\fBf.setmapstate\fP" 8
 Set the WorkSpace manager in map state.
 
+.IP "\fBf.setpriority \fIvalue\fP" 8
+Set the window's priority to \fIvalue\fP (enclosed between double quotes).
+
 .IP "\fBf.showiconmgr\fP" 8
 This function maps the current icon manager.
 
@@ -2312,6 +2371,17 @@ Restart freezed animations (if any).
 
 .IP "\fBf.stopanimation\fP" 8
 Freeze animations (if any).
+
+.IP "\fBf.switchpriority" 8
+Switch the window's priority, independently of its ability to switch
+automatically.
+
+.IP "\fBf.tinylower\fP" 8
+.IP "\fBf.tinyraise\fP" 8
+These two functions allow you to raise/lower a window "one step" at
+a time. For instance, \fBf.tinyraise\fP will bring the current window
+just above the lowest one that's hiding it. These two functions are not
+subject to priority-switching.
 
 .IP "\fBf.title\fP" 8
 This function provides a centered, unselectable item in a menu definition.  It

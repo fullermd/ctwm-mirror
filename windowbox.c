@@ -93,7 +93,7 @@ void createWindowBoxes (void)
 	XSetWMHints (dpy, win, &wmhints);
 
 	winbox->window = win;
-	winbox->twmwin = AddWindow (win, 2, NULL);
+	winbox->twmwin = AddWindow (win, ADD_WINDOW_WINDOWBOX, NULL, Scr->currentvs);
 	if (!winbox->twmwin) {
 	    fprintf (stderr, "cannot create %s window box, exiting...\n", winbox->name);
 	    exit (1);

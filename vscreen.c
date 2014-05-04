@@ -39,6 +39,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
   name_list *nptr;
   Atom _XA_WM_VIRTUALROOT = XInternAtom (dpy, "WM_VIRTUALROOT", False);
   Bool userealroot = True;
+  VirtualScreen *vs00 = NULL;
 
   NewFontCursor (&cursor, "X_cursor");
 
@@ -55,6 +56,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
       vs->wsw	 = 0;
       scr->vScreenList = vs;
       scr->currentvs   = vs;
+      scr->numVscreens = 1;
       return;
     } else {
       scr->VirtualScreens = (name_list*) malloc (sizeof (name_list));
@@ -63,6 +65,7 @@ void InitVirtualScreens (ScreenInfo *scr) {
       sprintf (scr->VirtualScreens->name, "%dx%d+0+0", scr->rootw, scr->rooth);
     }
   }
+  scr->numVscreens = 0;
 
   attrmask  = ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
               SubstructureRedirectMask | KeyPressMask | ButtonPressMask |
@@ -108,6 +111,14 @@ void InitVirtualScreens (ScreenInfo *scr) {
 
     vs->next = scr->vScreenList;
     scr->vScreenList = vs;
+    Scr->numVscreens++;
+
+    /*
+     * Remember which virtual screen is at (0,0).
+     */
+    if (x == 0 && y ==0) {
+	vs00 = vs;
+    }
   }
 
   if (scr->vScreenList == NULL) {
@@ -115,10 +126,19 @@ void InitVirtualScreens (ScreenInfo *scr) {
     fprintf (stderr, "no valid VirtualScreens found, exiting...\n");
     exit (1);
   }
-  /* XXX Should setup scr->{currentvs,Root{,x,y,w,h}} as if the
+  /* Setup scr->{currentvs,Root{,x,y,w,h}} as if the
    * _correct_ virtual screen is entered with the mouse.
    * See HandleEnterNotify().
    */
+  if (vs00 == NULL)
+      vs00 = scr->vScreenList;
+
+  Scr->Root  = vs00->window;
+  Scr->rootx = Scr->crootx + vs00->x;
+  Scr->rooty = Scr->crooty + vs00->y;
+  Scr->rootw = vs00->w;
+  Scr->rooth = vs00->h;
+  Scr->currentvs = vs00;
 }
 
 VirtualScreen *findIfVScreenOf (int x, int y)

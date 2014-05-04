@@ -64,7 +64,7 @@
 #include "twm.h"
 #include "screen.h"
 #include "icons.h"
-#include "gram.h"
+#include "otp.h"
 #include "list.h"
 #include "parse.h"
 #include "util.h"
@@ -465,6 +465,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 
     icon = (Icon*) malloc (sizeof (struct Icon));
 
+    icon->otp           = NULL;
     icon->border	= Scr->IconBorderColor;
     icon->iconc.fore	= Scr->IconC.fore;
     icon->iconc.back	= Scr->IconC.back;
@@ -795,6 +796,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     icon->w_y = final_y;
   }
     tmp_win->iconified = TRUE;
+    OtpAdd(tmp_win, IconWin);
 
     XMapSubwindows(dpy, icon->w);
     XSaveContext(dpy, icon->w, TwmContext, (XPointer)tmp_win);

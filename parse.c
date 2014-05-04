@@ -629,6 +629,7 @@ typedef struct _TwmKeyword {
 #define kw0_NoWarpToMenuTitle           65
 #define kw0_SaveWorkspaceFocus          66 /* blais */
 #define kw0_RaiseOnWarp			67
+#define kw0_AutoPriority		68
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -731,6 +732,8 @@ static TwmKeyword keytable[] = {
     { "autofocustotransients",  KEYWORD, kw0_AutoFocusToTransients }, /* kai */
     { "autolower",		AUTO_LOWER, 0 },
     { "autooccupy",		KEYWORD, kw0_AutoOccupy },
+    { "autopopup",            	AUTO_POPUP, 0 },
+    { "autopriority",		KEYWORD, kw0_AutoPriority },
     { "autoraise",		AUTO_RAISE, 0 },
     { "autoraiseicons",		KEYWORD, kw0_AutoRaiseIcons },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
@@ -786,6 +789,7 @@ static TwmKeyword keytable[] = {
     { "f.backmapiconmgr",	FKEYWORD, F_BACKMAPICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
     { "f.bottomzoom",		FKEYWORD, F_BOTTOMZOOM },
+    { "f.changepriority",	FSKEYWORD, F_CHANGEPRIORITY },
     { "f.changesize",           FSKEYWORD, F_CHANGESIZE },
     { "f.circledown",		FKEYWORD, F_CIRCLEDOWN },
     { "f.circleup",		FKEYWORD, F_CIRCLEUP },
@@ -848,6 +852,7 @@ static TwmKeyword keytable[] = {
     { "f.pin",			FKEYWORD, F_PIN },
     { "f.previconmgr",		FKEYWORD, F_PREVICONMGR },
     { "f.prevworkspace",	FKEYWORD, F_PREVWORKSPACE },
+    { "f.priorityswitching",	FKEYWORD, F_PRIORITYSWITCHING },
     { "f.quit",			FKEYWORD, F_QUIT },
     { "f.raise",		FKEYWORD, F_RAISE },
     { "f.raiseicons",		FKEYWORD, F_RAISEICONS },
@@ -871,6 +876,7 @@ static TwmKeyword keytable[] = {
     { "f.separator",		FKEYWORD, F_SEPARATOR },
     { "f.setbuttonsstate",	FKEYWORD, F_SETBUTTONSTATE },
     { "f.setmapstate",		FKEYWORD, F_SETMAPSTATE },
+    { "f.setpriority",		FSKEYWORD, F_SETPRIORITY },
     { "f.showbackground",      	FKEYWORD, F_SHOWBGRD },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
     { "f.showworkspacemgr",	FKEYWORD, F_SHOWWORKMGR },
@@ -881,6 +887,9 @@ static TwmKeyword keytable[] = {
     { "f.squeeze",		FKEYWORD, F_SQUEEZE },
     { "f.startanimation",	FKEYWORD, F_STARTANIMATION },
     { "f.stopanimation",	FKEYWORD, F_STOPANIMATION },
+    { "f.switchpriority",	FKEYWORD, F_SWITCHPRIORITY },
+    { "f.tinylower",		FKEYWORD, F_TINYLOWER },
+    { "f.tinyraise",		FKEYWORD, F_TINYRAISE },
     { "f.title",		FKEYWORD, F_TITLE },
     { "f.toggleoccupation",	FSKEYWORD, F_TOGGLEOCCUPATION },
 #ifdef SOUNDS
@@ -997,6 +1006,7 @@ static TwmKeyword keytable[] = {
     { "nowarptomenutitle",      KEYWORD, kw0_NoWarpToMenuTitle },
     { "occupy",			OCCUPYLIST, 0 },
     { "occupyall",		OCCUPYALL, 0 },
+    { "ontoppriority",		ON_TOP_PRIORITY, 0 },
     { "opaquemove",		OPAQUEMOVE, 0 },
     { "opaquemovethreshold",	NKEYWORD, kwn_OpaqueMoveThreshold },
     { "opaqueresize",		OPAQUERESIZE, 0 },
@@ -1005,6 +1015,8 @@ static TwmKeyword keytable[] = {
     { "packnewwindows",		KEYWORD, kw0_PackNewWindows },
     { "pixmapdirectory",	SKEYWORD, kws_PixmapDirectory },
     { "pixmaps",		PIXMAPS, 0 },
+    { "prioritynotswitching",	PRIORITY_NOT_SWITCHING, 0 },
+    { "priorityswitching",     	PRIORITY_SWITCHING, 0 },
     { "r",			ROOT, 0 },
     { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
     { "raiseonclick",		KEYWORD, kw0_RaiseOnClick },
@@ -1225,6 +1237,10 @@ int do_single_keyword (int keyword)
 
       case kw0_AutoOccupy:
 	Scr->AutoOccupy = TRUE;
+	return 1;
+
+      case kw0_AutoPriority:
+	Scr->AutoPriority = TRUE;
 	return 1;
 
       case kw0_TransientHasOccupation:

@@ -91,6 +91,7 @@
 #include "parse.h"
 #include "gram.h"
 #include "util.h"
+#include "otp.h"
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
@@ -187,9 +188,11 @@ static unsigned int set_mask_ignore (unsigned int modifier)
 
 void AutoRaiseWindow (TwmWindow *tmp)
 {
-    RaiseWindow (tmp);
+    OtpRaise(tmp, WinWin);
 
-    if (ActiveMenu && ActiveMenu->w) XRaiseWindow (dpy, ActiveMenu->w);
+    if (ActiveMenu && ActiveMenu->w) {
+	XRaiseWindow (dpy, ActiveMenu->w);
+    }
     XSync (dpy, 0);
     enter_win = NULL;
     enter_flag = TRUE;
@@ -208,11 +211,28 @@ void SetRaiseWindow (TwmWindow *tmp)
     XSync (dpy, 0);
 }
 
+void AutoPopupMaybe(tmp)
+    TwmWindow *tmp;
+{
+    if (LookInList(Scr->AutoPopupL, tmp->full_name, &tmp->class)
+	|| Scr->AutoPopup){
+	if (OCCUPY (tmp, Scr->currentvs->wsw->currentwspc)) {
+	    if (!tmp->mapped) {
+		DeIconify(tmp);
+		SetRaiseWindow (tmp);
+	    }
+	}else{
+	    tmp->mapped = TRUE;
+	}
+    }
+}
+
 void AutoLowerWindow (TwmWindow *tmp)
 {
-    LowerWindow (tmp);
+    OtpLower (tmp, WinWin);
 
-    if (ActiveMenu && ActiveMenu->w) XRaiseWindow (dpy, ActiveMenu->w);
+    if (ActiveMenu && ActiveMenu->w)
+	XRaiseWindow (dpy, ActiveMenu->w);
     XSync (dpy, 0);
     enter_win = NULL;
     enter_flag = FALSE;
@@ -1412,6 +1432,7 @@ void HandlePropertyNotify(void)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     Pixmap pm;
     int icon_change;
+    int name_change;
     XRectangle inc_rect;
     XRectangle logical_rect;
 
@@ -1462,10 +1483,14 @@ void HandlePropertyNotify(void)
       case XA_WM_NAME:
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_NAME);
 	if (prop == NULL) return;
+
+	name_change = strcmp (Tmp_win->full_name, prop);
+	icon_change = FALSE;
+
 #ifdef CLAUDE
-	if (strstr (prop, " - Mozilla")) {
-	  char *moz = strstr (prop, " - Mozilla");
-	  *moz = '\0';
+	{
+	    char *moz = strstr (prop, " - Mozilla");
+	    if (moz) *moz = '\0';
 	}
 #endif
 	free_window_names (Tmp_win, True, True, False);
@@ -1478,6 +1503,11 @@ void HandlePropertyNotify(void)
 		       &inc_rect, &logical_rect);
 	Tmp_win->name_width = logical_rect.width;
 
+	/* recompute the priority if necessary */
+	if (name_change && Scr->AutoPriority) {
+	    OtpRecomputeValues(Tmp_win);
+	}
+	
 	SetupWindow (Tmp_win, Tmp_win->frame_x, Tmp_win->frame_y,
 		     Tmp_win->frame_width, Tmp_win->frame_height, -1);
 
@@ -1522,7 +1552,13 @@ void HandlePropertyNotify(void)
 	 */
 	if (Tmp_win->icon_name == NoName) {
 	    Tmp_win->icon_name = Tmp_win->name;
-	    RedoIcon();
+	    icon_change = TRUE;
+ 	}
+	if (name_change || icon_change) {
+	    if (icon_change){
+		RedoIcon();
+	    }
+	    AutoPopupMaybe(Tmp_win);
 	}
 	break;
 
@@ -1542,6 +1578,7 @@ void HandlePropertyNotify(void)
 
 	if (icon_change) {
 	    RedoIcon();
+	    AutoPopupMaybe(Tmp_win);
 	}
 	break;
 
@@ -1700,6 +1737,10 @@ void HandlePropertyNotify(void)
 		RedoIconName ();
 	    }
 	}
+	if (Tmp_win->wmhints && (Tmp_win->wmhints->flags & IconPixmapHint)) {
+	    AutoPopupMaybe(Tmp_win);
+	}
+
 	break;
 
       case XA_WM_NORMAL_HINTS:
@@ -1770,7 +1811,8 @@ static void RedoIcon(void)
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
 	    Tmp_win->icon = icon;
 	    IconUp (Tmp_win);
-	    XMapRaised (dpy, Tmp_win->icon->w);
+	    OtpRaise(Tmp_win, IconWin);
+	    XMapWindow (dpy, Tmp_win->icon->w);
         }
 	else {
 	    Tmp_win->icon = icon;
@@ -1782,7 +1824,8 @@ static void RedoIcon(void)
 	    IconDown (Tmp_win);
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
 	    CreateIconWindow (Tmp_win, -100, -100);
-	    XMapRaised (dpy, Tmp_win->icon->w);
+	    OtpRaise(Tmp_win, IconWin);
+ 	    XMapWindow (dpy, Tmp_win->icon->w);
 	}
 	else {
 	    Tmp_win->icon = (Icon*) 0;
@@ -2179,6 +2222,10 @@ void HandleDestroyNotify(void)
 	return;
 
     RemoveWindowFromRegion (Tmp_win);
+
+    if (Tmp_win->icon != NULL) OtpRemove(Tmp_win, IconWin);
+    OtpRemove(Tmp_win, WinWin);
+
 #ifdef GNOME
     GnomeDeleteClientWindow (Tmp_win); /* Fix the gnome client list */
 #endif /* GNOME */
@@ -2290,7 +2337,6 @@ void HandleDestroyNotify(void)
 	Tmp_win->next->prev = Tmp_win->prev;
     if (Tmp_win->auto_raise) Scr->NumAutoRaises--;
     if (Tmp_win->auto_lower) Scr->NumAutoLowers--;
-    if (Tmp_win->frame == Lowerontop) Lowerontop = (Window)-1;
 
     free_window_names (Tmp_win, True, True, True);		/* 1, 2, 3 */
     if (Tmp_win->wmhints)					/* 4 */
@@ -2352,8 +2398,24 @@ void HandleMapRequest(void)
     /* If the window has never been mapped before ... */
     if (Tmp_win == NULL)
     {
+	VirtualScreen *vs = Scr->currentvs;
 	/* Add decorations. */
-	Tmp_win = AddWindow(Event.xany.window, FALSE, (IconMgr *) NULL);
+#if 0
+	/* Assumption: new windows always get mapped in the vscreen
+	 * where the mouse is. That can't be right...
+	 */
+	if (Event.xmaprequest.parent != vs->w) {
+	    VirtualScreen *tvs;
+	    for (tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
+		if (Event.xmaprequest.parent == vs->w) {
+		    vs = tvs;
+		    break;
+		}
+	    }
+
+	}
+#endif
+	Tmp_win = AddWindow(Event.xany.window, ADD_WINDOW_NORMAL, (IconMgr *) NULL, vs);
 	if (Tmp_win == NULL) return;
 #ifdef GNOME
 	GnomeAddClientWindow (Tmp_win); /* add the new window to the gnome client list */
@@ -2415,8 +2477,7 @@ void HandleMapRequest(void)
                     HandlingEvents && /* to avoid warping during startup */
                     LookInList(Scr->WarpOnDeIconify, Tmp_win->full_name, &Tmp_win->class)) {
                     if (!Scr->NoRaiseDeicon) {
-			XMapRaised(dpy, Tmp_win->frame);
-                        //OtpRaise(Tmp_win, WinWin);
+                        OtpRaise(Tmp_win, WinWin);
 		    }
                     AddToWorkSpace(Scr->currentvs->wsw->currentwspc->name, Tmp_win);
                 }
@@ -2746,7 +2807,13 @@ void HandleButtonRelease(void)
 	}
 
 	if (!Scr->NoRaiseMove) { /* && !Scr->OpaqueMove)    opaque already did */
-	    RaiseFrame(DragWindow);
+	    if (DragWindow == Tmp_win->frame) {
+		OtpRaise(Tmp_win, WinWin);
+	    } else if (Tmp_win->icon && DragWindow == Tmp_win->icon->w) {
+		OtpRaise(Tmp_win, IconWin);
+	    } else {
+		fprintf(stderr, "ERROR -- events.c:2815\n");
+	    }
 	}
 
 	if (!Scr->OpaqueMove)
@@ -3117,8 +3184,8 @@ void HandleButtonPress(void)
 		    SetFocus (Tmp_win, CurrentTime);
 		}
 		if (Scr->RaiseOnClick) {
-		    RaiseWindow (Tmp_win);
-		    WMapRaise   (Tmp_win);
+		    OtpRaise (Tmp_win, WinWin);
+		    WMapRaise (Tmp_win);
 		}
 		XSync (dpy, 0);
 		XAllowEvents (dpy, ReplayPointer, CurrentTime);
@@ -3531,7 +3598,9 @@ void HandleEnterNotify(void)
 		    Tmp_win->icon &&
 		    ewp->window == Tmp_win->icon->w &&
 		    ewp->detail != NotifyInferior) {
-		    if (Scr->AutoRaiseIcons) XRaiseWindow (dpy, Tmp_win->icon->w);
+		    if (Scr->AutoRaiseIcons) {
+			OtpRaise(Tmp_win, IconWin);
+		    }
 		    ExpandIconTitle (Tmp_win);
 		    return;
 		}
@@ -3942,12 +4011,36 @@ void HandleConfigureRequest(void)
     if ((cre->value_mask & CWStackMode) && Tmp_win->stackmode) {
 	TwmWindow *otherwin;
 
+#if 0
 	xwc.sibling = (((cre->value_mask & CWSibling) &&
 			(otherwin = GetTwmWindow(cre->above)))
 		       ? otherwin->frame : cre->above);
 	xwc.stack_mode = cre->detail;
 	XConfigureWindow (dpy, Tmp_win->frame, 
 			  cre->value_mask & (CWSibling | CWStackMode), &xwc);
+#else
+	if (cre->value_mask & CWSibling) {
+	    otherwin = GetTwmWindow(cre->above);
+            if (otherwin) {
+                OtpForcePlacement (Tmp_win, cre->detail, otherwin);
+            } else {
+                fprintf(stderr, "XConfigureRequest: unkown otherwin\n");
+            }
+	} else {
+	    switch (cre->detail) {
+	    case TopIf:
+	    case Above: OtpRaise(Tmp_win, WinWin);
+		break;
+	    case BottomIf:
+	    case Below: OtpLower(Tmp_win, WinWin);
+		break;
+	    case Opposite: OtpRaiseLower(Tmp_win, WinWin);
+		break;
+	    default:
+		;
+	    }
+	}
+#endif
 	sendEvent = True;
     }
 
@@ -3984,11 +4077,15 @@ void HandleConfigureRequest(void)
 	Tmp_win->old_bw = cre->border_width;  /* for restoring */
     }
 
-    if (cre->value_mask & CWX) {	/* override even if border change */
+    /* If old_bw is zero, the application has asked not to have any border,
+       so we indeed do not draw any border.  Maybe it would be better to set
+       frame_bw and frame_bw3D to 0 in this case, but I don't know where
+       this is handled.  --Stef  */
+    if ((cre->value_mask & CWX) && Tmp_win->old_bw) {	/* override even if border change */
 	x = cre->x - bw;
 	x -= ((gravx < 0) ? 0 : Tmp_win->frame_bw3D);
     }
-    if (cre->value_mask & CWY) {
+    if ((cre->value_mask & CWY) && Tmp_win->old_bw) {
 	y = cre->y - ((gravy < 0) ? 0 : Tmp_win->title_height) - bw;
 	y -= ((gravy < 0) ? 0 : Tmp_win->frame_bw3D);
     }

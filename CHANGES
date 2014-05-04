@@ -1734,3 +1734,13 @@ VirtualScreens {
 	placing windows off-screen, the "f.rescuewindows" function
 	for emergencies, a hack-fix for f.adoptwindow. More virtual
 	screen tweaks/fixes.
+
+    4 - Added the remaining OnTopPriority changes from Stefan Monnier
+	<monnier@IRO.UMontreal.CA>: AutoPopup, AutoPriority,
+	OnTopPriority, PrioritySwitching, f.changepriority,
+	f.priorityswitching, f.setpriority, f.switchpriority,
+	f.tinylower, f.tinyraise. Currently consistency checking code is
+	enabled, which will terminate with an assertion failure if
+	something unexpected happens. Smoothed out various
+	inconsistencies that this check discovered when virtual screens
+	are used.

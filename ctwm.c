@@ -98,6 +98,7 @@
 #include "icons.h"
 #include "iconmgr.h"
 #include "session.h"
+#include "otp.h"
 #include "cursor.h"
 #include "windowbox.h"
 #ifdef SOUNDS
@@ -544,6 +545,8 @@ int main(int argc, char **argv, char **environ)
 	Scr->TitleBackgroundL = NULL;
 	Scr->IconForegroundL = NULL;
 	Scr->IconBackgroundL = NULL;
+	Scr->AutoPopupL = NULL;
+	Scr->AutoPopup = FALSE;
 	Scr->NoBorder = NULL;
 	Scr->NoIconTitle = NULL;
 	Scr->NoTitle = NULL;
@@ -560,7 +563,7 @@ int main(int argc, char **argv, char **environ)
 	Scr->IconNames = NULL;
 	Scr->NoHighlight = NULL;
 	Scr->NoStackModeL = NULL;
-	Scr->AlwaysOnTopL = NULL;
+	Scr->OTP = NULL;
 	Scr->NoTitleHighlight = NULL;
 	Scr->DontIconify = NULL;
 	Scr->IconMgrNoShow = NULL;
@@ -930,6 +933,7 @@ static void InitVariables(void)
     FreeList(&Scr->IconManagerFL);
     FreeList(&Scr->IconManagerBL);
     FreeList(&Scr->IconMgrs);
+    FreeList(&Scr->AutoPopupL);
     FreeList(&Scr->NoBorder);
     FreeList(&Scr->NoIconTitle);
     FreeList(&Scr->NoTitle);
@@ -941,7 +945,7 @@ static void InitVariables(void)
     FreeList(&Scr->IconNames);
     FreeList(&Scr->NoHighlight);
     FreeList(&Scr->NoStackModeL);
-    FreeList(&Scr->AlwaysOnTopL);
+    OtpScrInitData(Scr);
     FreeList(&Scr->NoTitleHighlight);
     FreeList(&Scr->DontIconify);
     FreeList(&Scr->IconMgrNoShow);
@@ -1218,7 +1222,7 @@ void RestoreWithdrawnLocation (TwmWindow *tmp)
 	  int xbox, ybox;
 	  if (XGetGeometry (dpy, tmp->frame, &JunkRoot, &xbox, &ybox, 
 			    &JunkWidth, &JunkHeight, &bw, &JunkDepth)) {
-	    XReparentWindow  (dpy, tmp->frame, Scr->Root, xbox, ybox);
+	    ReparentWindow  (dpy, tmp, WinWin, Scr->Root, xbox, ybox);
 	  }
 	}
 	XConfigureWindow (dpy, tmp->w, mask, &xwc);

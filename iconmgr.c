@@ -71,6 +71,7 @@
 #include "parse.h"
 #include "screen.h"
 #include "resize.h"
+#include "otp.h"
 #include "add_window.h"
 #define __WANT_SICONIFY_BITS
 #include "siconify.bm"
@@ -175,7 +176,14 @@ void CreateIconManagers(void)
 	wmhints.input         = True;
 	wmhints.flags         = InputHint | StateHint;
 	XSetWMHints (dpy, p->w, &wmhints);
-	p->twm_win = AddWindow(p->w, TRUE, p);
+	p->twm_win = AddWindow(p->w, ADD_WINDOW_ICON_MANAGER, p, Scr->currentvs);
+#if DEBUG
+	fprintf(stderr, "CreateIconManagers: AddWindowed '%s' -> frame=%x vs=%p parent_vs=%p\n", str, p->twm_win->frame, p->twm_win->vs, p->twm_win->parent_vs);
+#endif
+	/*
+	 * SetupOccupation() called from AddWindow() doesn't setup
+	 * occupation and vs for icon managers.
+	 */
 	if (ws)
 	  p->twm_win->occupation = 1 << ws->number;
 	else
@@ -201,9 +209,7 @@ void CreateIconManagers(void)
       }
       if (ws != NULL) ws = ws->next;
     }
-    for (p = Scr->iconmgr; p != NULL; p = p->next) {
-      p->twm_win->vs = Scr->vScreenList;
-    }
+
     if (Scr->workSpaceManagerActive)
 	Scr->workSpaceMgr.workSpaceList->iconmgr = Scr->iconmgr;
 
@@ -390,7 +396,7 @@ void MoveIconManager(int dir)
 
     /* raise the frame so the icon manager is visible */
     if (ip->twm_win->mapped) {
-	RaiseWindow(ip->twm_win);
+	OtpRaise(ip->twm_win, WinWin);
 	XWarpPointer(dpy, None, tmp->icon, 0,0,0,0, 5, 5);
     } else {
 	if (tmp->twm->title_height) {
@@ -470,7 +476,7 @@ void MoveMappedIconManager(int dir)
 
     /* raise the frame so the icon manager is visible */
     if (ip->twm_win->mapped) {
-	RaiseWindow(ip->twm_win);
+	OtpRaise(ip->twm_win, WinWin);
 	XWarpPointer(dpy, None, tmp->icon, 0,0,0,0, 5, 5);
     } else {
 	if (tmp->twm->title_height) {
@@ -547,7 +553,7 @@ void JumpIconManager(register int dir)
     }
 
     /* raise the frame so it is visible */
-    RaiseWindow(tmp_ip->twm_win);
+    OtpRaise(tmp_ip->twm_win, WinWin);
     if (tmp_ip->active)
 	XWarpPointer(dpy, None, tmp_ip->active->icon, 0,0,0,0, 5, 5);
     else
@@ -568,7 +574,7 @@ void JumpIconManager(register int dir)
 WList *AddIconManager(TwmWindow *tmp_win)
 {
     WList *tmp, *old;
-    int h, offs;
+    int h;
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     IconMgr *ip;
@@ -653,9 +659,11 @@ WList *AddIconManager(TwmWindow *tmp_win)
 	attributes.border_pixel = Scr->Black;
 	attributes.event_mask = (ButtonReleaseMask| ButtonPressMask | ExposureMask);
 	attributes.cursor = Scr->ButtonCursor;
-	offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
-	tmp->icon = XCreateWindow (dpy, tmp->w, offs + 3,
-		(int) (h - siconify_height)/2,
+	//offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
+	//tmp->icon = XCreateWindow (dpy, tmp->w, offs + 3,
+		//(int) (h - siconify_height)/2,
+	/* The precise location will be set it in PackIconManager.  */
+	tmp->icon = XCreateWindow (dpy, tmp->w, 0, 0,
 		(unsigned int) siconify_width,
 		(unsigned int) siconify_height,
 		(unsigned int) 0, CopyFromParent,
@@ -862,21 +870,18 @@ void NotActiveIconManager(WList *active)
 void DrawIconManagerBorder(WList *tmp, int fill)
 {
     if (Scr->use3Diconmanagers) {
-	if (tmp->active && Scr->Highlight)
-	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, Scr->IconManagerShadowDepth,
-				tmp->cp, on, fill, False);
-	else
-	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, Scr->IconManagerShadowDepth,
-				tmp->cp, off, fill, False);
+	Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height,
+		      Scr->IconManagerShadowDepth, tmp->cp,
+		      (tmp->active && Scr->Highlight ? on : off),
+		      fill, False);
     }
     else {
 	XSetForeground(dpy, Scr->NormalGC, tmp->cp.fore);
 	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2, tmp->width-5, tmp->height-5);
 
-	if (tmp->active && Scr->Highlight)
-	    XSetForeground(dpy, Scr->NormalGC, tmp->highlight);
-	else
-	    XSetForeground(dpy, Scr->NormalGC, tmp->cp.back);
+	XSetForeground(dpy, Scr->NormalGC,
+		       (tmp->active && Scr->Highlight
+			? tmp->highlight : tmp->cp.back));
 
         XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 0, 0, tmp->width-1, tmp->height-1);
         XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 1, 1, tmp->width-3, tmp->height-3);

@@ -83,4 +83,7 @@ typedef struct WorkSpaceWindow WorkSpaceWindow;
 typedef struct OccupyWindow OccupyWindow;
 typedef struct CaptiveCTWM CaptiveCTWM;
 
+/* from otp */
+typedef struct OtpWinList OtpWinList;
+typedef struct OtpPreferences OtpPreferences;
 #endif /* _TYPES_ */

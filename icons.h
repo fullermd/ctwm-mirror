@@ -65,6 +65,7 @@ struct Icon
 {
     Matchtype	match;
     Window	w;		/* the icon window */
+    OtpWinList *otp;		/* OnTopPriority info for the icon */
     Window	bm_w;		/* the icon bitmap window */
     Image	*image;		/* image icon structure */
     int		x;		/* icon text x coordinate */

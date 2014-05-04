@@ -308,6 +308,7 @@ struct TwmWindow
 {
     struct TwmWindow *next;	/* next twm window */
     struct TwmWindow *prev;	/* previous twm window */
+    OtpWinList *otp;		/* OnTopPriority info for the window */
     Window w;			/* the child window */
     int old_bw;			/* border width before reparenting */
     Window frame;		/* the frame window */
@@ -366,7 +367,6 @@ struct TwmWindow
     short icon_moved;		/* user explicitly moved the icon */
     short highlight;		/* should highlight this window */
     short stackmode;		/* honor stackmode requests */
-    short ontoppriority;	/* how much on top should that be */
     short iconify_by_unmapping;	/* unmap window to iconify it */
     short iconmgr;		/* this is an icon manager window */
     short wspmgr;		/* this is a workspace manager manager window */
@@ -409,8 +409,8 @@ struct TwmWindow
 	int x, y;
 	unsigned int width, height;
     } savegeometry;
-    struct VirtualScreen *vs;
-    struct VirtualScreen *old_parent_vs;
+    struct VirtualScreen *vs;		/* where the window is supposed to be (may be NULL) */
+    struct VirtualScreen *parent_vs;	/* where it really is (never gets deparented) */
     struct VirtualScreen *savevs;
 
     Bool nameChanged;	/* did WM_NAME ever change? */

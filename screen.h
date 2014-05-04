@@ -258,6 +258,7 @@ struct ScreenInfo
     VirtualScreen *vScreenList;
     VirtualScreen *currentvs;
     name_list     *VirtualScreens;
+    int		numVscreens;
 
     name_list	*OccupyAll;	/* list of window names occupying all workspaces at startup */
     name_list	*UnmapByMovingFarAway;
@@ -276,6 +277,7 @@ struct ScreenInfo
     short	WMgrButtonShadowDepth;
     short	BeNiceToColormap;
     short	BorderCursors;
+    short	AutoPopup;
     short	BorderShadowDepth;
     short	TitleButtonShadowDepth;
     short	TitleShadowDepth;
@@ -298,6 +300,9 @@ struct ScreenInfo
     short       AutoFocusToTransients; /* kai */
     short       PackNewWindows;
 
+    struct OtpPreferences *OTP;
+    struct OtpPreferences *IconOTP;
+
     name_list *BorderColorL;
     name_list *IconBorderColorL;
     name_list *BorderTileForegroundL;
@@ -309,6 +314,7 @@ struct ScreenInfo
     name_list *IconManagerFL;
     name_list *IconManagerBL;
     name_list *IconMgrs;
+    name_list *AutoPopupL;	/* list of window the popup when changed */
     name_list *NoBorder;	/* list of window without borders          */
     name_list *NoIconTitle;	/* list of window names with no icon title */
     name_list *NoTitle;		/* list of window names with no title bar */
@@ -319,7 +325,6 @@ struct ScreenInfo
     name_list *IconNames;	/* list of window names and icon names */
     name_list *NoHighlight;	/* list of windows to not highlight */
     name_list *NoStackModeL;	/* windows to ignore stack mode requests */
-    name_list *AlwaysOnTopL;	/* windows to keep on top */
     name_list *NoTitleHighlight;/* list of windows to not highlight the TB*/
     name_list *DontIconify;	/* don't iconify by unmapping */
     name_list *IconMgrNoShow;	/* don't show in the icon manager */
@@ -411,6 +416,7 @@ struct ScreenInfo
     short ShowWorkspaceManager;	/* display the workspace manager */
     short IconManagerDontShow;	/* show nothing in the icon manager */
     short AutoOccupy;		/* Do we automatically change occupation when name changes */
+    short AutoPriority;		/* Do we automatically change priority when name changes */
     short TransientHasOccupation;	/* Do transient-for windows have their own occupation */
     short DontPaintRootWindow;	/* don't paint anything on the root window */
     short BackingStore;		/* use backing store for menus */
@@ -420,10 +426,10 @@ struct ScreenInfo
     short RandomDisplacementY;	/* randomly displace by this much vertically */
     short OpaqueMove;		/* move the window rather than outline */
     short DoOpaqueMove;		/* move the window rather than outline */
-    short OpaqueMoveThreshold;		/*  */
+    unsigned short OpaqueMoveThreshold;		/*  */
     short DoOpaqueResize;		/* resize the window rather than outline */
     short OpaqueResize;		/* resize the window rather than outline */
-    short OpaqueResizeThreshold;	/*  */
+    unsigned short OpaqueResizeThreshold;	/*  */
     short Highlight;		/* should we highlight the window borders */
     short StackMode;		/* should we honor stack mode requests */
     short TitleHighlight;	/* should we highlight the titlebar */
@@ -482,8 +488,5 @@ extern int FirstScreen;
 #define RP_OFF 0
 #define RP_ALL 1
 #define RP_UNMAPPED 2
-
-#define ONTOP_MAX 16
-#define ONTOP_DEFAULT 8
 
 #endif /* _SCREEN_ */

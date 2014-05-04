@@ -204,6 +204,12 @@ extern void TwmOutput(int c);
 #define F_CHANGESIZE		128     /* string */
 #define F_MOVETITLEBAR		129
 
+#define F_SETPRIORITY		150	/* string (but should be number) */
+#define F_CHANGEPRIORITY	151	/* string (but should be number) */
+#define F_SWITCHPRIORITY	152
+#define F_PRIORITYSWITCHING	153
+#define F_TINYRAISE		154
+#define F_TINYLOWER		155
 #define F_UNSQUEEZE		156
 #define F_RAISEORSQUEEZE	157
 #define F_RESCUE_WINDOWS	158
