@@ -1,4 +1,3 @@
-
                                    CTWM
                                    ----
 
@@ -35,8 +34,7 @@ possible, thought it's doubtful, that twm patches can still be
 applied...  with great care.
 
 If you are happy with ctwm, please send me a not to richard@levitte.org.
-If you find bugs, please send a report (one per bug, please!) to
-ctwm-bugs@free.lp.se.
+If you find bugs, please send a report to the mailing list.
 
 				----------
 
@@ -96,16 +94,15 @@ Many useful informations are only in the CHANGES file, so please read it.
 
 Mailing lists:
 
-There is a mailing list for discussions ctwm@free.lp.se.  Subscribe at
-minimalist@free.lp.se.
+There is a mailing list for discussions ctwm@ctwm.org.  Subscribe at
+minimalist@ctwm.org.
 
 Repository:
 
-CTWM development uses monotone (see http://www.venge.net/monotone) for
-version control.  The current central server is free.lp.se, and the
-branch to pull is "free.lp.se:X.ctwm".
+CTWM development uses bazaar (see http://bazaar.canonical.com/) for
+version control.  The code is available on launchpad as lp:ctwm'.  See
+https://launchpad.net/ctwm for more details.
 
 Further information:
 
-http://ctwm.free.lp.se/
-
+http://www.ctwm.org/

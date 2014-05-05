@@ -1315,7 +1315,7 @@ SIGNAL_T Crash (int signum)
     fprintf (stderr, "If a core file was generated in your directory,\n");
     fprintf (stderr, "can you please try extract the stack trace,\n");
     fprintf (stderr, "and mail the results, and a description of what you were doing,\n");
-    fprintf (stderr, "to ctwm-bugs@free.lp.se.  Thank you for your support.\n");
+    fprintf (stderr, "to ctwm@ctwm.org.  Thank you for your support.\n");
     fprintf (stderr, "...exiting ctwm now.\n\n");
 
     abort ();

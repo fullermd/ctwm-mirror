@@ -475,8 +475,9 @@ char *ExpandFilename(char *name)
     newname = (char *) malloc (HomeLen + strlen(name) + 2);
     if (!newname) {
 	fprintf (stderr, 
-		 "%s:  unable to allocate %ld bytes to expand filename %s/%s\n",
-		 ProgramName, (long)(HomeLen + strlen(name) + 2), Home, &name[1]);
+		 "%s:  unable to allocate %lu bytes to expand filename %s/%s\n",
+		 ProgramName, (unsigned long) HomeLen + strlen(name) + 2,
+		 Home, &name[1]);
     } else {
 	(void) sprintf (newname, "%s/%s", Home, &name[1]);
     }
