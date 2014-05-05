@@ -159,7 +159,6 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.windowFont.basename =
       "-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1";
     /*"-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1";*/
-    Scr->workSpaceMgr.switchWorkspacesOrdered = 0;
 
     XrmInitialize ();
     if (MapWListContext == (XContext) 0) MapWListContext = XUniqueContext ();

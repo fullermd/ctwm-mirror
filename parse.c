@@ -692,7 +692,6 @@ typedef struct _TwmKeyword {
 #define kwn_BorderBottom		34
 #define kwn_BorderLeft			35
 #define kwn_BorderRight			36
-#define kwn_SwitchWorkspacesOrdered	37
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -1054,7 +1053,6 @@ static TwmKeyword keytable[] = {
     { "startsqueezed",		STARTSQUEEZED, 0 },
     { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
     { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
-    { "switchworkspacesordered",NKEYWORD, kwn_SwitchWorkspacesOrdered },
     { "t",			TITLE, 0 },
     { "threedborderwidth",	NKEYWORD, kwn_ThreeDBorderWidth },
     { "title",			TITLE, 0 },
@@ -1781,10 +1779,6 @@ int do_number_keyword (int keyword, int num)
 	if (Scr->FirstTime) Scr->RaiseOnClickButton = num;
 	if (Scr->RaiseOnClickButton < 1) Scr->RaiseOnClickButton = 1;
 	if (Scr->RaiseOnClickButton > MAX_BUTTONS) Scr->RaiseOnClickButton = MAX_BUTTONS;
-	return 1;
-
-      case kwn_SwitchWorkspacesOrdered:
-	Scr->workSpaceMgr.switchWorkspacesOrdered  = num;
 	return 1;
 
 
