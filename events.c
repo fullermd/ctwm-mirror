@@ -452,8 +452,8 @@ static ScreenInfo *GetTwmScreen(XEvent *event)
 Bool DispatchEvent2 (void)
 {
     Window w = Event.xany.window;
-    StashEventTime (&Event);
     ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
+    StashEventTime (&Event);
 
     Tmp_win = GetTwmWindow(w);
     Scr = GetTwmScreen(&Event);
@@ -491,8 +491,8 @@ Bool DispatchEvent2 (void)
 Bool DispatchEvent (void)
 {
     Window w = Event.xany.window;
-    StashEventTime (&Event);
     ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
+    StashEventTime (&Event);
 
     Tmp_win = GetTwmWindow(w);
     Scr = GetTwmScreen(&Event);
