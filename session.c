@@ -154,16 +154,16 @@ char *GetClientID (Window window)
     int actual_format;
     unsigned long nitems;
     unsigned long bytes_after;
-    unsigned char *prop = NULL;
+    Window *prop = NULL;
 
     if (XGetWindowProperty (dpy, window, _XA_WM_CLIENT_LEADER,
 	0L, 1L, False, AnyPropertyType,	&actual_type, &actual_format,
-	&nitems, &bytes_after, &prop) == Success)
+	&nitems, &bytes_after, (unsigned char **)&prop) == Success)
     {
 	if (actual_type == XA_WINDOW && actual_format == 32 &&
 	    nitems == 1 && bytes_after == 0)
 	{
-	    client_leader = *((Window *) prop);
+	    client_leader = *prop;
 
 	    if (XGetTextProperty (dpy, client_leader, &tp, _XA_SM_CLIENT_ID))
 	    {

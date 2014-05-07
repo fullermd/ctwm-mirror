@@ -893,7 +893,7 @@ void safecopy(char *dest, char *src, int size)
 
 Bool RedirectToCaptive (Window window)
 {
-    unsigned char	*prop;
+    Window		*prop;
     unsigned long	nitems, bytesafter;
     Atom		actual_type;
     int			actual_format;
@@ -927,10 +927,10 @@ Bool RedirectToCaptive (Window window)
 	
 	if (XGetWindowProperty (dpy, Scr->Root, _XA_WM_CTWM_ROOT,
 		0L, 1L, False, AnyPropertyType, &actual_type, &actual_format,
-		&nitems, &bytesafter, &prop) == Success) {
+		&nitems, &bytesafter, (unsigned char **)&prop) == Success) {
 	    if (actual_type == XA_WINDOW && actual_format == 32 &&
 			nitems == 1 /*&& bytesafter == 0*/) {
-		newroot = *((Window*) prop);
+		newroot = *prop;
 		if (XGetWindowAttributes (dpy, newroot, &wa)) {
 		    XReparentWindow (dpy, window, newroot, 0, 0);
 		    XMapWindow (dpy, window);
@@ -3530,12 +3530,11 @@ void SetPropsIfCaptiveCtwm (TwmWindow *win)
 
 Window CaptiveCtwmRootWindow (Window window)
 {
-    unsigned char	*prop;
+    Window		*prop;
     unsigned long	bytesafter;
     unsigned long	len;
     Atom		actual_type;
     int			actual_format;
-    Window		ret;
     Atom		_XA_WM_CTWM_ROOT;
 
     _XA_WM_CTWM_ROOT = XInternAtom (dpy, "WM_CTWM_ROOT", True);
@@ -3543,10 +3542,10 @@ Window CaptiveCtwmRootWindow (Window window)
 
     if (XGetWindowProperty (dpy, window, _XA_WM_CTWM_ROOT, 0L, 1L,
 			False, XA_WINDOW, &actual_type, &actual_format, &len,
-			&bytesafter, &prop) != Success) return ((Window)0);
+			&bytesafter, (unsigned char **)&prop) != Success)
+	return ((Window)0);
     if (len == 0) return ((Window)0);
-    ret = *((Window*) prop);
-    return (ret);
+    return *prop;
 }
 
 CaptiveCTWM GetCaptiveCTWMUnderPointer (void)
