@@ -549,6 +549,7 @@ Has no effect if \fBBeNiceToColormap\fP is active.
 This variable indicates that border width of a window's frame should be set to
 the initial border width of the window, rather than to the value of
 \fBBorderWidth\fP.
+If \fBUse3DBorders\fP is set this variable is automatically unset.
 
 .IP "\fBColor\fP { \fIcolors\-list\fP }" 8
 This variable specifies a list of color assignments to be made if the default
@@ -1498,6 +1499,7 @@ Tells \fIctwm\fP to use 3D\-looking window borders. The width ot the 3D borders
 is \fBThreeDBorderWidth\fP. The color of the 3D border is \fBBorderTileBackground\fP,
 and if NoHighlight is not selected, the border of the Focus window is
 \fBBorderColor\fP.
+Setting this automatically unsets \fBClientBorderWidth\fP.
 
 .IP "\fBUseThreeDIconManagers\fP" 8
 Tells \fIctwm\fP to use 3D\-looking IconManagers if any.

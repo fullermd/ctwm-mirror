@@ -38,7 +38,7 @@
 #include "icons.h"
 #include "list.h"
 
-#define DEBUG_OTP	1
+#define DEBUG_OTP	0
 #if DEBUG_OTP
 #define DPRINTF(x)	fprintf x 
 #else

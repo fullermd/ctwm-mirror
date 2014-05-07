@@ -502,7 +502,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
     else
     if (tmp_win->frame_bw3D != 0) {
 	tmp_win->frame_bw = 0;
-	Scr->ClientBorderWidth = FALSE;
     }
     else
     if (Scr->ClientBorderWidth) {

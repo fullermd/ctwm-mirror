@@ -726,6 +726,9 @@ int main(int argc, char **argv, char **environ)
 	}
 
 
+	if (Scr->use3Dborders) {
+	    Scr->ClientBorderWidth = FALSE;
+	}
 
 	if (Scr->use3Dtitles) {
 	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 0;

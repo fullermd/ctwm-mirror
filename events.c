@@ -2367,7 +2367,7 @@ void HandleDestroyNotify(void)
 void HandleCreateNotify(void)
 {
 #ifdef DEBUG_EVENTS
-    fprintf(stderr, "CreateNotify w = 0x%x\n", Event.xcreatewindow.window);
+    fprintf(stderr, "CreateNotify w = 0x%x\n", (unsigned)Event.xcreatewindow.window);
     fflush(stderr);
     XBell(dpy, 0);
     XSync(dpy, 0);
@@ -3964,7 +3964,7 @@ void HandleConfigureRequest(void)
     if (cre->value_mask & CWHeight)
 	fprintf(stderr, "  height = %d\n", cre->height);
     if (cre->value_mask & CWSibling)
-	fprintf(stderr, "  above = 0x%x\n", cre->above);
+	fprintf(stderr, "  above = 0x%x\n", (unsigned)cre->above);
     if (cre->value_mask & CWStackMode)
 	fprintf(stderr, "  stack = %d\n", cre->detail);
 #endif
@@ -3998,14 +3998,6 @@ void HandleConfigureRequest(void)
     if ((cre->value_mask & CWStackMode) && Tmp_win->stackmode) {
 	TwmWindow *otherwin;
 
-#if 0
-	xwc.sibling = (((cre->value_mask & CWSibling) &&
-			(otherwin = GetTwmWindow(cre->above)))
-		       ? otherwin->frame : cre->above);
-	xwc.stack_mode = cre->detail;
-	XConfigureWindow (dpy, Tmp_win->frame, 
-			  cre->value_mask & (CWSibling | CWStackMode), &xwc);
-#else
 	if (cre->value_mask & CWSibling) {
 	    otherwin = GetTwmWindow(cre->above);
             if (otherwin) {
@@ -4027,7 +4019,6 @@ void HandleConfigureRequest(void)
 		;
 	    }
 	}
-#endif
 	sendEvent = True;
     }
 
@@ -4064,15 +4055,11 @@ void HandleConfigureRequest(void)
 	Tmp_win->old_bw = cre->border_width;  /* for restoring */
     }
 
-    /* If old_bw is zero, the application has asked not to have any border,
-       so we indeed do not draw any border.  Maybe it would be better to set
-       frame_bw and frame_bw3D to 0 in this case, but I don't know where
-       this is handled.  --Stef  */
-    if ((cre->value_mask & CWX) && Tmp_win->old_bw) {	/* override even if border change */
+    if ((cre->value_mask & CWX)) {	/* override even if border change */
 	x = cre->x - bw;
 	x -= ((gravx < 0) ? 0 : Tmp_win->frame_bw3D);
     }
-    if ((cre->value_mask & CWY) && Tmp_win->old_bw) {
+    if ((cre->value_mask & CWY)) {
 	y = cre->y - ((gravy < 0) ? 0 : Tmp_win->title_height) - bw;
 	y -= ((gravy < 0) ? 0 : Tmp_win->frame_bw3D);
     }
@@ -4101,6 +4088,10 @@ void HandleConfigureRequest(void)
      * requested client window width; the inner height is the same as the
      * requested client window height plus any title bar slop.
      */
+#ifdef DEBUG_EVENTS
+    fprintf(stderr, "SetupFrame(x=%d, y=%d, width=%d, height=%d, bw=%d)\n",
+	    x, y, width, height, bw);
+#endif
     SetupFrame (Tmp_win, x, y, width, height, bw, sendEvent);
 }
 
