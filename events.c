@@ -3391,7 +3391,7 @@ void HandleEnterNotify(void)
 	 */
 	scanArgs.w = ewp->window;
 	scanArgs.leaves = scanArgs.enters = False;
-	(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *) &scanArgs);
+	(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (void *) &scanArgs);
 
 	/*
 	 * if entering root window, restore twm default colormap so that 
@@ -3468,7 +3468,7 @@ void HandleEnterNotify(void)
 			scanArgs.w = ewp->window;
 			scanArgs.leaves = scanArgs.enters = False;
 			(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner,
-					     (char *) &scanArgs);
+					     (void *) &scanArgs);
 			if (scanArgs.leaves && !scanArgs.inferior) return;
 
 			XQueryPointer(dpy, Scr->Root, &w, &w, &x, &y,
@@ -3491,7 +3491,7 @@ void HandleEnterNotify(void)
 	     */
 	    scanArgs.w = ewp->window;
 	    scanArgs.leaves = scanArgs.enters = False;
-	    (void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *) &scanArgs);
+	    (void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (void *) &scanArgs);
 
 	    /*
 	     * if entering root window, restore twm default colormap so that 
