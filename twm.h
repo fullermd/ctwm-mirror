@@ -516,7 +516,6 @@ extern XContext MenuContext;
 extern XContext IconManagerContext;
 extern XContext ScreenContext;
 extern XContext ColormapContext;
-extern XContext VirtScreenContext;
 
 extern char *Home;
 extern int HomeLen;

@@ -191,7 +191,6 @@ XContext MenuContext;		/* context for all menu windows */
 XContext IconManagerContext;	/* context for all window list windows */
 XContext ScreenContext;		/* context to get screen data */
 XContext ColormapContext;	/* context for colormap operations */
-XContext VirtScreenContext;	/* context for virtual screen */
 
 XClassHint NoClass;		/* for applications with no class */
 
@@ -441,7 +440,6 @@ int main(int argc, char **argv, char **environ)
     IconManagerContext = XUniqueContext();
     ScreenContext = XUniqueContext();
     ColormapContext = XUniqueContext();
-    VirtScreenContext = XUniqueContext();
 
     InternUsefulAtoms ();
 

@@ -199,7 +199,6 @@ void GetGravityOffsets (TwmWindow *tmp,	/* window from which to get gravity */
 
 TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 {
-    VirtualScreen *vs_context = NULL;
     TwmWindow *tmp_win;			/* new twm window structure */
     int stat;
     XEvent event;
@@ -592,13 +591,16 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
      * (restore session for example)
      */
 
-    /* note, this may update tmp_win->vs in case of "can never happen". */
+    /*
+     * Note, this may update tmp_win->vs if needed to make the window
+     * visible in a vscreen.
+     */
 
     if (restoredFromPrevSession) {
-      SetupOccupation (tmp_win, saved_occupation);
-    } else
-      SetupOccupation (tmp_win, 0);
-    tmp_win->parent_vs = tmp_win->vs;
+	SetupOccupation (tmp_win, saved_occupation);
+    } else {
+	SetupOccupation (tmp_win, 0);
+    }
     /*=================================================================*/
 
     tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;
@@ -622,14 +624,15 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 	ask_user = False;
     }
 
-    if (XFindContext (dpy, w, VirtScreenContext, (XPointer *)&vs_context) == XCSUCCESS)
-      vroot = vs_context->window;
-    else
-    if (tmp_win->vs)
-      vroot = tmp_win->vs->window;
-    else
-      vroot = Scr->Root;
-    if (winbox) vroot = winbox->window;
+    vs = tmp_win->vs;
+    if (vs) {
+	vroot = tmp_win->vs->window;
+    } else {
+	vroot = Scr->Root;	/* never */
+    }
+    if (winbox) {
+	vroot = winbox->window;
+    }
 
     /*
      * do any prompting for position

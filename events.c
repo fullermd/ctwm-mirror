@@ -2396,33 +2396,20 @@ void HandleMapRequest(void)
     Tmp_win = GetTwmWindow(Event.xany.window);
 
     /* If the window has never been mapped before ... */
-    if (Tmp_win == NULL)
-    {
-	VirtualScreen *vs = Scr->currentvs;
+    if (Tmp_win == NULL) {
 	/* Add decorations. */
-#if 0
-	/* Assumption: new windows always get mapped in the vscreen
-	 * where the mouse is. That can't be right...
-	 */
-	if (Event.xmaprequest.parent != vs->w) {
-	    VirtualScreen *tvs;
-	    for (tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
-		if (Event.xmaprequest.parent == vs->w) {
-		    vs = tvs;
-		    break;
-		}
-	    }
+	VirtualScreen *vs = Scr->currentvs;
 
-	}
-#endif
-	Tmp_win = AddWindow(Event.xany.window, ADD_WINDOW_NORMAL, (IconMgr *) NULL, vs);
-	if (Tmp_win == NULL) return;
+	Tmp_win = AddWindow(Event.xany.window,
+			    ADD_WINDOW_NORMAL,
+			    (IconMgr *) NULL,
+			    vs);
+	if (Tmp_win == NULL)
+	    return;
 #ifdef GNOME
 	GnomeAddClientWindow (Tmp_win); /* add the new window to the gnome client list */
 #endif /* GNOME */
-    }
-    else
-    {
+    } else {
 	/*
 	 * If the window has been unmapped by the client, it won't be listed
 	 * in the icon manager.  Add it again, if requested.

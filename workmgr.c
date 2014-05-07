@@ -764,7 +764,6 @@ void SetupOccupation (TwmWindow *twm_win,
     XWindowAttributes winattrs;
     unsigned long     eventMask;
     XrmDatabase       db = NULL;
-    VirtualScreen     *vs;
     long gwkspc = 0; /* for GNOME - which workspace we occupy */
 
     if (! Scr->workSpaceManagerActive) {
@@ -837,19 +836,24 @@ void SetupOccupation (TwmWindow *twm_win,
 
     /*================================================================*/
 
+
     if ((twm_win->occupation & fullOccupation) == 0) {
-	vs = twm_win->vs;
-	if (!vs) vs = Scr->currentvs;
-	if (vs && vs->wsw->currentwspc) {
-	    twm_win->occupation = 1 << vs->wsw->currentwspc->number;
-	} else {
-	    /* This should never happen; we always get a default vs */
-	    twm_win->occupation = 1 << 0;
-	    fprintf(stderr, "*** setting default occupation to 1<<0\n");
-	
+	VirtualScreen *vs = twm_win->vs;
+
+	twm_win->occupation = 1 << vs->wsw->currentwspc->number;
+    }
+    /*
+     * If the occupation would not show it in the current vscreen,
+     * but in one of the other vscreens, change the vscreen.
+     */
+    if (Scr->numVscreens > 1) {
+	if (!OCCUPY(twm_win, twm_win->vs->wsw->currentwspc)) {
+	    VirtualScreen *vs;
+
 	    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
 		if (OCCUPY (twm_win, vs->wsw->currentwspc)) {
 		    twm_win->vs = vs;
+		    twm_win->parent_vs = vs;
 		    break;
 		}
 	    }
@@ -1818,16 +1822,13 @@ static void CreateWorkSpaceManagerWindow (VirtualScreen *vs)
     wmhints.input         = True;
     wmhints.initial_state = NormalState;
     XSetWMHints (dpy, vs->wsw->w, &wmhints);
-    XSaveContext (dpy, vs->wsw->w, VirtScreenContext, (XPointer) vs);
     tmp_win = AddWindow (vs->wsw->w, ADD_WINDOW_WORKSPACE_MANAGER,
-	    Scr->iconmgr, vs);
+			 Scr->iconmgr, vs);
     if (! tmp_win) {
 	fprintf (stderr, "cannot create workspace manager window, exiting...\n");
 	exit (1);
     }
     tmp_win->occupation = fullOccupation;
-    //tmp_win->vs = vs;
-    //tmp_win->parent_vs = vs;
     tmp_win->attr.width = width;
     tmp_win->attr.height = height;
     ResizeWorkSpaceManager(vs, tmp_win);
