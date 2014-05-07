@@ -40,62 +40,20 @@
 #include "twm.h"
 #include "mwmhints.h"
 
-/*
- * Contents of the _MOTIF_WM_HINTS property.
- */
+static Atom MOTIF_WM_HINTS = None;
 
-typedef struct
+int GetMWMHints(Window w, MotifWmHints *mwmHints)
 {
-    int	         flags;
-    int		 functions;
-    int		 decorations;
-    int		 input_mode;
-    int		 status;
-} MotifWmHints;
-
-/* bit definitions for MwmHints.flags */
-#define MWM_HINTS_FUNCTIONS	(1L << 0)
-#define MWM_HINTS_DECORATIONS	(1L << 1)
-#define MWM_HINTS_INPUT_MODE	(1L << 2)
-#define MWM_HINTS_STATUS	(1L << 3)
-
-/* bit definitions for MwmHints.functions */
-#define MWM_FUNC_ALL		(1L << 0)
-#define MWM_FUNC_RESIZE		(1L << 1)
-#define MWM_FUNC_MOVE		(1L << 2)
-#define MWM_FUNC_MINIMIZE	(1L << 3)
-#define MWM_FUNC_MAXIMIZE	(1L << 4)
-#define MWM_FUNC_CLOSE		(1L << 5)
-
-/* bit definitions for MwmHints.decorations */
-#define MWM_DECOR_ALL		(1L << 0)	/* [v] */
-#define MWM_DECOR_BORDER	(1L << 1)	/* [v] */
-#define MWM_DECOR_RESIZEH	(1L << 2)
-#define MWM_DECOR_TITLE		(1L << 3)	/* [v] */
-#define MWM_DECOR_MENU		(1L << 4)
-#define MWM_DECOR_MINIMIZE	(1L << 5)
-#define MWM_DECOR_MAXIMIZE	(1L << 6)
-
-/* values for MwmHints.input_mode */
-#define MWM_INPUT_MODELESS			0
-#define MWM_INPUT_PRIMARY_APPLICATION_MODAL	1
-#define MWM_INPUT_SYSTEM_MODAL			2
-#define MWM_INPUT_FULL_APPLICATION_MODAL	3
-
-/* bit definitions for MwmHints.status */
-#define MWM_TEAROFF_WINDOW	(1L << 0)
-
-static Atom MOTIF_WM_HINTS;
-
-static int GetMWMHints(Display *dpy, Window w, MotifWmHints *mwmHints)
-{
-    mwmHints->flags = 0;	/* if not found, there are none */
+    /* Defaults for when not found */
+    mwmHints->flags = 0;
     mwmHints->functions = 0;
     mwmHints->decorations = 0;
+#ifdef FULL_MWM_DATA
     mwmHints->input_mode = 0;
     mwmHints->status = 0;
+#endif
 
-    if (MOTIF_WM_HINTS == 0) {
+    if (MOTIF_WM_HINTS == (Atom)None) {
 	MOTIF_WM_HINTS = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
     }
 
@@ -124,10 +82,19 @@ static int GetMWMHints(Display *dpy, Window w, MotifWmHints *mwmHints)
 	mwmHints->flags = ((unsigned long *)prop)[0];
 	mwmHints->functions = ((unsigned long *)prop)[1];
 	mwmHints->decorations = ((unsigned long *)prop)[2];
-	if (nitems >= 4) {
-	    mwmHints->input_mode = ((unsigned long *)prop)[3];
-	    if (nitems >= 5) {
-		mwmHints->status = ((unsigned long *)prop)[4];
+#ifdef FULL_MWM_DATA
+	mwmHints->input_mode = ((unsigned long *)prop)[3];
+	mwmHints->status = ((unsigned long *)prop)[4];
+#endif
+
+	if (mwmHints->flags & MWM_HINTS_FUNCTIONS) {
+	    if (mwmHints->functions & MWM_FUNC_ALL) {
+		mwmHints->functions ^= ~0;
+	    }
+	}
+	if (mwmHints->flags & MWM_HINTS_DECORATIONS) {
+	    if (mwmHints->decorations & MWM_DECOR_ALL) {
+		mwmHints->decorations ^= ~0;
 	    }
 	}
 
@@ -152,11 +119,11 @@ static int GetMWMHints(Display *dpy, Window w, MotifWmHints *mwmHints)
  * these options won't reverse that.
  */
 
-void ApplyMWMHints(Display *dpy, TwmWindow *twmWin)
+void ApplyMWMHints(TwmWindow *twmWin)
 {
     MotifWmHints mwmHints;
 
-    if (GetMWMHints(dpy, twmWin->w, &mwmHints)) {
+    if (GetMWMHints(twmWin->w, &mwmHints)) {
 	if (mwmHints.flags & MWM_HINTS_DECORATIONS) {
 	    if (mwmHints.decorations & MWM_DECOR_ALL) {
 		mwmHints.decorations ^= ~0;
