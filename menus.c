@@ -1880,7 +1880,7 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
  ***********************************************************************
  */
 
-int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
+int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 		    XEvent *eventp, int context, int pulldown)
 {
     static Time last_time = 0;
@@ -3515,7 +3515,7 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 	break;
 
     case F_WARPRING:
-	switch (action[0]) {
+	switch (((char *)action)[0]) {
 	  case 'n':
 	    WarpAlongRing (&eventp->xbutton, True);
 	    break;
@@ -3614,7 +3614,8 @@ int ExecuteFunction(int func, char *action, Window w, TwmWindow *tmp_win,
 
     case F_MENU:
 	if (action && ! strncmp (action, "WGOTO : ", 8)) {
-	    GotoWorkSpaceByName (/* XXXXX */ Scr->currentvs, action + 8);
+	    GotoWorkSpaceByName (/* XXXXX */ Scr->currentvs,
+		((char *)action) + 8);
 	}
 	else {
 	    MenuItem *item;
