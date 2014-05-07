@@ -112,8 +112,8 @@ DEBUGPARSERDEFINES = -DYYDEBUG=1
     CDEBUGFLAGS = -g -O0
 #endif
 
-#ifdef GCC_PEDANTIC
-      CCOPTIONS = -pedantic -ansi -Wall \
+#ifndef NO_WARNS
+      CCOPTIONS = -Wall \
 		-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef \
 		-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts \
 		-Winline -Wnested-externs -Wmissing-declarations
