@@ -1253,7 +1253,7 @@ void RestoreWithdrawnLocation (TwmWindow *tmp)
  ***********************************************************************
  */
 
-void Reborder (Time time)
+void Reborder (Time mytime)
 {
     TwmWindow *tmp;			/* temp twm window structure */
     int scrnum;
@@ -1277,7 +1277,7 @@ void Reborder (Time time)
     }
     Scr = savedScreen;
     XUngrabServer (dpy);
-    SetFocus ((TwmWindow*)NULL, time);
+    SetFocus ((TwmWindow*)NULL, mytime);
 }
 
 SIGNAL_T Done(int signum)

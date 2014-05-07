@@ -69,11 +69,6 @@
 #include "parse.h"
 #include "util.h"
 
-extern void twmrc_error_prefix(void);
-extern Bool AnimationPending;
-extern Bool AnimationActive;
-extern Bool MaybeAnimate;
-
 #define iconWidth(w)	(w->icon->border_width * 2 + \
 			Scr->ShrinkIconTitles ? w->icon->width : w->icon->w_width)
 #define iconHeight(w)	(w->icon->border_width * 2 + w->icon->w_height)

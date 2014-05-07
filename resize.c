@@ -1346,7 +1346,7 @@ void ChangeSize (char *in_string, TwmWindow *tmp_win)
   int rx, ry, wx, wy, mr;
   Window  rr, cr;
 
-  if (isdigit(in_string[0]))
+  if (isdigit((int)(unsigned char)in_string[0]))
     {
       while(in_string[i] != 'x')
 	{

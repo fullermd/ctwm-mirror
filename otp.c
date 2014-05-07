@@ -38,7 +38,7 @@
 #include "icons.h"
 #include "list.h"
 
-#define DEBUG_OTP	0
+#define DEBUG_OTP	1
 #if DEBUG_OTP
 #define DPRINTF(x)	fprintf x 
 #else
@@ -181,7 +181,7 @@ static Window WindowOfOwl(OtpWinList *owl)
 	? owl->twm_win->icon->w : owl->twm_win->frame;
 }
 
-Bool OtpCheckConsistency()
+Bool OtpCheckConsistency(void)
 {
 #if DEBUG_OTP
     VirtualScreen *tvs;
@@ -208,7 +208,6 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
     int priority = 0;
     int stack = -1;
     int nwins = 0;
-    int i;
 
     XQueryTree(dpy, vroot, &root, &parent, &children, &nchildren);
 
@@ -218,7 +217,7 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
 	fprintf(stderr, "XQueryTree: %d children:\n", nchildren);
 
 	for (i = 0; i < nchildren; i++) {
-	    fprintf(stderr, "[%d]=%x ", i, children[i]);
+	    fprintf(stderr, "[%d]=%x ", i, (unsigned int)children[i]);
 	}
 	fprintf(stderr, "\n");
     }
@@ -246,11 +245,11 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
 #if DEBUG_OTP
 
 	fprintf(stderr, "checking owl: pri %d w=%x stack=%d",
-		priority, WindowOfOwl(owl), stack);
+		priority, (unsigned int)WindowOfOwl(owl), stack);
 	if (twm_win) {
 	    fprintf(stderr, " title=%s occupation=%x ",
 		    twm_win->full_name,
-		    twm_win->occupation);
+		    (unsigned int)twm_win->occupation);
 	    if (owl->twm_win->vs) {
 		fprintf(stderr, " vs:(x,y)=(%d,%d)",
 		    twm_win->vs->x,
@@ -294,6 +293,7 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
 	    Window windowOfOwl = WindowOfOwl(owl);
 	    
 #if DEBUG_OTP
+	    int i;
 	    for (i = 0; i < nchildren && windowOfOwl != children[i];) {
 		i++;
 	    }
@@ -302,7 +302,7 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
 	    assert (i < nchildren && "Window was not found in stack");
 	    if (0) {
 		char buf[128];
-		snprintf(buf, 128, "xwininfo -all -id %d", windowOfOwl);
+		snprintf(buf, 128, "xwininfo -all -id %d", (int)windowOfOwl);
 		system(buf);
 	    }
 
@@ -312,7 +312,7 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
 	    /* check against the Xserver's stack */
 	    do {
 		stack++;
-		DPRINTF((stderr, "stack++: children[%d] = %x\n", stack, children[stack]));
+		DPRINTF((stderr, "stack++: children[%d] = %x\n", stack, (unsigned int)children[stack]));
 		assert(stack < nchildren);
 	    } while (windowOfOwl != children[stack]);
 #endif /* DEBUG_OTP */
@@ -367,16 +367,15 @@ static void InsertOwlAbove (OtpWinList *owl, OtpWinList *other_owl)
 {
     XWindowChanges xwc;
     int xwcm;
-    OtpWinList *relativeOwl;
 
 #if DEBUG_OTP
     fprintf(stderr, "InsertOwlAbove owl->priority=%d w=%x ",
 	    owl->priority,
-	    WindowOfOwl(owl));
+	    (unsigned int)WindowOfOwl(owl));
     if (other_owl != NULL) {
 	fprintf(stderr, "other_owl->priority=%d w=%x",
 		other_owl->priority,
-		WindowOfOwl(other_owl));
+		(unsigned int)WindowOfOwl(other_owl));
     }
     fprintf(stderr, "\n");
 #endif
@@ -921,9 +920,9 @@ void OtpAdd (TwmWindow *twm_win, WinType wintype)
 }
 
 
-name_list **OtpScrSwitchingL (ScreenInfo *Scr, WinType wintype)
+name_list **OtpScrSwitchingL (ScreenInfo *scr, WinType wintype)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? Scr->IconOTP : Scr->OTP;
+    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
 
     assert(prefs != NULL);
 
@@ -931,19 +930,19 @@ name_list **OtpScrSwitchingL (ScreenInfo *Scr, WinType wintype)
 }
 
 
-void OtpScrSetSwitching (ScreenInfo *Scr, WinType wintype, Bool switching)
+void OtpScrSetSwitching (ScreenInfo *scr, WinType wintype, Bool switching)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? Scr->IconOTP : Scr->OTP;
+    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
 
     assert(prefs != NULL);
 
-    Scr->OTP->switching = switching;
+    scr->OTP->switching = switching;
 }
 
 
-void OtpScrSetZero (ScreenInfo *Scr, WinType wintype, int priority)
+void OtpScrSetZero (ScreenInfo *scr, WinType wintype, int priority)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? Scr->IconOTP : Scr->OTP;
+    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
 
     assert(prefs != NULL);
 
@@ -956,9 +955,9 @@ void OtpScrSetZero (ScreenInfo *Scr, WinType wintype, int priority)
 }
 
 
-name_list **OtpScrPriorityL (ScreenInfo *Scr, WinType wintype, int priority)
+name_list **OtpScrPriorityL (ScreenInfo *scr, WinType wintype, int priority)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? Scr->IconOTP : Scr->OTP;
+    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
 
     assert(prefs != NULL);
 
@@ -996,14 +995,14 @@ static void free_OtpPreferences (OtpPreferences *pref)
     free(pref);
 }
 
-void OtpScrInitData (ScreenInfo *Scr)
+void OtpScrInitData (ScreenInfo *scr)
 {
-    if (Scr->OTP != NULL)
-	free_OtpPreferences(Scr->OTP);
-    if (Scr->IconOTP != NULL)
-	free_OtpPreferences(Scr->IconOTP);
-    Scr->OTP = new_OtpPreferences();
-    Scr->IconOTP = new_OtpPreferences();
+    if (scr->OTP != NULL)
+	free_OtpPreferences(scr->OTP);
+    if (scr->IconOTP != NULL)
+	free_OtpPreferences(scr->IconOTP);
+    scr->OTP = new_OtpPreferences();
+    scr->IconOTP = new_OtpPreferences();
 }
 
 int ReparentWindow(Display *display, TwmWindow *twm_win, WinType wintype,
@@ -1014,7 +1013,7 @@ int ReparentWindow(Display *display, TwmWindow *twm_win, WinType wintype,
     OtpWinList *other = owl->below;
     assert(owl != NULL);
 
-    DPRINTF((stderr, "ReparentWindow: w=%x type=%d\n", WindowOfOwl(owl), wintype));
+    DPRINTF((stderr, "ReparentWindow: w=%x type=%d\n", (unsigned int)WindowOfOwl(owl), wintype));
     result = XReparentWindow(display, WindowOfOwl(owl), parent, x, y);
     /* The raise was already done by XReparentWindow, so this call
        just re-places the window at the right spot in the list
@@ -1037,7 +1036,7 @@ int ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
     OtpWinList *below_win = win_owl->below;
     OtpWinList *below_icon = icon_owl->below;
 
-    DPRINTF((stderr, "ReparentWindowAndIcon %x\n", twm_win->frame));
+    DPRINTF((stderr, "ReparentWindowAndIcon %x\n", (unsigned int)twm_win->frame));
     result = XReparentWindow(display, twm_win->frame, parent, win_x, win_y);
     result = XReparentWindow(display, twm_win->icon->w, parent, icon_x, icon_y);
     /* The raise was already done by XReparentWindow, so this call

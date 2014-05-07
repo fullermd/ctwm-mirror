@@ -156,9 +156,6 @@ void HandleFocusChange (void);
 #  include "gnomewindefs.h"
 #endif /* GNOME */
 
-extern Atom _XA_WM_OCCUPATION;
-extern Atom _XA_WM_CURRENTWORKSPACE;
-
 int GnomeProxyButtonPress = -1;
 
 /*#define TRACE_FOCUS*/
@@ -211,8 +208,7 @@ void SetRaiseWindow (TwmWindow *tmp)
     XSync (dpy, 0);
 }
 
-void AutoPopupMaybe(tmp)
-    TwmWindow *tmp;
+void AutoPopupMaybe(TwmWindow *tmp)
 {
     if (LookInList(Scr->AutoPopupL, tmp->full_name, &tmp->class)
 	|| Scr->AutoPopup){
@@ -1106,24 +1102,24 @@ void HandleKeyPress(void)
 		switch (item->item [0]) {
 		    case '^' :
 			if ((modifier & ControlMask) &&
-			    (keynam [0] == tolower (item->item [1])))
+			    (keynam [0] == tolower ((int)(unsigned char)item->item [1])))
 			    matched = True;
 			break;
 		    case '~' :
 			if ((modifier & Mod1Mask) &&
-			    (keynam [0] == tolower (item->item [1])))
+			    (keynam [0] == tolower ((int)(unsigned char)item->item [1])))
 			    matched = True;
 			break;
 		    case ' ' :
 			offset = 1;
 		    default :
 			if (((Scr->IgnoreCaseInMenuSelection) &&
-			    (keynam [0] == tolower (item->item [offset]))) ||
+			    (keynam [0] == tolower ((int)(unsigned char)item->item [offset]))) ||
 
-			     ((modifier & ShiftMask) && isupper (item->item [offset]) &&
-			     (keynam [0] == tolower (item->item [offset]))) ||
+			     ((modifier & ShiftMask) && isupper ((int)(unsigned char)item->item [offset]) &&
+			     (keynam [0] == tolower ((int)(unsigned char)item->item [offset]))) ||
 
-			    (!(modifier & ShiftMask) && islower (item->item [offset]) &&
+			    (!(modifier & ShiftMask) && islower ((int)(unsigned char)item->item [offset]) &&
 			     (keynam [0] == item->item [offset]))) matched = True;
 			break;
 		}
@@ -1484,7 +1480,7 @@ void HandlePropertyNotify(void)
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_NAME);
 	if (prop == NULL) return;
 
-	name_change = strcmp (Tmp_win->full_name, prop);
+	name_change = strcmp ((char *)Tmp_win->full_name, (char *)prop);
 	icon_change = FALSE;
 
 #ifdef CLAUDE

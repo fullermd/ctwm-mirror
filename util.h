@@ -141,6 +141,7 @@ void PaintTitle (TwmWindow *tmp_win);
 void PaintIcon (TwmWindow *tmp_win);
 void PaintTitleButton (TwmWindow *tmp_win, TBWindow  *tbw);
 void AdoptWindow (void);
+void RescueWindows (void);
 void DebugTrace (char *file);
 void SetBorderCursor (TwmWindow *tmp_win, int x, int y);
 

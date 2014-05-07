@@ -63,7 +63,6 @@ static void fakeRaiseLower ();
 #  include "gnomewindefs.h" /* include GNOME hints definitions */
 #endif /* GNOME */
 
-extern void twmrc_error_prefix (void); /* in gram.c */
 extern char *captivename;
 
 /***********************************************************************
@@ -121,8 +120,6 @@ static Cursor handCursor  = (Cursor) 0;
 static Bool DontRedirect (Window window);
 
 extern Bool donttoggleworkspacemanagerstate;
-extern Bool MaybeAnimate;
-extern FILE *tracefile;
 
 void InitWorkSpaceManager (void)
 {
@@ -1422,22 +1419,6 @@ static void DisplayWinUnchecked (VirtualScreen *vs, TwmWindow *tmp_win)
 	XMapWindow (dpy, tmp_win->frame);
 	SetMapStateProp (tmp_win, NormalState);
     }
-}
-
-/*
- * Returns true if the window occupies multiple workspaces.
- *
- * Uses the well-known bit manipulation trick to remove the
- * most significant set bit.
- */
-
-int HasMultipleOccupation(TwmWindow *tmp_win)
-{
-    int occupation = tmp_win->occupation;
-
-    occupation &= occupation - 1;
-
-    return occupation != 0;
 }
 
 void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)

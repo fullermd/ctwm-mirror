@@ -76,6 +76,7 @@ extern Time lastTimestamp;
 extern void SimulateMapRequest(Window w);
 extern void AutoRaiseWindow(TwmWindow *tmp);
 extern void SetRaiseWindow (TwmWindow *tmp);
+extern void AutoPopupMaybe(TwmWindow *tmp);
 extern void AutoLowerWindow(TwmWindow *tmp);
 #define LastTimestamp() lastTimestamp
 extern Window WindowOfEvent (XEvent *e);

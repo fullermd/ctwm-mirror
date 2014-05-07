@@ -3202,7 +3202,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 	    {
 		if (!action) action = "undef";
 		fprintf (stderr, "%s: couldn't find function \"%s\"\n", 
-			 ProgramName, action);
+			 ProgramName, (char *)action);
 		return TRUE;
 	    }
 
@@ -3675,7 +3675,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 	else
 	{
 	    fprintf (stderr, "%s:  unable to open file \"%s\"\n", 
-		     ProgramName, action);
+		     ProgramName, (char *)action);
 	}
 	break;
 

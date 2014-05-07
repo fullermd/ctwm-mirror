@@ -124,7 +124,6 @@
 static int ParseRandomPlacement (register char *s);
 static int ParseButtonStyle (register char *s);
 extern int yyparse(void);
-extern void twmrc_error_prefix(void);
 
 static FILE *twmrc;
 static int ptr = 0;

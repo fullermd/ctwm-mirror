@@ -84,6 +84,7 @@
 #include "screen.h"
 #include "icons.h"
 #include "cursor.h"
+#include "resize.h"
 #include <stdio.h>
 #ifdef VMS
 #include <decw$include/Xos.h>
@@ -1532,7 +1533,8 @@ Bool UpdateFont (MyFont *font, int height)
 {
     int prev = font->avg_height;
     font->avg_fheight = (font->avg_fheight * font->avg_count + height)
-	/ ++font->avg_count;
+	/ (font->avg_count + 1);
+    font->avg_count++;
     /* Arbitrary limit.  */
     if (font->avg_count >= 256) font->avg_count = 256;
     font->avg_height = (int) (font->avg_fheight + 0.5);

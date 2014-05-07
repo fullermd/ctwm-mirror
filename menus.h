@@ -210,6 +210,7 @@ extern Bool AddFuncButton(int num, int cont, int mods, int func,
 			  MenuRoot *menu, MenuItem *item);
 extern void PopDownMenu(void);
 extern void HideMenu(MenuRoot *menu);
+extern void resizeFromCenter(Window w, TwmWindow *tmp_win);
 extern int ExecuteFunction(int func, void *action,
 			   Window w, TwmWindow *tmp_win,
 			   XEvent *eventp,
@@ -240,6 +241,7 @@ extern void FocusOnRoot(void);
 extern void TryToPack (TwmWindow *tmp_win, int *x, int *y);
 extern void TryToPush (TwmWindow *tmp_win, int x, int y, int dir);
 extern void TryToGrid (TwmWindow *tmp_win, int *x, int *y);
+extern void WarpCursorToDefaultEntry (MenuRoot *menu);
 extern void WarpToWindow (TwmWindow *t, int must_raise);
 extern void DisplayPosition (TwmWindow *tmp_win, int x, int y);
 extern void AutoSqueeze (TwmWindow *tmp_win);

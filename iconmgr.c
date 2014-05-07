@@ -177,12 +177,9 @@ void CreateIconManagers(void)
 	wmhints.flags         = InputHint | StateHint;
 	XSetWMHints (dpy, p->w, &wmhints);
 	p->twm_win = AddWindow(p->w, ADD_WINDOW_ICON_MANAGER, p, Scr->currentvs);
-#if DEBUG
-	fprintf(stderr, "CreateIconManagers: AddWindowed '%s' -> frame=%x vs=%p parent_vs=%p\n", str, p->twm_win->frame, p->twm_win->vs, p->twm_win->parent_vs);
-#endif
 	/*
 	 * SetupOccupation() called from AddWindow() doesn't setup
-	 * occupation and vs for icon managers.
+	 * occupation for icon managers.
 	 */
 	if (ws)
 	  p->twm_win->occupation = 1 << ws->number;

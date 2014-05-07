@@ -86,4 +86,8 @@ extern TwmWindow *OtpNextWinDown(TwmWindow *);
 
 /* Other access functions */
 extern int OtpGetPriority(TwmWindow *twm_win);
+
+/* Other debugging functions */
+extern Bool OtpCheckConsistency(void);
+
 #endif /* _OTP_ */
