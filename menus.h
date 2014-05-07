@@ -205,7 +205,7 @@ extern Bool AddFuncButton(int num, int cont, int mods, int func,
 extern void DestroyMenu (MenuRoot *menu);
 extern int PopDownMenu(void);
 extern int HideMenu(MenuRoot *menu);
-extern int ExecuteFunction(int func, char *action,
+extern int ExecuteFunction(int func, void *action,
 			   Window w, TwmWindow *tmp_win,
 			   XEvent *eventp,
 			   int context, int pulldown);
