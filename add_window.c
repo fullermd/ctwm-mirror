@@ -128,8 +128,6 @@ static void		mergeWindowEntries (WindowEntry	*old, WindowEntry *we);
 char NoName[] = "Untitled"; /* name if no name is specified */
 int  resizeWhenAdd;
 
-extern Atom _OL_WIN_ATTR;
-
 #if defined(__hpux) && !defined(_XPG4_EXTENDED)
 #   define FDSET int*
 #else

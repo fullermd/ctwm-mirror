@@ -79,8 +79,8 @@ extern void OtpAdd(TwmWindow*, WinType);
 extern void OtpRemove(TwmWindow*, WinType);
 
 /* Iterators.  */
-extern TwmWindow *OtpBottomWin();
-extern TwmWindow *OtpTopWin();
+extern TwmWindow *OtpBottomWin(void);
+extern TwmWindow *OtpTopWin(void);
 extern TwmWindow *OtpNextWinUp(TwmWindow *);
 extern TwmWindow *OtpNextWinDown(TwmWindow *);
 

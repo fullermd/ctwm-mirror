@@ -519,7 +519,6 @@ extern XContext ColormapContext;
 
 extern char *Home;
 extern int HomeLen;
-extern int ParseError;
 
 extern int HandlingEvents;
 extern Cursor TopCursor, TopLeftCursor, LeftCursor, BottomLeftCursor,

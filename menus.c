@@ -168,6 +168,7 @@ static void MosaicFade (TwmWindow *tmp_win, Window blanket);
 static void SendSaveYourselfMessage (TwmWindow *tmp, Time timestamp);
 static void SendDeleteWindowMessage (TwmWindow *tmp, Time timestamp);
 static void HideIconManager (void);
+static void DestroyMenu (MenuRoot *menu);
 static void ShowIconManager (void);
 static void BumpWindowColormap (TwmWindow *tmp, int inc);
 static void Identify (TwmWindow *t);
@@ -184,10 +185,6 @@ static void waitamoment (float timeout);
 
 #define SHADOWWIDTH 5			/* in pixels */
 #define ENTRY_SPACING 4
-
-#ifdef GNOME
-  extern Atom _XA_WIN_STATE;
-#endif /* GNOME */
 
 
 
