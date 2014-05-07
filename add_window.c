@@ -589,7 +589,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
       SetupOccupation (tmp_win, saved_occupation);
     } else
       SetupOccupation (tmp_win, 0);
-    tmp_win->old_parent_vs = vs;
     /*=================================================================*/
 
     tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;

@@ -452,8 +452,8 @@ static ScreenInfo *GetTwmScreen(XEvent *event)
 Bool DispatchEvent2 (void)
 {
     Window w = Event.xany.window;
-    StashEventTime (&Event);
     ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
+    StashEventTime (&Event);
 
     Tmp_win = GetTwmWindow(w);
     Scr = GetTwmScreen(&Event);
@@ -491,8 +491,8 @@ Bool DispatchEvent2 (void)
 Bool DispatchEvent (void)
 {
     Window w = Event.xany.window;
-    StashEventTime (&Event);
     ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
+    StashEventTime (&Event);
 
     Tmp_win = GetTwmWindow(w);
     Scr = GetTwmScreen(&Event);
@@ -3336,21 +3336,23 @@ typedef struct HENScanArgs {
 } HENScanArgs;
 
 /* ARGSUSED*/
-static Bool HENQueueScanner(Display *display, XEvent *ev, char *args)
+static Bool HENQueueScanner(Display *display, XEvent *ev, char *_args)
 {
+    HENScanArgs *args = (void *)_args;
+
     if (ev->type == LeaveNotify) {
-	if (ev->xcrossing.window == ((HENScanArgs *) args)->w &&
+	if (ev->xcrossing.window == args->w &&
 	    ev->xcrossing.mode == NotifyNormal) {
-	    ((HENScanArgs *) args)->leaves = True;
+	    args->leaves = True;
 	    /*
 	     * Only the last event found matters for the Inferior field.
 	     */
-	    ((HENScanArgs *) args)->inferior =
+	    args->inferior =
 		(ev->xcrossing.detail == NotifyInferior);
 	}
     } else if (ev->type == EnterNotify) {
 	if (ev->xcrossing.mode == NotifyUngrab)
-	    ((HENScanArgs *) args)->enters = True;
+	    args->enters = True;
     }
 
     return (False);
@@ -3391,7 +3393,7 @@ void HandleEnterNotify(void)
 	 */
 	scanArgs.w = ewp->window;
 	scanArgs.leaves = scanArgs.enters = False;
-	(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *) &scanArgs);
+	(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (void *) &scanArgs);
 
 	/*
 	 * if entering root window, restore twm default colormap so that 
@@ -3468,7 +3470,7 @@ void HandleEnterNotify(void)
 			scanArgs.w = ewp->window;
 			scanArgs.leaves = scanArgs.enters = False;
 			(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner,
-					     (char *) &scanArgs);
+					     (void *) &scanArgs);
 			if (scanArgs.leaves && !scanArgs.inferior) return;
 
 			XQueryPointer(dpy, Scr->Root, &w, &w, &x, &y,
@@ -3491,7 +3493,7 @@ void HandleEnterNotify(void)
 	     */
 	    scanArgs.w = ewp->window;
 	    scanArgs.leaves = scanArgs.enters = False;
-	    (void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *) &scanArgs);
+	    (void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (void *) &scanArgs);
 
 	    /*
 	     * if entering root window, restore twm default colormap so that 
@@ -3741,12 +3743,14 @@ typedef struct HLNScanArgs {
 } HLNScanArgs;
 
 /* ARGSUSED*/
-static Bool HLNQueueScanner(Display *display, XEvent *ev, char *args)
+static Bool HLNQueueScanner(Display *display, XEvent *ev, char *_args)
 {
+    HLNScanArgs *args = (void *)_args;
+
     if (ev->type == EnterNotify && ev->xcrossing.mode != NotifyGrab) {
-	((HLNScanArgs *) args)->enters = True;
-	if (ev->xcrossing.window == ((HLNScanArgs *) args)->w)
-	    ((HLNScanArgs *) args)->matches = True;
+	args->enters = True;
+	if (ev->xcrossing.window == args->w)
+	    args->matches = True;
     }
 
     return (False);

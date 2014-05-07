@@ -93,7 +93,7 @@ char **CtwmListWorkspaces (Display *display, int scrnum)
 	l += strlen (p) + 1;
 	p += strlen (p) + 1;
     }
-    ret [i] = '\0';
+    ret [i] = NULL;
     return (ret);
 }
 
@@ -164,7 +164,7 @@ char **CtwmCurrentOccupation (Display *display, Window window)
 	l += strlen (p) + 1;
 	p += strlen (p) + 1;
     }
-    ret [i] = '\0';
+    ret [i] = NULL;
     return (ret);
 }
 
