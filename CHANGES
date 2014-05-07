@@ -1726,3 +1726,7 @@ VirtualScreens {
 
     2 - Fix a bug where insufficient validation of the size hints
         resulted in a division by zero when considering aspect ratio.
+
+    3 - Look at _MOTOF_WM_HINTS for titlebar-less or border-less
+	windows. Proof of concept version; integration with other
+	configuration can be improved.

@@ -96,6 +96,7 @@
 #include "icons.h"
 #include "iconmgr.h"
 #include "session.h"
+#include "mwmhints.h"
 
 #define gray_width 2
 #define gray_height 2
@@ -513,6 +514,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
         tmp_win->title_height = Scr->TitleHeight + tmp_win->frame_bw;
     if (LookInList(Scr->NoTitle, tmp_win->full_name, &tmp_win->class))
         tmp_win->title_height = 0;
+
+    ApplyMWMHints(dpy, tmp_win);
 
     tmp_win->OpaqueMove = Scr->DoOpaqueMove;
     if (LookInList(Scr->OpaqueMoveList, tmp_win->full_name, &tmp_win->class))
