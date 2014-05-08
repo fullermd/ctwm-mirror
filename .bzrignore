@@ -1,5 +1,6 @@
 .depend
 Makefile
+Makefile.bak
 ctwm
 ctwm._man
 deftwmrc.c
