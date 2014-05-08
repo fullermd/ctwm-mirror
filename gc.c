@@ -70,7 +70,7 @@
 #include <stdio.h>
 #include "twm.h"
 #include "util.h"
-#include "gram.h"
+#include "gram.tab.h"
 #include "screen.h"
 #include "gc.h"
 

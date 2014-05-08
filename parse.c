@@ -87,7 +87,6 @@
 #include "screen.h"
 #include "menus.h"
 #include "util.h"
-#include "gram.h"
 #include "parse.h"
 #include "version.h"
 #ifdef SOUNDS
@@ -2139,11 +2138,7 @@ static FILE *start_m4(FILE *fraw)
                 dup2(fids[1], 1);       /* stdout = pipe to parent */
                 /* get_defs("m4", dpy, display_name) */
                 tmp_file = m4_defs(dpy, display_name);
-                execlp("m4", "m4",
-#if !defined(__NetBSD__)
-			"-s",
-#endif
-			tmp_file, "-", NULL);
+                execlp(M4CMD, M4CMD, "-s", tmp_file, "-", NULL);
 
                 /* If we get here we are screwed... */
                 perror("Can't execlp() m4");

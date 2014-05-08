@@ -74,7 +74,7 @@
 #endif
 #include "twm.h"
 #include "screen.h"
-#include "gram.h"
+#include "gram.tab.h"
 #include "list.h"
 #include "util.h"
 

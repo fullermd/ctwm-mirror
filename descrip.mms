@@ -136,7 +136,7 @@ ZIPDISTEXTRA = *.*_obj
 
 # Files we NEVER distribute.  I have no idea how I will deal with this
 # regarding tar, though...
-NODIST = gram.c gram.h lex.c
+NODIST = gram.tab.c gram.tab.h lex.c
 
 all : setup
 	@ ! We define the MMS/MMK macros as symbols, or we might get problems

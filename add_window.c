@@ -88,7 +88,6 @@
 #include "util.h"
 #include "resize.h"
 #include "parse.h"
-#include "gram.h"
 #include "list.h"
 #include "events.h"
 #include "menus.h"
@@ -2270,26 +2269,50 @@ int FetchWmColormapWindows (TwmWindow *tmp)
 void GetWindowSizeHints (TwmWindow *tmp)
 {
     long supplied = 0;
+    XSizeHints *hints = &tmp->hints;
 
-    if (!XGetWMNormalHints (dpy, tmp->w, &tmp->hints, &supplied))
-      tmp->hints.flags = 0;
+    if (!XGetWMNormalHints (dpy, tmp->w, hints, &supplied))
+      hints->flags = 0;
 
-    if (tmp->hints.flags & PResizeInc) {
-	if (tmp->hints.width_inc == 0) tmp->hints.width_inc = 1;
-	if (tmp->hints.height_inc == 0) tmp->hints.height_inc = 1;
+    if (hints->flags & PResizeInc) {
+	if (hints->width_inc == 0) hints->width_inc = 1;
+	if (hints->height_inc == 0) hints->height_inc = 1;
     }
 
-    if (!(supplied & PWinGravity) && (tmp->hints.flags & USPosition)) {
+    if (!(supplied & PWinGravity) && (hints->flags & USPosition)) {
 	static int gravs[] = { SouthEastGravity, SouthWestGravity,
 			       NorthEastGravity, NorthWestGravity };
 	int right =  tmp->attr.x + tmp->attr.width + 2 * tmp->old_bw;
 	int bottom = tmp->attr.y + tmp->attr.height + 2 * tmp->old_bw;
-	tmp->hints.win_gravity = 
+	hints->win_gravity = 
 	  gravs[((Scr->rooth - bottom <
 		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 2) |
 		((Scr->rootw - right   <
 		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 1)];
-	tmp->hints.flags |= PWinGravity;
+	hints->flags |= PWinGravity;
+    }
+
+    /* Check for min size < max size */
+    if ((hints->flags & (PMinSize|PMaxSize)) == (PMinSize|PMaxSize)) {
+	if (hints->max_width < hints->min_width) {
+	    if (hints->max_width > 0) {
+		hints->min_width = hints->max_width;
+	    } else if (hints->min_width > 0) {
+		hints->max_width = hints->min_width;
+	    } else {
+		hints->max_width = hints->min_width = 1;
+	    }
+	}
+
+	if (hints->max_height < hints->min_height) {
+	    if (hints->max_height > 0) {
+		hints->min_height = hints->max_height;
+	    } else if (hints->min_height > 0) {
+		hints->max_height = hints->min_height;
+	    } else {
+		hints->max_height = hints->min_height = 1;
+	    }
+	}
     }
 }
 
@@ -2414,12 +2437,10 @@ static void splitWindowRegionEntry (WindowEntry *we, int grav1, int grav2,
 				    int w, int h)
 {
     WindowEntry	*new;
-    int		save;
 
     switch (grav1) {
 	case D_NORTH:
 	case D_SOUTH:
-	    save = we->w;
 	    if (w != we->w) splitWindowRegionEntry (we, grav2, grav1, w, we->h);
 	    if (h != we->h) {
 		new = (WindowEntry *) malloc (sizeof (WindowEntry));
@@ -2440,7 +2461,6 @@ static void splitWindowRegionEntry (WindowEntry *we, int grav1, int grav2,
 	    break;
 	case D_EAST:
 	case D_WEST:
-	    save = we->h;
 	    if (h != we->h) splitWindowRegionEntry (we, grav2, grav1, we->w, h);
 	    if (w != we->w) {
 		new = (WindowEntry *) malloc (sizeof (WindowEntry));
