@@ -935,7 +935,6 @@ void UnmaskScreen (void)
 #else
     struct timeval	timeout;
 #endif
-    Pixel		stdpixels [256];
     Colormap            stdcmap = Scr->RootColormaps.cwins[0]->colormap->c;
     Colormap		cmap;
     XColor		colors [256], stdcolors [256];
@@ -948,7 +947,6 @@ void UnmaskScreen (void)
     timeout.tv_usec = usec % (unsigned long) 1000000;
     timeout.tv_sec  = usec / (unsigned long) 1000000;
 #endif
-    for (i = 0; i < 256; i++) stdpixels [i] = i;
 
     if (Scr->WelcomeImage) {
 	Pixel pixels [256];
