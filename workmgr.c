@@ -136,7 +136,7 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.windowcp.fore = Scr->Black;
     Scr->workSpaceMgr.windowcpgiven = False;
 
-    Scr->workSpaceMgr.occupyWindow = (OccupyWindow*) malloc (sizeof (OccupyWindow));
+    Scr->workSpaceMgr.occupyWindow = calloc(1, sizeof (OccupyWindow));
     Scr->workSpaceMgr.occupyWindow->name      = "Occupy Window";
     Scr->workSpaceMgr.occupyWindow->icon_name = "Occupy Window Icon";
     Scr->workSpaceMgr.occupyWindow->geometry  = NULL;
