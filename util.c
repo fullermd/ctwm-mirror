@@ -986,29 +986,6 @@ void UnmaskScreen (void)
     }
     if (Scr->Monochrome != COLOR) goto fin;
 
-/*
-    XClearWindow (dpy, Scr->Root);
-    XSync (dpy, 0);
-    PaintAllDecoration ();
-    XSetWindowBackgroundPixmap (dpy, Scr->WindowMask, None);
-    for (i = 0; i < 128; i++) {
-	for (j = 0; j < 256; j++) {
-	    colors [j].pixel = j;
-	    colors [j].red   = stdcolors [j].red   * (i / 127.0);
-	    colors [j].green = stdcolors [j].green * (i / 127.0);
-	    colors [j].blue  = stdcolors [j].blue  * (i / 127.0);
-	    colors [j].flags = DoRed | DoGreen | DoBlue;
-	}
-	XStoreColors (dpy, cmap, colors, 256);
-#ifdef VMS
-        lib$wait(&timeout);
-#else
-	select (0, (void *) 0, (void *) 0, (void *) 0, &timeout);
-#endif
-    }
-    XUnmapWindow (dpy, Scr->WindowMask);
-*/
-
     cmap = XCreateColormap (dpy, Scr->Root, Scr->d_visual, AllocNone);
     if (! cmap) goto fin;
     for (i = 0; i < 256; i++) {
