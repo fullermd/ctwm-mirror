@@ -1589,7 +1589,7 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 {
     int		  mask;
     int		  lines, vspace, hspace, count, columns;
-    unsigned int  width, height, bwidth, bheight, wwidth, wheight;
+    unsigned int  width, height, bwidth, bheight;
     char	  *name, *icon_name, *geometry;
     int		  i, j;
     ColorPair	  cp;
@@ -1674,8 +1674,6 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 	y       = vs->h - height;
 	gravity = NorthWestGravity;
     }
-    wwidth  = width  / columns;
-    wheight = height / lines;
 
 #define Dummy	1
 
