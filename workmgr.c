@@ -466,12 +466,6 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     valuemask = (CWBackingStore | CWSaveUnder);
     attr.backing_store = NotUseful;
     attr.save_under    = False;
-    /*    cachew = XCreateWindow (dpy, Scr->Root, vs->x, vs->y,
-			(unsigned int) vs->w, (unsigned int) vs->h, (unsigned int) 0,
-			CopyFromParent, (unsigned int) CopyFromParent,
-			(Visual *) CopyFromParent, valuemask,
-			&attr);
-			XMapWindow (dpy, cachew);*/
 
     if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
 	if (newws->image == None)
