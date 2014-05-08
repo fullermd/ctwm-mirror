@@ -173,7 +173,7 @@ SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="$(PIXMAPDIR)"')
 SpecialObjectRule(util.o,util.c,-DNOPUTENV)
 #endif
 
-depend:: lex.c gram.tab.c deftwmrc.c 
+depend:: lex.c gram.tab.c deftwmrc.c
 
 NormalLibraryTarget(ctwm, libctwm.o)
 ComplexProgramTarget(ctwm)
