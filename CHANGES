@@ -1726,3 +1726,12 @@ VirtualScreens {
 
     2 - Fix a bug where insufficient validation of the size hints
         resulted in a division by zero when considering aspect ratio.
+
+    3 - Lots of minor compiler warnings and build fixes, a few of which
+        were real current or latent bugs.  Leave warnings enabled by
+        default.  A few of the build system adjustments may break very
+        old systems (e.g., those with original AT&T yacc).
+
+    4 - Fix incorrect inclusion of $DESTDIR in some paths.
+
+    5 - Update for new website and mailing list at ctwm.org.
