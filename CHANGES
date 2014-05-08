@@ -586,6 +586,7 @@ setenv CTWM_WELCOME_FILE "|(giftoppm | pnmtoxwd) < ~/images/2010.gif"
 
 
     Changes from version 3.1 to 3.2
+    1994-11-13 (or earlier)
     -------------------------------
 
     1 - I have considerably reworked the focus handling. So I have probably
@@ -676,7 +677,9 @@ LeftTitleButton ":xpm:menu" {
 	signals anymore. I hope it is more portable. The old code is still
 	available if you define USE_SIGNALS.
 
+
     Changes from version 3.2 to 3.3
+    1995-02-11 (or earlier)
     -------------------------------
 
     1 - Better 3D borders with SqueezeTitle.
@@ -766,6 +769,7 @@ LeftTitleButton ":xpm:menu" {
 
 
     Changes from version 3.3 to 3.4
+    1996-09-14 (or earlier)
     -------------------------------
 
     1 - 2 new keywords : XMoveGrid and YMoveGrid with an integer parameter.
@@ -888,6 +892,7 @@ IconRegion geomstring vgrav hgrav gridwidth gridheight [iconjust] [iconregjust] 
 
 
     Changes from version 3.4 to 3.5
+    1997-11-27 (or earlier)
     -------------------------------
 
 
@@ -1027,6 +1032,7 @@ TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
 
 
     Changes from version 3.5 to 3.5.1
+    1999-05-02 (or earlier)
     ---------------------------------
 
 
@@ -1046,6 +1052,7 @@ TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
 
 
     Changes from version 3.5.1 to 3.5.2
+    1999-09-10 (or earlier)
     -----------------------------------
 
 
@@ -1068,6 +1075,7 @@ TWM_CAPTIVE_NAME : The name of the captive Ctwm, if captive.
 
 
     Changes from version 3.5.2 to 3.6
+    2002-08-08 (or earlier)
     ---------------------------------
 
     1 - Fix line numbers for errors when using m4 preprocessor. Send thanks
@@ -1132,6 +1140,7 @@ WindowGeometries {
 
 
     Changes from version 3.6 to 3.7
+    2005-07-19
     -------------------------------
 
     1 - Workspace context (bkctwmws.patch)
@@ -1458,6 +1467,7 @@ VirtualScreens {
 
 
     Changes from version 3.7 to 3.8
+    2007-02-16
     -------------------------------
 
     1 - Global cleanup
@@ -1666,6 +1676,7 @@ VirtualScreens {
 
 
     Changes from version 3.8 to 3.8.1
+    2012-01-05
     ---------------------------------
 
     1 - Fix bug causing [de]iconified status of windows to not be
