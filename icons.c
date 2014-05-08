@@ -81,12 +81,10 @@ extern Bool MaybeAnimate;
 static void splitEntry (IconEntry *ie, int grav1, int grav2, int w, int h)
 {
     IconEntry	*new;
-    int		save;
 
     switch (grav1) {
     case D_NORTH:
     case D_SOUTH:
-	save = ie->w;
 	if (w != ie->w)
 	    splitEntry (ie, grav2, grav1, w, ie->h);
 	if (h != ie->h) {
@@ -97,7 +95,7 @@ static void splitEntry (IconEntry *ie, int grav1, int grav2, int w, int h)
 	    ie->next = new;
 	    new->x = ie->x;
 	    new->h = (ie->h - h);
-	    new->w = /*save*/ ie->w;
+	    new->w = ie->w;
 	    ie->h = h;
 	    if (grav1 == D_SOUTH) {
 		new->y = ie->y;
@@ -108,7 +106,6 @@ static void splitEntry (IconEntry *ie, int grav1, int grav2, int w, int h)
 	break;
     case D_EAST:
     case D_WEST:
-	save = ie->h;
 	if (h != ie->h)
 	    splitEntry (ie, grav2, grav1, ie->w, h);
 	if (w != ie->w) {
@@ -119,7 +116,7 @@ static void splitEntry (IconEntry *ie, int grav1, int grav2, int w, int h)
 	    ie->next = new;
 	    new->y = ie->y;
 	    new->w = (ie->w - w);
-	    new->h = /*save*/ ie->h;
+	    new->h = ie->h;
 	    ie->w = w;
 	    if (grav1 == D_EAST) {
 		new->x = ie->x;

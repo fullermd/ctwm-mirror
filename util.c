@@ -935,13 +935,10 @@ void UnmaskScreen (void)
 #else
     struct timeval	timeout;
 #endif
-    Pixel		stdpixels [256];
     Colormap            stdcmap = Scr->RootColormaps.cwins[0]->colormap->c;
     Colormap		cmap;
     XColor		colors [256], stdcolors [256];
     int			i, j, usec;
-    Status		status;
-    unsigned long	planemask;
 
 #ifdef VMS
     timeout = 0.017;
@@ -950,7 +947,6 @@ void UnmaskScreen (void)
     timeout.tv_usec = usec % (unsigned long) 1000000;
     timeout.tv_sec  = usec / (unsigned long) 1000000;
 #endif
-    for (i = 0; i < 256; i++) stdpixels [i] = i;
 
     if (Scr->WelcomeImage) {
 	Pixel pixels [256];
@@ -964,7 +960,6 @@ void UnmaskScreen (void)
 	XFreeColors  (dpy, cmap, pixels, 256, 0L);
 	XFreeColors  (dpy, cmap, pixels, 256, 0L); /* Ah Ah */
 
-	status = XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
 	for (i = 0; i < 256; i++) {
 	    colors [i].pixel = i;
 	    colors [i].flags = DoRed | DoGreen | DoBlue;
@@ -991,32 +986,8 @@ void UnmaskScreen (void)
     }
     if (Scr->Monochrome != COLOR) goto fin;
 
-/*
-    XClearWindow (dpy, Scr->Root);
-    XSync (dpy, 0);
-    PaintAllDecoration ();
-    XSetWindowBackgroundPixmap (dpy, Scr->WindowMask, None);
-    for (i = 0; i < 128; i++) {
-	for (j = 0; j < 256; j++) {
-	    colors [j].pixel = j;
-	    colors [j].red   = stdcolors [j].red   * (i / 127.0);
-	    colors [j].green = stdcolors [j].green * (i / 127.0);
-	    colors [j].blue  = stdcolors [j].blue  * (i / 127.0);
-	    colors [j].flags = DoRed | DoGreen | DoBlue;
-	}
-	XStoreColors (dpy, cmap, colors, 256);
-#ifdef VMS
-        lib$wait(&timeout);
-#else
-	select (0, (void *) 0, (void *) 0, (void *) 0, &timeout);
-#endif
-    }
-    XUnmapWindow (dpy, Scr->WindowMask);
-*/
-
     cmap = XCreateColormap (dpy, Scr->Root, Scr->d_visual, AllocNone);
     if (! cmap) goto fin;
-    status = XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
     for (i = 0; i < 256; i++) {
 	colors [i].pixel = i;
 	colors [i].red   = 0;

@@ -1771,7 +1771,7 @@ static Bool belongs_to_twm_window (register TwmWindow *t, register Window w)
 
 void resizeFromCenter(Window w, TwmWindow *tmp_win)
 {
-  int lastx, lasty, width, height, bw2;
+  int lastx, lasty, bw2;
   int namelen;
   XRectangle inc_rect;
   XRectangle logical_rect;
@@ -1783,9 +1783,7 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
 
   XmbTextExtents(Scr->SizeFont.font_set, tmp_win->name, namelen,
 		 &inc_rect, &logical_rect);
-  width = (SIZE_HINDENT + logical_rect.width);
 
-  height = Scr->SizeFont.height + SIZE_VINDENT * 2;
   XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
 	       &DragWidth, &DragHeight, 
 	       &JunkBW, &JunkDepth);
@@ -1795,24 +1793,10 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
   XQueryPointer (dpy, Scr->Root, &JunkRoot, 
 		 &JunkChild, &JunkX, &JunkY,
 		 &AddingX, &AddingY, &JunkMask);
-/*****
-  Scr->SizeStringOffset = width +
-    XTextWidth(Scr->SizeFont.font, ": ", 2);
-  XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-		 Scr->SizeStringWidth, height);
-  XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
-		    SIZE_VINDENT + Scr->SizeFont.font->ascent,
-		    ": ", 2);
-*****/
+
   lastx = -10000;
   lasty = -10000;
-/*****
-  MoveOutline(Scr->Root,
-	      origDragX - JunkBW, origDragY - JunkBW,
-	      DragWidth * JunkBW, DragHeight * JunkBW,
-	      tmp_win->frame_bw,
-	      tmp_win->title_height + tmp_win->frame_bw3D);
-*****/
+
   MenuStartResize(tmp_win, origDragX, origDragY, DragWidth, DragHeight);
   while (TRUE)
     {
@@ -3119,7 +3103,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 	    {
 		if (!action) action = "undef";
 		fprintf (stderr, "%s: couldn't find function \"%s\"\n", 
-			 ProgramName, action);
+			 ProgramName, (char *)action);
 		return TRUE;
 	    }
 
@@ -3546,7 +3530,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 	else
 	{
 	    fprintf (stderr, "%s:  unable to open file \"%s\"\n", 
-		     ProgramName, action);
+		     ProgramName, (char *)action);
 	}
 	break;
 

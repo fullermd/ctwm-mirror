@@ -447,7 +447,6 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     IconMgr		 *iconmgr;
     Window		 oldw;
     Window		 neww;
-    unsigned long	 valuemask;
     TwmWindow		 *focuswindow;
     TwmWindow		 *last_twmWin = NULL;
     virtualScreen	 *tmpvs;
@@ -463,15 +462,8 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     newws = ws;
     if (oldws == newws) return;
 
-    valuemask = (CWBackingStore | CWSaveUnder);
     attr.backing_store = NotUseful;
     attr.save_under    = False;
-    /*    cachew = XCreateWindow (dpy, Scr->Root, vs->x, vs->y,
-			(unsigned int) vs->w, (unsigned int) vs->h, (unsigned int) 0,
-			CopyFromParent, (unsigned int) CopyFromParent,
-			(Visual *) CopyFromParent, valuemask,
-			&attr);
-			XMapWindow (dpy, cachew);*/
 
     if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
 	if (newws->image == None)
@@ -1597,7 +1589,7 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 {
     int		  mask;
     int		  lines, vspace, hspace, count, columns;
-    unsigned int  width, height, bwidth, bheight, wwidth, wheight;
+    unsigned int  width, height, bwidth, bheight;
     char	  *name, *icon_name, *geometry;
     int		  i, j;
     ColorPair	  cp;
@@ -1682,8 +1674,6 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
 	y       = vs->h - height;
 	gravity = NorthWestGravity;
     }
-    wwidth  = width  / columns;
-    wheight = height / lines;
 
 #define Dummy	1
 
