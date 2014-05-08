@@ -1771,7 +1771,7 @@ static Bool belongs_to_twm_window (register TwmWindow *t, register Window w)
 
 void resizeFromCenter(Window w, TwmWindow *tmp_win)
 {
-  int lastx, lasty, width, height, bw2;
+  int lastx, lasty, bw2;
   int namelen;
   XRectangle inc_rect;
   XRectangle logical_rect;
@@ -1783,9 +1783,7 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
 
   XmbTextExtents(Scr->SizeFont.font_set, tmp_win->name, namelen,
 		 &inc_rect, &logical_rect);
-  width = (SIZE_HINDENT + logical_rect.width);
 
-  height = Scr->SizeFont.height + SIZE_VINDENT * 2;
   XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
 	       &DragWidth, &DragHeight, 
 	       &JunkBW, &JunkDepth);
