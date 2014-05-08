@@ -35,7 +35,6 @@
 #include "add_window.h"
 #include "events.h"
 #include "otp.h"
-#include "gram.h"
 #include "clicktofocus.h"
 #include "cursor.h"
 #include "list.h"
@@ -132,7 +131,7 @@ void InitWorkSpaceManager (void)
     Scr->workSpaceMgr.windowcp.fore = Scr->Black;
     Scr->workSpaceMgr.windowcpgiven = False;
 
-    Scr->workSpaceMgr.occupyWindow = (OccupyWindow*) malloc (sizeof (OccupyWindow));
+    Scr->workSpaceMgr.occupyWindow = calloc(1, sizeof (OccupyWindow));
     Scr->workSpaceMgr.occupyWindow->name      = "Occupy Window";
     Scr->workSpaceMgr.occupyWindow->icon_name = "Occupy Window Icon";
     Scr->workSpaceMgr.occupyWindow->geometry  = NULL;
@@ -432,7 +431,6 @@ void GotoWorkSpace (VirtualScreen *vs, WorkSpace *ws)
     IconMgr		 *iconmgr;
     Window		 oldw;
     Window		 neww;
-    unsigned long	 valuemask;
     TwmWindow		 *focuswindow;
     VirtualScreen	 *tmpvs;
 
@@ -447,15 +445,8 @@ void GotoWorkSpace (VirtualScreen *vs, WorkSpace *ws)
     newws = ws;
     if (oldws == newws) return;
 
-    valuemask = (CWBackingStore | CWSaveUnder);
     attr.backing_store = NotUseful;
     attr.save_under    = False;
-    /*    cachew = XCreateWindow (dpy, Scr->Root, vs->x, vs->y,
-			(unsigned int) vs->w, (unsigned int) vs->h, (unsigned int) 0,
-			CopyFromParent, (unsigned int) CopyFromParent,
-			(Visual *) CopyFromParent, valuemask,
-			&attr);
-			XMapWindow (dpy, cachew);*/
 
     if (useBackgroundInfo && ! Scr->DontPaintRootWindow) {
 	if (newws->image == None)
@@ -1639,7 +1630,7 @@ static void CreateWorkSpaceManagerWindow (VirtualScreen *vs)
 {
     int		  mask;
     int		  lines, vspace, hspace, count, columns;
-    unsigned int  width, height, bwidth, bheight, wwidth, wheight;
+    unsigned int  width, height, bwidth, bheight;
     char	  *name, *icon_name, *geometry;
     int		  i, j;
     ColorPair	  cp;
@@ -1724,8 +1715,6 @@ static void CreateWorkSpaceManagerWindow (VirtualScreen *vs)
 	y       = vs->h - height;
 	gravity = NorthWestGravity;
     }
-    wwidth  = width  / columns;
-    wheight = height / lines;
 
 #define Dummy	1
 

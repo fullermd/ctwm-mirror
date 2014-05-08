@@ -89,7 +89,6 @@
 #include "events.h"
 #include "resize.h"
 #include "parse.h"
-#include "gram.h"
 #include "util.h"
 #include "otp.h"
 #include "screen.h"
