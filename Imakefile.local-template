@@ -76,6 +76,13 @@ XCOMM
 #define USE_M4
 
 XCOMM ----------------------------------------------------------------------
+XCOMM Feature: Using M4 to process the ctwm configuration file
+XCOMM If you want to change the default m4 command (for example to gm4),
+XCOMM set M4CMD.
+XCOMM
+#define M4CMD	m4
+
+XCOMM ----------------------------------------------------------------------
 XCOMM Feature: Support for Gnome extensions
 XCOMM If you want to build with Gnome extensions, define GNOME.
 XCOMM

@@ -2125,7 +2125,7 @@ static FILE *start_m4(FILE *fraw)
         pipe(fids);
         fres = fork();
         if (fres < 0) {
-                perror("Fork for m4 failed");
+                perror("Fork for " M4CMD " failed");
                 exit(23);
         }
         if (fres == 0) {
@@ -2141,7 +2141,7 @@ static FILE *start_m4(FILE *fraw)
                 execlp(M4CMD, M4CMD, "-s", tmp_file, "-", NULL);
 
                 /* If we get here we are screwed... */
-                perror("Can't execlp() m4");
+                perror("Can't execlp() " M4CMD);
                 exit(124);
         }
         /* Parent */
