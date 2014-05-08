@@ -9,11 +9,12 @@ XCOMM
 #include "Imakefile.local"
 
 
+        BYFLAGS = -d
 #ifdef DEBUGPARSER
-         YFLAGS = -d -t -v
+         YFLAGS = $(BYFLAGS) -t -v
 DEBUGPARSERDEFINES = -DYYDEBUG=1
 #else
-         YFLAGS = -d
+         YFLAGS = $(BYFLAGS)
 #endif
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
