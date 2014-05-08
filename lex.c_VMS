@@ -100,7 +100,6 @@ extern struct yysvf yysvec[], *yybgin;
  ***********************************************************************/
 
 /* #include <stdio.h> */		/* lex already includes stdio.h */
-#include "gram.h"
 #include "parse.h"
 extern char *ProgramName;
 

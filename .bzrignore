@@ -3,8 +3,7 @@ Makefile
 ctwm
 ctwm._man
 deftwmrc.c
-gram.c
-gram.h
+gram.tab.[ch]
 lex.c
 *.o.info
 Imakefile.local

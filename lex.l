@@ -70,7 +70,6 @@
 #    include <unixio.h>
 #  endif
 #endif
-#include "gram.h"
 #include "parse.h"
 extern char *ProgramName;
 

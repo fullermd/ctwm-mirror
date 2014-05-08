@@ -94,7 +94,6 @@
 #include "list.h"
 #include "util.h"
 #include "parse.h"
-#include "gram.h"
 #include "screen.h"
 #include "icons.h"
 #include "add_window.h"
