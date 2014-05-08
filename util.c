@@ -940,7 +940,6 @@ void UnmaskScreen (void)
     Colormap		cmap;
     XColor		colors [256], stdcolors [256];
     int			i, j, usec;
-    unsigned long	planemask;
 
 #ifdef VMS
     timeout = 0.017;
