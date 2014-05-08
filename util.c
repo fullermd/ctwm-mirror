@@ -940,7 +940,6 @@ void UnmaskScreen (void)
     Colormap		cmap;
     XColor		colors [256], stdcolors [256];
     int			i, j, usec;
-    Status		status;
     unsigned long	planemask;
 
 #ifdef VMS
@@ -964,7 +963,6 @@ void UnmaskScreen (void)
 	XFreeColors  (dpy, cmap, pixels, 256, 0L);
 	XFreeColors  (dpy, cmap, pixels, 256, 0L); /* Ah Ah */
 
-	status = XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
 	for (i = 0; i < 256; i++) {
 	    colors [i].pixel = i;
 	    colors [i].flags = DoRed | DoGreen | DoBlue;
@@ -1016,7 +1014,6 @@ void UnmaskScreen (void)
 
     cmap = XCreateColormap (dpy, Scr->Root, Scr->d_visual, AllocNone);
     if (! cmap) goto fin;
-    status = XAllocColorCells (dpy, cmap, False, &planemask, 0, stdpixels, 256);
     for (i = 0; i < 256; i++) {
 	colors [i].pixel = i;
 	colors [i].red   = 0;
