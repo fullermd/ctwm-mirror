@@ -447,7 +447,6 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     IconMgr		 *iconmgr;
     Window		 oldw;
     Window		 neww;
-    unsigned long	 valuemask;
     TwmWindow		 *focuswindow;
     TwmWindow		 *last_twmWin = NULL;
     virtualScreen	 *tmpvs;
@@ -463,7 +462,6 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     newws = ws;
     if (oldws == newws) return;
 
-    valuemask = (CWBackingStore | CWSaveUnder);
     attr.backing_store = NotUseful;
     attr.save_under    = False;
 
