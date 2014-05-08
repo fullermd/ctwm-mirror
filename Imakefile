@@ -186,7 +186,9 @@ install::
 	done
 #endif
 
-gram.h gram.c: gram.y
+gram.c: gram.h
+
+gram.h: gram.y
 	$(YACC) $(YFLAGS) gram.y
 	$(MV) y.tab.c gram.c
 	$(MV) y.tab.h gram.h
