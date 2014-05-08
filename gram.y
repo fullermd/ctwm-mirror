@@ -1207,7 +1207,7 @@ static Bool CheckWarpScreenArg (register char *s)
 	strcmp (s,  WARPSCREEN_BACK) == 0)
       return True;
 
-    for (; *s && isascii(*s) && isdigit(*s); s++) ; /* SUPPRESS 530 */
+    for (; *s && Isascii(*s) && Isdigit(*s); s++) ; /* SUPPRESS 530 */
     return (*s ? False : True);
 }
 
