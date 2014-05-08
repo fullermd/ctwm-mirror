@@ -64,7 +64,6 @@
 #include "twm.h"
 #include "screen.h"
 #include "icons.h"
-#include "gram.h"
 #include "list.h"
 #include "parse.h"
 #include "util.h"

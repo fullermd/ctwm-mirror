@@ -33,7 +33,6 @@
 #include "resize.h"
 #include "add_window.h"
 #include "events.h"
-#include "gram.h"
 #include "clicktofocus.h"
 #include "cursor.h"
 #include "list.h"

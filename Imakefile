@@ -9,11 +9,12 @@ XCOMM
 #include "Imakefile.local"
 
 
+        BYFLAGS = -d -b gram
 #ifdef DEBUGPARSER
-         YFLAGS = -d -t -v
+         YFLAGS = $(BYFLAGS) -t -v
 DEBUGPARSERDEFINES = -DYYDEBUG=1
 #else
-         YFLAGS = -d
+         YFLAGS = $(BYFLAGS)
 #endif
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
@@ -127,12 +128,12 @@ LOCAL_LIBRARIES = $(M4LIB) $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLI
 
  EXTRA_INCLUDES = $(M4INCDIR) $(IMCONVINCDIR) $(XPMINCDIR) $(JPEGINCDIR) $(SOUNDINCDIR)
 
-           SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
+           SRCS = gram.tab.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
 		cursor.c icons.c workmgr.c windowbox.c clicktofocus.c \
 		vscreen.c session.c $(GNOMESRC) $(SOUNDSRC)
 
-           OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
+           OBJS = gram.tab.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
 		cursor.o icons.o workmgr.o windowbox.o clicktofocus.o \
 		vscreen.o session.o $(GNOMEOBJ) $(SOUNDOBJ)
@@ -172,7 +173,7 @@ SpecialObjectRule(ctwm.o,ctwm.c,'-DPIXMAP_DIRECTORY="$(PIXMAPDIR)"')
 SpecialObjectRule(util.o,util.c,-DNOPUTENV)
 #endif
 
-depend:: lex.c gram.c deftwmrc.c 
+depend:: lex.c gram.tab.c deftwmrc.c
 
 NormalLibraryTarget(ctwm, libctwm.o)
 ComplexProgramTarget(ctwm)
@@ -186,13 +187,13 @@ install::
 	done
 #endif
 
-gram.h gram.c: gram.y
+gram.tab.c: gram.tab.h
+
+gram.tab.h: gram.y
 	$(YACC) $(YFLAGS) gram.y
-	$(MV) y.tab.c gram.c
-	$(MV) y.tab.h gram.h
 
 clean::
-	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.tab.h gram.tab.c lex.c deftwmrc.c
 	$(RM) *.[chy].flc *.orig *.rej
 
 deftwmrc.c:  system.ctwmrc
@@ -208,7 +209,7 @@ deftwmrc.c:  system.ctwmrc
 	echo '    (char *) 0 };' >>$@
 
 GET_VERSION="`grep '^\#define VERSION_ID' version.c | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"
-dist:	clean Makefile gram.h gram.c lex.c deftwmrc.c
+dist:	clean Makefile gram.tab.h gram.tab.c lex.c deftwmrc.c
 	version=$(GET_VERSION); \
 	if echo $$version | grep 'devel$$' > /dev/null; then \
 	    version="$$version.`date '+%Y%m%d'`"; \

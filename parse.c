@@ -87,7 +87,6 @@
 #include "screen.h"
 #include "menus.h"
 #include "util.h"
-#include "gram.h"
 #include "parse.h"
 #include "version.h"
 #ifdef SOUNDS

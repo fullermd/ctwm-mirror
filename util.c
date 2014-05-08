@@ -80,7 +80,7 @@
 #include "util.h"
 #include "events.h"
 #include "add_window.h"
-#include "gram.h"
+#include "gram.tab.h"
 #include "screen.h"
 #include "icons.h"
 #include "cursor.h"

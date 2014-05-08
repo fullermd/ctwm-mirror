@@ -88,7 +88,6 @@
 #include "util.h"
 #include "resize.h"
 #include "parse.h"
-#include "gram.h"
 #include "list.h"
 #include "events.h"
 #include "menus.h"

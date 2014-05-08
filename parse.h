@@ -62,6 +62,7 @@
  **********************************************************************/
 
 #include "types.h"
+#include "gram.tab.h"
 
 #ifndef _PARSE_
 #define _PARSE_

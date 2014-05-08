@@ -93,7 +93,6 @@
 #include "menus.h"
 #include "events.h"
 #include "util.h"
-#include "gram.h"
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
