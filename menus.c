@@ -1795,24 +1795,10 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
   XQueryPointer (dpy, Scr->Root, &JunkRoot, 
 		 &JunkChild, &JunkX, &JunkY,
 		 &AddingX, &AddingY, &JunkMask);
-/*****
-  Scr->SizeStringOffset = width +
-    XTextWidth(Scr->SizeFont.font, ": ", 2);
-  XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-		 Scr->SizeStringWidth, height);
-  XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
-		    SIZE_VINDENT + Scr->SizeFont.font->ascent,
-		    ": ", 2);
-*****/
+
   lastx = -10000;
   lasty = -10000;
-/*****
-  MoveOutline(Scr->Root,
-	      origDragX - JunkBW, origDragY - JunkBW,
-	      DragWidth * JunkBW, DragHeight * JunkBW,
-	      tmp_win->frame_bw,
-	      tmp_win->title_height + tmp_win->frame_bw3D);
-*****/
+
   MenuStartResize(tmp_win, origDragX, origDragY, DragWidth, DragHeight);
   while (TRUE)
     {
