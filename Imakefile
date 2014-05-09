@@ -212,9 +212,8 @@ dist:	clean Makefile gram.tab.h gram.tab.c lex.c deftwmrc.c
 	if echo $$version | grep 'devel$$' > /dev/null; then \
 	    version="$$version.`date '+%Y%m%d'`"; \
 	fi; \
-	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \
-	       \! -path _MTN/\* \! -path \*/_MTN/\* \! -name _MTN \
-	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
+	find * \
+	       \! -name STATUS \! -name TABLE \
 	       \! -name Makefile \
 	       \! -name Imakefile.local \! -name descrip.local \
 	       \! -name '*.o.info' \! -name '*.flc' \! -name semantic.cache \
