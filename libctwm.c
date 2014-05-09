@@ -233,6 +233,7 @@ int CtwmAddToCurrentWorkspace (Display *display, Window window)
 		     PropModeReplace,
 		     prop, (int) len + strlen ((char*)currentw));
     XFree ((char *)prop);
+    XFree ((char *)currentw);
     XFlush (display);
     return (1);
 }
