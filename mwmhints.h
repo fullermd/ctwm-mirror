@@ -1,4 +1,3 @@
-
 #ifndef _MWMHINTS_
 #define _MWMHINTS_
 
@@ -53,6 +52,18 @@ typedef struct
 
 /* bit definitions for MwmHints.status */
 #define MWM_TEAROFF_WINDOW	(1L << 0)
+
+/*
+ * The above includes some contents from <Xm/MwmUtil.h>.
+ *
+ * Copyright (c) 1987-2012, The Open Group. All rights reserved.
+ *
+ * These libraries and programs are free software; you can
+ * redistribute them and/or modify them under the terms of the GNU
+ * Lesser General Public License as published by the Free Software
+ * Foundation; either version 2 of the License, or (at your option)
+ * any later version.
+ */
 
 extern int GetMWMHints(Window w, MotifWmHints *mwmHints);
 

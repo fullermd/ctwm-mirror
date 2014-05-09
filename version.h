@@ -65,5 +65,6 @@
 
 extern char *Version;
 extern char *VersionNumber;
+extern char *VCSRevision;
 
 #endif /* _VERSION_ */

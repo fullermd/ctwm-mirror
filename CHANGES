@@ -1719,6 +1719,7 @@ VirtualScreens {
 	[via Olaf Seibert]
 
     Changes from version 3.8.1 to 3.8.2
+    2014-??-??
     -----------------------------------
 
     1 - Various code cleanups.
@@ -1747,7 +1748,7 @@ VirtualScreens {
 
     5 - Update for new website and mailing list at ctwm.org.
 
-    6 - Look at _MOTOF_WM_HINTS for titlebar-less or border-less
+    6 - Look at _MOTIF_WM_HINTS for titlebar-less or border-less
 	windows.
 
     7 - Selected a number of cleanups from Stefan Monnier

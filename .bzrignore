@@ -8,3 +8,4 @@ gram.tab.[ch]
 lex.c
 *.o.info
 Imakefile.local
+*.tar*

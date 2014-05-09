@@ -54,3 +54,4 @@
 
 char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID;
 char *VersionNumber = VERSION_ID;
+char *VCSRevision = "%%REVISION%%";

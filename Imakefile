@@ -69,7 +69,9 @@ DEBUGPARSERDEFINES = -DYYDEBUG=1
 
 #if defined USE_M4 || defined USEM4
   M4DEFINES = -DUSEM4
-#ifndef M4CMD
+#ifdef M4_CMD
+      M4CMD = M4_CMD
+#else
       M4CMD = m4
 #endif
 #else
@@ -206,25 +208,7 @@ deftwmrc.c:  system.ctwmrc
 
 GET_VERSION="`grep '^\#define VERSION_ID' version.c | sed -e 's/^[^"]*"\([^"]*\)".*$$/\1/'`"
 dist:	clean Makefile gram.tab.h gram.tab.c lex.c deftwmrc.c
-	version=$(GET_VERSION); \
-	if echo $$version | grep 'devel$$' > /dev/null; then \
-	    version="$$version.`date '+%Y%m%d'`"; \
-	fi; \
-	find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \
-	       \! -path _MTN/\* \! -path \*/_MTN/\* \! -name _MTN \
-	       \! -name .cvsignore \! -name STATUS \! -name TABLE \
-	       \! -name Makefile \
-	       \! -name Imakefile.local \! -name descrip.local \
-	       \! -name '*.o.info' \! -name '*.flc' \! -name semantic.cache \
-	       \! -name y.output \
-		| sort > ../ctwm-$$version.list; \
-	tar --no-recursion --files-from ../ctwm-$$version.list -cvf - | \
-	tardy --user_number=0  --user_name=ctwm \
-	      --group_number=0 --group_name=ctwm \
-	      --prefix=ctwm-$$version - |\
-	gzip --best >../ctwm-$$version.tar.gz; \
-	rm -f ../ctwm-$$version.list; \
-	ls -l ../ctwm-$$version.tar.gz
+	./mk_tar.sh
 
 rpm: hack_spec dist unhack_spec do_rpm
 hack_spec:

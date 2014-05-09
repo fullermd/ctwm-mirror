@@ -862,8 +862,12 @@ void SetupOccupation (TwmWindow *twm_win,
     if (XGetWindowProperty (dpy, twm_win->w, _XA_WIN_STATE, 0L, 32, False,
 			    XA_CARDINAL, &actual_type, &actual_format, &nitems,
 			    &bytesafter, &prop) 
-	!= Success || nitems == 0) gwkspc = 0;
-    else gwkspc = (int)*prop;
+	!= Success || nitems == 0) {
+	gwkspc = 0;
+    } else {
+	gwkspc = (int)*prop;
+	XFree ((char *)prop);
+    }
     if (twm_win->occupation == fullOccupation)
       gwkspc |= WIN_STATE_STICKY;
     else
@@ -895,7 +899,6 @@ void safecopy(char *dest, char *src, int size)
 
 Bool RedirectToCaptive (Window window)
 {
-    Window		*prop;
     unsigned long	nitems, bytesafter;
     Atom		actual_type;
     int			actual_format;
@@ -921,7 +924,9 @@ Bool RedirectToCaptive (Window window)
     ret = False;
     status = XrmGetResource (db, "ctwm.redirect", "Ctwm.Redirect", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
-	char cctwm [64];
+	char	         cctwm [64];
+	Window		*prop;
+
 	safecopy (cctwm, value.addr, sizeof(cctwm));
 	atomname = (char*) malloc (strlen ("WM_CTWM_ROOT_") + strlen (cctwm) + 1);
 	sprintf (atomname, "WM_CTWM_ROOT_%s", cctwm);
@@ -939,6 +944,7 @@ Bool RedirectToCaptive (Window window)
 		    ret = True;
 		}
 	    }
+	    XFree ((char *)prop);
 	}
     }
     status = XrmGetResource (db, "ctwm.rootWindow", "Ctwm.RootWindow", &str_type, &value);
@@ -1447,8 +1453,12 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
  	if (XGetWindowProperty(dpy, tmp_win->w, _XA_WIN_STATE, 0L, 32, False,
 			      XA_CARDINAL, &actual_type, &actual_format, &numitems,
 			      &bytesafter, &prop) 
-	   != Success || numitems == 0) gwkspc = 0;
- 	else gwkspc = (int)*prop;
+	   != Success || numitems == 0) {
+	    gwkspc = 0;
+	} else {
+	    gwkspc = (int)*prop;
+	    XFree((char *)prop);
+	}
  	if (tmp_win->occupation == fullOccupation)
 	  gwkspc |= WIN_STATE_STICKY;
  	else
@@ -1509,8 +1519,12 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
     if (XGetWindowProperty (dpy, tmp_win->w, _XA_WIN_STATE, 0L, 32, False,
 			    XA_CARDINAL, &actual_type, &actual_format, &numitems,
 			    &bytesafter, &prop) 
-	!= Success || numitems == 0) gwkspc = 0;
-    else gwkspc = (int)*prop;
+	!= Success || numitems == 0) {
+	gwkspc = 0;
+    } else {
+	gwkspc = (int)*prop;
+	XFree ((char *)prop);
+    }
     if (tmp_win->occupation == fullOccupation)
       gwkspc |= WIN_STATE_STICKY;
     else
@@ -3441,6 +3455,8 @@ static char **GetCaptivesList (int scrnum)
 	p += strlen ((char*)p) + 1;
     }
     ret [i] = (char*) 0;
+    XFree ((char *)prop);
+
     return (ret);
 }
 
@@ -3590,7 +3606,8 @@ void SetPropsIfCaptiveCtwm (TwmWindow *win)
 
 Window CaptiveCtwmRootWindow (Window window)
 {
-    Window		*prop;
+    Window	       *prop;
+    Window		w;
     unsigned long	bytesafter;
     unsigned long	len;
     Atom		actual_type;
@@ -3605,7 +3622,9 @@ Window CaptiveCtwmRootWindow (Window window)
 			&bytesafter, (unsigned char **)&prop) != Success)
 	return ((Window)0);
     if (len == 0) return ((Window)0);
-    return *prop;
+    w = *prop;
+    XFree ((char *)prop);
+    return w;
 }
 
 CaptiveCTWM GetCaptiveCTWMUnderPointer (void)
@@ -3652,6 +3671,7 @@ static Bool DontRedirect (Window window)
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) return (False);
     if (len == 0) return (False);
+    XFree ((char *)prop);
     return (True);
 }
 

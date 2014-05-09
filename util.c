@@ -2966,6 +2966,7 @@ void AdoptWindow (void)
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) break;
 	if (len == 0) break; /* it is not a local root window */
+	XFree ((char *)prop);
 	localroot = w;
 	XQueryPointer (dpy, localroot, &root, &child, &root_x, &root_y,
 					&win_x, &win_y, &key_buttons);
