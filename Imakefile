@@ -219,13 +219,12 @@ dist:	clean Makefile gram.tab.h gram.tab.c lex.c deftwmrc.c
 	       \! -name '*.o.info' \! -name '*.flc' \! -name semantic.cache \
 	       \! -name y.output \
 		| sort > ../ctwm-$$version.list; \
-	tar --no-recursion --files-from ../ctwm-$$version.list -cvf - | \
-	tardy --user_number=0  --user_name=ctwm \
-	      --group_number=0 --group_name=ctwm \
-	      --prefix=ctwm-$$version - |\
-	gzip --best >../ctwm-$$version.tar.gz; \
+	tar --no-recursion --files-from ../ctwm-$$version.list \
+		--uid 0 --uname ctwm --gid 0 --gname ctwm \
+		-s "/^/ctwm-$$version\\\//" \
+		-cvf ../ctwm-$$version.tar ; \
 	rm -f ../ctwm-$$version.list; \
-	ls -l ../ctwm-$$version.tar.gz
+	ls -l ../ctwm-$$version.tar
 
 rpm: hack_spec dist unhack_spec do_rpm
 hack_spec:
