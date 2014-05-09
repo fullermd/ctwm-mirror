@@ -33,8 +33,9 @@ now, there are a bit more changes and a few more additions.  It's
 possible, thought it's doubtful, that twm patches can still be
 applied...  with great care.
 
-If you are happy with ctwm, please send me a not to richard@levitte.org.
-If you find bugs, please send a report to the mailing list.
+If you find bugs in ctwm, or just want to tell us how much you like it,
+please send a report to the mailing list.
+
 
 				----------
 
@@ -94,7 +95,7 @@ Many useful informations are only in the CHANGES file, so please read it.
 
 Mailing lists:
 
-There is a mailing list for discussions ctwm@ctwm.org.  Subscribe at
+There is a mailing list for discussions: ctwm@ctwm.org.  Subscribe at
 minimalist@ctwm.org.
 
 Repository:
