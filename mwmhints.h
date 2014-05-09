@@ -55,6 +55,5 @@ typedef struct
 #define MWM_TEAROFF_WINDOW	(1L << 0)
 
 extern int GetMWMHints(Window w, MotifWmHints *mwmHints);
-extern void ApplyMWMHints(TwmWindow *twmWin);
 
 #endif /* include guard */

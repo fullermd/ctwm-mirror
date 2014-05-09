@@ -110,33 +110,3 @@ int GetMWMHints(Window w, MotifWmHints *mwmHints)
     return success;
 }
 
-/*
- * Apply the MWM hints, if possible.
- *
- * The only ones we support are "without title" and "without border".
- *
- * If other configuration decides to have no title or border,
- * these options won't reverse that.
- */
-
-void ApplyMWMHints(TwmWindow *twmWin)
-{
-    MotifWmHints mwmHints;
-
-    if (GetMWMHints(twmWin->w, &mwmHints)) {
-	if (mwmHints.flags & MWM_HINTS_DECORATIONS) {
-	    if (mwmHints.decorations & MWM_DECOR_ALL) {
-		mwmHints.decorations ^= ~0;
-	    }
-
-	    if ((mwmHints.decorations & MWM_DECOR_BORDER) == 0) {
-		twmWin->frame_bw = 0;
-		twmWin->frame_bw3D = 0;
-	    }
-
-	    if ((mwmHints.decorations & MWM_DECOR_TITLE) == 0) {
-		twmWin->title_height = 0;
-	    }
-	}
-    }
-}
