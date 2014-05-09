@@ -159,7 +159,8 @@ Bool CtwmGetVScreenMap (Display *display, Window rootw,
     *outbuf_len = (len>=*outbuf_len)?*outbuf_len-1:len;
     memcpy(outbuf, prop, *outbuf_len);
     outbuf[*outbuf_len] = '\0';
-    return (True); 
+    XFree((char *)prop);
+    return True; 
 }
 
 Bool CtwmSetVScreenMap(Display *display, Window rootw,

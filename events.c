@@ -1746,6 +1746,7 @@ void HandlePropertyNotify(void)
 				  &bytesafter, &prop) != Success ||
 	      actual == None) return;
 	  ChangeOccupation (Tmp_win, GetMaskFromProperty (prop, nitems));
+	  XFree ((char *)prop);
 	}
 #ifdef GNOME
 	else if (Event.xproperty.atom == _XA_WIN_WORKSPACE){
@@ -1753,6 +1754,7 @@ void HandlePropertyNotify(void)
 				XA_CARDINAL, &actual, &actual_format, &nitems, &bytesafter,
 				&gwkspc) != Success || actual == None) return;
 	  ChangeOccupation (Tmp_win, 1 << (int)(*gwkspc));
+	  XFree ((char *)gwkspc);
 	}
 #endif /* GNOME */
 	break;

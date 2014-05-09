@@ -52,6 +52,7 @@ Bool CtwmIsRunning (Display *display, int scrnum)
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &prop) != Success) return (False);
     if (len == 0) return (False);
+    XFree ((char *)prop);
     return (True);
 }
 
@@ -94,6 +95,7 @@ char **CtwmListWorkspaces (Display *display, int scrnum)
 	p += strlen (p) + 1;
     }
     ret [i] = NULL;
+    XFree ((char *)prop);
     return (ret);
 }
 
@@ -165,6 +167,7 @@ char **CtwmCurrentOccupation (Display *display, Window window)
 	p += strlen (p) + 1;
     }
     ret [i] = NULL;
+    XFree ((char *)prop);
     return (ret);
 }
 
@@ -216,6 +219,7 @@ int CtwmAddToCurrentWorkspace (Display *display, Window window)
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &currentw) != Success) return (0);
     if (len == 0) return (0);
+    XFree ((char *)prop);
 
     _XA_WM_OCCUPATION = XInternAtom (display, "WM_OCCUPATION", True);
     if (_XA_WM_OCCUPATION == None) return (0);
@@ -229,6 +233,7 @@ int CtwmAddToCurrentWorkspace (Display *display, Window window)
     XChangeProperty (display, window, _XA_WM_OCCUPATION, XA_STRING, 8,
 		     PropModeReplace,
 		     prop, (int) len + strlen ((char*)currentw));
+    XFree ((char *)prop);
     XFlush (display);
     return (1);
 }

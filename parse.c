@@ -1874,18 +1874,21 @@ int do_color_keyword (int keyword, int colormode, char *s)
 static void put_pixel_on_root(Pixel pixel)
 {
   int           i, addPixel = 1;
-  Atom          pixelAtom, retAtom;
+  Atom          retAtom;
   int           retFormat;
   unsigned long nPixels, retAfter;
   Pixel        *retProp;
-  pixelAtom = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", True);
-  XGetWindowProperty(dpy, Scr->Root, pixelAtom, 0, 8192,
+
+  if (XGetWindowProperty(dpy, Scr->Root, _XA_MIT_PRIORITY_COLORS, 0, 8192,
 		     False, XA_CARDINAL, &retAtom,
 		     &retFormat, &nPixels, &retAfter,
-		     (unsigned char **)&retProp);
+		     (unsigned char **)&retProp) != Success || !retProp)
+      return;
 
   for (i=0; i< nPixels; i++)
       if (pixel == retProp[i]) addPixel = 0;
+
+  XFree((char *)retProp);
 
   if (addPixel)
       XChangeProperty (dpy, Scr->Root, _XA_MIT_PRIORITY_COLORS,

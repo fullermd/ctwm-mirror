@@ -100,6 +100,7 @@
 #include "windowbox.h"
 #include "workmgr.h"
 #include "cursor.h"
+#include "gnomewindefs.h"
 #ifdef SOUNDS
 #  include "sound.h"
 #endif
@@ -4280,9 +4281,13 @@ void Squeeze (TwmWindow *tmp_win)
  	if (XGetWindowProperty (dpy, tmp_win->w, _XA_WIN_STATE, 0L, 32, False,
 			       XA_CARDINAL, &actual_type, &actual_format,
 			       &nitems, &bytesafter, &prop) 
-	    != Success || nitems == 0) gwkspc = 0;
- 	else gwkspc = (int)*prop;
- 	gwkspc &= ~(1<<5);
+	    != Success || nitems == 0) {
+	    gwkspc = 0;
+	} else {
+	    gwkspc = (int)*prop;
+	    XFree ((char *)prop);
+	}
+ 	gwkspc &= ~WIN_STATE_SHADED;
  	XChangeProperty (dpy, tmp_win->w, _XA_WIN_STATE, XA_CARDINAL, 32, 
 			 PropModeReplace, (unsigned char *)&gwkspc, 1);
 	XSelectInput(dpy, tmp_win->w, eventMask); 
@@ -4324,9 +4329,13 @@ void Squeeze (TwmWindow *tmp_win)
     if (XGetWindowProperty (dpy, tmp_win->w, _XA_WIN_STATE, 0L, 32, False,
 			    XA_CARDINAL, &actual_type, &actual_format, &nitems,
 			    &bytesafter, &prop) 
-	!= Success || nitems == 0) gwkspc = 0;
-    else gwkspc = (int)*prop;
-    gwkspc |= (1<<5);
+	!= Success || nitems == 0) {
+	gwkspc = 0;
+    } else {
+	gwkspc = (int)*prop;
+	XFree ((char *)prop);
+    }
+    gwkspc |= WIN_STATE_SHADED;
     XChangeProperty (dpy, tmp_win->w, _XA_WIN_STATE, XA_CARDINAL, 32, 
 		     PropModeReplace, (unsigned char *)&gwkspc, 1);
 #else
