@@ -1746,3 +1746,6 @@ VirtualScreens {
     4 - Fix incorrect inclusion of $DESTDIR in some paths.
 
     5 - Update for new website and mailing list at ctwm.org.
+
+    6 - Look at _MOTOF_WM_HINTS for titlebar-less or border-less
+	windows.
