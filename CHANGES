@@ -1747,7 +1747,10 @@ VirtualScreens {
 
     5 - Update for new website and mailing list at ctwm.org.
 
-    6 - Selected a number of cleanups from Stefan Monnier
+    6 - Look at _MOTOF_WM_HINTS for titlebar-less or border-less
+	windows.
+
+    7 - Selected a number of cleanups from Stefan Monnier
 	<monnier@IRO.UMontreal.CA>, including rate-limiting of
 	animations using a new _XA_WM_END_OF_ANIMATION message.
 	Added some similar changes, improved the prevention of
@@ -1755,7 +1758,7 @@ VirtualScreens {
 	for emergencies, a hack-fix for f.adoptwindow. More virtual
 	screen tweaks/fixes.
 
-    7 - Added the remaining OnTopPriority changes from Stefan Monnier
+    8 - Added the remaining OnTopPriority changes from Stefan Monnier
 	<monnier@IRO.UMontreal.CA>: AutoPopup, AutoPriority,
 	OnTopPriority, PrioritySwitching, f.changepriority,
 	f.priorityswitching, f.setpriority, f.switchpriority,

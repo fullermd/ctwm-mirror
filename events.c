@@ -1101,24 +1101,24 @@ void HandleKeyPress(void)
 		switch (item->item [0]) {
 		    case '^' :
 			if ((modifier & ControlMask) &&
-			    (keynam [0] == tolower ((int)(unsigned char)item->item [1])))
+			    (keynam [0] == Tolower (item->item [1])))
 			    matched = True;
 			break;
 		    case '~' :
 			if ((modifier & Mod1Mask) &&
-			    (keynam [0] == tolower ((int)(unsigned char)item->item [1])))
+			    (keynam [0] == Tolower (item->item [1])))
 			    matched = True;
 			break;
 		    case ' ' :
 			offset = 1;
 		    default :
 			if (((Scr->IgnoreCaseInMenuSelection) &&
-			    (keynam [0] == tolower ((int)(unsigned char)item->item [offset]))) ||
+			    (keynam [0] == Tolower (item->item [offset]))) ||
 
-			     ((modifier & ShiftMask) && isupper ((int)(unsigned char)item->item [offset]) &&
-			     (keynam [0] == tolower ((int)(unsigned char)item->item [offset]))) ||
+			     ((modifier & ShiftMask) && Isupper (item->item [offset]) &&
+			     (keynam [0] == Tolower (item->item [offset]))) ||
 
-			    (!(modifier & ShiftMask) && islower ((int)(unsigned char)item->item [offset]) &&
+			    (!(modifier & ShiftMask) && Islower (item->item [offset]) &&
 			     (keynam [0] == item->item [offset]))) matched = True;
 			break;
 		}

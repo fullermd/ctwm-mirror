@@ -82,6 +82,19 @@
 #define ABS(x) ((x)<0?-(x):(x))
 #endif
 
+/*
+ * Define some helper macros, because "The argument to toupper() must be
+ * EOF or representable as an unsigned char; otherwise, the behavior is
+ * undefined." In particular, an argument of type "char" is problematic
+ * (gcc:  warning: array subscript has type 'char').
+ */
+#define Isascii(c)	isascii((int)(unsigned char)(c))
+#define Isdigit(c)	isdigit((int)(unsigned char)(c))
+#define Islower(c)	islower((int)(unsigned char)(c))
+#define Isupper(c)	isupper((int)(unsigned char)(c))
+#define Tolower(c)	tolower((int)(unsigned char)(c))
+#define Toupper(c)	toupper((int)(unsigned char)(c))
+
 extern int Animating;
 extern Bool AnimationActive;
 extern Bool MaybeAnimate;
