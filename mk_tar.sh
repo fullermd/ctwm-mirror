@@ -16,6 +16,10 @@ if [ -d $dir ] ; then
 	echo "Dir '$dir' already exists!"
 	exit;
 fi
+if [ -r $dir.tar ] ; then
+	echo "Tarball '$dir.tar' already exists!"
+	exit;
+fi
 mkdir -m755 $dir
 
 # Copy the pertinent files in
