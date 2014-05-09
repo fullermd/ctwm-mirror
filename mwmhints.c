@@ -62,7 +62,7 @@ int GetMWMHints(Window w, MotifWmHints *mwmHints)
     int actual_format;
     unsigned long nitems;
     unsigned long bytes_after;
-    unsigned char *prop = NULL;
+    unsigned long *prop = NULL;
 
     success = XGetWindowProperty(
 			dpy, w, MOTIF_WM_HINTS,
@@ -73,18 +73,18 @@ int GetMWMHints(Window w, MotifWmHints *mwmHints)
 			&actual_format, /* int *actual_format_return, */
 			&nitems, 	/* unsigned long *nitems_return,  */
 			&bytes_after, 	/* unsigned long * */
-			&prop);		/* unsigned char ** */
+			(unsigned char **)&prop);	/* unsigned char ** */
 
     if (success == Success &&
 	    actual_type == MOTIF_WM_HINTS &&
 	    actual_format == 32 &&
 	    nitems >= 3) {
-	mwmHints->flags = ((unsigned long *)prop)[0];
-	mwmHints->functions = ((unsigned long *)prop)[1];
-	mwmHints->decorations = ((unsigned long *)prop)[2];
+	mwmHints->flags = (int)prop[0];
+	mwmHints->functions = (int)prop[1];
+	mwmHints->decorations = (int)prop[2];
 #ifdef FULL_MWM_DATA
-	mwmHints->input_mode = ((unsigned long *)prop)[3];
-	mwmHints->status = ((unsigned long *)prop)[4];
+	mwmHints->input_mode = (int)prop[3];
+	mwmHints->status = (int)prop[4];
 #endif
 
 	if (mwmHints->flags & MWM_HINTS_FUNCTIONS) {
