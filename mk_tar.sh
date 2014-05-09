@@ -32,7 +32,7 @@ find * \
 	| cpio -pmdu $dir
 
 # Edit the set version file in-place
-revid=`bzr version-info --custom --template '{revision_id}'`
+revid=`bzr revision-info --tree | cut -d' ' -f2`
 sed -i '' -e "s/%%REVISION%%/$revid/" $dir/version.c
 
 # Tar it up
