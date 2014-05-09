@@ -31,8 +31,8 @@
  * Only the bits marked [v] are actually looked at.
  * For the rest, ctwm has no concept, really.
  *
- * Lots of information gleaned from the Motif header <Xm/MwmUtil.h> and
- * manual page VendorShell(3motif).
+ * For some information about the meaning of the flags, see
+ * the manual page VendorShell(3) from the Motif library.
  */
 
 #include <stdio.h>
