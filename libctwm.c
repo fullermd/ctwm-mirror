@@ -219,7 +219,6 @@ int CtwmAddToCurrentWorkspace (Display *display, Window window)
 			False, XA_STRING, &actual_type, &actual_format, &len,
 			&bytesafter, &currentw) != Success) return (0);
     if (len == 0) return (0);
-    XFree ((char *)prop);
 
     _XA_WM_OCCUPATION = XInternAtom (display, "WM_OCCUPATION", True);
     if (_XA_WM_OCCUPATION == None) return (0);
@@ -234,6 +233,7 @@ int CtwmAddToCurrentWorkspace (Display *display, Window window)
 		     PropModeReplace,
 		     prop, (int) len + strlen ((char*)currentw));
     XFree ((char *)prop);
+    XFree ((char *)currentw);
     XFlush (display);
     return (1);
 }

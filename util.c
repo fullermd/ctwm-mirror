@@ -86,6 +86,15 @@
 #include "cursor.h"
 #include "resize.h"
 #include <stdio.h>
+
+/*
+ * Need this for the fixed-size uint_*'s used below.  stdint.h would be
+ * the more appropriate include, but there exist systems that don't have
+ * it, but do have inttypes.h (FreeBSD 4, Solaris 7-9 I've heard of,
+ * probably more).
+ */
+#include <inttypes.h>
+
 #ifdef VMS
 #include <decw$include/Xos.h>
 #include <decw$include/Xatom.h>
@@ -96,7 +105,7 @@
 #ifdef HAVE_XWDFILE_H
 #include "XWDFile.h"		/* We do some tricks, since the original
 				   has bugs...		/Richard Levitte */
-#endif
+#endif /* HAVE_XWDFILE_H */
 #include <unixlib.h>
 #include <starlet.h>
 #include <ssdef.h>
@@ -104,7 +113,7 @@
 #include <lib$routines.h>
 #ifdef __DECC
 #include <unistd.h>
-#endif
+#endif /* __DECC */
 #define USE_SIGNALS
 #ifndef F_OK
 #  define F_OK 0
@@ -118,14 +127,14 @@
 #ifndef R_OK
 #  define R_OK 4
 #endif
-#else
+#else /* !VMS */
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/CharSet.h>
 #include <X11/Xmu/WinUtil.h>
 #include <X11/XWDFile.h>
-#endif
+#endif /* VMS */
 
 #if defined(USE_SIGNALS) && defined(__sgi)
 #  define _BSD_SIGNALS
@@ -2948,6 +2957,7 @@ void AdoptWindow (void)
     Window		root, parent, child, *children;
     unsigned int	nchildren, key_buttons;
     int			root_x, root_y, win_x, win_y;
+    int			ret;
     int			savedRestartPreviousState;
 
     localroot = w = RootWindow (dpy, Scr->screen);
@@ -2962,11 +2972,14 @@ void AdoptWindow (void)
 	if (child == (Window) 0) break;
 
 	w = XmuClientWindow (dpy, child);
-	if (XGetWindowProperty (dpy, w, _XA_WM_WORKSPACESLIST, 0L, 512,
+	ret = XGetWindowProperty (dpy, w, _XA_WM_WORKSPACESLIST, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
-			&bytesafter, &prop) != Success) break;
-	if (len == 0) break; /* it is not a local root window */
-	XFree ((char *)prop);
+			&bytesafter, &prop);
+	XFree ((char *)prop); /* Don't ever do anything with it */
+	if (ret != Success)
+		break;
+	if (len == 0) /* it is not a local root window */
+		break; /* it is not a local root window */
 	localroot = w;
 	XQueryPointer (dpy, localroot, &root, &child, &root_x, &root_y,
 					&win_x, &win_y, &key_buttons);
@@ -4061,7 +4074,6 @@ void ConstrainByBorders (TwmWindow *twmwin,
 
 #ifdef JPEG
 
-/* May need stdint.h (on C99) or inttypes.h (on not-quite) systems? */
 uint16_t *buffer_16bpp;
 uint32_t *buffer_32bpp;
 
