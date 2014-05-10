@@ -2900,6 +2900,7 @@ void adoptWindow (void)
     Window		root, parent, child, *children;
     unsigned int	nchildren, key_buttons;
     int			root_x, root_y, win_x, win_y;
+    int			ret;
 
     localroot = w = RootWindow (dpy, Scr->screen);
     XGrabPointer (dpy, localroot, False,
@@ -2913,11 +2914,14 @@ void adoptWindow (void)
 	if (child == (Window) 0) break;
 
 	w = XmuClientWindow (dpy, child);
-	if (XGetWindowProperty (dpy, w, _XA_WM_WORKSPACESLIST, 0L, 512,
+	ret = XGetWindowProperty (dpy, w, _XA_WM_WORKSPACESLIST, 0L, 512,
 			False, XA_STRING, &actual_type, &actual_format, &len,
-			&bytesafter, &prop) != Success) break;
-	if (len == 0) break; /* it is not a local root window */
-	XFree ((char *)prop);
+			&bytesafter, &prop);
+	XFree ((char *)prop); /* Don't ever do anything with it */
+	if (ret != Success)
+		break;
+	if (len == 0) /* it is not a local root window */
+		break; /* it is not a local root window */
 	localroot = w;
 	XQueryPointer (dpy, localroot, &root, &child, &root_x, &root_y,
 					&win_x, &win_y, &key_buttons);
