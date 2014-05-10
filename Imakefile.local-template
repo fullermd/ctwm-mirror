@@ -113,9 +113,7 @@ XCOMM
 
 XCOMM ----------------------------------------------------------------------
 XCOMM Feature: Compile with lots and lots of warnings
-XCOMM If you use gcc, and want to build with as much paranoia as possible,
-XCOMM define GCC_PEDANTIC.
-XCOMM Quite honestly, I would recommend for you not to use it for now.
-XCOMM You'll just start running and screaming :-).	-- Richard Levitte
-XCOMM
-#undef  GCC_PEDANTIC
+XCOMM This is enabled by default.  Setting NO_WARNS turns it off.  You
+XCOMM probably shouldn't do that unless it offends you having so much
+XCOMM output...
+#undef  NO_WARNS
