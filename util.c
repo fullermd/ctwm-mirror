@@ -95,7 +95,7 @@
 #ifdef HAVE_XWDFILE_H
 #include "XWDFile.h"		/* We do some tricks, since the original
 				   has bugs...		/Richard Levitte */
-#endif
+#endif /* HAVE_XWDFILE_H */
 #include <unixlib.h>
 #include <starlet.h>
 #include <ssdef.h>
@@ -103,7 +103,7 @@
 #include <lib$routines.h>
 #ifdef __DECC
 #include <unistd.h>
-#endif
+#endif /* __DECC */
 #define USE_SIGNALS
 #ifndef F_OK
 #  define F_OK 0
@@ -117,14 +117,14 @@
 #ifndef R_OK
 #  define R_OK 4
 #endif
-#else
+#else /* !VMS */
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/CharSet.h>
 #include <X11/Xmu/WinUtil.h>
 #include <X11/XWDFile.h>
-#endif
+#endif /* VMS */
 
 #if defined(USE_SIGNALS) && defined(__sgi)
 #  define _BSD_SIGNALS
