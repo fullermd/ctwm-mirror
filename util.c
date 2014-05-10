@@ -85,6 +85,15 @@
 #include "icons.h"
 #include "cursor.h"
 #include <stdio.h>
+
+/*
+ * Need this for the fixed-size uint_*'s used below.  stdint.h would be
+ * the more appropriate include, but there exist systems that don't have
+ * it, but do have inttypes.h (FreeBSD 4, Solaris 7-9 I've heard of,
+ * probably more).
+ */
+#include <inttypes.h>
+
 #ifdef VMS
 #include <decw$include/Xos.h>
 #include <decw$include/Xatom.h>
@@ -3915,7 +3924,6 @@ void ConstrainByBorders (TwmWindow *twmwin,
 
 #ifdef JPEG
 
-/* May need stdint.h (on C99) or inttypes.h (on not-quite) systems? */
 uint16_t *buffer_16bpp;
 uint32_t *buffer_32bpp;
 
