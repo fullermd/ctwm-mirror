@@ -41,9 +41,9 @@ please send a report to the mailing list.
 Configuration:
 
 Ctwm is built using xmkmf, which read Imakefile.  That file includes
-Imakefile.local, which is meant for local configuration, and WHICH
-YOU MUST CREATE.  For your comfort, the file Imakefile.local-template
-can simply be copied to Imakefile.local, then changed.
+Imakefile.local, which is meant for local configuration, and *WHICH YOU
+MUST CREATE*.  For your comfort, the file Imakefile.local-template can
+simply be copied to Imakefile.local, then changed.
 
 Configuration is done by defining any of the following C macros:
 
@@ -75,6 +75,8 @@ rplay package replace `#undef USE_SOUND' with `#define USE_SOUND'.
 
 Building:
 
+funny prompt> cp Imakefile.local-template Imakefile.local
+              [ edit if necessary; you probably don't have to ]
 funny prompt> xmkmf
 funny prompt> make
 
@@ -82,8 +84,7 @@ funny prompt> make
 
 Installation:
 
-funny prompt> make install
-funny prompt> make install.man
+funny prompt> make install install.man
 
                                 ----------
 
