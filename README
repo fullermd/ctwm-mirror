@@ -3,8 +3,7 @@
 
 
 CTWM is an extension to twm, originally written by Claude Lecommandeur
-(see README.Claude for his README), that support multiple virtual
-screens, and a lot of other goodies.
+that support multiple virtual screens, and a lot of other goodies.
 
 You can use and manage up to 32 virtual screens called workspaces.
 You swap from one workspace to another by clicking on a button in an
@@ -37,7 +36,7 @@ If you find bugs in ctwm, or just want to tell us how much you like it,
 please send a report to the mailing list.
 
 
-				----------
+                                ----------
 
 Configuration:
 
@@ -48,50 +47,50 @@ can simply be copied to Imakefile.local, then changed.
 
 Configuration is done by defining any of the following C macros:
 
-USEM4		If defined, enables the use of the m4 preprocessor on
-		the run-time configuration file.  Disable if m4 isn't
-		present.
-		Defined in Imakefile.local-template.
-XPM		If defined, enables the use of xpm images.  Disable if
-		libxpm isn't present.
-		Defined in Imakefile.local-template.
-JPEG		If defined, enables the use of jpeg images.  Disable
-		if libjpeg isn't present.
-		Defined in Imakefile.local-template.
-GNOME		If defined, build to work with Gnome.
-		Defined in Imakefile.local-template.
-USE_SOUND	if defined, build with sound support.  Disable if
-		librplay isn't present.
-		Defined in Imakefile.local-template.
-USE_GNU_REGEX	if defined, build with GNU regex.  Otherwise, use an
-		internal implementation.
-		Undefined in Imakefile.local-template.
+USEM4           If defined, enables the use of the m4 preprocessor on
+                the run-time configuration file.  Disable if m4 isn't
+                present.
+                Defined in Imakefile.local-template.
+XPM             If defined, enables the use of xpm images.  Disable if
+                libxpm isn't present.
+                Defined in Imakefile.local-template.
+JPEG            If defined, enables the use of jpeg images.  Disable
+                if libjpeg isn't present.
+                Defined in Imakefile.local-template.
+GNOME           If defined, build to work with Gnome.
+                Defined in Imakefile.local-template.
+USE_SOUND       if defined, build with sound support.  Disable if
+                librplay isn't present.
+                Defined in Imakefile.local-template.
+USE_GNU_REGEX   if defined, build with GNU regex.  Otherwise, use an
+                internal implementation.
+                Undefined in Imakefile.local-template.
 
 If you don't have xpm, fetch it from ftp.x.org or comment out the
 #define XPM in Imakefile.local.  If you don't have the m4 preprocessor
 (or don't want to use it) comment out #define USEM4, if you have the
 rplay package replace `#undef USE_SOUND' with `#define USE_SOUND'.
 
-				----------
+                                ----------
 
 Building:
 
 funny prompt> xmkmf
 funny prompt> make
 
-				----------
+                                ----------
 
 Installation:
 
 funny prompt> make install
 funny prompt> make install.man
 
-				----------
+                                ----------
 
 There is a manual page, which always needs more work (any volunteer ?).
 Many useful informations are only in the CHANGES file, so please read it.
 
-				----------
+                                ----------
 
 Mailing lists:
 
@@ -107,3 +106,6 @@ https://launchpad.net/ctwm for more details.
 Further information:
 
 http://www.ctwm.org/
+
+
+# vim:expandtab:
