@@ -365,17 +365,18 @@ static OtpWinList *GetOwlAtOrBelowInVS(OtpWinList *owl, VirtualScreen *vs)
 
 static void InsertOwlAbove (OtpWinList *owl, OtpWinList *other_owl)
 {
-    XWindowChanges xwc;
-    int xwcm;
-
 #if DEBUG_OTP
-    fprintf(stderr, "InsertOwlAbove owl->priority=%d w=%x ",
+    fprintf(stderr, "InsertOwlAbove owl->priority=%d w=%x parent_vs:(x,y)=(%d,%d)",
 	    owl->priority,
-	    (unsigned int)WindowOfOwl(owl));
+	    (unsigned int)WindowOfOwl(owl),
+	    owl->twm_win->parent_vs->x,
+	    owl->twm_win->parent_vs->y);
     if (other_owl != NULL) {
-	fprintf(stderr, "other_owl->priority=%d w=%x",
+	fprintf(stderr, "other_owl->priority=%d w=%x parent_vs:(x,y)=(%d,%d)",
 		other_owl->priority,
-		(unsigned int)WindowOfOwl(other_owl));
+		(unsigned int)WindowOfOwl(other_owl),
+		owl->twm_win->parent_vs->x,
+		owl->twm_win->parent_vs->y);
     }
     fprintf(stderr, "\n");
 #endif
@@ -397,7 +398,7 @@ static void InsertOwlAbove (OtpWinList *owl, OtpWinList *other_owl)
         owl->above->below = owl;
         bottomOwl = owl;
     } else {
-	OtpWinList *vs_owl = GetOwlAtOrBelowInVS(other_owl, owl->twm_win->vs);
+	OtpWinList *vs_owl = GetOwlAtOrBelowInVS(other_owl, owl->twm_win->parent_vs);
 
 	assert(owl->priority >= other_owl->priority);
 	if (other_owl->above != NULL) {
@@ -411,10 +412,13 @@ static void InsertOwlAbove (OtpWinList *owl, OtpWinList *other_owl)
 	    /* pass the action to the Xserver */
 	    XLowerWindow(dpy, WindowOfOwl(owl));
 	} else {
+	    XWindowChanges xwc;
+	    int xwcm;
+
 	    DPRINTF((stderr, "General case\n"));
 	    /* general case */
 	    assert(vs_owl->priority <= other_owl->priority);
-	    assert(owl->twm_win->vs == vs_owl->twm_win->parent_vs);
+	    assert(owl->twm_win->parent_vs == vs_owl->twm_win->parent_vs);
 	
 	    /* pass the action to the Xserver */
 	    xwcm = CWStackMode | CWSibling;
@@ -423,13 +427,11 @@ static void InsertOwlAbove (OtpWinList *owl, OtpWinList *other_owl)
 	    XConfigureWindow(dpy, WindowOfOwl(owl), xwcm, &xwc);
 	}
 
-
 	/* update the list */
 	owl->below = other_owl;
 	owl->above = other_owl->above;
 	owl->below->above = owl;
 	if (owl->above != NULL) owl->above->below = owl;
-
     }
 }
 
