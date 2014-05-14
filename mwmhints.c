@@ -44,6 +44,13 @@ static Atom MOTIF_WM_HINTS = None;
 
 int GetMWMHints(Window w, MotifWmHints *mwmHints)
 {
+    int success;
+    Atom actual_type;
+    int actual_format;
+    unsigned long nitems;
+    unsigned long bytes_after;
+    unsigned long *prop = NULL;
+
     /* Defaults for when not found */
     mwmHints->flags = 0;
     mwmHints->functions = 0;
@@ -56,13 +63,6 @@ int GetMWMHints(Window w, MotifWmHints *mwmHints)
     if (MOTIF_WM_HINTS == (Atom)None) {
 	MOTIF_WM_HINTS = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
     }
-
-    int success;
-    Atom actual_type;
-    int actual_format;
-    unsigned long nitems;
-    unsigned long bytes_after;
-    unsigned long *prop = NULL;
 
     success = XGetWindowProperty(
 			dpy, w, MOTIF_WM_HINTS,
