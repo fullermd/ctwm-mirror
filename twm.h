@@ -530,6 +530,7 @@ extern unsigned int InfoWidth,InfoHeight;
 extern char Info[][INFO_SIZE];
 extern int Argc;
 extern char **Argv;
+extern Bool ShowWelcomeWindow;
 #ifndef VMS
 extern char **Environ;
 #endif

@@ -665,6 +665,9 @@ These windows won't be set to InactiveState when they become invisible
 due to a change workspace. This has been added because some ill\-behaved
 clients (Frame5) don't like this.
 
+.IP "\fBDontShowWelcomeWindow\fP" 8
+indicates the same as the -W option: the welcome window is not shown.
+
 .IP "\fBDontSqueezeTitle\fP [{ \fIwin\-list\fP }] " 8
 This variable indicates that titlebars should not be squeezed to their
 minimum size as described under \fBSqueezeTitle\fP below.

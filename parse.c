@@ -636,6 +636,7 @@ typedef struct _TwmKeyword {
 #define kw0_NoWarpToMenuTitle           65
 #define kw0_SaveWorkspaceFocus          66 /* blais */
 #define kw0_RaiseOnWarp			67
+#define kw0_DontShowWelcomeWindow	68
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -777,6 +778,7 @@ static TwmKeyword keytable[] = {
     { "dontpaintrootwindow",	KEYWORD, kw0_DontPaintRootWindow },
     { "dontsave",		DONT_SAVE, 0 },
     { "dontsetinactive",	DONTSETINACTIVE, 0 },
+    { "dontshowwelcomewindow",  KEYWORD, kw0_DontShowWelcomeWindow },
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
     { "donttoggleworkspacemanagerstate", DONTTOGGLEWORKSPACEMANAGERSTATE, 0 },
     { "dontwarpcursorinwmap",	KEYWORD, kw0_DontWarpCursorInWMap },
@@ -1383,6 +1385,10 @@ int do_single_keyword (int keyword)
 
       case kw0_NoWarpToMenuTitle:
 	Scr->NoWarpToMenuTitle = TRUE;
+	return 1;
+
+      case kw0_DontShowWelcomeWindow:
+	ShowWelcomeWindow = False;
 	return 1;
 
     }
