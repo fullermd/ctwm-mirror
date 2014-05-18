@@ -1964,9 +1964,11 @@ void HandleClientMessage(void)
 	unsigned long new_stuff = (unsigned long) Event.xclient.data.l [1];
 	unsigned long old_stuff = (unsigned long) Event.xclient.data.l [0];
 	Window	      tmp_win = Event.xclient.window;
-	for (twm_win = Scr->FirstWindow; twm_win != NULL; twm_win = twm_win->next)
-	    if (twm_win->w == tmp_win) break;
+
+	twm_win = GetTwmWindow(tmp_win);
+
 	if (twm_win == NULL) return;
+
 	for (i = 1; i < (1 << 10); i <<= 1){
 	    switch (old_stuff & i) {
 		case WIN_STATE_STICKY: /* sticky */
