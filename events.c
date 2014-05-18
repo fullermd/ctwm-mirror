@@ -445,18 +445,19 @@ static ScreenInfo *GetTwmScreen(XEvent *event)
 Bool DispatchEvent2 (void)
 {
     Window w = Event.xany.window;
-    ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
-    StashEventTime (&Event);
+    ScreenInfo *thisScr;
 
+    StashEventTime (&Event);
     Tmp_win = GetTwmWindow(w);
-    Scr = GetTwmScreen(&Event);
+    thisScr = GetTwmScreen(&Event);
 
     dumpevent(&Event);
 
-    if (!Scr) {
-	Scr = lastScr;	    /* XXX_MIKE - try not to leave Scr NULL */
+    if (!thisScr) {
 	return False;
     }
+    Scr = thisScr;
+
     FixRootEvent (&Event);
 
 #ifdef SOUNDS
@@ -484,18 +485,18 @@ Bool DispatchEvent2 (void)
 Bool DispatchEvent (void)
 {
     Window w = Event.xany.window;
-    ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
-    StashEventTime (&Event);
+    ScreenInfo *thisScr;
 
+    StashEventTime (&Event);
     Tmp_win = GetTwmWindow(w);
-    Scr = GetTwmScreen(&Event);
+    thisScr = GetTwmScreen(&Event);
 
     dumpevent(&Event);
 
-    if (!Scr) {
-	Scr = lastScr;	    /* XXX_MIKE - try not to leave Scr NULL */
+    if (!thisScr) {
 	return False;
     }
+    Scr = thisScr;
 
     if (captive) {
       if ((Event.type == ConfigureNotify) && (Event.xconfigure.window == Scr->CaptiveRoot)) {
