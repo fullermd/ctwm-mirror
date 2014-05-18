@@ -398,10 +398,10 @@ struct TwmWindow
     short StartSqueezed;
     short AlwaysSqueezeToGravity;
     short DontSetInactive;
-    Bool hasfocusvisible;	/* The window has visivle focus*/
+    Bool hasfocusvisible;	/* The window has visible focus*/
     int  occupation;
-    Image *HiliteImage;                /* focus highlight window background */
-    Image *LoliteImage;                /* focus lowlight window background */
+    Image *HiliteImage;         /* focus highlight window background */
+    Image *LoliteImage;         /* focus lowlight window background */
     WindowRegion *wr;
     WindowBox *winbox;
     Bool iswinbox;
@@ -409,9 +409,9 @@ struct TwmWindow
 	int x, y;
 	unsigned int width, height;
     } savegeometry;
-    struct VirtualScreen *vs;		/* where the window is supposed to be (may be NULL) */
-    struct VirtualScreen *parent_vs;	/* where it really is (never gets deparented) */
-    struct VirtualScreen *savevs;
+    struct VirtualScreen *vs;	/* where the window is mapped (may be NULL) */
+    struct VirtualScreen *parent_vs;	/* where it is parented (deparenting is impossible) */
+    struct VirtualScreen *savevs;	/* for ShowBackground only */
 
     Bool nameChanged;	/* did WM_NAME ever change? */
     /* did the user ever change the width/height? {yes, no, or unknown} */
