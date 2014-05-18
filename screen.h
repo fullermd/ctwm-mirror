@@ -445,8 +445,7 @@ struct ScreenInfo
     short RaiseWhenAutoUnSqueeze;
     short RaiseOnClick;		/* Raise a window when clieked into */
     short RaiseOnClickButton;		/* Raise a window when clieked into */
-    short IgnoreLockModifier;	/* Should we ignore the lock modifier */
-    unsigned int IgnoreModifier;
+    unsigned int IgnoreModifier;/* We should ignore these modifiers */
     short IgnoreCaseInMenuSelection;	/* Should we ignore case in menu selection */
     short NoWarpToMenuTitle; /* warp cursor to clipped menu title */
     short NoImagesInWorkSpaceManager;   /* do not display mini images of the desktop background images on WSmap */

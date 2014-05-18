@@ -200,7 +200,6 @@ static void dumpevent (XEvent *e);
 
 static unsigned int set_mask_ignore (unsigned int modifier)
 {
-    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
     modifier &= ~Scr->IgnoreModifier;
 
     return modifier;

@@ -1358,7 +1358,7 @@ int do_single_keyword (int keyword)
 	return 1;
 
       case kw0_IgnoreLockModifier:
-	Scr->IgnoreLockModifier = TRUE;
+	Scr->IgnoreModifier |= LockMask;
 	return 1;
 
       case kw0_PackNewWindows:

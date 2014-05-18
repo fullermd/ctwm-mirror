@@ -1117,7 +1117,6 @@ void InitVariables(void)
     Scr->RaiseWhenAutoUnSqueeze = False;
     Scr->RaiseOnClick = False;
     Scr->RaiseOnClickButton = 1;
-    Scr->IgnoreLockModifier = False;
     Scr->IgnoreModifier = 0;
     Scr->IgnoreCaseInMenuSelection = False;
     Scr->PackNewWindows = False;
