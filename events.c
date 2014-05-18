@@ -1978,24 +1978,6 @@ void HandleClientMessage(void)
 	if (old_stuff & WIN_STATE_SHADED) {	/* shaded (squeezed) */
 	    Squeeze (twm_win);
 	}
-#ifdef notdef
-	if (old_stuff & WIN_STATE_MINIMIZED) {	/* minimized - reserved */
-	}
-	if (old_stuff & WIN_STATE_MAXIMIZED_VERT) { /* window in maximized V state */
-	}
-	if (old_stuff & WIN_STATE_MAXIMIZED_HORIZ) { /* maximized horizontally */
-	}
-	if (old_stuff & WIN_STATE_HIDDEN) { /* hidden - what does this mean?? */
-	}
-	if (old_stuff & WIN_STATE_HID_WORKSPACE) { /* not on this workspace */
-	}
-	if (old_stuff & WIN_STATE_HID_TRANSIENT) { /* owner of transient hidden ? */
-	}
-	if (old_stuff & WIN_STATE_FIXED_POSITION) { /* position fixed, don't move */
-	}
-	if (old_stuff & WIN_STATE_ARRANGE_IGNORE) { /* ignore when auto-arranging */
-	}
-#endif /* notdef */
     }
 #endif /* GNOME */
 }
