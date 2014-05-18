@@ -1512,9 +1512,6 @@ void GrabButtons(TwmWindow *tmp_win)
 	if ((tmp->cont != C_WINDOW) || (tmp->func == 0)) continue;
 	grabbutton (tmp->num, tmp->mods, tmp_win->frame, GrabModeAsync);
 	    
-	if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask)) {
-	    grabbutton (tmp->num, tmp->mods | LockMask, tmp_win->frame, GrabModeAsync);
-	}
 	for (i = 0 ; i < 8 ; i++) {
 	    if ((Scr->IgnoreModifier & ModifierMask [i]) && !(tmp->mods & ModifierMask [i]))
 		grabbutton (tmp->num, tmp->mods | ModifierMask [i],
@@ -1570,9 +1567,9 @@ void GrabKeys(TwmWindow *tmp_win)
 	case C_WINDOW:
 	/* case C_WORKSPACE: */
 	    if (tmp->mods & AltMask) break;
+
 	    grabkey (tmp, 0, tmp_win->w);
-	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		grabkey (tmp, LockMask, tmp_win->w);
+
 	    for (i = 0 ; i < 8 ; i++) {
 		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 		    !(tmp->mods & ModifierMask [i]))
@@ -1582,9 +1579,9 @@ void GrabKeys(TwmWindow *tmp_win)
 
 	case C_ICON:
 	    if (!tmp_win->icon || tmp_win->icon->w) break;
+
 	    grabkey (tmp, 0, tmp_win->icon->w);
-	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		grabkey (tmp, LockMask, tmp_win->icon->w);
+
 	    for (i = 0 ; i < 8 ; i++) {
 		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 		    !(tmp->mods & ModifierMask [i]))
@@ -1594,9 +1591,9 @@ void GrabKeys(TwmWindow *tmp_win)
 
 	case C_TITLE:
 	    if (!tmp_win->title_w) break;
+
 	    grabkey (tmp, 0, tmp_win->title_w);
-	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		grabkey (tmp, LockMask, tmp_win->title_w);
+
 	    for (i = 0 ; i < 8 ; i++) {
 		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 		    !(tmp->mods & ModifierMask [i]))
@@ -1606,9 +1603,6 @@ void GrabKeys(TwmWindow *tmp_win)
 
 	case C_NAME:
 	    grabkey (tmp, 0, tmp_win->w);
-	    if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask)) {
-		grabkey (tmp, LockMask, tmp_win->w);
-	    }
 	    for (i = 0 ; i < 8 ; i++) {
 		if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 		    !(tmp->mods & ModifierMask [i]))
@@ -1616,8 +1610,7 @@ void GrabKeys(TwmWindow *tmp_win)
 	    }
 	    if (tmp_win->icon && tmp_win->icon->w) {
 		grabkey (tmp, 0, tmp_win->icon->w);
-		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		    grabkey (tmp, LockMask, tmp_win->icon->w);
+
 		for (i = 0 ; i < 8 ; i++) {
 		    if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 			!(tmp->mods & ModifierMask [i]))
@@ -1626,8 +1619,7 @@ void GrabKeys(TwmWindow *tmp_win)
 	    }
 	    if (tmp_win->title_w) {
 		grabkey (tmp, 0, tmp_win->title_w);
-		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		    grabkey (tmp, LockMask, tmp_win->title_w);
+
 		for (i = 0 ; i < 8 ; i++) {
 		    if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 			!(tmp->mods & ModifierMask [i]))
@@ -1649,8 +1641,7 @@ void GrabKeys(TwmWindow *tmp_win)
 	{
 	    for (p = Scr->iconmgr; p != NULL; p = p->next) {
 		ungrabkey (tmp, 0, p->twm_win->w);
-		if (Scr->IgnoreLockModifier && !(tmp->mods & LockMask))
-		    ungrabkey (tmp, LockMask, p->twm_win->w);
+
 		for (i = 0 ; i < 8 ; i++) {
 		    if ((Scr->IgnoreModifier & ModifierMask [i]) &&
 			!(tmp->mods & ModifierMask [i]))

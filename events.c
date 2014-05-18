@@ -200,15 +200,8 @@ static void dumpevent (XEvent *e);
 
 static unsigned int set_mask_ignore (unsigned int modifier)
 {
-    int i;
-    unsigned int ModifierMask[8] = { ShiftMask, ControlMask, LockMask,
-				     Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask,
-				     Mod5Mask };
+    modifier &= ~Scr->IgnoreModifier;
 
-    if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
-    for (i = 0 ; i < 8 ; i++) {
-	if (Scr->IgnoreModifier & ModifierMask [i]) modifier &= ~ModifierMask [i];
-    }
     return modifier;
 }
 
@@ -451,18 +444,19 @@ static ScreenInfo *GetTwmScreen(XEvent *event)
 Bool DispatchEvent2 (void)
 {
     Window w = Event.xany.window;
-    ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
-    StashEventTime (&Event);
+    ScreenInfo *thisScr;
 
+    StashEventTime (&Event);
     Tmp_win = GetTwmWindow(w);
-    Scr = GetTwmScreen(&Event);
+    thisScr = GetTwmScreen(&Event);
 
     dumpevent(&Event);
 
-    if (!Scr) {
-	Scr = lastScr;	    /* XXX_MIKE - try not to leave Scr NULL */
+    if (!thisScr) {
 	return False;
     }
+    Scr = thisScr;
+
     FixRootEvent (&Event);
 
 #ifdef SOUNDS
@@ -490,18 +484,18 @@ Bool DispatchEvent2 (void)
 Bool DispatchEvent (void)
 {
     Window w = Event.xany.window;
-    ScreenInfo *lastScr = Scr;   /* XXX_MIKE - assume Scr OK on entry... */
-    StashEventTime (&Event);
+    ScreenInfo *thisScr;
 
+    StashEventTime (&Event);
     Tmp_win = GetTwmWindow(w);
-    Scr = GetTwmScreen(&Event);
+    thisScr = GetTwmScreen(&Event);
 
     dumpevent(&Event);
 
-    if (!Scr) {
-	Scr = lastScr;	    /* XXX_MIKE - try not to leave Scr NULL */
+    if (!thisScr) {
 	return False;
     }
+    Scr = thisScr;
 
     if (captive) {
       if ((Event.type == ConfigureNotify) && (Event.xconfigure.window == Scr->CaptiveRoot)) {
@@ -554,11 +548,11 @@ void HandleEvents(void)
 
 	CtwmNextEvent (dpy, &Event);
 
-	if (Event.type < 0 || Event.type >= MAX_X_EVENT)
+	if (Event.type < 0 || Event.type >= MAX_X_EVENT) {
 	    XtDispatchEvent (&Event);
-	else
-
-	(void) DispatchEvent ();
+	} else {
+	    (void) DispatchEvent ();
+	}
     }
 }
 
@@ -1938,7 +1932,6 @@ wmapupd:
 void HandleClientMessage(void)
 {
     TwmWindow *twm_win;
-    int i;
 
     if (Event.xclient.message_type == _XA_WM_CHANGE_STATE) {
 	if (Tmp_win != NULL) {
@@ -1959,46 +1952,31 @@ void HandleClientMessage(void)
 #ifdef GNOME
     /* 6/19/1999 nhd for GNOME compliance */
     if (Event.xclient.message_type == _XA_WIN_WORKSPACE) {
-      /* XXXXX
-	 supposedly works with a single screen, but is less certain with
-	 multiple screens */
-      GotoWorkSpaceByNumber (Scr->currentvs, Event.xclient.data.l[0]);
-      return;
+	/* XXXXX
+	   supposedly works with a single screen, but is less certain with
+	   multiple screens */
+	GotoWorkSpaceByNumber (Scr->currentvs, Event.xclient.data.l[0]);
+	return;
     }
     if (Event.xclient.message_type == _XA_WIN_STATE) {
-      unsigned long new_stuff = (unsigned long) Event.xclient.data.l [1];
-      unsigned long old_stuff = (unsigned long) Event.xclient.data.l [0];
-      Window	      tmp_win = Event.xclient.window;
-      for (twm_win = Scr->FirstWindow; twm_win != NULL; twm_win = twm_win->next)
-	if (twm_win->w == tmp_win) break;
-      if (twm_win == NULL) return;
-      for (i = 1; i < (1 << 10); i <<= 1){
-	switch (old_stuff & i) {
-	  case WIN_STATE_STICKY: /* sticky */
-	    if (new_stuff & i) OccupyAll (twm_win);
-	    else ChangeOccupation (twm_win, (1<<(Scr->currentvs->wsw->currentwspc->number)));
-	    break;
-	  case WIN_STATE_MINIMIZED: /* minimized - reserved */
-	    break;
-	  case WIN_STATE_MAXIMIZED_VERT: /* window in maximized V state */
-	    break;
-	  case WIN_STATE_MAXIMIZED_HORIZ: /* maximized horizontally */
-	    break;
-	  case WIN_STATE_HIDDEN: /* hidden - what does this mean?? */
-	    break;
-	  case WIN_STATE_SHADED: /* shaded (squeezed) */
+	unsigned long new_stuff = (unsigned long) Event.xclient.data.l [1];
+	unsigned long old_stuff = (unsigned long) Event.xclient.data.l [0];
+	Window	      tmp_win = Event.xclient.window;
+
+	twm_win = GetTwmWindow(tmp_win);
+
+	if (twm_win == NULL) return;
+
+	if (old_stuff & WIN_STATE_STICKY) { /* sticky */
+	    if (new_stuff & WIN_STATE_STICKY) {
+		OccupyAll (twm_win);
+	    } else {
+		ChangeOccupation (twm_win, (1<<(Scr->currentvs->wsw->currentwspc->number)));
+	    }
+	} 
+	if (old_stuff & WIN_STATE_SHADED) {	/* shaded (squeezed) */
 	    Squeeze (twm_win);
-	    break;
-	  case WIN_STATE_HID_WORKSPACE: /* not on this workspace */
-	    break;
-	  case WIN_STATE_HID_TRANSIENT: /* owner of transient hidden ? */
-	    break;
-	  case WIN_STATE_FIXED_POSITION: /* position fixed, don't move */
-	    break;
-	  case WIN_STATE_ARRANGE_IGNORE: /* ignore when auto-arranging */
-	    break;
 	}
-      }
     }
 #endif /* GNOME */
 }
