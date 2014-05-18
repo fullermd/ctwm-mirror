@@ -295,7 +295,11 @@ stmt		: error
 		  win_list
 		| WORKSPACES {}
 		  workspc_list
-		| IGNOREMODIFIER {} LB keys  { Scr->IgnoreModifier = mods; mods = 0; } RB
+		| IGNOREMODIFIER
+			{ mods = 0; }
+			LB keys
+			{ Scr->IgnoreModifier |= mods; mods = 0; }
+			RB
 		| OCCUPYALL		{ list = &Scr->OccupyAll; }
 		  win_list
 		| ICONMENU_DONTSHOW	{ list = &Scr->IconMenuDontShow; }

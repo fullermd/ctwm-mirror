@@ -1718,8 +1718,9 @@ VirtualScreens {
 	situation the size should not change at all...                 
 	[via Olaf Seibert]
 
+
     Changes from version 3.8.1 to 3.8.2
-    2014-??-??
+    2014-05-18
     -----------------------------------
 
     1 - Various code cleanups.
@@ -1751,7 +1752,11 @@ VirtualScreens {
     6 - Look at _MOTIF_WM_HINTS for titlebar-less or border-less
 	windows.
 
-    7 - Selected a number of cleanups from Stefan Monnier
+    Changes from version 3.8.2 to ???
+    xxxx-xx-xx
+    -----------------------------------
+
+    1 - Selected a number of cleanups from Stefan Monnier
 	<monnier@IRO.UMontreal.CA>, including rate-limiting of
 	animations using a new _XA_WM_END_OF_ANIMATION message.
 	Added some similar changes, improved the prevention of
@@ -1759,7 +1764,7 @@ VirtualScreens {
 	for emergencies, a hack-fix for f.adoptwindow. More virtual
 	screen tweaks/fixes.
 
-    8 - Added the remaining OnTopPriority changes from Stefan Monnier
+    2 - Added the remaining OnTopPriority changes from Stefan Monnier
 	<monnier@IRO.UMontreal.CA>: AutoPopup, AutoPriority,
 	OnTopPriority, PrioritySwitching, f.changepriority,
 	f.priorityswitching, f.setpriority, f.switchpriority,

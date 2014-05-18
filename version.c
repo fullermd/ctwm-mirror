@@ -50,7 +50,7 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
-#define VERSION_ID "3.8.2-pre"
+#define VERSION_ID "3.8.2-post"
 
 char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID;
 char *VersionNumber = VERSION_ID;
