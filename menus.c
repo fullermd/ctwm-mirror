@@ -3431,11 +3431,11 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 	break;
 
     case F_CIRCLEUP:
-	XCirculateSubwindowsUp(dpy, Scr->Root);
+	OtpCirculateSubwindows(Scr->currentvs, RaiseLowest);
 	break;
 
     case F_CIRCLEDOWN:
-	XCirculateSubwindowsDown(dpy, Scr->Root);
+	OtpCirculateSubwindows(Scr->currentvs, LowerHighest);
 	break;
 
     case F_EXEC:

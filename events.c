@@ -150,6 +150,7 @@ int Cancel = FALSE;
 void HandleCreateNotify(void);
 void HandleShapeNotify (void);
 void HandleFocusChange (void);
+void HandleCirculateNotify (void);
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
@@ -283,6 +284,7 @@ void InitEvents(void)
     EventHandler[VisibilityNotify] = HandleVisibilityNotify;
     EventHandler[FocusIn] = HandleFocusChange;
     EventHandler[FocusOut] = HandleFocusChange;
+    EventHandler[CirculateNotify] = HandleCirculateNotify;
     if (HasShape)
 	EventHandler[ShapeEventBase+ShapeNotify] = HandleShapeNotify;
 }
@@ -839,7 +841,7 @@ static XEvent *LastFocusEvent(Window w, XEvent *first)
 			current=new;
 			last= &current;
 #ifdef TRACE_FOCUS
-			printf("! %s 0x%x mode=%d, detail=%d\n", 
+			fprintf(stderr, "! %s 0x%x mode=%d, detail=%d\n", 
 			       new.xfocus.type == FocusIn?"in":"out",
 			       Tmp_win,new.xfocus.mode, new.xfocus.detail);
 #endif       
@@ -847,7 +849,7 @@ static XEvent *LastFocusEvent(Window w, XEvent *first)
 		else
 		{
 #ifdef TRACE_FOCUS
-			printf("~ %s 0x%x mode=%d, detail=%d\n", 
+			fprintf(stderr, "~ %s 0x%x mode=%d, detail=%d\n", 
 			       new.xfocus.type == FocusIn?"in":"out",
 			       Tmp_win,new.xfocus.mode, new.xfocus.detail);
 #endif
@@ -864,7 +866,7 @@ void HandleFocusIn(XFocusInEvent *event)
 {
 
 #ifdef TRACE_FOCUS
-	printf("HandleFocusIn : +0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
+    fprintf(stderr, "HandleFocusIn : +0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
 	       Tmp_win, Tmp_win->w, event->window, event->mode, event->detail);
 #endif
 
@@ -879,7 +881,7 @@ void HandleFocusIn(XFocusInEvent *event)
 void HandleFocusOut(XFocusOutEvent *event)
 {
 #ifdef TRACE_FOCUS
-	printf("HandleFocusOut : -0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
+    fprintf(stderr, "HandleFocusOut : -0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
 	       Tmp_win, Tmp_win->w, event->window, event->mode, event->detail);
 #endif
 
@@ -914,7 +916,7 @@ void SynthesiseFocusOut(Window w)
 	XEvent event;
 
 #ifdef TRACE_FOCUS
-	printf ("Synthesizing FocusOut on %x\n", w);
+	fprintf (stderr, "Synthesizing FocusOut on %x\n", w);
 #endif
 
 	event.type=FocusOut;
@@ -931,7 +933,7 @@ void SynthesiseFocusIn(Window w)
 	XEvent event;
 
 #ifdef TRACE_FOCUS
-	printf ("Synthesizing FocusIn on %x\n", w);
+	fprintf (stderr, "Synthesizing FocusIn on %x\n", w);
 #endif
 
 	event.type=FocusIn;
@@ -943,6 +945,43 @@ void SynthesiseFocusIn(Window w)
 
 }
 
+/*
+ * Only sent if SubstructureNotifyMask is selected on the (root) window.
+ */
+void HandleCirculateNotify()
+{
+    VirtualScreen *vs;
+#ifdef DEBUG_EVENTS
+    fprintf(stderr, "HandleCirculateNotify\n");
+    fprintf(stderr, "event=%x window=%x place=%d\n",
+		(unsigned)Event.xcirculate.event,
+		(unsigned)Event.xcirculate.window,
+		Event.xcirculate.place);
+#endif
+
+    for (vs = Scr->vScreenList; vs; vs = vs->next) {
+	if (Event.xcirculate.event == vs->window) {
+	    TwmWindow *twm_win = GetTwmWindow(Event.xcirculate.window);
+
+	    if (twm_win) {
+		WinType wt;
+
+		if (Event.xcirculate.window == twm_win->frame) {
+		    wt = WinWin;
+		} else if (twm_win->icon &&
+			   Event.xcirculate.window == twm_win->icon->w) {
+		    wt = IconWin;
+		} else {
+		    return;
+		}
+
+		OtpHandleCirculateNotify(vs,
+			twm_win, wt,
+			Event.xcirculate.place);
+	    }
+	}
+    }
+}
 
 /***********************************************************************
  *
@@ -4134,7 +4173,7 @@ void HandleShapeNotify (void)
 void HandleUnknown(void)
 {
 #ifdef DEBUG_EVENTS
-    fprintf(stderr, "type = %d\n", Event.type);
+    fprintf(stderr, "HandleUnknown: Event.type = %d\n", Event.type);
 #endif
 }
 

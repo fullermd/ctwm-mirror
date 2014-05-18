@@ -22,6 +22,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  *
  * Author:  Stefan Monnier [ monnier@lia.di.epfl.ch ]
+ * Adapted for use with more than one virtual screen by
+ * Olaf "Rhialto" Seibert <rhialto@falu.nl>.
  *
  * $Id: otp.c,v 1.9 2005/04/08 16:59:25 monnier Exp $
  *
@@ -703,6 +705,60 @@ void OtpTinyLower (TwmWindow *twm_win, WinType wintype)
     OtpCheckConsistency();
 }
 
+
+/*
+ * XCirculateSubwindows() is complicated by the fact that it restacks only
+ * in case of overlapping windows. Therefore it seems easier to not
+ * try to emulate that but to leave it to the X server.
+ *
+ * If XCirculateSubwindows() actually does something, it sends a
+ * CirculateNotify event, but you only receive it if
+ * SubstructureNotifyMask is selected on the root window.
+ * However... if that is done from the beginning, for some reason all
+ * windows disappear when ctwm starts or exits.
+ * Maybe SubstructureNotifyMask interferes with SubstructureRedirectMask?
+ *
+ * To get around that, the SubstructureNotifyMask is selected only
+ * temporarily here when wanted.
+ */
+
+void OtpCirculateSubwindows(VirtualScreen *vs, int direction)
+{
+    Window w = vs->window;
+    XWindowAttributes winattrs;
+
+    DPRINTF((stderr, "OtpCirculateSubwindows %d\n", direction));
+
+    XGetWindowAttributes (dpy, w, &winattrs);
+    XSelectInput (dpy, w, winattrs.your_event_mask | SubstructureNotifyMask);
+    XCirculateSubwindows(dpy, w, direction);
+    XSelectInput (dpy, w, winattrs.your_event_mask);
+    /*
+     * Now we should get the CirculateNotify event.
+     * It seems to arrive soon enough that we don't have to play tricks
+     * here to look ahead in the message queue.
+     */
+}
+
+/*
+ * Update our list of Owls after the Circulate action, and also
+ * enforce the priority by possibly restacking the window again.
+ */
+
+void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win, WinType wintype, int place)
+{
+    switch (place) {
+	case PlaceOnTop:
+	    OtpRaise(twm_win, wintype);
+	    break;
+	case PlaceOnBottom:
+	    OtpLower(twm_win, wintype);
+	    break;
+	default:
+	    DPRINTF((stderr, "OtpHandleCirculateNotify: place=%d\n", place));
+	    assert(0 && "OtpHandleCirculateNotify: place equals PlaceOnTop nor PlaceOnBottom");
+    }
+}
 
 void OtpSetPriority (TwmWindow *twm_win, WinType wintype, int new_pri)
 {

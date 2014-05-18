@@ -58,6 +58,8 @@ extern void OtpLower(TwmWindow*, WinType);
 extern void OtpRaiseLower(TwmWindow*, WinType);
 extern void OtpTinyRaise(TwmWindow*, WinType);
 extern void OtpTinyLower(TwmWindow*, WinType);
+extern void OtpCirculateSubwindows(VirtualScreen *vs, int direction);
+extern void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win, WinType wintype, int place);
 
 /* functions to change a window's OTP value */
 extern void OtpSetPriority(TwmWindow*, WinType, int);
