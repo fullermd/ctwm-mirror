@@ -501,8 +501,9 @@ int main(int argc, char **argv, char **environ)
 	XSync(dpy, 0); /* Flush possible previous errors */
 	RedirectError = FALSE;
 	XSetErrorHandler(CatchRedirectError);
-	attrmask = ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
-	  SubstructureRedirectMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask;
+	attrmask = ColormapChangeMask | EnterWindowMask | PropertyChangeMask |
+		   SubstructureRedirectMask | KeyPressMask | ButtonPressMask |
+		   ButtonReleaseMask;
 	if (captive) attrmask |= StructureNotifyMask;
 	XSelectInput (dpy, croot, attrmask);
 	XSync(dpy, 0);
