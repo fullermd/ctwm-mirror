@@ -1201,7 +1201,7 @@ int do_single_keyword (int keyword)
 	return 1;
 
       case kw0_NoTitleFocus:
-	Scr->TitleFocus = TRUE /*FALSE*/;
+	Scr->TitleFocus = FALSE;
 	return 1;
 
       case kw0_DecorateTransients:
