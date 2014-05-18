@@ -1720,7 +1720,7 @@ VirtualScreens {
 
 
     Changes from version 3.8.1 to 3.8.2
-    2014-??-??
+    2014-05-18
     -----------------------------------
 
     1 - Various code cleanups.
@@ -1751,3 +1751,8 @@ VirtualScreens {
 
     6 - Look at _MOTIF_WM_HINTS for titlebar-less or border-less
 	windows.
+
+
+    Changes from version 3.8.2 to ???
+    xxxx-xx-xx
+    -----------------------------------
