@@ -200,15 +200,9 @@ static void dumpevent (XEvent *e);
 
 static unsigned int set_mask_ignore (unsigned int modifier)
 {
-    int i;
-    unsigned int ModifierMask[8] = { ShiftMask, ControlMask, LockMask,
-				     Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask,
-				     Mod5Mask };
-
     if (Scr->IgnoreLockModifier) modifier &= ~LockMask;
-    for (i = 0 ; i < 8 ; i++) {
-	if (Scr->IgnoreModifier & ModifierMask [i]) modifier &= ~ModifierMask [i];
-    }
+    modifier &= ~Scr->IgnoreModifier;
+
     return modifier;
 }
 
