@@ -548,11 +548,11 @@ void HandleEvents(void)
 
 	CtwmNextEvent (dpy, &Event);
 
-	if (Event.type < 0 || Event.type >= MAX_X_EVENT)
+	if (Event.type < 0 || Event.type >= MAX_X_EVENT) {
 	    XtDispatchEvent (&Event);
-	else
-
-	(void) DispatchEvent ();
+	} else {
+	    (void) DispatchEvent ();
+	}
     }
 }
 
