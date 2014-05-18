@@ -1283,8 +1283,9 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
 	XUnmapWindow (dpy, tmp_win->frame);
 	XSelectInput (dpy, tmp_win->w, eventMask);
 
-	if (!tmp_win->DontSetInactive)
-	SetMapStateProp (tmp_win, InactiveState);
+	if (!tmp_win->DontSetInactive) {
+	    SetMapStateProp (tmp_win, InactiveState);
+	}
     } else if (tmp_win->icon_on && tmp_win->icon && tmp_win->icon->w) {
 	XUnmapWindow (dpy, tmp_win->icon->w);
 	IconDown (tmp_win);
