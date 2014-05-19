@@ -9,3 +9,4 @@ lex.c
 *.o.info
 Imakefile.local
 *.tar*
+build/*
