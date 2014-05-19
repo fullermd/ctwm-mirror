@@ -391,6 +391,7 @@ int ParseStringList (char **sl)
 
 
 #ifndef USEM4
+#include <ctype.h>
 
 /* This has Tom's include() funtionality.  This is utterly useless if you
  * can use m4 for the same thing.               Chris P. Ross */
