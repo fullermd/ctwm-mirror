@@ -107,17 +107,17 @@ else(BISON_FOUND)
 	if(NOT YACC)
 		message(FATAL_ERROR "Can't find yacc.")
 	endif(NOT YACC)
-	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gram.tab.c
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
+	add_custom_command(OUTPUT gram.tab.c
+		DEPENDS gram.y
 		COMMAND ${YACC} -d -b gram ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
 	)
 endif(BISON_FOUND)
 
 
 # Magic to build deftwmrc.c
-set(defc ${CMAKE_CURRENT_BINARY_DIR}/deftwmrc.c)
+set(defc deftwmrc.c)
 add_custom_command(OUTPUT ${defc}
-	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc
+	DEPENDS system.ctwmrc
 	COMMAND echo '/*' > ${defc}
 	COMMAND echo ' * This file is generated automatically from the default' >> ${defc}
 	COMMAND echo ' * twm bindings file system.ctwmrc by the twm Imakefile.' >> ${defc}
@@ -154,8 +154,8 @@ endif(DO_LIBCTWM)
 
 
 # Setup man page
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz
-	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man
+add_custom_command(OUTPUT ctwm.1.gz
+	DEPENDS ctwm.man
 	COMMAND gzip -nc ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man > ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz
 	COMMENT "Building ctwm.1"
 )
