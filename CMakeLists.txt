@@ -37,16 +37,6 @@ if(NOT NO_M4)
 	)
 endif(NOT NO_M4)
 
-# Standard defs
-add_definitions(
-	-Wall
-	-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef
-	-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts
-	-Winline -Wnested-externs -Wmissing-declarations
-	-DSYSTEM_INIT_FILE="$(CONFDIR)/system.ctwmrc"
-	-DPIXMAP_DIRECTORY="$(PIXMAPDIR)"
-)
-
 
 # Include source and generated files
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -66,6 +56,10 @@ if(X11_FOUND)
 		target_link_libraries(ctwm ${X11_Xpm_LIB})
 		add_definitions(-DXPM)
 	endif(X11_Xpm_FOUND)
+
+	set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
+	set(CONFDIR ${TWMDIR})
+	set(PIXMAPDIR ${TWMDIR}/images)
 else(X11_FOUND)
 	# This just isn't feasible...
 	message(FATAL_ERROR "Can't find X libs.")
@@ -118,4 +112,15 @@ add_custom_command(OUTPUT ${defc}
 	COMMAND echo 'char *defTwmrc[] = {' >> ${defc}
 	COMMAND sed -e "/^#/d" -e 's/\"/\\\\\"/g' -e 's/^/    \"/' -e 's/$$/\",/' ${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc >> ${defc}
 	COMMAND echo '    (char *) 0 }\;' >> ${defc}
+)
+
+
+# Standard defs
+add_definitions(
+	-Wall
+	-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef
+	-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts
+	-Winline -Wnested-externs -Wmissing-declarations
+	-DSYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
+	-DPIXMAP_DIRECTORY="${PIXMAPDIR}"
 )
