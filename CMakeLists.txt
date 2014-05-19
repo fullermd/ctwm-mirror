@@ -154,11 +154,14 @@ endif(DO_LIBCTWM)
 
 
 # Setup man page
-add_custom_command(OUTPUT ctwm.1.gz
+find_program(GZIP_CMD gzip)
+set(MANPAGE ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz)
+add_custom_command(OUTPUT ${MANPAGE}
 	DEPENDS ctwm.man
-	COMMAND gzip -nc ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man > ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz
+	COMMAND ${GZIP_CMD} -nc ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man > ${MANPAGE}
 	COMMENT "Building ctwm.1"
 )
+add_custom_target(man ALL DEPENDS ${MANPAGE})
 
 
 # Installing stuff
@@ -171,6 +174,6 @@ INSTALL(DIRECTORY xpm/
 INSTALL(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
-INSTALL(FILES ctwm.1.gz
+INSTALL(FILES ${MANPAGE}
 	DESTINATION man/man1
 )
