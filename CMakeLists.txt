@@ -9,6 +9,10 @@ set(CTWMSRC
 	vscreen.c session.c mwmhints.c
 )
 
+# Libs
+set(CTWMLIBS)
+
+
 # Do build Gnome stuff by default
 if(NOT NO_GNOME)
 	set(CTWMSRC ${CTWMSRC} gnome.c)
@@ -23,7 +27,7 @@ if(USE_SOUND)
 	if(NOT LIBRPLAY)
 		message(FATAL_ERROR "Can't find librplay.")
 	endif(NOT LIBRPLAY)
-	target_link_libraries(ctwm ${LIBRPLAY})
+	set(CTWMLIBS ${CTWMLIBS} ${LIBRPLAY})
 endif(USE_SOUND)
 
 # m4 by default
@@ -55,18 +59,16 @@ add_definitions(
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-# We're building ctwm
-add_executable(ctwm ${CTWMSRC})
-
 # Better have X
 find_package(X11)
 if(X11_FOUND)
 	include_directories(${X11_INCLUDE_DIR})
-	target_link_libraries(ctwm ${X11_LIBRARIES})
-	target_link_libraries(ctwm ${X11_Xmu_LIB})
-	target_link_libraries(ctwm ${X11_Xt_LIB})
+	set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
+	set(CTWMLIBS ${CTWMLIBS} ${X11_LIBRARIES})
+	set(CTWMLIBS ${CTWMLIBS} ${X11_Xmu_LIB})
+	set(CTWMLIBS ${CTWMLIBS} ${X11_Xt_LIB})
 	if(X11_Xpm_FOUND)
-		target_link_libraries(ctwm ${X11_Xpm_LIB})
+		set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
 		add_definitions(-DXPM)
 	endif(X11_Xpm_FOUND)
 
@@ -82,7 +84,7 @@ endif(X11_FOUND)
 find_package(JPEG)
 if(JPEG_FOUND)
 	include_directories(${JPEG_INCLUDE_DIR})
-	target_link_libraries(ctwm ${JPEG_LIBRARIES})
+	set(CTWMLIBS ${CTWMLIBS} ${JPEG_LIBRARIES})
 	add_definitions(-DJPEG)
 endif(JPEG_FOUND)
 
@@ -134,3 +136,8 @@ set_property(SOURCE parse.c APPEND
 set_property(SOURCE parse.c ctwm.c APPEND
 	PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
 )
+
+
+# We're building ctwm
+add_executable(ctwm ${CTWMSRC})
+target_link_libraries(ctwm ${CTWMLIBS})
