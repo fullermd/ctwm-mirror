@@ -1436,7 +1436,9 @@ void HandlePropertyNotify(void)
     XRectangle inc_rect;
     XRectangle logical_rect;
 
+#ifdef GNOME
     unsigned char *gwkspc;
+#endif
 
     /* watch for standard colormap changes */
     if (Event.xproperty.window == Scr->Root) {
@@ -1931,7 +1933,9 @@ wmapupd:
 
 void HandleClientMessage(void)
 {
+#ifdef GNOME
     TwmWindow *twm_win;
+#endif
 
     if (Event.xclient.message_type == _XA_WM_CHANGE_STATE) {
 	if (Tmp_win != NULL) {
