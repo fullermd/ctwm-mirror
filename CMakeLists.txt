@@ -97,17 +97,16 @@ else(FLEX_FOUND)
 endif(FLEX_FOUND)
 
 # This only finds bison, not yacc.  There doesn't seem to be a standard
-# module for yacc, so hand-code it.  Except this doesn't seem to work;
-# find_package() blows up right away   :(
+# module for yacc, so hand-code it.
 find_package(BISON)
 if(BISON_FOUND)
 	BISON_TARGET(ctwm_parser gram.y ${CMAKE_CURRENT_BINARY_DIR}/gram.tab.c
 		COMPILE_FLAGS -d -b gram)
 else(BISON_FOUND)
 	find_program(YACC yacc)
-	if(not YACC)
+	if(NOT YACC)
 		message(FATAL_ERROR "Can't find yacc.")
-	endif(not YACC)
+	endif(NOT YACC)
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gram.tab.c
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
 		COMMAND ${YACC} -d -b gram ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
