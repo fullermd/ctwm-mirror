@@ -23,6 +23,20 @@ if(USE_SOUND)
 	target_link_libraries(ctwm ${LIBRPLAY})
 endif(USE_SOUND)
 
+# m4 by default
+if(NOT NO_M4)
+	if(NOT M4_CMD)
+		find_program(M4_CMD m4)
+	endif(NOT M4_CMD)
+	if(NOT M4_CMD)
+		message(FATAL_ERROR "Can't find m4 program: try setting M4_CMD.")
+	endif(NOT M4_CMD)
+	add_definitions(-DUSEM4)
+	set_source_files_properties(parse.c
+		PROPERTIES COMPILE_DEFINITIONS M4CMD="${M4_CMD}"
+	)
+endif(NOT NO_M4)
+
 # Standard defs
 add_definitions(
 	-Wall
@@ -31,7 +45,6 @@ add_definitions(
 	-Winline -Wnested-externs -Wmissing-declarations
 	-DSYSTEM_INIT_FILE="$(CONFDIR)/system.ctwmrc"
 	-DPIXMAP_DIRECTORY="$(PIXMAPDIR)"
-	-DM4CMD="$(M4CMD)"
 )
 
 
