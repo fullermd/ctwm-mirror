@@ -38,6 +38,16 @@ if(NOT NO_M4)
 endif(NOT NO_M4)
 
 
+# Standard defs
+add_definitions(
+	-Wall
+	-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef
+	-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts
+	-Winline -Wnested-externs -Wmissing-declarations
+)
+
+
+
 # Include source and generated files
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -115,12 +125,9 @@ add_custom_command(OUTPUT ${defc}
 )
 
 
-# Standard defs
-add_definitions(
-	-Wall
-	-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef
-	-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts
-	-Winline -Wnested-externs -Wmissing-declarations
-	-DSYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
-	-DPIXMAP_DIRECTORY="${PIXMAPDIR}"
+set_property(SOURCE parse.c APPEND
+	PROPERTY COMPILE_DEFINITIONS SYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
+)
+set_property(SOURCE parse.c ctwm.c APPEND
+	PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
 )
