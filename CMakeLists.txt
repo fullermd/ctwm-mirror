@@ -32,8 +32,8 @@ if(NOT NO_M4)
 		message(FATAL_ERROR "Can't find m4 program: try setting M4_CMD.")
 	endif(NOT M4_CMD)
 	add_definitions(-DUSEM4)
-	set_source_files_properties(parse.c
-		PROPERTIES COMPILE_DEFINITIONS M4CMD="${M4_CMD}"
+	set_property(SOURCE parse.c APPEND
+		PROPERTY COMPILE_DEFINITIONS M4CMD="${M4_CMD}"
 	)
 endif(NOT NO_M4)
 
