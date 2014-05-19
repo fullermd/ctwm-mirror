@@ -1,0 +1,108 @@
+cmake_minimum_required(VERSION 2.6)
+project(ctwm C)
+
+# Various standard sources
+set(CTWMSRC
+	gram.tab.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c
+	parse.c menus.c events.c resize.c util.c version.c iconmgr.c
+	cursor.c icons.c workmgr.c windowbox.c clicktofocus.c
+	vscreen.c session.c mwmhints.c
+)
+
+# Do build Gnome stuff by default
+if(NOT NO_GNOME)
+	set(CTWMSRC ${CTWMSRC} gnome.c)
+	add_definitions(-DGNOME)
+endif(NOT NO_GNOME)
+
+# Don't build sound stuff
+if(USE_SOUND)
+	set(CTWMSRC ${CTWMSRC} sound.c)
+	add_definitions(-DSOUNDS)
+	find_library(LIBRPLAY NAMES rplay)
+	target_link_libraries(ctwm ${LIBRPLAY})
+endif(USE_SOUND)
+
+# Standard defs
+add_definitions(
+	-Wall
+	-Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wundef
+	-Wredundant-decls -Wcast-align -Wcast-qual -Wchar-subscripts
+	-Winline -Wnested-externs -Wmissing-declarations
+	-DSYSTEM_INIT_FILE="$(CONFDIR)/system.ctwmrc"
+	-DPIXMAP_DIRECTORY="$(PIXMAPDIR)"
+	-DM4CMD="$(M4CMD)"
+)
+
+
+# Include source and generated files
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# We're building ctwm
+add_executable(ctwm ${CTWMSRC})
+
+# Better have X
+find_package(X11)
+if(X11_FOUND)
+	include_directories(${X11_INCLUDE_DIR})
+	target_link_libraries(ctwm ${X11_LIBRARIES})
+	target_link_libraries(ctwm ${X11_Xmu_LIB})
+	target_link_libraries(ctwm ${X11_Xt_LIB})
+	if(X11_Xpm_FOUND)
+		target_link_libraries(ctwm ${X11_Xpm_LIB})
+		add_definitions(-DXPM)
+	endif(X11_Xpm_FOUND)
+else(X11_FOUND)
+	# This just isn't feasible...
+	message(FATAL_ERROR "Can't find X libs.")
+endif(X11_FOUND)
+
+# Betcha we've got JPEG
+find_package(JPEG)
+if(JPEG_FOUND)
+	include_directories(${JPEG_INCLUDE_DIR})
+	target_link_libraries(ctwm ${JPEG_LIBRARIES})
+	add_definitions(-DJPEG)
+endif(JPEG_FOUND)
+
+# This should work everywhere
+find_package(FLEX)
+if(FLEX_FOUND)
+	FLEX_TARGET(ctwm_lexer lex.l ${CMAKE_CURRENT_BINARY_DIR}/lex.c)
+else(FLEX_FOUND)
+	message(FATAL_ERROR "Can't find flex.")
+endif(FLEX_FOUND)
+
+# This only finds bison, not yacc.  There doesn't seem to be a standard
+# module for yacc, so hand-code it.  Except this doesn't seem to work;
+# find_package() blows up right away   :(
+find_package(BISON)
+if(BISON_FOUND)
+	BISON_TARGET(ctwm_parser gram.y ${CMAKE_CURRENT_BINARY_DIR}/gram.tab.c
+		COMPILE_FLAGS -d -b gram)
+else(BISON_FOUND)
+	find_program(YACC yacc)
+	if(not YACC)
+		message(FATAL_ERROR "Can't find yacc.")
+	endif(not YACC)
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gram.tab.c
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
+		COMMAND ${YACC} -d -b gram ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
+	)
+endif(BISON_FOUND)
+
+
+# Magic to build deftwmrc.c
+set(defc ${CMAKE_CURRENT_BINARY_DIR}/deftwmrc.c)
+add_custom_command(OUTPUT ${defc}
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc
+	COMMAND echo '/*' > ${defc}
+	COMMAND echo ' * This file is generated automatically from the default' >> ${defc}
+	COMMAND echo ' * twm bindings file system.ctwmrc by the twm Imakefile.' >> ${defc}
+	COMMAND echo '  */' >> ${defc}
+	COMMAND echo '' >> ${defc}
+	COMMAND echo 'char *defTwmrc[] = {' >> ${defc}
+	COMMAND sed -e "/^#/d" -e 's/\"/\\\\\"/g' -e 's/^/    \"/' -e 's/$$/\",/' ${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc >> ${defc}
+	COMMAND echo '    (char *) 0 }\;' >> ${defc}
+)
