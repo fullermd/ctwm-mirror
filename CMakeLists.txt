@@ -151,3 +151,11 @@ if(DO_LIBCTWM)
 	add_executable(demolib demolib.c)
 	target_link_libraries(demolib ctwmc ${CTWMLIBS})
 endif(DO_LIBCTWM)
+
+
+# Setup man page
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man
+	COMMAND gzip -nc ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man > ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz
+	COMMENT "Building ctwm.1"
+)
