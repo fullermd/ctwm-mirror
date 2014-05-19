@@ -140,3 +140,14 @@ set_property(SOURCE parse.c ctwm.c APPEND
 # We're building ctwm
 add_executable(ctwm ${CTWMSRC})
 target_link_libraries(ctwm ${CTWMLIBS})
+
+
+# Allow building the libctwm stuff too.  Don't do it by default though.
+# The old imake setup build libctwm, but not demolib, and it doesn't
+# serve any purpose at the moment.  Maybe we can do something with it in
+# the future.
+if(DO_LIBCTWM)
+	add_library(ctwmc SHARED libctwm.c)
+	add_executable(demolib demolib.c)
+	target_link_libraries(demolib ctwmc ${CTWMLIBS})
+endif(DO_LIBCTWM)
