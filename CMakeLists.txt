@@ -159,3 +159,15 @@ add_custom_command(OUTPUT ctwm.1.gz
 	COMMAND gzip -nc ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man > ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz
 	COMMENT "Building ctwm.1"
 )
+
+
+# Installing stuff
+INSTALL(TARGETS ctwm
+	DESTINATION "bin"
+)
+INSTALL(DIRECTORY "xpm/"
+	DESTINATION ${PIXMAPDIR}
+)
+INSTALL(FILES ctwm.1.gz
+	DESTINATION ${INSTALL_MAN_DIR}/man1
+)
