@@ -15,6 +15,7 @@ set(CTWMLIBS)
 
 #
 # Define options
+# These can be set at the command line; e.g., "cmake -DUSE_JPEG=OFF"
 #
 option(USE_XPM   "Enable XPM support"                 ON )
 option(USE_JPEG  "Enable libjpeg support"             ON )
