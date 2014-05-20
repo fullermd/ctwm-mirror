@@ -2252,7 +2252,9 @@ static char *m4_defs(Display *display, char *host)
 	if (!(user=getenv("USER")) && !(user=getenv("LOGNAME"))) user = "unknown";
         fputs(MkDef("USER", user), tmpf);
         fputs(MkDef("HOME", getenv("HOME")), tmpf);
+#ifdef PIXMAP_DIRECTORY
         fputs(MkDef("PIXMAP_DIRECTORY", PIXMAP_DIRECTORY), tmpf);
+#endif
         fputs(MkNum("VERSION", ProtocolVersion(display)), tmpf);
         fputs(MkNum("REVISION", ProtocolRevision(display)), tmpf);
         fputs(MkDef("VENDOR", ServerVendor(display)), tmpf);
