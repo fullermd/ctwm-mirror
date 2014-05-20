@@ -61,24 +61,24 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Better have X
 find_package(X11)
-if(X11_FOUND)
-	include_directories(${X11_INCLUDE_DIR})
-	set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
-	set(CTWMLIBS ${CTWMLIBS} ${X11_LIBRARIES})
-	set(CTWMLIBS ${CTWMLIBS} ${X11_Xmu_LIB})
-	set(CTWMLIBS ${CTWMLIBS} ${X11_Xt_LIB})
-	if(X11_Xpm_FOUND)
-		set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
-		add_definitions(-DXPM)
-	endif(X11_Xpm_FOUND)
-
-	set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
-	set(CONFDIR ${TWMDIR})
-	set(PIXMAPDIR ${TWMDIR}/images)
-else(X11_FOUND)
+if(NOT X11_FOUND)
 	# This just isn't feasible...
 	message(FATAL_ERROR "Can't find X libs.")
-endif(X11_FOUND)
+endif(NOT X11_FOUND)
+
+include_directories(${X11_INCLUDE_DIR})
+set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
+set(CTWMLIBS ${CTWMLIBS} ${X11_LIBRARIES})
+set(CTWMLIBS ${CTWMLIBS} ${X11_Xmu_LIB})
+set(CTWMLIBS ${CTWMLIBS} ${X11_Xt_LIB})
+if(X11_Xpm_FOUND)
+	set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
+	add_definitions(-DXPM)
+endif(X11_Xpm_FOUND)
+
+set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
+set(CONFDIR ${TWMDIR})
+set(PIXMAPDIR ${TWMDIR}/images)
 
 # Betcha we've got JPEG
 find_package(JPEG)
