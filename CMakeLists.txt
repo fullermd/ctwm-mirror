@@ -36,16 +36,16 @@ if(NOT X11_FOUND)
 endif(NOT X11_FOUND)
 
 include_directories(${X11_INCLUDE_DIR})
-set(CTWMLIBS ${CTWMLIBS} ${X11_LIBRARIES})
-set(CTWMLIBS ${CTWMLIBS} ${X11_Xmu_LIB})
-set(CTWMLIBS ${CTWMLIBS} ${X11_Xt_LIB})
+list(APPEND CTWMLIBS ${X11_LIBRARIES})
+list(APPEND CTWMLIBS ${X11_Xmu_LIB})
+list(APPEND CTWMLIBS ${X11_Xt_LIB})
 
 if(USE_XPM)
 	if(NOT X11_Xpm_FOUND)
 		message(FATAL_ERROR "Couldn't find XPM libs")
 	endif(NOT X11_Xpm_FOUND)
 
-	set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
+	list(APPEND CTWMLIBS ${X11_Xpm_LIB})
 	add_definitions(-DXPM)
 	set_property(SOURCE parse.c ctwm.c APPEND
 		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
@@ -67,7 +67,7 @@ if(USE_JPEG)
 	endif()
 
 	include_directories(${JPEG_INCLUDE_DIR})
-	set(CTWMLIBS ${CTWMLIBS} ${JPEG_LIBRARIES})
+	list(APPEND CTWMLIBS ${JPEG_LIBRARIES})
 	add_definitions(-DJPEG)
 	message(STATUS "Enabling libjpeg support.")
 endif(USE_JPEG)
@@ -96,16 +96,16 @@ if(USE_SOUND)
 		message(FATAL_ERROR "Can't find librplay.")
 	endif(NOT LIBRPLAY)
 
-	set(CTWMSRC ${CTWMSRC} sound.c)
+	list(APPEND CTWMSRC sound.c)
 	add_definitions(-DSOUNDS)
-	set(CTWMLIBS ${CTWMLIBS} ${LIBRPLAY})
+	list(APPEND CTWMLIBS ${LIBRPLAY})
 	message(STATUS "Enabling librplay sound support.")
 endif(USE_SOUND)
 
 
 # Do build Gnome support bits by default
 if(USE_GNOME)
-	set(CTWMSRC ${CTWMSRC} gnome.c)
+	list(APPEND CTWMSRC gnome.c)
 	add_definitions(-DGNOME)
 	message(STATUS "Enabling GNOME1 support.")
 endif(USE_GNOME)
