@@ -17,11 +17,12 @@ set(CTWMLIBS)
 # Define options
 # These can be set at the command line; e.g., "cmake -DUSE_JPEG=OFF"
 #
-option(USE_XPM   "Enable XPM support"                 ON )
-option(USE_JPEG  "Enable libjpeg support"             ON )
-option(USE_M4    "Enable m4 support"                  ON )
-option(USE_SOUND "Enable librplay sound support"      OFF)
-option(USE_GNOME "Enable GNOME1 support"              ON )
+option(USE_XPM    "Enable XPM support"                 ON )
+option(USE_JPEG   "Enable libjpeg support"             ON )
+option(USE_M4     "Enable m4 support"                  ON )
+option(USE_SOUND  "Enable librplay sound support"      OFF)
+option(USE_GNOME  "Enable GNOME1 support"              ON )
+option(USE_IMCONV "Enable imconv support"              OFF)
 
 
 #
@@ -109,6 +110,23 @@ if(USE_GNOME)
 	add_definitions(-DGNOME)
 	message(STATUS "Enabling GNOME1 support.")
 endif(USE_GNOME)
+
+
+# imconv is pretty historical, but until we dike it out...
+if(USE_IMCONV)
+	find_library(LIBIMCONV NAMES im)
+	find_library(LIBSDSC NAMES sdsc)
+	if(NOT LIBIMCONV)
+		message(FATAL_ERROR "Can't find libim for imconv")
+	endif(NOT LIBIMCONV)
+	if(NOT LIBSDSC)
+		message(FATAL_ERROR "Can't find libsdsc for imconv")
+	endif(NOT LIBSDSC)
+
+	add_definitions(-DIMCONV)
+	list(APPEND CTWMLIBS ${LIBIMCONV} ${LIBSDSC})
+	message(STATUS "Enabling imconv support.")
+endif(USE_IMCONV)
 
 
 #
