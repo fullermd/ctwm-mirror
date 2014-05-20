@@ -37,6 +37,7 @@ if(X11_Xpm_FOUND AND NOT NO_XPM)
 	set_property(SOURCE parse.c ctwm.c APPEND
 		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
 	)
+	message(STATUS "Enabling XPM support.")
 endif(X11_Xpm_FOUND AND NOT NO_XPM)
 
 set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
@@ -51,6 +52,7 @@ if(JPEG_FOUND AND NOT NO_JPEG)
 	include_directories(${JPEG_INCLUDE_DIR})
 	set(CTWMLIBS ${CTWMLIBS} ${JPEG_LIBRARIES})
 	add_definitions(-DJPEG)
+	message(STATUS "Enabling libjpeg support.")
 endif(JPEG_FOUND AND NOT NO_JPEG)
 
 
@@ -66,6 +68,7 @@ if(NOT NO_M4)
 	set_property(SOURCE parse.c APPEND
 		PROPERTY COMPILE_DEFINITIONS M4CMD="${M4_CMD}"
 	)
+	message(STATUS "Enabling m4 support.")
 endif(NOT NO_M4)
 
 
@@ -78,6 +81,7 @@ if(USE_SOUND)
 		message(FATAL_ERROR "Can't find librplay.")
 	endif(NOT LIBRPLAY)
 	set(CTWMLIBS ${CTWMLIBS} ${LIBRPLAY})
+	message(STATUS "Enabling librplay support.")
 endif(USE_SOUND)
 
 
@@ -85,6 +89,7 @@ endif(USE_SOUND)
 if(NOT NO_GNOME)
 	set(CTWMSRC ${CTWMSRC} gnome.c)
 	add_definitions(-DGNOME)
+	message(STATUS "Enabling GNOME1 support.")
 endif(NOT NO_GNOME)
 
 
