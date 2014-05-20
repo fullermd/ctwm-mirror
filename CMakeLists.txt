@@ -28,13 +28,17 @@ include_directories(${X11_INCLUDE_DIR})
 set(CTWMLIBS ${CTWMLIBS} ${X11_LIBRARIES})
 set(CTWMLIBS ${CTWMLIBS} ${X11_Xmu_LIB})
 set(CTWMLIBS ${CTWMLIBS} ${X11_Xt_LIB})
+
+set(HAS_XPM 0)
 if(X11_Xpm_FOUND AND NOT NO_XPM)
 	set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
 	add_definitions(-DXPM)
+	set(HAS_XPM 1)
 endif(X11_Xpm_FOUND AND NOT NO_XPM)
 
 set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
 set(CONFDIR ${TWMDIR})
+# This only has meaning if HAS_XPM
 set(PIXMAPDIR ${TWMDIR}/images)
 
 
@@ -136,9 +140,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set_property(SOURCE parse.c APPEND
 	PROPERTY COMPILE_DEFINITIONS SYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
 )
-set_property(SOURCE parse.c ctwm.c APPEND
-	PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
-)
+if(HAS_XPM)
+	set_property(SOURCE parse.c ctwm.c APPEND
+		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
+	)
+endif(HAS_XPM)
 
 
 
@@ -188,9 +194,11 @@ add_custom_target(man ALL DEPENDS ${MANPAGE})
 INSTALL(TARGETS ctwm
 	DESTINATION bin
 )
-INSTALL(DIRECTORY xpm/
-	DESTINATION ${PIXMAPDIR}
-)
+if(HAS_XPM)
+	INSTALL(DIRECTORY xpm/
+		DESTINATION ${PIXMAPDIR}
+	)
+endif(HAS_XPM)
 INSTALL(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
