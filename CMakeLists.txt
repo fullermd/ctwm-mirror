@@ -114,7 +114,7 @@ endif(USE_GNOME)
 #
 # Next find some build tools
 #
-# flex shoudl be everywhere
+# flex should be everywhere
 find_package(FLEX)
 if(FLEX_FOUND)
 	FLEX_TARGET(ctwm_lexer lex.l ${CMAKE_CURRENT_BINARY_DIR}/lex.c)
