@@ -34,6 +34,9 @@ if(X11_Xpm_FOUND AND NOT NO_XPM)
 	set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
 	add_definitions(-DXPM)
 	set(HAS_XPM 1)
+	set_property(SOURCE parse.c ctwm.c APPEND
+		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
+	)
 endif(X11_Xpm_FOUND AND NOT NO_XPM)
 
 set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
@@ -140,11 +143,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set_property(SOURCE parse.c APPEND
 	PROPERTY COMPILE_DEFINITIONS SYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
 )
-if(HAS_XPM)
-	set_property(SOURCE parse.c ctwm.c APPEND
-		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
-	)
-endif(HAS_XPM)
 
 
 
