@@ -41,6 +41,8 @@ list(APPEND CTWMLIBS ${X11_LIBRARIES})
 list(APPEND CTWMLIBS ${X11_Xmu_LIB})
 list(APPEND CTWMLIBS ${X11_Xt_LIB})
 
+
+# Hard to imagine xpm not being around or somebody not wanting it, but...
 if(USE_XPM)
 	if(NOT X11_Xpm_FOUND)
 		message(FATAL_ERROR "Couldn't find XPM libs")
