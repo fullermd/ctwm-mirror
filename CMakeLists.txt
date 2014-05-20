@@ -14,6 +14,16 @@ set(CTWMLIBS)
 
 
 #
+# Define options
+#
+option(USE_XPM   "Enable XPM support"                 ON )
+option(USE_JPEG  "Enable libjpeg support"             ON )
+option(USE_M4    "Enable m4 support"                  ON )
+option(USE_SOUND "Enable librplay sound support"      OFF)
+option(USE_GNOME "Enable GNOME1 support"              ON )
+
+
+#
 # First find various stuff we need, if enabled.
 #
 
@@ -29,35 +39,41 @@ set(CTWMLIBS ${CTWMLIBS} ${X11_LIBRARIES})
 set(CTWMLIBS ${CTWMLIBS} ${X11_Xmu_LIB})
 set(CTWMLIBS ${CTWMLIBS} ${X11_Xt_LIB})
 
-set(HAS_XPM 0)
-if(X11_Xpm_FOUND AND NOT NO_XPM)
+if(USE_XPM)
+	if(NOT X11_Xpm_FOUND)
+		message(FATAL_ERROR "Couldn't find XPM libs")
+	endif(NOT X11_Xpm_FOUND)
+
 	set(CTWMLIBS ${CTWMLIBS} ${X11_Xpm_LIB})
 	add_definitions(-DXPM)
-	set(HAS_XPM 1)
 	set_property(SOURCE parse.c ctwm.c APPEND
 		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
 	)
 	message(STATUS "Enabling XPM support.")
-endif(X11_Xpm_FOUND AND NOT NO_XPM)
+endif(USE_XPM)
 
 set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
 set(CONFDIR ${TWMDIR})
-# This only has meaning if HAS_XPM
+# This actually only has meaning if we're building with XPM
 set(PIXMAPDIR ${TWMDIR}/images)
 
 
 # libjpeg is pretty common
-find_package(JPEG)
-if(JPEG_FOUND AND NOT NO_JPEG)
+if(USE_JPEG)
+	find_package(JPEG)
+	if(NOT JPEG_FOUND)
+		message(FATAL_ERROR "Couldn't find libjpeg")
+	endif()
+
 	include_directories(${JPEG_INCLUDE_DIR})
 	set(CTWMLIBS ${CTWMLIBS} ${JPEG_LIBRARIES})
 	add_definitions(-DJPEG)
 	message(STATUS "Enabling libjpeg support.")
-endif(JPEG_FOUND AND NOT NO_JPEG)
+endif(USE_JPEG)
 
 
 # m4 is on by default too
-if(NOT NO_M4)
+if(USE_M4)
 	if(NOT M4_CMD)
 		find_program(M4_CMD m4)
 	endif(NOT M4_CMD)
@@ -69,28 +85,29 @@ if(NOT NO_M4)
 		PROPERTY COMPILE_DEFINITIONS M4CMD="${M4_CMD}"
 	)
 	message(STATUS "Enabling m4 support.")
-endif(NOT NO_M4)
+endif(USE_M4)
 
 
 # rplay off by default
 if(USE_SOUND)
-	set(CTWMSRC ${CTWMSRC} sound.c)
-	add_definitions(-DSOUNDS)
 	find_library(LIBRPLAY NAMES rplay)
 	if(NOT LIBRPLAY)
 		message(FATAL_ERROR "Can't find librplay.")
 	endif(NOT LIBRPLAY)
+
+	set(CTWMSRC ${CTWMSRC} sound.c)
+	add_definitions(-DSOUNDS)
 	set(CTWMLIBS ${CTWMLIBS} ${LIBRPLAY})
-	message(STATUS "Enabling librplay support.")
+	message(STATUS "Enabling librplay sound support.")
 endif(USE_SOUND)
 
 
 # Do build Gnome support bits by default
-if(NOT NO_GNOME)
+if(USE_GNOME)
 	set(CTWMSRC ${CTWMSRC} gnome.c)
 	add_definitions(-DGNOME)
 	message(STATUS "Enabling GNOME1 support.")
-endif(NOT NO_GNOME)
+endif(USE_GNOME)
 
 
 #
@@ -197,11 +214,11 @@ add_custom_target(man ALL DEPENDS ${MANPAGE})
 INSTALL(TARGETS ctwm
 	DESTINATION bin
 )
-if(HAS_XPM)
+if(USE_XPM)
 	INSTALL(DIRECTORY xpm/
 		DESTINATION ${PIXMAPDIR}
 	)
-endif(HAS_XPM)
+endif(USE_XPM)
 INSTALL(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
