@@ -23,6 +23,7 @@ option(USE_M4     "Enable m4 support"                  ON )
 option(USE_SOUND  "Enable librplay sound support"      OFF)
 option(USE_GNOME  "Enable GNOME1 support"              ON )
 option(USE_IMCONV "Enable imconv support"              OFF)
+option(USE_SREGEX "Use regex from libc"                ON )
 
 
 #
@@ -129,6 +130,26 @@ if(USE_IMCONV)
 	list(APPEND CTWMLIBS ${LIBIMCONV} ${LIBSDSC})
 	message(STATUS "Enabling imconv support.")
 endif(USE_IMCONV)
+
+
+# This calls itself GNU but doesn't really have anything to do with GNU.
+# All sorts of non-GNU systems include it.  Most/all nowadays, probably.
+if(USE_SREGEX)
+	include(CheckIncludeFiles)
+	include(CheckFunctionExists)
+	check_include_files(regex.h HAS_REGEX_H)
+	check_function_exists(regexec HAS_REGEXEC)
+
+	if(NOT HAS_REGEX_H)
+		message(FATAL_ERROR "Can't find regex.h")
+	endif(NOT HAS_REGEX_H)
+	if(NOT HAS_REGEXEC)
+		message(FATAL_ERROR "Can't find regexec()")
+	endif(NOT HAS_REGEXEC)
+
+	add_definitions(-DUSE_GNU_REGEX)
+	message(STATUS "Enabling libc regex usage.")
+endif(USE_SREGEX)
 
 
 #
