@@ -166,9 +166,15 @@ endif(FLEX_FOUND)
 # This only finds bison, not yacc.  There doesn't seem to be a standard
 # module for yacc, so hand-code it.
 find_package(BISON)
+set(YFLAGS "-d -b gram")
+if(DO_DEBUGPARSER)
+	set(YFLAGS "${YFLAGS} -t -v")
+	add_definitions(-DYYEBUG=1)
+	message(STATUS "Enabling config parser debug.")
+endif(DO_DEBUGPARSER)
 if(BISON_FOUND)
 	BISON_TARGET(ctwm_parser gram.y ${CMAKE_CURRENT_BINARY_DIR}/gram.tab.c
-		COMPILE_FLAGS -d -b gram)
+		COMPILE_FLAGS ${YFLAGS})
 else()
 	find_program(YACC yacc)
 	if(NOT YACC)
@@ -176,7 +182,7 @@ else()
 	endif(NOT YACC)
 	add_custom_command(OUTPUT gram.tab.c
 		DEPENDS gram.y
-		COMMAND ${YACC} -d -b gram ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
+		COMMAND ${YACC} ${YFLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
 	)
 endif(BISON_FOUND)
 
