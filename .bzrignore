@@ -1,12 +1,8 @@
 .depend
 Makefile
-Makefile.bak
 ctwm
-ctwm._man
 deftwmrc.c
 gram.tab.[ch]
 lex.c
-*.o.info
-Imakefile.local
 *.tar*
 build/*
