@@ -214,6 +214,21 @@ set_property(SOURCE parse.c APPEND
 	PROPERTY COMPILE_DEFINITIONS SYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
 )
 
+# Where should we stick manpages?
+if(MANBASE)
+	set(MAN1PATH "${MANBASE}/man1")
+else()
+	find_file(MAN1PATH man1
+		PATHS
+			"${CMAKE_INSTALL_PREFIX}/share/man"
+			"${CMAKE_INSTALL_PREFIX}/man"
+		NO_DEFAULT_PATH)
+endif(MANBASE)
+if(NOT MAN1PATH)
+	message(FATAL_ERROR "Can't figure out manpath; try setting MANBASE.")
+else()
+	message(STATUS "Installing manpage to ${MAN1PATH}")
+endif(NOT MAN1PATH)
 
 
 # Hand-build deftwmrc.c
@@ -271,5 +286,5 @@ INSTALL(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
 INSTALL(FILES ${MANPAGE}
-	DESTINATION man/man1
+	DESTINATION ${MAN1PATH}
 )
