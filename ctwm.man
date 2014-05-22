@@ -2527,7 +2527,7 @@ they may be lost if they are iconified and no bindings to
 .nf
 $HOME/.ctwmrc.<screen number>
 $HOME/.ctwmrc
-/usr/lib/X11/twm/system.ctwmrc
+@TWMDIR@/system.ctwmrc
 $HOME/.twmrc
 .fi
 .SH "ENVIRONMENT VARIABLES"

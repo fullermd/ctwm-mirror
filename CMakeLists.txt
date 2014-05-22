@@ -267,15 +267,18 @@ if(DO_LIBCTWM)
 endif(DO_LIBCTWM)
 
 
-# Compress man page
+# Rewrite man page
+set(MANPAGE ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1)
+configure_file(ctwm.man ${MANPAGE} @ONLY)
+
+# Compress
 find_program(GZIP_CMD gzip)
-set(MANPAGE ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz)
-add_custom_command(OUTPUT ${MANPAGE}
-	DEPENDS ctwm.man
-	COMMAND ${GZIP_CMD} -nc ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man > ${MANPAGE}
-	COMMENT "Building ctwm.1.gz"
+add_custom_command(OUTPUT "${MANPAGE}.gz"
+	DEPENDS ${MANPAGE}
+	COMMAND ${GZIP_CMD} -nc ${MANPAGE} > ${MANPAGE}.gz
+	COMMENT "Building ${MANPAGE}.gz"
 )
-add_custom_target(man ALL DEPENDS ${MANPAGE})
+add_custom_target(man ALL DEPENDS "${MANPAGE}.gz")
 
 
 # Installing everything
@@ -290,6 +293,6 @@ endif(USE_XPM)
 INSTALL(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
-INSTALL(FILES ${MANPAGE}
+INSTALL(FILES "${MANPAGE}.gz"
 	DESTINATION ${MAN1PATH}
 )
