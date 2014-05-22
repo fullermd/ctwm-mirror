@@ -253,7 +253,7 @@ set(MANPAGE ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1.gz)
 add_custom_command(OUTPUT ${MANPAGE}
 	DEPENDS ctwm.man
 	COMMAND ${GZIP_CMD} -nc ${CMAKE_CURRENT_SOURCE_DIR}/ctwm.man > ${MANPAGE}
-	COMMENT "Building ctwm.1"
+	COMMENT "Building ctwm.1.gz"
 )
 add_custom_target(man ALL DEPENDS ${MANPAGE})
 
