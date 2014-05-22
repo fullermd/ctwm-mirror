@@ -1,5 +1,4 @@
 .depend
-Makefile
 ctwm
 deftwmrc.c
 gram.tab.[ch]
