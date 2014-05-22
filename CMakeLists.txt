@@ -214,6 +214,7 @@ set_property(SOURCE parse.c APPEND
 	PROPERTY COMPILE_DEFINITIONS SYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
 )
 
+
 # Where should we stick manpages?
 if(MANBASE)
 	set(MAN1PATH "${MANBASE}/man1")
@@ -230,6 +231,10 @@ else()
 	message(STATUS "Installing manpage to ${MAN1PATH}")
 endif(NOT MAN1PATH)
 
+
+#
+# And the build targets
+#
 
 # Hand-build deftwmrc.c
 set(defc deftwmrc.c)
