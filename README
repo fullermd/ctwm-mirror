@@ -40,51 +40,77 @@ please send a report to the mailing list.
 
 Configuration:
 
-Ctwm is built using xmkmf, which read Imakefile.  That file includes
-Imakefile.local, which is meant for local configuration, and *WHICH YOU
-MUST CREATE*.  For your comfort, the file Imakefile.local-template can
-simply be copied to Imakefile.local, then changed.
+CTWM is build using CMake, which does its best to root around in your
+system to find the pieces the build needs.  Occasionally though you might
+have to give it some help, or change the defaults of what features are
+expected.
 
-Configuration is done by defining any of the following C macros:
+In the common case, the included Makefile will do the necessary
+invocations, and you won't need to worry about it; just run a normal
+"make ; make install" invocation.  If you need to make alterations
+though, you may have to invoke cmake manually and set various params on
+the command line (cmake also has various GUI configurators, not covered
+here).
 
-USEM4           If defined, enables the use of the m4 preprocessor on
-                the run-time configuration file.  Disable if m4 isn't
-                present.
-                Defined in Imakefile.local-template.
-XPM             If defined, enables the use of xpm images.  Disable if
-                libxpm isn't present.
-                Defined in Imakefile.local-template.
-JPEG            If defined, enables the use of jpeg images.  Disable
+The following parameters control the features/external libs that are
+available.  The defaults can be changed by passing parameters like
+"-DUSE_XYZ=OFF" to the cmake command line.
+
+USE_M4          Enables use of m4(1) for preprocessing config files at
+                runtime.  If your m4 is called something other than 'm4'
+                or 'gm4', you may need to also set M4_CMD to point at it.
+                (ON by default)
+USE_XPM         Enables the use of xpm images.  Disable if libxpm isn't
+                present, which is just barely possible on very old
+                systems.
+                (ON by default)
+USE_JPEG        Enables the use of jpeg images via libjpeg.  Disable
                 if libjpeg isn't present.
-                Defined in Imakefile.local-template.
-GNOME           If defined, build to work with Gnome.
-                Defined in Imakefile.local-template.
-USE_SOUND       if defined, build with sound support.  Disable if
-                librplay isn't present.
-                Defined in Imakefile.local-template.
-USE_GNU_REGEX   if defined, build with GNU regex.  Otherwise, use an
-                internal implementation.
-                Undefined in Imakefile.local-template.
+                (ON by default)
+USE_GNOME       If defined, enables interaction with GNOME1 properties.
+                This doesn't require any GNOME libraries or includes.
+                (ON by default)
+USE_SREGEX      Build with regex support from libc.  Otherwise, use an
+                internal implementation.  You may need to disable this if
+                your libc has no regexec() etc functions.
+                (ON by default)
+USE_SOUND       Build with sound support via librplay.
+                (OFF by default)
+USE_IMCONV      Enable support for imconv library from SDSC.  This is
+                almost certainly of historical interest only; if you
+                don't already know exactly what it is and why you want
+                it, you don't.
+                (OFF by default)
 
-If you don't have xpm, fetch it from ftp.x.org or comment out the
-#define XPM in Imakefile.local.  If you don't have the m4 preprocessor
-(or don't want to use it) comment out #define USEM4, if you have the
-rplay package replace `#undef USE_SOUND' with `#define USE_SOUND'.
+Additional vars you might need to set:
+
+M4_CMD          Name of m4 program, if it's not 'm4' or 'gm4'.
+MANBASE         Base directory under which manpage dirs like 'man1' and
+                'man2' live.  The logic in the process _should_ be able
+                to find them, but if it fails (or guesses wrong) you may
+                need to tell it directly.  And then tell us about it, so
+                we can improve the automatic search.
 
                                 ----------
 
 Building:
 
-funny prompt> cp Imakefile.local-template Imakefile.local
-              [ edit if necessary; you probably don't have to ]
-funny prompt> xmkmf
+In the simple case, the defaults should work.  Most modern or semi-modern
+systems should fall into this.
+
 funny prompt> make
+
+If you need to make changes, you'll want to run cmake manually first
+
+funny prompt> cd build && cmake -DUSE_XPM=OFF -DM4_CMD=superm4 ..
+funny prompt> make
+
 
                                 ----------
 
 Installation:
 
-funny prompt> make install install.man
+funny prompt> make install
 
                                 ----------
 
