@@ -80,7 +80,7 @@ endif(USE_JPEG)
 # m4 is on by default too
 if(USE_M4)
 	if(NOT M4_CMD)
-		find_program(M4_CMD m4)
+		find_program(M4_CMD m4 gm4)
 	endif(NOT M4_CMD)
 	if(NOT M4_CMD)
 		message(FATAL_ERROR "Can't find m4 program: try setting M4_CMD.")
@@ -89,7 +89,7 @@ if(USE_M4)
 	set_property(SOURCE parse.c APPEND
 		PROPERTY COMPILE_DEFINITIONS M4CMD="${M4_CMD}"
 	)
-	message(STATUS "Enabling m4 support.")
+	message(STATUS "Enabling m4 support (${M4_CMD}).")
 endif(USE_M4)
 
 
