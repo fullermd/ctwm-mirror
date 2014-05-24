@@ -3,10 +3,28 @@ project(ctwm C)
 
 # Our base set of sources
 set(CTWMSRC
-	gram.tab.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c
-	parse.c menus.c events.c resize.c util.c version.c iconmgr.c
-	cursor.c icons.c workmgr.c windowbox.c clicktofocus.c
-	vscreen.c session.c mwmhints.c
+	add_window.c
+	clicktofocus.c
+	ctwm.c
+	cursor.c
+	deftwmrc.c
+	events.c
+	gc.c
+	gram.tab.c
+	iconmgr.c
+	icons.c
+	lex.c
+	list.c
+	menus.c
+	mwmhints.c
+	parse.c
+	resize.c
+	session.c
+	util.c
+	version.c
+	vscreen.c
+	windowbox.c
+	workmgr.c
 )
 
 # Libs
