@@ -178,6 +178,7 @@ if(USE_IMCONV)
 
 	add_definitions(-DIMCONV)
 	list(APPEND CTWMLIBS ${LIBIMCONV} ${LIBSDSC})
+	include_directories(${LIBIMCONV_INCLUDE_DIR}  ${LIBSDSC_INCLUDE_DIR})
 	message(STATUS "Enabling imconv support.")
 endif(USE_IMCONV)
 
