@@ -61,6 +61,24 @@ list(APPEND CTWMLIBS ${X11_Xmu_LIB})
 list(APPEND CTWMLIBS ${X11_Xt_LIB})
 
 
+#
+# Setup some search paths
+#
+set(INCSEARCH
+	"${CMAKE_INSTALL_PREFIX}/include"
+	${X11_INCLUDE_DIR}
+	"/usr/local/include"
+	"/usr/include"
+)
+set(LIBSEARCH
+	"${CMAKE_INSTALL_PREFIX}/lib"
+	${X11_LIBRARY_DIR}
+	"/usr/local/lib"
+	"/usr/lib"
+	"/lib"
+)
+
+
 # Hard to imagine xpm not being around or somebody not wanting it, but...
 if(USE_XPM)
 	if(NOT X11_Xpm_FOUND)
@@ -113,14 +131,19 @@ endif(USE_M4)
 
 # rplay off by default
 if(USE_SOUND)
-	find_library(LIBRPLAY NAMES rplay)
+	find_library(LIBRPLAY NAMES rplay PATHS ${LIBSEARCH})
 	if(NOT LIBRPLAY)
-		message(FATAL_ERROR "Can't find librplay.")
+		message(FATAL_ERROR "Can't find librplay lib.")
 	endif(NOT LIBRPLAY)
+	find_path(LIBRPLAY_INCLUDE_DIR NAME rplay.h PATHS ${INCSEARCH})
+	if(NOT LIBRPLAY_INCLUDE_DIR)
+		message(FATAL_ERROR "Can't find rplay.h.")
+	endif(NOT LIBRPLAY_INCLUDE_DIR)
 
 	list(APPEND CTWMSRC sound.c)
 	add_definitions(-DSOUNDS)
 	list(APPEND CTWMLIBS ${LIBRPLAY})
+	include_directories(${LIBRPLAY_INCLUDE_DIR})
 	message(STATUS "Enabling librplay sound support.")
 endif(USE_SOUND)
 
@@ -135,14 +158,23 @@ endif(USE_GNOME)
 
 # imconv is pretty historical, but until we dike it out...
 if(USE_IMCONV)
-	find_library(LIBIMCONV NAMES im)
-	find_library(LIBSDSC NAMES sdsc)
+	find_library(LIBIMCONV NAMES im PATHS ${LIBSEARCH})
 	if(NOT LIBIMCONV)
 		message(FATAL_ERROR "Can't find libim for imconv")
 	endif(NOT LIBIMCONV)
+	find_path(LIBIMCONV_INCLUDE_DIR NAME im.h PATHS ${INCSEARCH})
+	if(NOT LIBIMCONV_INCLUDE_DIR)
+		message(FATAL_ERROR "Can't find im.h for imconv")
+	endif(NOT LIBIMCONV_INCLUDE_DIR)
+
+	find_library(LIBSDSC NAMES sdsc PATHS ${LIBSEARCH})
 	if(NOT LIBSDSC)
 		message(FATAL_ERROR "Can't find libsdsc for imconv")
 	endif(NOT LIBSDSC)
+	find_path(LIBSDSC_INCLUDE_DIR NAME sdsc.h PATHS ${INCSEARCH})
+	if(NOT LIBSDSC_INCLUDE_DIR)
+		message(FATAL_ERROR "Can't find sdsc.h for imconv")
+	endif(NOT LIBSDSC_INCLUDE_DIR)
 
 	add_definitions(-DIMCONV)
 	list(APPEND CTWMLIBS ${LIBIMCONV} ${LIBSDSC})
