@@ -264,6 +264,7 @@ if(DO_LIBCTWM)
 	add_library(ctwmc SHARED libctwm.c)
 	add_executable(demolib demolib.c)
 	target_link_libraries(demolib ctwmc ${CTWMLIBS})
+	message(STATUS "Building libctwmc and demolib.")
 endif(DO_LIBCTWM)
 
 
