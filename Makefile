@@ -6,5 +6,5 @@ build/Makefile cmake: CMakeLists.txt
 	( cd build && \
 		cmake -DCMAKE_C_FLAGS:STRING="${CFLAGS}" ${CMAKE_EXTRAS} .. )
 
-allclean:
+allclean distclean:
 	rm -rf build/*
