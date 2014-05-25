@@ -216,9 +216,9 @@ endif(FLEX_FOUND)
 
 # This only finds bison, not yacc.  There doesn't seem to be a standard
 # module for yacc, so hand-code it.
-set(YFLAGS "-d -b gram")
+set(YFLAGS -d -b gram)
 if(DO_DEBUGPARSER)
-	set(YFLAGS "${YFLAGS} -t -v")
+	list(APPEND YFLAGS -t -v)
 	add_definitions(-DYYEBUG=1)
 	message(STATUS "Enabling config parser debug.")
 endif(DO_DEBUGPARSER)
