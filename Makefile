@@ -3,7 +3,8 @@ all build ctwm install clean: build/Makefile
 	( cd build && ${MAKE} ${@} )
 
 build/Makefile cmake: CMakeLists.txt
-	( cd build && cmake -DCMAKE_C_FLAGS:STRING="${CFLAGS}" .. )
+	( cd build && \
+		cmake -DCMAKE_C_FLAGS:STRING="${CFLAGS}" ${CMAKE_EXTRAS} .. )
 
 allclean:
 	rm -rf build/*
