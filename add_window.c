@@ -603,8 +603,10 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
      */
 
     /*
-     * Note, this may update tmp_win->vs if needed to make the window
-     * visible in a vscreen.
+     * Note, this may update tmp_win->{parent_,}vs if needed to make the
+     * window visible in another vscreen.
+     * It may set tmp_win->vs to NULL if it has no occupation in the
+     * current workspace.
      */
 
     if (restoredFromPrevSession) {
@@ -635,11 +637,12 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 	ask_user = False;
     }
 
-    vs = tmp_win->vs;
+    vs = tmp_win->parent_vs;
     if (vs) {
-	vroot = tmp_win->vs->window;
+	vroot = vs->window;
     } else {
 	vroot = Scr->Root;	/* never */
+	tmp_win->parent_vs = Scr->currentvs;
     }
     if (winbox) {
 	vroot = winbox->window;

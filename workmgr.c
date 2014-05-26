@@ -832,12 +832,16 @@ void SetupOccupation (TwmWindow *twm_win,
     }
     /*
      * If the occupation would not show it in the current vscreen,
-     * but in one of the other vscreens, change the vscreen.
+     * make it vanish.
+     *
+     * If it could be shown in one of the other vscreens, change the vscreen.
      */
-    if (Scr->numVscreens > 1) {
-	if (!OCCUPY(twm_win, twm_win->vs->wsw->currentwspc)) {
-	    VirtualScreen *vs;
+    if (!OCCUPY(twm_win, twm_win->vs->wsw->currentwspc)) {
+	VirtualScreen *vs;
 
+	twm_win->vs = NULL;
+
+	if (Scr->numVscreens > 1) {
 	    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
 		if (OCCUPY (twm_win, vs->wsw->currentwspc)) {
 		    twm_win->vs = vs;
