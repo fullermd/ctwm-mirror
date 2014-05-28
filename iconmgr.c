@@ -179,12 +179,25 @@ void CreateIconManagers(void)
 	p->twm_win = AddWindow(p->w, ADD_WINDOW_ICON_MANAGER, p, Scr->currentvs);
 	/*
 	 * SetupOccupation() called from AddWindow() doesn't setup
-	 * occupation for icon managers.
+	 * occupation for icon managers, nor clear vs if occupation lacks.
+	 *
+	 * There is no Scr->currentvs->wsw->currentwspc set up this
+	 * early, so we can't check with that; the best check we can do
+	 * is use ws->number.  This may be incorrect when re-starting
+	 * ctwm.
 	 */
-	if (ws)
-	  p->twm_win->occupation = 1 << ws->number;
-	else
-	  p->twm_win->occupation = 1;
+	if (ws) {
+	    p->twm_win->occupation = 1 << ws->number;
+	    if (ws->number > 0) {
+		p->twm_win->vs = NULL;
+	    }
+	} else {
+	    p->twm_win->occupation = 1;
+	}
+#ifdef DEBUG_ICONMGR
+	fprintf(stderr, "CreateIconManagers: IconMgr %p: x=%d y=%d w=%d h=%d occupation=%x\n",
+		p, JunkX, JunkY,  p->width, p->height, p->twm_win->occupation);
+#endif
 
 	sizehints.flags       = PWinGravity;
 	sizehints.win_gravity = gravity;
@@ -656,9 +669,6 @@ WList *AddIconManager(TwmWindow *tmp_win)
 	attributes.border_pixel = Scr->Black;
 	attributes.event_mask = (ButtonReleaseMask| ButtonPressMask | ExposureMask);
 	attributes.cursor = Scr->ButtonCursor;
-	//offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
-	//tmp->icon = XCreateWindow (dpy, tmp->w, offs + 3,
-		//(int) (h - siconify_height)/2,
 	/* The precise location will be set it in PackIconManager.  */
 	tmp->icon = XCreateWindow (dpy, tmp->w, 0, 0,
 		(unsigned int) siconify_width,
@@ -1035,4 +1045,18 @@ void PackIconManager(IconMgr *ip)
 		   newwidth + 2 * ip->twm_win->frame_bw3D,
 		   ip->height + ip->twm_win->title_height + 2 * ip->twm_win->frame_bw3D, -1);
     ip->width = savewidth;
+}
+
+void dump_iconmanager(IconMgr *mgr, char *label)
+{
+    fprintf(stderr, "IconMgr %s %p name='%s' geom='%s'\n",
+	    label,
+	    mgr,
+	    mgr->name,
+	    mgr->geometry);
+    fprintf(stderr, "next = %p, prev = %p, lasti = %p, nextv = %p\n",
+	    mgr->next,
+	    mgr->prev,
+	    mgr->lasti,
+	    mgr->nextv);
 }

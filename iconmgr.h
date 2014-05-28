@@ -120,6 +120,7 @@ extern void DrawIconManagerBorder(WList *tmp, int fill);
 extern void SortIconManager(IconMgr *ip);
 extern void PackIconManager(IconMgr *ip);
 extern void PackIconManagers(void);
+extern void dump_iconmanager(IconMgr *mgr, char *label);
 
 
 #endif /* _ICONMGR_ */
