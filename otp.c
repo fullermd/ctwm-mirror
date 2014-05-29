@@ -39,6 +39,7 @@
 #include "util.h"
 #include "icons.h"
 #include "list.h"
+#include "events.h"
 
 #define DEBUG_OTP	0
 #if DEBUG_OTP
@@ -726,6 +727,7 @@ void OtpCirculateSubwindows(VirtualScreen *vs, int direction)
 {
     Window w = vs->window;
     XWindowAttributes winattrs;
+    Bool circulated;
 
     DPRINTF((stderr, "OtpCirculateSubwindows %d\n", direction));
 
@@ -735,9 +737,13 @@ void OtpCirculateSubwindows(VirtualScreen *vs, int direction)
     XSelectInput (dpy, w, winattrs.your_event_mask);
     /*
      * Now we should get the CirculateNotify event.
-     * It seems to arrive soon enough that we don't have to play tricks
-     * here to look ahead in the message queue.
+     * It usually seems to arrive soon enough, but just to be sure, look
+     * ahead in the message queue to see if it can be expedited.
      */
+    circulated = XCheckTypedWindowEvent (dpy, w, CirculateNotify, &Event);
+    if (circulated) {
+	HandleCirculateNotify();
+    }
 }
 
 /*

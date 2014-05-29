@@ -106,6 +106,7 @@ extern void HandleFocusIn(XFocusInEvent *event);
 extern void HandleFocusOut(XFocusOutEvent *event);
 extern void SynthesiseFocusOut(Window w);
 extern void SynthesiseFocusIn(Window w);
+extern void HandleCirculateNotify (void);
 extern int Transient(Window w, Window *propw);
 
 extern ScreenInfo *FindScreenInfo(Window w);

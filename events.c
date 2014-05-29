@@ -150,7 +150,6 @@ int Cancel = FALSE;
 void HandleCreateNotify(void);
 void HandleShapeNotify (void);
 void HandleFocusChange (void);
-void HandleCirculateNotify (void);
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
