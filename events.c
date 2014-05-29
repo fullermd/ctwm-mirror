@@ -1333,8 +1333,7 @@ void HandleKeyPress(void)
         if (Context == C_ICON ||
 	    Context == C_FRAME ||
 	    Context == C_TITLE ||
-	    (Tmp_win->iconmanagerlist &&
-	     (Event.xany.window == Tmp_win->iconmanagerlist->w)))
+	    Context == C_ICONMGR)
         {
             Event.xkey.window = Tmp_win->w;
             XSendEvent(dpy, Tmp_win->w, False, KeyPressMask, &Event);
