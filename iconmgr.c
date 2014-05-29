@@ -253,6 +253,7 @@ IconMgr *AllocateIconManager(char *name, char *icon_name, char *geom,
     p->first = NULL;
     p->last = NULL;
     p->active = NULL;
+    p->twm_win = NULL;
     p->scr = Scr;
     p->count = 0;
     p->x = 0;
