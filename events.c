@@ -1326,16 +1326,15 @@ void HandleKeyPress(void)
      */
     if (Tmp_win)
     {
-        /* if (Tmp_win == Scr->currentvs->wsw->twm_win) */
-	if (Tmp_win->wspmgr) {
+	if (Context == C_WORKSPACE) {
 	  WMgrHandleKeyPressEvent (Scr->currentvs, &Event);
 	  return;
         }
-        if (Tmp_win->icon && ((Event.xany.window == Tmp_win->icon->w) ||
-	    (Event.xany.window == Tmp_win->frame) ||
-	    (Event.xany.window == Tmp_win->title_w) ||
+        if (Context == C_ICON ||
+	    Context == C_FRAME ||
+	    Context == C_TITLE ||
 	    (Tmp_win->iconmanagerlist &&
-	     (Event.xany.window == Tmp_win->iconmanagerlist->w))))
+	     (Event.xany.window == Tmp_win->iconmanagerlist->w)))
         {
             Event.xkey.window = Tmp_win->w;
             XSendEvent(dpy, Tmp_win->w, False, KeyPressMask, &Event);
