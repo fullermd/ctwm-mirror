@@ -667,7 +667,6 @@ WList *AddIconManager(TwmWindow *tmp_win)
     if (Scr->WindowMask) XRaiseWindow (dpy, Scr->WindowMask);
     XMapWindow(dpy, tmp->w);
 
-    XSaveContext(dpy, tmp->w, IconManagerContext, (XPointer) tmp);
     XSaveContext(dpy, tmp->w, TwmContext, (XPointer) tmp_win);
     XSaveContext(dpy, tmp->w, ScreenContext, (XPointer) Scr);
     XSaveContext(dpy, tmp->icon, TwmContext, (XPointer) tmp_win);
@@ -814,7 +813,6 @@ void RemoveIconManager(TwmWindow *tmp_win)
     XDeleteContext(dpy, tmp->icon, TwmContext);
     XDeleteContext(dpy, tmp->icon, ScreenContext);
     XDestroyWindow(dpy, tmp->icon);
-    XDeleteContext(dpy, tmp->w, IconManagerContext);
     XDeleteContext(dpy, tmp->w, TwmContext);
     XDeleteContext(dpy, tmp->w, ScreenContext);
     XDestroyWindow(dpy, tmp->w);

@@ -186,7 +186,6 @@ Cursor LeftButt;
 
 XContext TwmContext;		/* context for twm windows */
 XContext MenuContext;		/* context for all menu windows */
-XContext IconManagerContext;	/* context for all window list windows */
 XContext ScreenContext;		/* context to get screen data */
 XContext ColormapContext;	/* context for colormap operations */
 XContext VirtScreenContext;	/* context for virtual screen */
@@ -439,7 +438,6 @@ int main(int argc, char **argv, char **environ)
     HasShape = XShapeQueryExtension (dpy, &ShapeEventBase, &ShapeErrorBase);
     TwmContext = XUniqueContext();
     MenuContext = XUniqueContext();
-    IconManagerContext = XUniqueContext();
     ScreenContext = XUniqueContext();
     ColormapContext = XUniqueContext();
     VirtScreenContext = XUniqueContext();

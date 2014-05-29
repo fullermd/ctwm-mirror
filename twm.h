@@ -508,7 +508,6 @@ extern XClassHint NoClass;
 
 extern XContext TwmContext;
 extern XContext MenuContext;
-extern XContext IconManagerContext;
 extern XContext ScreenContext;
 extern XContext ColormapContext;
 extern XContext VirtScreenContext;
