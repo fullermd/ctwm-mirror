@@ -86,6 +86,7 @@
 #include "add_window.h"
 #include "windowbox.h"
 #include "util.h"
+#include "otp.h"
 #include "resize.h"
 #include "parse.h"
 #include "list.h"
@@ -126,8 +127,6 @@ static void		mergeWindowEntries (WindowEntry	*old, WindowEntry *we);
 
 char NoName[] = "Untitled"; /* name if no name is specified */
 int  resizeWhenAdd;
-
-extern Atom _OL_WIN_ATTR;
 
 #if defined(__hpux) && !defined(_XPG4_EXTENDED)
 #   define FDSET int*
@@ -196,9 +195,8 @@ void GetGravityOffsets (TwmWindow *tmp,	/* window from which to get gravity */
  ***********************************************************************
  */
 
-TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
+TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 {
-    virtualScreen *vs;
     TwmWindow *tmp_win;			/* new twm window structure */
     int stat;
     XEvent event;
@@ -239,18 +237,29 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 
     /* allocate space for the twm window */
     tmp_win = (TwmWindow *)calloc(1, sizeof(TwmWindow));
-    if (tmp_win == 0)
-    {
+    if (tmp_win == 0) {
 	fprintf (stderr, "%s: Unable to allocate memory to manage window ID %lx.\n",
 		 ProgramName, w);
 	return NULL;
     }
+
     switch (iconm) {
-	case  0 : iswinbox = 0; break;
-	case  1 : iswinbox = 0; break;
-	case  2 : iswinbox = 1; iconm  = 0; break;
-	case  3 : iswman   = 1; iconm  = 0; break;
-	default : iswinbox = 0; iswman = 0; iconm = 1; break;
+	case ADD_WINDOW_NORMAL:
+	    break;
+	case ADD_WINDOW_ICON_MANAGER:
+	    /* iconm remains nonzero */
+	    break;
+	case  ADD_WINDOW_WINDOWBOX:
+	    iswinbox = 1;
+	    iconm  = 0;
+	    break;
+	case ADD_WINDOW_WORKSPACE_MANAGER :
+	    iswman = 1;
+	    iconm  = 0;
+	    break;
+	default :
+	    iconm = ADD_WINDOW_ICON_MANAGER;
+	    break;
     }
     tmp_win->w = w;
     tmp_win->zoomed = ZOOM_NONE;
@@ -258,8 +267,8 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     tmp_win->iconmgrp = iconp;
     tmp_win->wspmgr = iswman;
     tmp_win->iswinbox = iswinbox;
-    tmp_win->vs = NULL;
-    tmp_win->old_parent_vs = NULL;
+    tmp_win->vs = vs;
+    tmp_win->parent_vs = vs;
     tmp_win->savevs = NULL;
     tmp_win->cmaps.number_cwins = 0;
     tmp_win->savegeometry.width = -1;
@@ -391,9 +400,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	(!LookInList(Scr->NoStackModeL, tmp_win->full_name, 
 	    &tmp_win->class));
 
-    tmp_win->ontoppriority = (LookInList(Scr->AlwaysOnTopL,
-	tmp_win->full_name, &tmp_win->class)) ? ONTOP_MAX : ONTOP_DEFAULT;
-
     tmp_win->titlehighlight = Scr->TitleHighlight && 
 	(!LookInList(Scr->NoTitleHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
@@ -502,7 +508,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	    tmp_win->frame_bw3D = 0;
 	} else if (tmp_win->frame_bw3D != 0) {
 	    tmp_win->frame_bw = 0;
-	    Scr->ClientBorderWidth = FALSE;
 	} else if (Scr->ClientBorderWidth) {
 	    tmp_win->frame_bw = tmp_win->old_bw;
 	} else {
@@ -597,12 +602,18 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
      * (restore session for example)
      */
 
-    /* note, this is where tmp_win->vs get setup, among other things */
+    /*
+     * Note, this may update tmp_win->{parent_,}vs if needed to make the
+     * window visible in another vscreen.
+     * It may set tmp_win->vs to NULL if it has no occupation in the
+     * current workspace.
+     */
 
     if (restoredFromPrevSession) {
-      SetupOccupation (tmp_win, saved_occupation);
-    } else
-      SetupOccupation (tmp_win, 0);
+	SetupOccupation (tmp_win, saved_occupation);
+    } else {
+	SetupOccupation (tmp_win, 0);
+    }
     /*=================================================================*/
 
     tmp_win->frame_width  = tmp_win->attr.width  + 2 * tmp_win->frame_bw3D;
@@ -626,14 +637,16 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
 	ask_user = False;
     }
 
-    if (XFindContext (dpy, w, VirtScreenContext, (XPointer *)&vs) == XCSUCCESS)
-      vroot = vs->window;
-    else
-    if (tmp_win->vs)
-      vroot = tmp_win->vs->window;
-    else
-      vroot = Scr->Root;
-    if (winbox) vroot = winbox->window;
+    vs = tmp_win->parent_vs;
+    if (vs) {
+	vroot = vs->window;
+    } else {
+	vroot = Scr->Root;	/* never */
+	tmp_win->parent_vs = Scr->currentvs;
+    }
+    if (winbox) {
+	vroot = winbox->window;
+    }
 
     /*
      * do any prompting for position
@@ -1272,7 +1285,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
     else
 	tmp_win->gray = None;
 
-    RaiseWindow(tmp_win);
+    OtpAdd(tmp_win, WinWin);
 	
     if (tmp_win->title_w) {
 	ComputeTitleLocation (tmp_win);
@@ -1718,7 +1731,7 @@ static void CreateHighlightWindows (TwmWindow *tmp_win)
 	gc = XCreateGC (dpy, pm, (GCForeground|GCBackground|GCGraphicsExposures), &gcv);
 	if (gc) {
 	    XCopyPlane (dpy, bm, pm, gc, 0, 0, gray_width, gray_height, 0, 0, 1);
-	    tmp_win->HiliteImage = (Image*) malloc (sizeof (struct _Image));
+	    tmp_win->HiliteImage = (Image *) malloc (sizeof (Image));
 	    tmp_win->HiliteImage->pixmap = pm;
 	    tmp_win->HiliteImage->width  = gray_width;
 	    tmp_win->HiliteImage->height = gray_height;
@@ -2127,7 +2140,7 @@ ColormapWindow *CreateColormapWindow(Window w,
     return (cwin);
 }
 
-int FetchWmColormapWindows (TwmWindow *tmp)
+void FetchWmColormapWindows (TwmWindow *tmp)
 {
     register int i, j;
     Window *cmap_windows = NULL;
@@ -2252,8 +2265,6 @@ int FetchWmColormapWindows (TwmWindow *tmp)
 	else
 	  XFree ((char *) cmap_windows);
     }
-
-    return (0);
 }
 
 
@@ -2570,7 +2581,7 @@ void DealWithNonSensicalGeometries(Display *mydpy, Window vroot, TwmWindow *tmp_
     int			x,y;
     unsigned int	w,h;
     unsigned int	j;
-    virtualScreen	*myvs, *vs;
+    VirtualScreen	*myvs, *vs;
     int			dropx = 0;
 
     if(! vroot)

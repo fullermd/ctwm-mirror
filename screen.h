@@ -80,10 +80,11 @@
 #define ICONIFY_MOSAIC  1
 #define ICONIFY_ZOOMIN  2
 #define ICONIFY_ZOOMOUT 3
-#define ICONIFY_SWEEP   4
+#define ICONIFY_FADE    4
+#define ICONIFY_SWEEP   5
 
-struct _StdCmap {
-    struct _StdCmap *next;		/* next link in chain */
+struct StdCmap {
+    struct StdCmap *next;		/* next link in chain */
     Atom atom;				/* property from which this came */
     int nmaps;				/* number of maps below */
     XStandardColormap *maps;		/* the actual maps */
@@ -92,7 +93,7 @@ struct _StdCmap {
 #define SIZE_HINDENT 10
 #define SIZE_VINDENT 2
 
-struct _TitlebarPixmaps {
+struct TitlebarPixmaps {
     Pixmap xlogo;
     Pixmap resize;
     Pixmap question;
@@ -122,7 +123,7 @@ struct ScreenInfo
     TwmWindow *FirstWindow;	/* the head of the twm window list */
     Colormaps RootColormaps;	/* the colormaps of the root window */
 
-    Window Root;		/* the root window: the current virual screen */
+    Window Root;		/* the root window: the current virtual screen */
     Window XineramaRoot;	/* the root window, may be CaptiveRoot or otherwise RealRoot */
     Window CaptiveRoot;		/* the captive root window, if any, or 0 */
     Window RealRoot;		/* the actual root window of the display */
@@ -135,7 +136,7 @@ struct ScreenInfo
  *  |   | when captive window is used (most uses are likely incorrect!) | |
  *  |   |                                                               | |
  *  |   | +--XineramaRoot---------------------------------------------+ | |
- *  |   | | the root that encompasses all virual screens              | | |
+ *  |   | | the root that encompasses all virtual screens             | | |
  *  |   | |                                                           | | |
  *  |   | | +--Root-----------+ +--Root--------+ +--Root------------+ | | |
  *  |   | | | one or more     | | Most cases   | |                  | | | |
@@ -254,9 +255,10 @@ struct ScreenInfo
     WorkSpaceMgr workSpaceMgr;
     short	workSpaceManagerActive;
 
-    virtualScreen *vScreenList;
-    virtualScreen *currentvs;
+    VirtualScreen *vScreenList;
+    VirtualScreen *currentvs;
     name_list     *VirtualScreens;
+    int		numVscreens;
 
     name_list	*OccupyAll;	/* list of window names occupying all workspaces at startup */
     name_list	*UnmapByMovingFarAway;
@@ -275,11 +277,17 @@ struct ScreenInfo
     short	WMgrButtonShadowDepth;
     short	BeNiceToColormap;
     short	BorderCursors;
+    short	AutoPopup;
     short	BorderShadowDepth;
     short	TitleButtonShadowDepth;
     short	TitleShadowDepth;
     short	MenuShadowDepth;
     short	IconManagerShadowDepth;
+/* Spacing between the text and the outer border.  */
+#define ICON_MGR_IBORDER 3
+/* Thickness of the outer border (3d or not).  */
+#define ICON_MGR_OBORDER \
+    (Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2)
     short	ReallyMoveInWorkspaceManager;
     short	ShowWinWhenMovingInWmgr;
     short	ReverseCurrentWorkspace;
@@ -292,6 +300,9 @@ struct ScreenInfo
     short       AutoFocusToTransients; /* kai */
     short       PackNewWindows;
 
+    struct OtpPreferences *OTP;
+    struct OtpPreferences *IconOTP;
+
     name_list *BorderColorL;
     name_list *IconBorderColorL;
     name_list *BorderTileForegroundL;
@@ -303,16 +314,17 @@ struct ScreenInfo
     name_list *IconManagerFL;
     name_list *IconManagerBL;
     name_list *IconMgrs;
+    name_list *AutoPopupL;	/* list of window the popup when changed */
     name_list *NoBorder;	/* list of window without borders          */
     name_list *NoIconTitle;	/* list of window names with no icon title */
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
     name_list *AutoRaise;	/* list of window names to auto-raise */
+    name_list *WarpOnDeIconify;	/* list of window names to warp on deiconify */ 
     name_list *AutoLower;	/* list of window names to auto-lower */
     name_list *IconNames;	/* list of window names and icon names */
     name_list *NoHighlight;	/* list of windows to not highlight */
     name_list *NoStackModeL;	/* windows to ignore stack mode requests */
-    name_list *AlwaysOnTopL;	/* windows to keep on top */
     name_list *NoTitleHighlight;/* list of windows to not highlight the TB*/
     name_list *DontIconify;	/* don't iconify by unmapping */
     name_list *IconMgrNoShow;	/* don't show in the icon manager */
@@ -404,6 +416,7 @@ struct ScreenInfo
     short ShowWorkspaceManager;	/* display the workspace manager */
     short IconManagerDontShow;	/* show nothing in the icon manager */
     short AutoOccupy;		/* Do we automatically change occupation when name changes */
+    short AutoPriority;		/* Do we automatically change priority when name changes */
     short TransientHasOccupation;	/* Do transient-for windows have their own occupation */
     short DontPaintRootWindow;	/* don't paint anything on the root window */
     short BackingStore;		/* use backing store for menus */
@@ -413,10 +426,10 @@ struct ScreenInfo
     short RandomDisplacementY;	/* randomly displace by this much vertically */
     short OpaqueMove;		/* move the window rather than outline */
     short DoOpaqueMove;		/* move the window rather than outline */
-    short OpaqueMoveThreshold;		/*  */
+    unsigned short OpaqueMoveThreshold;		/*  */
     short DoOpaqueResize;		/* resize the window rather than outline */
     short OpaqueResize;		/* resize the window rather than outline */
-    short OpaqueResizeThreshold;	/*  */
+    unsigned short OpaqueResizeThreshold;	/*  */
     short Highlight;		/* should we highlight the window borders */
     short StackMode;		/* should we honor stack mode requests */
     short TitleHighlight;	/* should we highlight the titlebar */
@@ -474,8 +487,5 @@ extern int FirstScreen;
 #define RP_OFF 0
 #define RP_ALL 1
 #define RP_UNMAPPED 2
-
-#define ONTOP_MAX 16
-#define ONTOP_DEFAULT 8
 
 #endif /* _SCREEN_ */

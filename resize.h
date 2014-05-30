@@ -70,7 +70,6 @@ extern void StartResize(XEvent *evp, TwmWindow *tmp_win,
 extern void AddStartResize(TwmWindow *tmp_win, int x, int y, int w, int h);
 extern void MenuDoResize(int x_root, int y_root, TwmWindow *tmp_win);
 extern void DoResize(int x_root, int y_root, TwmWindow *tmp_win);
-extern void DisplaySize(TwmWindow *tmp_win, int width, int height);
 extern void EndResize(void);
 extern void MenuEndResize(TwmWindow *tmp_win);
 extern void AddEndResize(TwmWindow *tmp_win);

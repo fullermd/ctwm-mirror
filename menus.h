@@ -175,6 +175,12 @@ extern int ConstMoveXR;
 extern int ConstMoveYT;
 extern int ConstMoveYB;
 
+extern int menuFromFrameOrWindowOrTitlebar;
+extern char *CurrentSelectedWorkspace;
+extern Bool AlternateContext;
+extern int AlternateKeymap;
+extern Window Lowerontop;
+
 #define MAXMENUDEPTH	10	/* max number of nested menus */
 extern int MenuDepth;
 
@@ -202,49 +208,29 @@ extern Bool AddFuncKey(char *name, int cont, int mods, int func,
 		       MenuRoot *menu, char *win_name, char *action);
 extern Bool AddFuncButton(int num, int cont, int mods, int func,
 			  MenuRoot *menu, MenuItem *item);
-extern void DestroyMenu (MenuRoot *menu);
-extern int PopDownMenu(void);
-extern int HideMenu(MenuRoot *menu);
+extern void PopDownMenu(void);
+extern void HideMenu(MenuRoot *menu);
+extern void resizeFromCenter(Window w, TwmWindow *tmp_win);
 extern int ExecuteFunction(int func, void *action,
 			   Window w, TwmWindow *tmp_win,
 			   XEvent *eventp,
 			   int context, int pulldown);
-extern int DeferExecution(int context, int func, Cursor cursor);
-extern int NeedToDefer(MenuRoot *root);
 extern void ReGrab(void);
 extern int CreateTitleButton(char *name, int func, char *action,
 			     MenuRoot *menuroot, Bool rightside,
 			     Bool append);
 extern void PaintEntry(MenuRoot *mr, MenuItem *mi, int exposure);
-extern void Paint3DEntry(MenuRoot *mr, MenuItem *mi, int exposure);
-extern void PaintNormalEntry(MenuRoot *mr, MenuItem *mi, int exposure);
 extern void PaintMenu(MenuRoot *mr, XEvent *e);
-extern int UpdateMenu(void);
+extern void UpdateMenu(void);
 extern void MakeMenus(void);
-extern int MakeMenu(MenuRoot *mr);
-extern int MoveMenu(XEvent *eventp);
+extern void MoveMenu(XEvent *eventp);
 extern void DeIconify(TwmWindow *tmp_win);
 extern void Iconify(TwmWindow *tmp_win, int def_x, int def_y);
-extern int WarpToScreen(int n, int inc);
-extern int BumpWindowColormap(TwmWindow *tmp, int inc);
 extern void SetMapStateProp(TwmWindow *tmp_win, int state);
-extern void SendDeleteWindowMessage (TwmWindow *tmp, Time timestamp);
-extern void SendSaveYourselfMessage (TwmWindow *tmp, Time timestamp);
+extern void SendEndAnimationMessage (Window w, Time timestamp);
 extern void SendTakeFocusMessage (TwmWindow *tmp, Time timestamp);
-extern int FindConstraint (TwmWindow *tmp_win, int direction);
-extern void MosaicFade (TwmWindow *tmp_win, Window blanket);
-extern void ZoomInWindow (TwmWindow *tmp_win, Window blanket);
-extern void ZoomOutWindow (TwmWindow *tmp_win, Window blanket);
-extern void FadeWindow (TwmWindow *tmp_win, Window blanket);
-extern void SweepWindow (TwmWindow *tmp_win, Window blanket);
-extern int WarpCursorToDefaultEntry (MenuRoot *menu);
-extern void PlaceTransients(TwmWindow *tmp_win, int where);
-extern void PlaceOntop (int ontop, int where);
 extern void ModifyCurrentTB(int button, int mods, int func, char *action,
 			    MenuRoot *menuroot);
-extern void Execute(char *s);
-extern void ShowIconManager (void);
-extern void HideIconManager (void);
 extern void RaiseWindow(TwmWindow *tmp_win);
 extern void LowerWindow(TwmWindow *tmp_win);
 extern void RaiseLower(TwmWindow *tmp_win);
@@ -255,15 +241,9 @@ extern void FocusOnRoot(void);
 extern void TryToPack (TwmWindow *tmp_win, int *x, int *y);
 extern void TryToPush (TwmWindow *tmp_win, int x, int y, int dir);
 extern void TryToGrid (TwmWindow *tmp_win, int *x, int *y);
-extern void resizeFromCenter(Window w, TwmWindow *tmp_win);
-extern void WarpAlongRing (XButtonEvent *ev, Bool forward);
+extern void WarpCursorToDefaultEntry (MenuRoot *menu);
 extern void WarpToWindow (TwmWindow *t, int must_raise);
 extern void DisplayPosition (TwmWindow *tmp_win, int x, int y);
-extern void packwindow (TwmWindow *tmp_win, char *direction);
-extern void fillwindow (TwmWindow *tmp_win, char *direction);
-#if 0 /* Not implemented!!! */
-extern Boolean TryNotToMoveOff ();
-#endif
 extern void AutoSqueeze (TwmWindow *tmp_win);
 extern void Squeeze(TwmWindow *tmp_win);
 

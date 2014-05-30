@@ -73,6 +73,7 @@
 #include "parse.h"
 #include "events.h"
 #include "util.h"
+#include "otp.h"
 #include "resize.h"
 #include "add_window.h"
 #include "screen.h"
@@ -102,8 +103,7 @@ static int last_height;
 
 static unsigned int resizeGrabMask;
 
-extern Cursor	TopRightCursor, TopLeftCursor, BottomRightCursor, BottomLeftCursor,
-		LeftCursor, RightCursor, TopCursor, BottomCursor;
+static void DisplaySize (TwmWindow *tmp_win, int width, int height);
 
 static void do_auto_clamp (TwmWindow *tmp_win, XEvent *evp)
 {
@@ -557,7 +557,7 @@ void DoResize(int x_root, int y_root, TwmWindow *tmp_win)
  ***********************************************************************
  */
 
-void DisplaySize(TwmWindow *tmp_win, int width, int height)
+static void DisplaySize(TwmWindow *tmp_win, int width, int height)
 {
     char str[100];
     int dwidth;
@@ -650,9 +650,10 @@ void EndResize(void)
     }
 
     if (!Scr->NoRaiseResize) {
-        RaiseWindow(tmp_win);
+	OtpRaise(tmp_win, WinWin);
 	WMapRaise (tmp_win);
     }
+
     UninstallRootColormap();
 
     ResizeWindow = None;
@@ -884,12 +885,29 @@ void SetupFrame (TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
 	     x, y, w, h, bw);
 #endif
 
-    if (x >= Scr->rootw)
-      x = Scr->rootw - 16;	/* one "average" cursor width */
-    if (y >= Scr->rooth)
-      y = Scr->rooth - 16;	/* one "average" cursor width */
     if (bw < 0)
-      bw = tmp_win->frame_bw;		/* -1 means current frame width */
+        bw = tmp_win->frame_bw;		/* -1 means current frame width */
+    {
+	int scrw, scrh;
+
+	scrw = Scr->rootw;
+	scrh = Scr->rooth;
+
+#define MARGIN	16			/* one "average" cursor width */
+
+	if (x >= scrw) {
+	    x = scrw - MARGIN;
+	}
+	if (y >= scrh) {
+	    y = scrh - MARGIN;
+	}
+	if ((x + w + bw <= 0)) {
+	    x = -w + MARGIN;
+	}
+	if ((y + h + bw <= 0)) {
+	    y = -h + MARGIN;
+	}
+    }
 
     if (tmp_win->iconmgr) {
 	tmp_win->iconmgrp->width = w - (2 * tmp_win->frame_bw3D);
@@ -964,6 +982,7 @@ void SetupFrame (TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
     frame_mask = 0;
     if (bw != tmp_win->frame_bw) {
 	frame_wc.border_width = tmp_win->frame_bw = bw;
+	if (bw == 0) tmp_win->frame_bw3D = 0;
 	frame_mask |= CWBorderWidth;
     }
     tmp_win->frame_x = x;
@@ -1093,10 +1112,9 @@ void fullzoom(TwmWindow *tmp_win, int flag)
     int basex, basey;
     int border_x, border_y;
     int frame_bw_times_2;
-    int  zwidth = Scr->rootw;
+    int zwidth  = Scr->rootw;
     int zheight = Scr->rooth;
     int tmpX, tmpY, tmpW, tmpH;
-
 
 
 	XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot,
@@ -1188,8 +1206,9 @@ void fullzoom(TwmWindow *tmp_win, int flag)
          }
       }
 
-    if (!Scr->NoRaiseResize)
-        RaiseWindow(tmp_win);
+    if (!Scr->NoRaiseResize) {
+	OtpRaise(tmp_win, WinWin);
+    }
 
     ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 #ifdef BETTERZOOM 

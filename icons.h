@@ -65,10 +65,13 @@ struct Icon
 {
     Matchtype	match;
     Window	w;		/* the icon window */
+    OtpWinList *otp;		/* OnTopPriority info for the icon */
     Window	bm_w;		/* the icon bitmap window */
     Image	*image;		/* image icon structure */
     int		x;		/* icon text x coordinate */
     int		y;		/* icon text y coordiante */
+    int		w_x;            /* x coor of the icon window !!untested!! */
+    int		w_y;            /* y coor of the icon window !!untested!! */
     int		w_width;	/* width of the icon window */
     int		w_height;	/* height of the icon window */
     int		width;          /* width of the icon bitmap */
@@ -107,7 +110,7 @@ extern void IconDown (TwmWindow *tmp_win);
 extern name_list **AddIconRegion(char *geom, int grav1, int grav2,
 				 int stepx, int stepy,
 				 char *ijust, char *just, char *align);
-extern int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y);
+extern void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y);
 extern void DeleteIconsList(TwmWindow *tmp_win);
 extern void ShrinkIconTitle (TwmWindow *tmp_win);
 extern void ExpandIconTitle (TwmWindow *tmp_win);

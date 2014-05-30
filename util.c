@@ -84,6 +84,7 @@
 #include "screen.h"
 #include "icons.h"
 #include "cursor.h"
+#include "resize.h"
 #include <stdio.h>
 
 /*
@@ -174,8 +175,6 @@
 
 #define MAXANIMATIONSPEED 20
 
-extern Atom _XA_WM_WORKSPACESLIST;
-
 static Image *LoadBitmapImage (char  *name, ColorPair cp);
 static Image *GetBitmapImage  (char  *name, ColorPair cp);
 #if !defined(VMS) || defined(HAVE_XWDFILE_H)
@@ -208,19 +207,20 @@ static Image  *Create3DCrossImage (ColorPair cp);
 static Image  *Create3DIconifyImage (ColorPair cp);
 static Image  *Create3DSunkenResizeImage (ColorPair cp);
 static Image  *Create3DBoxImage (ColorPair cp);
+static void PaintAllDecoration (void);
+static void PaintTitleButtons (TwmWindow *tmp_win);
 
-extern FILE *tracefile;
+static void FreeImage (Image *image);
 
-void FreeImage (Image *image);
-
-void _swapshort (register char *bp, register unsigned n);
-void _swaplong (register char *bp, register unsigned n);
+static void swapshort (char *bp, unsigned n);
+static void swaplong (char *bp, unsigned n);
 
 static int    reportfilenotfound = 1;
 static Colormap AlternateCmap = None;
 
 int  HotX, HotY;
 
+int  Animating        = 0;
 int  AnimationSpeed   = 0;
 Bool AnimationActive  = False;
 Bool MaybeAnimate     = True;
@@ -476,8 +476,8 @@ char *ExpandFilename(char *name)
     newname = (char *) malloc (HomeLen + strlen(name) + 1);
     if (!newname) {
         fprintf (stderr, 
- 		 "%s:  unable to allocate %d bytes to expand filename %s%s\n",
- 		 ProgramName, HomeLen + strlen(name) + 1, Home, &name[1]);
+ 		 "%s:  unable to allocate %ld bytes to expand filename %s%s\n",
+ 		 ProgramName, (long)(HomeLen + strlen(name) + 1), Home, &name[1]);
     } else {
         (void) sprintf (newname, "%s%s", Home, &name[1]);
     }
@@ -686,7 +686,7 @@ static Image *LoadBitmapImage (char  *name, ColorPair cp)
     bm = FindBitmap (name, &width, &height);
     if (bm == None) return (None);
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
     gcvalues.background = cp.back;
     gcvalues.foreground = cp.fore;
@@ -753,7 +753,7 @@ static Image *LoadXpmImage (char *name, ColorPair cp)
     fullname = ExpandPixmapPath (name);
     if (! fullname) return (None);
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (image == None) return (None);
 
     attributes.valuemask  = 0;
@@ -952,7 +952,7 @@ void UnmaskScreen (void)
 #ifdef VMS
     timeout = 0.017;
 #else
-    usec = 10000;
+    usec = 6000;
     timeout.tv_usec = usec % (unsigned long) 1000000;
     timeout.tv_sec  = usec / (unsigned long) 1000000;
 #endif
@@ -1111,7 +1111,8 @@ void ModifyAnimationSpeed (int incr)
     AnimationActive = True;
 }
 
-void AnimateHandler (void) {
+void AnimateHandler (void)
+{
     AnimationPending = True;
 
     sys$setef(timefe);
@@ -1132,6 +1133,8 @@ void TryToAnimate (void)
     static unsigned long lastsec;
     static long lastusec;
     unsigned long gap;
+
+    if (Animating > 1) return;	/* rate limiting */
 
     gettimeofday (&tp, &tzp);
     gap = ((tp.tv_sec - lastsec) * 1000000) + (tp.tv_usec - lastusec);
@@ -1277,11 +1280,13 @@ void Animate (void)
     int		nb;
 
     if (AnimationSpeed == 0) return;
+    if (Animating > 1) return;	/* rate limiting */
 #ifdef USE_SIGNALS
     AnimationPending = False;
 #endif
 
     MaybeAnimate = False;
+    scr = NULL;
     for (scrnum = 0; scrnum < NumScreens; scrnum++) {
 	if ((scr = ScreenList [scrnum]) == NULL) continue;
 
@@ -1313,6 +1318,10 @@ void Animate (void)
 	}
     }
     MaybeAnimate |= AnimateRoot ();
+    if (MaybeAnimate) {
+	Animating++;
+	SendEndAnimationMessage(scr->currentvs->wsw->w, LastTimestamp());
+    }
     XFlush (dpy);
     return;
 }
@@ -1501,6 +1510,21 @@ void GetShadeColors (ColorPair *cp)
     Scr->FirstTime = save;
 }
 
+Bool UpdateFont (MyFont *font, int height)
+{
+    int prev = font->avg_height;
+    font->avg_fheight = (font->avg_fheight * font->avg_count + height)
+	/ (font->avg_count + 1);
+    font->avg_count++;
+    /* Arbitrary limit.  */
+    if (font->avg_count >= 256) font->avg_count = 256;
+    font->avg_height = (int) (font->avg_fheight + 0.5);
+    /* fprintf (stderr, "Updating avg with %d(%d) + %d -> %d(%f)\n",
+     * 	     prev, font->avg_count, height,
+     * 	     font->avg_height, font->avg_fheight); */
+    return (prev != font->avg_height);
+}
+
 void GetFont(MyFont *font)
 {
     char *deffontname = "fixed,*";
@@ -1527,6 +1551,7 @@ void GetFont(MyFont *font)
 				    &missing_charset_list_return,
 				    &missing_charset_count_return,
 				    &def_string_return)) == NULL) {
+	fprintf (stderr, "Failed to get fontset %s\n", basename2);
 	if (Scr->DefaultFont.basename) {
 	    deffontname = Scr->DefaultFont.basename;
 	}
@@ -1554,6 +1579,9 @@ void GetFont(MyFont *font)
     font->y = ascent;
     font->ascent = ascent;
     font->descent = descent;
+    font->avg_height = 0;
+    font->avg_fheight = 0.0;
+    font->avg_count = 0;
 }
 
 
@@ -1624,14 +1652,45 @@ static void move_to_head (TwmWindow *t)
     if (t == NULL) return;
     if (Scr->FirstWindow == t) return;
 
+    /* Unlink t from current position */
     if (t->prev) t->prev->next = t->next;
     if (t->next) t->next->prev = t->prev;
 
+    /* Re-link t at head */
     t->next = Scr->FirstWindow;
     if (Scr->FirstWindow != NULL)
 	Scr->FirstWindow->prev = t;
     t->prev = NULL;
     Scr->FirstWindow = t;
+}
+
+/*
+ * Moves window 't' after window 'after'.
+ *
+ * If 'after' == NULL, puts it at the head.
+ * If 't' == NULL, does nothing.
+ * If the 't' is already after 'after', does nothing.
+ */
+ 
+void move_to_after (TwmWindow *t, TwmWindow *after)
+{
+    if (after == NULL) {
+	move_to_head(t);
+	return;
+    }
+    if (t == NULL) return;
+    if (after->next == t) return;
+
+    /* Unlink t from current position */
+    if (t->prev) t->prev->next = t->next;
+    if (t->next) t->next->prev = t->prev;
+
+    /* Re-link t after 'after' */
+    t->next = after->next;
+    if (after->next)
+	after->next->prev = t;
+    t->prev = after;
+    after->next = t;
 }
  
 /*
@@ -1662,10 +1721,16 @@ void SetFocus (TwmWindow *tmp_win, Time	tim)
 	SetFocusVisualAttributes (tmp_win, True);
     }
     Scr->Focus = tmp_win;
+#if 0
+    /*
+     * Not wanted if we sort-of want to keep the window list in
+     * stacking order.
+     */
     move_to_head (tmp_win);
+#endif
 }
 
-#
+
 #ifdef NOPUTENV
 /*
  * define our own putenv() if the system doesn't have one.
@@ -1856,7 +1921,7 @@ static Image *Create3DCrossImage (ColorPair cp)
     point = 4;
     midpoint = h/2;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *)malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -1921,7 +1986,7 @@ static Image *Create3DIconifyImage (ColorPair cp)
     if (!(h & 1)) h--;
     point = ((h/2-2) * 2+1) / 3;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *)malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -1951,7 +2016,7 @@ static Image *Create3DSunkenResizeImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *)malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -1979,7 +2044,7 @@ static Image *Create3DBoxImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (! (h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -2005,7 +2070,7 @@ static Image *Create3DDotImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -2032,7 +2097,7 @@ static Image *Create3DBarImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -2060,7 +2125,7 @@ static Image *Create3DVertBarImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -2087,7 +2152,7 @@ static Image *Create3DMenuImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -2111,7 +2176,7 @@ static Image *Create3DResizeImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -2136,7 +2201,7 @@ static Image *Create3DZoomImage (ColorPair cp)
     h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
 
-    image = (Image*) malloc (sizeof (struct _Image));
+    image = (Image *) malloc (sizeof (Image));
     if (! image) return (None);
     image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
     if (image->pixmap == None) return (None);
@@ -2234,7 +2299,7 @@ static Image *Create3DResizeAnimation (Bool in, Bool left, Bool top,
 
     image = im1 = None;
     for (i = (in ? 0 : (h/4)-1); (i < h/4) && (i >= 0); i += (in ? 1 : -1)) {
-	im = (Image*) malloc (sizeof (struct _Image));
+	im = (Image *) malloc (sizeof (Image));
 	if (! im) return (None);
 	im->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
 	if (im->pixmap == None) {
@@ -2292,7 +2357,7 @@ static Image *Create3DMenuAnimation (Bool up, ColorPair cp)
 
     image = im1 = None;
     for (j = (up ? 4 : 0); j != (up ? -1 : 5); j+= (up ? -1 : 1)) {
-	im = (Image*) malloc (sizeof (struct _Image));
+	im = (Image *) malloc (sizeof (Image));
 	if (! im) return (None);
 	im->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
 	if (im->pixmap == None) {
@@ -2342,7 +2407,7 @@ static Image *Create3DZoomAnimation (Bool in, Bool out, int n, ColorPair cp)
     image = im1 = None;
     for (j = (out ? -1 : 1) ; j < (in ? 2 : 0); j += 2){
 	for(k = (j > 0 ? 0 : n-1) ; (k >= 0) && (k < n); k += j){
-	    im = (Image*) malloc (sizeof (struct _Image));
+	    im = (Image *) malloc (sizeof (Image));
 	    im->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
 	    Draw3DBorder (im->pixmap, 0, 0, h, h, Scr->TitleButtonShadowDepth, cp, off, True, False);
 	    for (i = 2 + k; i < (h / 2); i += n) {
@@ -2648,19 +2713,17 @@ void Draw3DCorner (Window w,
     return;
 }
 
-void PaintAllDecoration (void)
+static void PaintAllDecoration (void)
 {
     TwmWindow *tmp_win;
-    virtualScreen *vs;
+    VirtualScreen *vs;
 
     for (tmp_win = Scr->FirstWindow; tmp_win != NULL; tmp_win = tmp_win->next) {
 	if (! visible (tmp_win)) continue;
 	if (tmp_win->mapped == TRUE) {
 	    if (tmp_win->frame_bw3D) {
-		if (tmp_win->highlight && tmp_win == Scr->Focus)
-		    PaintBorders (tmp_win, True);
-		else
-		    PaintBorders (tmp_win, False);
+		PaintBorders (tmp_win,
+			      (tmp_win->highlight && tmp_win == Scr->Focus));
 	    }
 	    if (tmp_win->title_w)      PaintTitle        (tmp_win);
 	    if (tmp_win->titlebuttons) PaintTitleButtons (tmp_win);
@@ -2769,7 +2832,7 @@ void PaintBorders (TwmWindow *tmp_win, Bool focus)
 void PaintTitle (TwmWindow *tmp_win)
 {
     int width, mwidth, len;
-    XRectangle inc_rect;
+    XRectangle ink_rect;
     XRectangle logical_rect;
 
     if (Scr->use3Dtitles) {
@@ -2792,7 +2855,7 @@ void PaintTitle (TwmWindow *tmp_win)
 	len    = strlen(tmp_win->name);
 	XmbTextExtents(Scr->TitleBarFont.font_set,
 		       tmp_win->name, strlen (tmp_win->name),
-		       &inc_rect, &logical_rect);
+		       &ink_rect, &logical_rect);
 	width = logical_rect.width;
 	mwidth = tmp_win->title_width  - Scr->TBInfo.titlex -
 		 Scr->TBInfo.rightoff  - Scr->TitlePadding  -
@@ -2801,22 +2864,15 @@ void PaintTitle (TwmWindow *tmp_win)
 	    len--;
 	    XmbTextExtents(Scr->TitleBarFont.font_set,
 			   tmp_win->name, len,
-			   &inc_rect, &logical_rect);
+			   &ink_rect, &logical_rect);
 	    width = logical_rect.width;
 	}
-	if (Scr->Monochrome != COLOR) {
-	    XmbDrawImageString(dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
-			     Scr->NormalGC,
-			     tmp_win->name_x,
-			     Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
-			     tmp_win->name, len);
-	}
-	else {
-	    XmbDrawString (dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
-			   Scr->NormalGC, tmp_win->name_x,
-			   Scr->TitleBarFont.y + Scr->TitleShadowDepth, 
-			   tmp_win->name, len);
-	}
+	((Scr->Monochrome != COLOR) ? XmbDrawImageString : XmbDrawString)
+	    (dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
+	     Scr->NormalGC,
+	     tmp_win->name_x,
+	     (Scr->TitleHeight - logical_rect.height) / 2 + (- logical_rect.y),
+	     tmp_win->name, len);
     }
     else
         XmbDrawString (dpy, tmp_win->title_w, Scr->TitleBarFont.font_set,
@@ -2829,7 +2885,7 @@ void PaintIcon (TwmWindow *tmp_win)
 {
     int		width, twidth, mwidth, len, x;
     Icon	*icon;
-    XRectangle inc_rect;
+    XRectangle ink_rect;
     XRectangle logical_rect;
 
     if (!tmp_win || !tmp_win->icon) return;
@@ -2845,24 +2901,26 @@ void PaintIcon (TwmWindow *tmp_win)
     len    = strlen (tmp_win->icon_name);
     XmbTextExtents(Scr->IconFont.font_set,
 		   tmp_win->icon_name, len,
-		   &inc_rect, &logical_rect);
+		   &ink_rect, &logical_rect);
     twidth = logical_rect.width;
-    mwidth = width - 2 * Scr->IconManagerShadowDepth - 6;
+    mwidth = width - 2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER);
     if (Scr->use3Diconmanagers) {
 	Draw3DBorder (icon->w, x, icon->height, width,
-		Scr->IconFont.height + 2 * Scr->IconManagerShadowDepth + 6,
+		Scr->IconFont.height +
+		    2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER),
 		Scr->IconManagerShadowDepth, icon->iconc, off, False, False);
     }
     while ((len > 0) && (twidth > mwidth)) {
 	len--;
 	XmbTextExtents(Scr->IconFont.font_set,
 		       tmp_win->icon_name, len,
-		       &inc_rect, &logical_rect);
+		       &ink_rect, &logical_rect);
 	twidth = logical_rect.width;
     }
     FB (icon->iconc.fore, icon->iconc.back);
     XmbDrawString(dpy, icon->w, Scr->IconFont.font_set, Scr->NormalGC,
-		  x + ((mwidth - twidth)/2) + Scr->IconManagerShadowDepth + 3,
+		  x + ((mwidth - twidth)/2) +
+		    Scr->IconManagerShadowDepth + ICON_MGR_IBORDER,
 		  icon->y, tmp_win->icon_name, len);
 }
 
@@ -2876,7 +2934,7 @@ void PaintTitleButton (TwmWindow *tmp_win, TBWindow  *tbw)
     return;
 }
 
-void PaintTitleButtons (TwmWindow *tmp_win)
+static void PaintTitleButtons (TwmWindow *tmp_win)
 {
     int i;
     TBWindow *tbw;
@@ -2887,7 +2945,7 @@ void PaintTitleButtons (TwmWindow *tmp_win)
     }
 }
 
-void adoptWindow (void)
+void AdoptWindow (void)
 {
     unsigned long	data [2];
     Window		localroot, w;
@@ -2901,6 +2959,7 @@ void adoptWindow (void)
     unsigned int	nchildren, key_buttons;
     int			root_x, root_y, win_x, win_y;
     int			ret;
+    int			savedRestartPreviousState;
 
     localroot = w = RootWindow (dpy, Scr->screen);
     XGrabPointer (dpy, localroot, False,
@@ -2954,8 +3013,98 @@ void adoptWindow (void)
     XChangeProperty (dpy, w, _XA_WM_STATE, _XA_WM_STATE, 32, 
 			PropModeReplace, (unsigned char *) data, 2);
     XFlush (dpy);
+    /*
+     * We don't want to "restore" the occupation that the window had
+     * in its former environment. For one, the names of the workspaces
+     * may be different. And if not, the window will initially be
+     * shown in the current workspace, which may be at odds with that
+     * occupation (and confusion ensues).
+     *
+     * Hypermove has the same problem, but that is a "push" operation
+     * (initiated by the originating window manager) so we don't know
+     * when it happens...
+     */
+    savedRestartPreviousState = RestartPreviousState;
+    RestartPreviousState = False;
     SimulateMapRequest (w);
+    RestartPreviousState = savedRestartPreviousState;
     return;
+}
+
+void RescueWindows (void)
+{
+    TwmWindow *twm_win = Scr->FirstWindow;
+
+    while (twm_win) {
+	VirtualScreen *vs = twm_win->vs;
+	if (vs) {
+	    /*
+	     * Check if this window seems completely out of sight.
+	     */
+	    int x = twm_win->frame_x;
+	    int y = twm_win->frame_y;
+	    int w = twm_win->frame_width;
+	    int h = twm_win->frame_height;
+	    int bw = twm_win->frame_bw;
+	    int fullw = w + 2 * bw;
+	    int fullh = h + 2 * bw;
+	    int old_x = x, old_y = y;
+	    struct Icon *i;
+
+#define MARGIN	20
+
+	    if (x >= vs->w - MARGIN) {
+		x = vs->w - fullw;
+	    }
+	    if (y >= vs->h - MARGIN) {
+		y = vs->h - fullh;
+	    }
+	    if ((x + fullw <= MARGIN)) {
+		x = 0;
+	    }
+	    if ((y + fullh <= MARGIN)) {
+		y = 0;
+	    }
+
+	    if (x != old_x || y != old_y) {
+		SetupWindow (twm_win, x, y, w, h, -1);
+	    }
+
+	    /*
+	     * If there is an icon, check it too.
+	     */
+	    i = twm_win->icon;
+	    if (i != NULL) {
+		x = i->w_x;
+		y = i->w_y;
+		w = i->w_width;
+		h = i->w_height;
+		old_x = x;
+		old_y = y;
+
+		if (x >= vs->w - MARGIN) {
+		    x = vs->w - w;
+		}
+		if (y >= vs->h - MARGIN) {
+		    y = vs->h - h;
+		}
+		if ((x + w <= MARGIN)) {
+		    x = 0;
+		}
+		if ((y + h <= MARGIN)) {
+		    y = 0;
+		}
+
+		if (x != old_x || y != old_y) {
+		    XMoveWindow (dpy, i->w, x, y);
+		    i->w_x = x;
+		    i->w_y = y;
+		}
+	    }
+#undef MARGIN
+	}
+	twm_win = twm_win->next;
+    }
 }
 
 void DebugTrace (char *file)
@@ -2975,8 +3124,6 @@ void DebugTrace (char *file)
     }
 }
 
-extern Cursor	TopRightCursor, TopLeftCursor, BottomRightCursor, BottomLeftCursor,
-		LeftCursor, RightCursor, TopCursor, BottomCursor;
 
 void SetBorderCursor (TwmWindow *tmp_win, int x, int y)
 {
@@ -3211,7 +3358,7 @@ Image *GetImage (char *name, ColorPair cp)
 		fprintf (stderr, "%s:  no such built-in bitmap \"%s\"\n", ProgramName, name);
 		return (None);
 	    }
-	    image = (Image*) malloc (sizeof (struct _Image));
+	    image = (Image *) malloc (sizeof (Image));
 	    image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
 	    if (Scr->rootGC == (GC) 0) Scr->rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
 	    gcvalues.background = cp.back;
@@ -3237,7 +3384,7 @@ Image *GetImage (char *name, ColorPair cp)
     return (image);
 }
 
-void FreeImage (Image *image)
+static void FreeImage (Image *image)
 {
     Image *im, *im2;
 
@@ -3309,7 +3456,7 @@ file_opened:
 #endif
 	return (None);
     }
-    if (*(char *) &swaptest) _swaplong ((char *) &header, sizeof (header));
+    if (*(char *) &swaptest) swaplong ((char *) &header, sizeof (header));
     if (header.file_version != XWD_FILE_VERSION) {
 	fprintf(stderr,"ctwm: XWD file format version mismatch : %s\n", filename);
 	return (None);
@@ -3342,8 +3489,8 @@ file_opened:
     }
     if (*(char *) &swaptest) {
 	for (i = 0; i < ncolors; i++) {
-	    _swaplong  ((char *) &xwdcolors [i].pixel, 4);
-	    _swapshort ((char *) &xwdcolors [i].red, 3 * 2);
+	    swaplong  ((char *) &xwdcolors [i].pixel, 4);
+	    swapshort ((char *) &xwdcolors [i].red, 3 * 2);
 	}
     }
     for (i = 0; i < ncolors; i++) {
@@ -3410,7 +3557,7 @@ file_opened:
     if (w > Scr->rootw)  w = Scr->rootw;
     if (h > Scr->rooth) h = Scr->rooth;
 
-    ret = (Image*) malloc (sizeof (struct _Image));
+    ret = (Image *) malloc (sizeof (Image));
     if (! ret) {
 	fprintf (stderr, "unable to allocate memory for image : %s\n", filename);
 	free (image);
@@ -3721,7 +3868,7 @@ static Image *GetImconvImage (char *filename,
 	ret->height = h;
     }
     XFree (image);
-    ret = (Image*) malloc (sizeof (struct _Image));
+    ret = (Image *) malloc (sizeof (Image));
     ret->pixmap = pixret;
     ret->mask   = None;
     ret->next   = None;
@@ -3754,7 +3901,7 @@ TagTable *table;
 
 #endif
 
-void _swapshort (register char *bp, register unsigned n)
+static void swapshort (char *bp, unsigned n)
 {
     register char c;
     register char *ep = bp + n;
@@ -3767,7 +3914,7 @@ void _swapshort (register char *bp, register unsigned n)
     }
 }
 
-void _swaplong (register char *bp, register unsigned n)
+static void swaplong (char *bp, unsigned n)
 {
     register char c;
     register char *ep = bp + n;
@@ -3998,7 +4145,7 @@ static Image *LoadJpegImage (char *name)
   fullname = ExpandPixmapPath (name);
   if (! fullname) return (None);
 
-  image = (Image*) malloc (sizeof (struct _Image));
+  image = (Image *) malloc (sizeof (Image));
   if (image == None) return (None);
 
   if ((infile = fopen (fullname, "rb")) == NULL) {
