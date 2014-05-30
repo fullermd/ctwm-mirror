@@ -1753,7 +1753,25 @@ VirtualScreens {
     6 - Look at _MOTIF_WM_HINTS for titlebar-less or border-less
 	windows.
 
-
     Changes from version 3.8.2 to ???
     xxxx-xx-xx
     -----------------------------------
+
+    1 - Selected a number of cleanups from Stefan Monnier
+	<monnier@IRO.UMontreal.CA>, including rate-limiting of
+	animations using a new _XA_WM_END_OF_ANIMATION message.
+	Font height is estimated based on used characters only.
+	Added some similar changes, improved the prevention of
+	placing windows off-screen, the "f.rescuewindows" function
+	for emergencies, a hack-fix for f.adoptwindow. More virtual
+	screen tweaks/fixes.
+
+    2 - Added the remaining OnTopPriority changes from Stefan Monnier
+	<monnier@IRO.UMontreal.CA>: AutoPopup, AutoPriority,
+	OnTopPriority, PrioritySwitching, f.changepriority,
+	f.priorityswitching, f.setpriority, f.switchpriority,
+	f.tinylower, f.tinyraise. Currently consistency checking code is
+	enabled, which will terminate with an assertion failure if
+	something unexpected happens. Smoothed out various
+	inconsistencies that this check discovered when virtual screens
+	are used.

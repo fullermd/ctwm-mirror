@@ -64,14 +64,10 @@
 #include "twm.h"
 #include "screen.h"
 #include "icons.h"
+#include "otp.h"
 #include "list.h"
 #include "parse.h"
 #include "util.h"
-
-extern void twmrc_error_prefix(void);
-extern Bool AnimationPending;
-extern Bool AnimationActive;
-extern Bool MaybeAnimate;
 
 #define iconWidth(w)	(w->icon->border_width * 2 + \
 			Scr->ShrinkIconTitles ? w->icon->width : w->icon->w_width)
@@ -283,6 +279,8 @@ int IconUp (TwmWindow *tmp_win)
     PlaceIcon(tmp_win, defx, defy, &x, &y);
     if (x != defx || y != defy) {
 	XMoveWindow (dpy, tmp_win->icon->w, x, y);
+        tmp_win->icon->w_x = x;
+        tmp_win->icon->w_y = y;
 	tmp_win->icon_moved = FALSE;	/* since we've restored it */
     }
     MaybeAnimate = True;
@@ -447,7 +445,7 @@ FreeIconRegions()
 }
 #endif
 
-int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
+void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 {
     unsigned long event_mask;
     unsigned long valuemask;		/* mask for create windows */
@@ -459,6 +457,7 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 
     icon = (Icon*) malloc (sizeof (struct Icon));
 
+    icon->otp           = NULL;
     icon->border	= Scr->IconBorderColor;
     icon->iconc.fore	= Scr->IconC.fore;
     icon->iconc.back	= Scr->IconC.back;
@@ -521,7 +520,7 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	tmp_win->wmhints->flags & IconPixmapHint) {
 	if (XGetGeometry(dpy, tmp_win->wmhints->icon_pixmap,
 		&JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth)) {
-	    image = (Image*) malloc (sizeof (struct _Image));
+	    image = (Image *) malloc (sizeof (Image));
 	    image->width  = JunkWidth;
 	    image->height = JunkHeight;
 	    image->pixmap = XCreatePixmap (dpy, Scr->Root, image->width,
@@ -633,21 +632,21 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 		       &inc_rect, &logical_rect);
 	icon->w_width = logical_rect.width;
 
-	icon->w_width += 2 * Scr->IconManagerShadowDepth + 6;
+	icon->w_width += 2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER);
 	if (icon->w_width > Scr->MaxIconTitleWidth) icon->w_width = Scr->MaxIconTitleWidth;
 	if (icon->w_width < icon->width)
 	{
 	    icon->x  = (icon->width - icon->w_width) / 2;
-	    icon->x += Scr->IconManagerShadowDepth + 3;
+	    icon->x += Scr->IconManagerShadowDepth + ICON_MGR_IBORDER;
 	    icon->w_width = icon->width;
 	}
 	else
 	{
-	    icon->x = Scr->IconManagerShadowDepth + 3;
+	    icon->x = Scr->IconManagerShadowDepth + ICON_MGR_IBORDER;
 	}
 	icon->y = icon->height + Scr->IconFont.height + Scr->IconManagerShadowDepth;
 	icon->w_height = icon->height + Scr->IconFont.height +
-			 2 * Scr->IconManagerShadowDepth + 6;
+			 2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER);
 	icon->has_title = True;
 	if (icon->height) icon->border_width = 0;
     }
@@ -785,15 +784,17 @@ int CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     if (final_y < 0) final_y = 0;
 
     XMoveWindow(dpy, icon->w, final_x, final_y);
+    icon->w_x = final_x;
+    icon->w_y = final_y;
   }
     tmp_win->iconified = TRUE;
+    OtpAdd(tmp_win, IconWin);
 
     XMapSubwindows(dpy, icon->w);
     XSaveContext(dpy, icon->w, TwmContext, (XPointer)tmp_win);
     XSaveContext(dpy, icon->w, ScreenContext, (XPointer)Scr);
     XDefineCursor(dpy, icon->w, Scr->IconCursor);
     MaybeAnimate = True;
-    return (0);
 }
 
 void DeleteIconsList(TwmWindow *tmp_win)

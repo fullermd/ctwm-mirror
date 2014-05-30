@@ -124,6 +124,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <stdio.h>
+#include <sys/stat.h>		/* For umask */
 #include "twm.h"
 #include "icons.h"
 #include "screen.h"
@@ -840,28 +841,37 @@ int GetWindowConfig (TwmWindow *theWindow, short *x, short *y,
 
 /*===[ Unique Filename Generator ]===========================================*/
 
-static char *unique_filename (char *path, char *prefix)
+static char *unique_filename (char *path, char *prefix, int *fd)
 /* this function attempts to allocate a temporary filename to store the 
  * information of the windows
  */
 {
-
-#ifndef X_NOT_POSIX
-    return ((char *) tempnam (path, prefix));
+#ifdef MISSING_MKSTEMP
+    char *name;
+    
+    while (1) {
+	name = (char *) tempnam (path, prefix);
+	*fd = open(name, O_CREAT | O_EXCL);
+	if (*fd >= 0) {
+	    return name;
+	}
+	free(name);
+    }
 #else
     char tempFile[PATH_MAX];
-    char *tmp;
 
     sprintf (tempFile, "%s/%sXXXXXX", path, prefix);
-    tmp = (char *) mktemp (tempFile);
-    if (tmp)
+    mode_t prev_umask = umask (077);
+    *fd = mkstemp (tempFile);
+    umask (prev_umask);
+    if (*fd >= 0)
     {
-	char *ptr = (char *) malloc (strlen (tmp) + 1);
-	strcpy (ptr, tmp);
-	return (ptr);
+	char *ptr = (char *) malloc (strlen (tempFile) + 1);
+	strcpy (ptr, tempFile);
+	return ptr;
+    } else {
+	return NULL;
     }
-    else
-	return (NULL);
 #endif
 }
 
@@ -891,6 +901,7 @@ void SaveYourselfPhase2CB (SmcConn smcCon, SmPointer clientData)
     char discardCommand[PATH_MAX + 4];
     int numVals, i;
     static int first_time = 1;
+    int configFd;
 
     if (first_time)
     {
@@ -942,10 +953,10 @@ void SaveYourselfPhase2CB (SmcConn smcCon, SmPointer clientData)
      *        no longer the same since the new format supports
      *        virtaul workspaces.
      *========================================================*/
-    if ((filename = unique_filename (path, ".ctwm")) == NULL)
+    if ((filename = unique_filename (path, ".ctwm", &configFd)) == NULL)
 	goto bad;
 
-    if (!(configFile = fopen (filename, "wb"))) /* wb = write bytes ? */
+    if (!(configFile = fdopen (configFd, "wb"))) /* wb = write binary */
 	goto bad;
 
     if (!write_ushort (configFile, SAVEFILE_VERSION))
