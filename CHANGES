@@ -1776,3 +1776,6 @@ VirtualScreens {
 	something unexpected happens. Smoothed out various
 	inconsistencies that this check discovered when virtual screens
 	are used.
+
+    3 - Icon manager windows are no longer included in the window ring
+	(that had confusing effects on the focus sequence).

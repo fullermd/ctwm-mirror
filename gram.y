@@ -95,6 +95,7 @@ static char *client, *workspace;
 static MenuItem *lastmenuitem = (MenuItem*) 0;
 
 extern void yyerror(char *s);
+static void InitGramVariables(void);
 static void RemoveDQuote(char *str);
 
 static MenuRoot *GetRoot(char *name, char *fore, char *back);
@@ -109,8 +110,7 @@ static char *ptr;
 static name_list **list;
 static int cont = 0;
 static int color;
-Bool donttoggleworkspacemanagerstate = FALSE;
-int mods = 0;
+static int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 
 extern int yylex(void);
@@ -146,7 +146,7 @@ extern int yyparse(void);
 %token <num> DONTSETINACTIVE CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
 %token <num> AUTOSQUEEZE STARTSQUEEZED DONT_SAVE AUTO_LOWER ICONMENU_DONTSHOW WINDOW_BOX
 %token <num> IGNOREMODIFIER WINDOW_GEOMETRIES ALWAYSSQUEEZETOGRAVITY VIRTUAL_SCREENS
-%token <num> IGNORE_TRANSIENT DONTTOGGLEWORKSPACEMANAGERSTATE
+%token <num> IGNORE_TRANSIENT
 %token <ptr> STRING
 
 %type <ptr> string
@@ -155,7 +155,8 @@ extern int yyparse(void);
 %start twmrc
 
 %%
-twmrc		: stmts
+twmrc		: { InitGramVariables(); }
+                  stmts
 		;
 
 stmts		: /* Empty */
@@ -381,7 +382,6 @@ stmt		: error
 						Scr->NoTitlebar = TRUE; }
 		| IGNORE_TRANSIENT	{ list = &Scr->IgnoreTransientL; }
 		  win_list
-		| DONTTOGGLEWORKSPACEMANAGERSTATE  { donttoggleworkspacemanagerstate = TRUE; }
 		| MAKE_TITLE		{ list = &Scr->MakeTitle; }
 		  win_list
 		| START_ICONIFIED	{ list = &Scr->StartIconified; }
@@ -1065,6 +1065,11 @@ void yyerror(char *s)
     twmrc_error_prefix();
     fprintf (stderr, "error in input file:  %s\n", s ? s : "");
     ParseError = 1;
+}
+
+static void InitGramVariables(void)
+{
+    mods = 0;
 }
 
 static void RemoveDQuote(char *str)

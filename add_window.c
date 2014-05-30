@@ -456,7 +456,7 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 	if (!t && tmp_win->group) t = GetTwmWindow(tmp_win->group);
 	if (t) tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
     }
-    if ((Scr->WindowRingAll && !iswman &&
+    if ((Scr->WindowRingAll && !iswman && !iconm &&
 	!LookInList(Scr->WindowRingExcludeL, tmp_win->full_name, &tmp_win->class)) ||
 	LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
 	if (Scr->Ring) {

@@ -187,7 +187,6 @@ Cursor LeftButt;
 
 XContext TwmContext;		/* context for twm windows */
 XContext MenuContext;		/* context for all menu windows */
-XContext IconManagerContext;	/* context for all window list windows */
 XContext ScreenContext;		/* context to get screen data */
 XContext ColormapContext;	/* context for colormap operations */
 
@@ -436,7 +435,6 @@ int main(int argc, char **argv, char **environ)
     HasShape = XShapeQueryExtension (dpy, &ShapeEventBase, &ShapeErrorBase);
     TwmContext = XUniqueContext();
     MenuContext = XUniqueContext();
-    IconManagerContext = XUniqueContext();
     ScreenContext = XUniqueContext();
     ColormapContext = XUniqueContext();
 
@@ -1127,6 +1125,7 @@ static void InitVariables(void)
     Scr->PackNewWindows = False;
     Scr->AlwaysSqueezeToGravity = FALSE;
     Scr->NoWarpToMenuTitle = FALSE;
+    Scr->DontToggleWorkspaceManagerState = False;
 
     Scr->BorderTop    = 0;
     Scr->BorderBottom = 0;
