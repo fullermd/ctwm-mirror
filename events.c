@@ -1060,7 +1060,7 @@ void HandleKeyPress(void)
 	keynam = XKeysymToString (keysym);
 	if (! keynam) return;
 
-	if (!strcmp (keynam, "Down") || !strcmp (keynam, "space")) {
+	if (keysym == XK_Down || keysym == XK_space) {
 	    xx = Event.xkey.x;
 	    yy = Event.xkey.y + Scr->EntryHeight;
 	    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy, &wx, &wy, &junkW);
@@ -1073,7 +1073,7 @@ void HandleKeyPress(void)
 	    return;
 	}
 	else
-	if (!strcmp (keynam, "Up")) {
+	if (keysym == XK_Up) {
 	    xx = Event.xkey.x;
 	    yy = Event.xkey.y - Scr->EntryHeight;
 	    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy, &wx, &wy, &junkW);
@@ -1086,11 +1086,11 @@ void HandleKeyPress(void)
 	    return;
 	}
 	else
-	if (!strcmp (keynam, "Right") || !strcmp (keynam, "Return")) {
+	if (keysym == XK_Right || keysym == XK_Return) {
 	    item = ActiveItem;
 	}
 	else
-	if (!strcmp (keynam, "Left") || !strcmp(keynam, "Escape")) {
+	if (keysym == XK_Left || keysym == XK_Escape) {
 	    MenuRoot *menu;
 
 	    if (ActiveMenu->pinned) return;
