@@ -3076,7 +3076,7 @@ void HandleButtonPress(void)
 	if (Event.xbutton.window == ActiveMenu->w) {
 	    modifier = (Event.xbutton.state & mods_used);
 	    modifier = set_mask_ignore (modifier);
-	    if ((ActiveItem && (ActiveItem->func == F_TITLE)) || (modifier == 8)) {
+	    if ((ActiveItem && (ActiveItem->func == F_TITLE)) || (modifier == Mod1Mask)) {
 		MoveMenu (&Event);
 		/*ButtonPressed = -1;*/
 	    }
