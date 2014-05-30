@@ -24,7 +24,7 @@ static Atom _XA_WIN_CLIENT_LIST;
 
 void InitGnome (void) {
   long curws = 0;
-  virtualScreen *vs;
+  VirtualScreen *vs;
   Atom _XA_WIN_SUPPORTING_WM_CHECK, _XA_WIN_PROTOCOLS,
     _XA_WIN_PROTOCOLS_LIST[PROTOCOLS_COUNT], _XA_WIN_DESKTOP_BUTTON_PROXY;
   XWindowAttributes winattrs;

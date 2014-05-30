@@ -64,6 +64,7 @@
 #ifndef _EVENTS_
 #define _EVENTS_
 
+#include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
 
@@ -75,6 +76,7 @@ extern Time lastTimestamp;
 extern void SimulateMapRequest(Window w);
 extern void AutoRaiseWindow(TwmWindow *tmp);
 extern void SetRaiseWindow (TwmWindow *tmp);
+extern void AutoPopupMaybe(TwmWindow *tmp);
 extern void AutoLowerWindow(TwmWindow *tmp);
 #define LastTimestamp() lastTimestamp
 extern Window WindowOfEvent (XEvent *e);
@@ -104,6 +106,7 @@ extern void HandleFocusIn(XFocusInEvent *event);
 extern void HandleFocusOut(XFocusOutEvent *event);
 extern void SynthesiseFocusOut(Window w);
 extern void SynthesiseFocusIn(Window w);
+extern void HandleCirculateNotify (void);
 extern int Transient(Window w, Window *propw);
 
 extern ScreenInfo *FindScreenInfo(Window w);
@@ -127,6 +130,8 @@ extern unsigned int DragHeight;
 extern unsigned int DragBW;
 extern int CurrentDragX;
 extern int CurrentDragY;
+extern int Context;
+extern FILE *tracefile;
 
 extern int ButtonPressed;
 extern int Cancel;

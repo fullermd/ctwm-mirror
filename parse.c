@@ -84,6 +84,7 @@
 #include <X11/Xmu/SysUtil.h>
 #endif
 #include "twm.h"
+#include "ctwm.h"
 #include "screen.h"
 #include "menus.h"
 #include "util.h"
@@ -104,10 +105,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-
-extern int GoThroughM4;
-extern char *keepM4_filename;
-extern int KeepTmpFile;
 #endif
 
 #if defined(ultrix)
@@ -126,7 +123,6 @@ extern int KeepTmpFile;
 static int ParseRandomPlacement (register char *s);
 static int ParseButtonStyle (register char *s);
 extern int yyparse(void);
-extern void twmrc_error_prefix(void);
 
 static FILE *twmrc;
 static int ptr = 0;
@@ -141,11 +137,10 @@ static FILE *start_m4(FILE *fraw);
 static char *m4_defs(Display *display, char *host);
 #endif
 
-extern int mods;
-
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
-
+int ParseError;				/* error parsing the .twmrc file */
 int RaiseDelay = 0;			/* msec, for AutoRaise */
+int twmrc_lineno;
 
 static int twmStringListInput(void);
 #ifndef USEM4
@@ -154,10 +149,6 @@ static int twmFileInput(void);
 static int m4twmFileInput (void);
 #endif
 int (*twmInputFunc)(void);
-
-extern char *defTwmrc[];		/* default bindings */
-
-extern char *captivename;
 
 /***********************************************************************
  *
@@ -406,7 +397,7 @@ static struct incl {
 static int include_file = 0;
 
 
-static int twmFileInput()
+static int twmFileInput(void)
 {
     if (overflowlen) return (int) overflowbuff[--overflowlen];
 
@@ -638,6 +629,7 @@ typedef struct _TwmKeyword {
 #define kw0_SaveWorkspaceFocus          66 /* blais */
 #define kw0_RaiseOnWarp			67
 #define kw0_DontShowWelcomeWindow	68
+#define kw0_AutoPriority		69
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -739,6 +731,8 @@ static TwmKeyword keytable[] = {
     { "autofocustotransients",  KEYWORD, kw0_AutoFocusToTransients }, /* kai */
     { "autolower",		AUTO_LOWER, 0 },
     { "autooccupy",		KEYWORD, kw0_AutoOccupy },
+    { "autopopup",            	AUTO_POPUP, 0 },
+    { "autopriority",		KEYWORD, kw0_AutoPriority },
     { "autoraise",		AUTO_RAISE, 0 },
     { "autoraiseicons",		KEYWORD, kw0_AutoRaiseIcons },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
@@ -795,6 +789,7 @@ static TwmKeyword keytable[] = {
     { "f.backmapiconmgr",	FKEYWORD, F_BACKMAPICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
     { "f.bottomzoom",		FKEYWORD, F_BOTTOMZOOM },
+    { "f.changepriority",	FSKEYWORD, F_CHANGEPRIORITY },
     { "f.changesize",           FSKEYWORD, F_CHANGESIZE },
     { "f.circledown",		FKEYWORD, F_CIRCLEDOWN },
     { "f.circleup",		FKEYWORD, F_CIRCLEUP },
@@ -857,15 +852,18 @@ static TwmKeyword keytable[] = {
     { "f.pin",			FKEYWORD, F_PIN },
     { "f.previconmgr",		FKEYWORD, F_PREVICONMGR },
     { "f.prevworkspace",	FKEYWORD, F_PREVWORKSPACE },
+    { "f.priorityswitching",	FKEYWORD, F_PRIORITYSWITCHING },
     { "f.quit",			FKEYWORD, F_QUIT },
     { "f.raise",		FKEYWORD, F_RAISE },
     { "f.raiseicons",		FKEYWORD, F_RAISEICONS },
     { "f.raiselower",		FKEYWORD, F_RAISELOWER },
+    { "f.raiseorsqueeze",	FKEYWORD, F_RAISEORSQUEEZE },
     { "f.refresh",		FKEYWORD, F_REFRESH },
     { "f.removefromworkspace",	FSKEYWORD, F_REMOVEFROMWORKSPACE },
 #ifdef SOUNDS
     { "f.rereadsounds",		FKEYWORD, F_REREADSOUNDS },
 #endif
+    { "f.rescuewindows",	FKEYWORD, F_RESCUE_WINDOWS },
     { "f.resize",		FKEYWORD, F_RESIZE },
     { "f.restart",		FKEYWORD, F_RESTART },
     { "f.restoregeometry",	FKEYWORD, F_RESTOREGEOMETRY },
@@ -878,6 +876,7 @@ static TwmKeyword keytable[] = {
     { "f.separator",		FKEYWORD, F_SEPARATOR },
     { "f.setbuttonsstate",	FKEYWORD, F_SETBUTTONSTATE },
     { "f.setmapstate",		FKEYWORD, F_SETMAPSTATE },
+    { "f.setpriority",		FSKEYWORD, F_SETPRIORITY },
     { "f.showbackground",      	FKEYWORD, F_SHOWBGRD },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
     { "f.showworkspacemgr",	FKEYWORD, F_SHOWWORKMGR },
@@ -888,6 +887,9 @@ static TwmKeyword keytable[] = {
     { "f.squeeze",		FKEYWORD, F_SQUEEZE },
     { "f.startanimation",	FKEYWORD, F_STARTANIMATION },
     { "f.stopanimation",	FKEYWORD, F_STOPANIMATION },
+    { "f.switchpriority",	FKEYWORD, F_SWITCHPRIORITY },
+    { "f.tinylower",		FKEYWORD, F_TINYLOWER },
+    { "f.tinyraise",		FKEYWORD, F_TINYRAISE },
     { "f.title",		FKEYWORD, F_TITLE },
     { "f.toggleoccupation",	FSKEYWORD, F_TOGGLEOCCUPATION },
 #ifdef SOUNDS
@@ -899,6 +901,7 @@ static TwmKeyword keytable[] = {
     { "f.trace",		FSKEYWORD, F_TRACE },
     { "f.twmrc",		FKEYWORD, F_RESTART },
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
+    { "f.unsqueeze",		FKEYWORD, F_UNSQUEEZE },
     { "f.upiconmgr",		FKEYWORD, F_UPICONMGR },
     { "f.upworkspace",		FKEYWORD, F_UPWORKSPACE },
     { "f.vanish",		FKEYWORD, F_VANISH },
@@ -1003,6 +1006,7 @@ static TwmKeyword keytable[] = {
     { "nowarptomenutitle",      KEYWORD, kw0_NoWarpToMenuTitle },
     { "occupy",			OCCUPYLIST, 0 },
     { "occupyall",		OCCUPYALL, 0 },
+    { "ontoppriority",		ON_TOP_PRIORITY, 0 },
     { "opaquemove",		OPAQUEMOVE, 0 },
     { "opaquemovethreshold",	NKEYWORD, kwn_OpaqueMoveThreshold },
     { "opaqueresize",		OPAQUERESIZE, 0 },
@@ -1011,6 +1015,8 @@ static TwmKeyword keytable[] = {
     { "packnewwindows",		KEYWORD, kw0_PackNewWindows },
     { "pixmapdirectory",	SKEYWORD, kws_PixmapDirectory },
     { "pixmaps",		PIXMAPS, 0 },
+    { "prioritynotswitching",	PRIORITY_NOT_SWITCHING, 0 },
+    { "priorityswitching",     	PRIORITY_SWITCHING, 0 },
     { "r",			ROOT, 0 },
     { "raisedelay",		NKEYWORD, kwn_RaiseDelay },
     { "raiseonclick",		KEYWORD, kw0_RaiseOnClick },
@@ -1076,6 +1082,7 @@ static TwmKeyword keytable[] = {
     { "w",			WINDOW, 0 },
     { "wait",			WAITC, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
+    { "warpondeiconify",	WARP_ON_DEICONIFY, 0 },
     { "warpringonscreen",	KEYWORD, kw0_WarpRingOnScreen },
     { "warptodefaultmenuentry",	KEYWORD, kw0_WarpToDefaultMenuEntry },
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
@@ -1229,6 +1236,10 @@ int do_single_keyword (int keyword)
 
       case kw0_AutoOccupy:
 	Scr->AutoOccupy = TRUE;
+	return 1;
+
+      case kw0_AutoPriority:
+	Scr->AutoPriority = TRUE;
 	return 1;
 
       case kw0_TransientHasOccupation:
@@ -1588,6 +1599,7 @@ int do_string_keyword (int keyword, char *s)
 	  if (strcmp (s,  "mosaic") == 0) Scr->IconifyStyle = ICONIFY_MOSAIC;
 	  if (strcmp (s,  "zoomin") == 0) Scr->IconifyStyle = ICONIFY_ZOOMIN;
 	  if (strcmp (s, "zoomout") == 0) Scr->IconifyStyle = ICONIFY_ZOOMOUT;
+	  if (strcmp (s,    "fade") == 0) Scr->IconifyStyle = ICONIFY_FADE;
 	  if (strcmp (s,   "sweep") == 0) Scr->IconifyStyle = ICONIFY_SWEEP;
 	  return 1;
 	}
@@ -1773,6 +1785,7 @@ int do_number_keyword (int keyword, int num)
 	if (Scr->RaiseOnClickButton < 1) Scr->RaiseOnClickButton = 1;
 	if (Scr->RaiseOnClickButton > MAX_BUTTONS) Scr->RaiseOnClickButton = MAX_BUTTONS;
 	return 1;
+
 
     }
 
@@ -2142,8 +2155,8 @@ static FILE *start_m4(FILE *fraw)
                 char *tmp_file;
 
                 /* Child */
-                close(0);                       /* stdin */
-                close(1);                       /* stdout */
+                close(0);               /* stdin */
+                close(1);               /* stdout */
                 dup2(fno, 0);           /* stdin = fraw */
                 dup2(fids[1], 1);       /* stdout = pipe to parent */
                 /* get_defs("m4", dpy, display_name) */

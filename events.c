@@ -90,6 +90,7 @@
 #include "resize.h"
 #include "parse.h"
 #include "util.h"
+#include "otp.h"
 #include "screen.h"
 #include "icons.h"
 #include "iconmgr.h"
@@ -100,39 +101,16 @@
 #include <ssdef.h>
 #include <lib$routines.h>
 #define USE_SIGNALS
-#else
-#define MAX(x,y) ((x)>(y)?(x):(y))
-#define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
-#define ABS(x) ((x)<0?-(x):(x))
-
-extern int iconifybox_width, iconifybox_height;
-extern unsigned int mods_used;
-extern int menuFromFrameOrWindowOrTitlebar;
-extern char *CurrentSelectedWorkspace;
-extern int RaiseDelay;
-
-#ifdef USE_SIGNALS
-extern Bool AnimationPending;
-#else /* USE_SIGNALS */
-extern struct timeval AnimateTimeout;
-#endif /* USE_SIGNALS */
-extern int  AnimationSpeed;
-extern Bool AnimationActive;
-extern Bool MaybeAnimate;
-
-extern int  AlternateKeymap;
-extern Bool AlternateContext;
 
 static void CtwmNextEvent (Display *display, XEvent  *event);
 static void RedoIcon(void);
 static void do_key_menu (MenuRoot *menu,	/* menu to pop up */
 			 Window w);		/* invoking window or None */
 void RedoIconName(void);
-extern void twmrc_error_prefix(void);
 
 #ifdef SOUNDS
-extern void play_sound(int snd);
+#include "sounds.h"
 #endif
 FILE *tracefile = NULL;
 
@@ -172,18 +150,10 @@ int Cancel = FALSE;
 void HandleCreateNotify(void);
 void HandleShapeNotify (void);
 void HandleFocusChange (void);
-extern int ShapeEventBase, ShapeErrorBase;
-
-extern Window lowerontop;
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
-  extern Atom _XA_WIN_WORKSPACE;
-  extern Atom _XA_WIN_STATE;
 #endif /* GNOME */
-
-extern Atom _XA_WM_OCCUPATION;
-extern Atom _XA_WM_CURRENTWORKSPACE;
 
 int GnomeProxyButtonPress = -1;
 
@@ -207,9 +177,11 @@ static unsigned int set_mask_ignore (unsigned int modifier)
 
 void AutoRaiseWindow (TwmWindow *tmp)
 {
-    RaiseWindow (tmp);
+    OtpRaise(tmp, WinWin);
 
-    if (ActiveMenu && ActiveMenu->w) XRaiseWindow (dpy, ActiveMenu->w);
+    if (ActiveMenu && ActiveMenu->w) {
+	XRaiseWindow (dpy, ActiveMenu->w);
+    }
     XSync (dpy, 0);
     enter_win = NULL;
     enter_flag = TRUE;
@@ -228,11 +200,27 @@ void SetRaiseWindow (TwmWindow *tmp)
     XSync (dpy, 0);
 }
 
+void AutoPopupMaybe(TwmWindow *tmp)
+{
+    if (LookInList(Scr->AutoPopupL, tmp->full_name, &tmp->class)
+	|| Scr->AutoPopup){
+	if (OCCUPY (tmp, Scr->currentvs->wsw->currentwspc)) {
+	    if (!tmp->mapped) {
+		DeIconify(tmp);
+		SetRaiseWindow (tmp);
+	    }
+	}else{
+	    tmp->mapped = TRUE;
+	}
+    }
+}
+
 void AutoLowerWindow (TwmWindow *tmp)
 {
-    LowerWindow (tmp);
+    OtpLower (tmp, WinWin);
 
-    if (ActiveMenu && ActiveMenu->w) XRaiseWindow (dpy, ActiveMenu->w);
+    if (ActiveMenu && ActiveMenu->w)
+	XRaiseWindow (dpy, ActiveMenu->w);
     XSync (dpy, 0);
     enter_win = NULL;
     enter_flag = FALSE;
@@ -288,6 +276,7 @@ void InitEvents(void)
     EventHandler[VisibilityNotify] = HandleVisibilityNotify;
     EventHandler[FocusIn] = HandleFocusChange;
     EventHandler[FocusOut] = HandleFocusChange;
+    EventHandler[CirculateNotify] = HandleCirculateNotify;
     if (HasShape)
 	EventHandler[ShapeEventBase+ShapeNotify] = HandleShapeNotify;
 }
@@ -845,7 +834,7 @@ static XEvent *LastFocusEvent(Window w, XEvent *first)
 			current=new;
 			last= &current;
 #ifdef TRACE_FOCUS
-			printf("! %s 0x%x mode=%d, detail=%d\n", 
+			fprintf(stderr, "! %s 0x%x mode=%d, detail=%d\n", 
 			       new.xfocus.type == FocusIn?"in":"out",
 			       Tmp_win,new.xfocus.mode, new.xfocus.detail);
 #endif       
@@ -853,7 +842,7 @@ static XEvent *LastFocusEvent(Window w, XEvent *first)
 		else
 		{
 #ifdef TRACE_FOCUS
-			printf("~ %s 0x%x mode=%d, detail=%d\n", 
+			fprintf(stderr, "~ %s 0x%x mode=%d, detail=%d\n", 
 			       new.xfocus.type == FocusIn?"in":"out",
 			       Tmp_win,new.xfocus.mode, new.xfocus.detail);
 #endif
@@ -870,7 +859,7 @@ void HandleFocusIn(XFocusInEvent *event)
 {
 
 #ifdef TRACE_FOCUS
-	printf("HandleFocusIn : +0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
+    fprintf(stderr, "HandleFocusIn : +0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
 	       Tmp_win, Tmp_win->w, event->window, event->mode, event->detail);
 #endif
 
@@ -885,7 +874,7 @@ void HandleFocusIn(XFocusInEvent *event)
 void HandleFocusOut(XFocusOutEvent *event)
 {
 #ifdef TRACE_FOCUS
-	printf("HandleFocusOut : -0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
+    fprintf(stderr, "HandleFocusOut : -0x%x (0x%x, 0x%x), mode=%d, detail=%d\n", 
 	       Tmp_win, Tmp_win->w, event->window, event->mode, event->detail);
 #endif
 
@@ -920,7 +909,7 @@ void SynthesiseFocusOut(Window w)
 	XEvent event;
 
 #ifdef TRACE_FOCUS
-	printf ("Synthesizing FocusOut on %x\n", w);
+	fprintf (stderr, "Synthesizing FocusOut on %x\n", w);
 #endif
 
 	event.type=FocusOut;
@@ -937,7 +926,7 @@ void SynthesiseFocusIn(Window w)
 	XEvent event;
 
 #ifdef TRACE_FOCUS
-	printf ("Synthesizing FocusIn on %x\n", w);
+	fprintf (stderr, "Synthesizing FocusIn on %x\n", w);
 #endif
 
 	event.type=FocusIn;
@@ -949,6 +938,43 @@ void SynthesiseFocusIn(Window w)
 
 }
 
+/*
+ * Only sent if SubstructureNotifyMask is selected on the (root) window.
+ */
+void HandleCirculateNotify()
+{
+    VirtualScreen *vs;
+#ifdef DEBUG_EVENTS
+    fprintf(stderr, "HandleCirculateNotify\n");
+    fprintf(stderr, "event=%x window=%x place=%d\n",
+		(unsigned)Event.xcirculate.event,
+		(unsigned)Event.xcirculate.window,
+		Event.xcirculate.place);
+#endif
+
+    for (vs = Scr->vScreenList; vs; vs = vs->next) {
+	if (Event.xcirculate.event == vs->window) {
+	    TwmWindow *twm_win = GetTwmWindow(Event.xcirculate.window);
+
+	    if (twm_win) {
+		WinType wt;
+
+		if (Event.xcirculate.window == twm_win->frame) {
+		    wt = WinWin;
+		} else if (twm_win->icon &&
+			   Event.xcirculate.window == twm_win->icon->w) {
+		    wt = IconWin;
+		} else {
+		    return;
+		}
+
+		OtpHandleCirculateNotify(vs,
+			twm_win, wt,
+			Event.xcirculate.place);
+	    }
+	}
+    }
+}
 
 /***********************************************************************
  *
@@ -1431,6 +1457,7 @@ void HandlePropertyNotify(void)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     Pixmap pm;
     int icon_change;
+    int name_change;
     XRectangle inc_rect;
     XRectangle logical_rect;
 
@@ -1483,10 +1510,14 @@ void HandlePropertyNotify(void)
       case XA_WM_NAME:
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_NAME);
 	if (prop == NULL) return;
+
+	name_change = strcmp ((char *)Tmp_win->full_name, (char *)prop);
+	icon_change = FALSE;
+
 #ifdef CLAUDE
-	if (strstr (prop, " - Mozilla")) {
-	  char *moz = strstr (prop, " - Mozilla");
-	  *moz = '\0';
+	{
+	    char *moz = strstr (prop, " - Mozilla");
+	    if (moz) *moz = '\0';
 	}
 #endif
 	free_window_names (Tmp_win, True, True, False);
@@ -1499,6 +1530,11 @@ void HandlePropertyNotify(void)
 		       &inc_rect, &logical_rect);
 	Tmp_win->name_width = logical_rect.width;
 
+	/* recompute the priority if necessary */
+	if (name_change && Scr->AutoPriority) {
+	    OtpRecomputeValues(Tmp_win);
+	}
+	
 	SetupWindow (Tmp_win, Tmp_win->frame_x, Tmp_win->frame_y,
 		     Tmp_win->frame_width, Tmp_win->frame_height, -1);
 
@@ -1543,7 +1579,13 @@ void HandlePropertyNotify(void)
 	 */
 	if (Tmp_win->icon_name == NoName) {
 	    Tmp_win->icon_name = Tmp_win->name;
-	    RedoIcon();
+	    icon_change = TRUE;
+ 	}
+	if (name_change || icon_change) {
+	    if (icon_change){
+		RedoIcon();
+	    }
+	    AutoPopupMaybe(Tmp_win);
 	}
 	break;
 
@@ -1551,9 +1593,10 @@ void HandlePropertyNotify(void)
 	prop = GetWMPropertyString(Tmp_win->w, XA_WM_ICON_NAME);
 	if (prop == NULL) return;
 #ifdef CLAUDE
-	if (strstr (prop, " - Mozilla")) {
+	{
 	  char *moz = strstr (prop, " - Mozilla");
-	  *moz = '\0';
+	  if (moz)
+	      *moz = '\0';
 	}
 #endif
 	icon_change = strcmp (Tmp_win->icon_name, (char*) prop);
@@ -1562,6 +1605,7 @@ void HandlePropertyNotify(void)
 
 	if (icon_change) {
 	    RedoIcon();
+	    AutoPopupMaybe(Tmp_win);
 	}
 	break;
 
@@ -1720,6 +1764,10 @@ void HandlePropertyNotify(void)
 		RedoIconName ();
 	    }
 	}
+	if (Tmp_win->wmhints && (Tmp_win->wmhints->flags & IconPixmapHint)) {
+	    AutoPopupMaybe(Tmp_win);
+	}
+
 	break;
 
       case XA_WM_NORMAL_HINTS:
@@ -1792,7 +1840,8 @@ static void RedoIcon(void)
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
 	    Tmp_win->icon = icon;
 	    IconUp (Tmp_win);
-	    XMapRaised (dpy, Tmp_win->icon->w);
+	    OtpRaise(Tmp_win, IconWin);
+	    XMapWindow (dpy, Tmp_win->icon->w);
         }
 	else {
 	    Tmp_win->icon = icon;
@@ -1804,7 +1853,8 @@ static void RedoIcon(void)
 	    IconDown (Tmp_win);
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
 	    CreateIconWindow (Tmp_win, -100, -100);
-	    XMapRaised (dpy, Tmp_win->icon->w);
+	    OtpRaise(Tmp_win, IconWin);
+ 	    XMapWindow (dpy, Tmp_win->icon->w);
 	}
 	else {
 	    Tmp_win->icon = (Icon*) 0;
@@ -1848,26 +1898,26 @@ void RedoIconName(void)
 		   Tmp_win->icon_name, strlen(Tmp_win->icon_name),
 		   &ink_rect, &logical_rect);
     Tmp_win->icon->w_width = logical_rect.width;
-    Tmp_win->icon->w_width += 2 * Scr->IconManagerShadowDepth + 6;
+    Tmp_win->icon->w_width += 2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER);
     if (Tmp_win->icon->w_width > Scr->MaxIconTitleWidth)
 	Tmp_win->icon->w_width = Scr->MaxIconTitleWidth;
 
     if (Tmp_win->icon->w_width < Tmp_win->icon->width)
     {
 	Tmp_win->icon->x = (Tmp_win->icon->width - Tmp_win->icon->w_width)/2;
-	Tmp_win->icon->x += Scr->IconManagerShadowDepth + 3;
+	Tmp_win->icon->x += Scr->IconManagerShadowDepth + ICON_MGR_IBORDER;
 	Tmp_win->icon->w_width = Tmp_win->icon->width;
     }
     else
     {
-	Tmp_win->icon->x = Scr->IconManagerShadowDepth + 3;
+	Tmp_win->icon->x = Scr->IconManagerShadowDepth + ICON_MGR_IBORDER;
     }
 
     x = GetIconOffset (Tmp_win->icon);
     Tmp_win->icon->y = Tmp_win->icon->height + Scr->IconFont.height +
 				Scr->IconManagerShadowDepth;
     Tmp_win->icon->w_height = Tmp_win->icon->height + Scr->IconFont.height +
-				2 * Scr->IconManagerShadowDepth + 6;
+				2 * (Scr->IconManagerShadowDepth + ICON_MGR_IBORDER);
 
     XResizeWindow(dpy, Tmp_win->icon->w, Tmp_win->icon->w_width, Tmp_win->icon->w_height);
     if (Tmp_win->icon->bm_w)
@@ -1981,6 +2031,13 @@ void HandleClientMessage(void)
 	}
     }
 #endif /* GNOME */
+   else if ((Event.xclient.message_type == _XA_WM_PROTOCOLS) &&
+             (Event.xclient.data.l[0] == _XA_WM_END_OF_ANIMATION)) {
+      if (Animating > 0)
+          Animating--;
+      else
+           fprintf(stderr, "!! end of unknown animation !!\n");
+   }
 }
 
 
@@ -1998,7 +2055,7 @@ static void flush_expose(Window w);
 void HandleExpose(void)
 {
     MenuRoot *tmp;
-    virtualScreen *vs;
+    VirtualScreen *vs;
 
     if (XFindContext(dpy, Event.xany.window, MenuContext, (XPointer *)&tmp) == 0)
     {
@@ -2080,27 +2137,30 @@ void HandleExpose(void)
 
 	    if (Event.xany.window == iconmanagerlist->w)
 	    {
-		int offs;
+		XRectangle ink_rect, logical_rect;
+		XmbTextExtents(Scr->IconManagerFont.font_set,
+			       Tmp_win->icon_name, strlen (Tmp_win->icon_name),
+			       &ink_rect, &logical_rect);
+ 
+		if (UpdateFont (&Scr->IconManagerFont, logical_rect.height))
+		    PackIconManagers();
 
 		DrawIconManagerBorder(iconmanagerlist, True);
 
 		FB(iconmanagerlist->cp.fore, iconmanagerlist->cp.back);
-		offs = Scr->use3Diconmanagers ? Scr->IconManagerShadowDepth : 2;
-		if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
-		    XmbDrawImageString(dpy, Event.xany.window,
-				       Scr->IconManagerFont.font_set,
-				       Scr->NormalGC, 
-				       iconmgr_textx,
-				       Scr->IconManagerFont.y + offs + 2,
-				       Tmp_win->icon_name,
-				       strlen(Tmp_win->icon_name));
-		else
-		    XmbDrawString(dpy, Event.xany.window,
-				  Scr->IconManagerFont.font_set, Scr->NormalGC,
-				  iconmgr_textx,
-				  Scr->IconManagerFont.y + offs + 2,
-				  Tmp_win->icon_name,
-				  strlen(Tmp_win->icon_name));
+		((Scr->use3Diconmanagers && (Scr->Monochrome != COLOR)) ?
+		    XmbDrawImageString : XmbDrawString)
+				    (dpy,
+				     Event.xany.window,
+				     Scr->IconManagerFont.font_set,
+				     Scr->NormalGC, 
+				     iconmgr_textx,
+				     (Scr->IconManagerFont.avg_height - logical_rect.height) / 2
+					 + (- logical_rect.y)
+					 + ICON_MGR_OBORDER
+					 + ICON_MGR_IBORDER,
+				     Tmp_win->icon_name,
+				     strlen(Tmp_win->icon_name));
 		flush_expose (Event.xany.window);
 		return;
 	    }
@@ -2177,6 +2237,10 @@ void HandleDestroyNotify(void)
 	return;
 
     RemoveWindowFromRegion (Tmp_win);
+
+    if (Tmp_win->icon != NULL) OtpRemove(Tmp_win, IconWin);
+    OtpRemove(Tmp_win, WinWin);
+
 #ifdef GNOME
     GnomeDeleteClientWindow (Tmp_win); /* Fix the gnome client list */
 #endif /* GNOME */
@@ -2288,7 +2352,6 @@ void HandleDestroyNotify(void)
 	Tmp_win->next->prev = Tmp_win->prev;
     if (Tmp_win->auto_raise) Scr->NumAutoRaises--;
     if (Tmp_win->auto_lower) Scr->NumAutoLowers--;
-    if (Tmp_win->frame == lowerontop) lowerontop = -1;
 
     free_window_names (Tmp_win, True, True, True);		/* 1, 2, 3 */
     if (Tmp_win->wmhints)					/* 4 */
@@ -2323,7 +2386,7 @@ void HandleDestroyNotify(void)
 void HandleCreateNotify(void)
 {
 #ifdef DEBUG_EVENTS
-    fprintf(stderr, "CreateNotify w = 0x%x\n", Event.xcreatewindow.window);
+    fprintf(stderr, "CreateNotify w = 0x%x\n", (unsigned)Event.xcreatewindow.window);
     fflush(stderr);
     XBell(dpy, 0);
     XSync(dpy, 0);
@@ -2348,17 +2411,20 @@ void HandleMapRequest(void)
     Tmp_win = GetTwmWindow(Event.xany.window);
 
     /* If the window has never been mapped before ... */
-    if (Tmp_win == NULL)
-    {
+    if (Tmp_win == NULL) {
 	/* Add decorations. */
-	Tmp_win = AddWindow(Event.xany.window, FALSE, (IconMgr *) NULL);
-	if (Tmp_win == NULL) return;
+	VirtualScreen *vs = Scr->currentvs;
+
+	Tmp_win = AddWindow(Event.xany.window,
+			    ADD_WINDOW_NORMAL,
+			    (IconMgr *) NULL,
+			    vs);
+	if (Tmp_win == NULL)
+	    return;
 #ifdef GNOME
 	GnomeAddClientWindow (Tmp_win); /* add the new window to the gnome client list */
 #endif /* GNOME */
-    }
-    else
-    {
+    } else {
 	/*
 	 * If the window has been unmapped by the client, it won't be listed
 	 * in the icon manager.  Add it again, if requested.
@@ -2409,6 +2475,14 @@ void HandleMapRequest(void)
 		break;
 
 	    case InactiveState:
+                if (!OCCUPY (Tmp_win, Scr->currentvs->wsw->currentwspc) &&
+                    HandlingEvents && /* to avoid warping during startup */
+                    LookInList(Scr->WarpOnDeIconify, Tmp_win->full_name, &Tmp_win->class)) {
+                    if (!Scr->NoRaiseDeicon) {
+                        OtpRaise(Tmp_win, WinWin);
+		    }
+                    AddToWorkSpace(Scr->currentvs->wsw->currentwspc->name, Tmp_win);
+                }
 		Tmp_win->mapped = TRUE;
 		if (Tmp_win->UnmapByMovingFarAway) {
 		    XMoveWindow (dpy, Tmp_win->frame, Scr->rootw + 1, Scr->rooth + 1);
@@ -2429,6 +2503,10 @@ void HandleMapRequest(void)
     /* If no hints, or currently an icon, just "deiconify" */
     else
     {
+      if (!OCCUPY (Tmp_win, Scr->currentvs->wsw->currentwspc) &&
+	  LookInList(Scr->WarpOnDeIconify, Tmp_win->full_name, &Tmp_win->class)) {
+	  AddToWorkSpace(Scr->currentvs->wsw->currentwspc->name, Tmp_win);
+      }
       if (1/*OCCUPY (Tmp_win, Scr->workSpaceMgr.activeWSPC)*/) {
 	if (Tmp_win->StartSqueezed) Squeeze (Tmp_win);
 	DeIconify(Tmp_win);
@@ -2689,18 +2767,27 @@ void HandleButtonRelease(void)
 	/*
 	 * sometimes getScreenOf() replies with the wrong window when moving
 	 * y to a negative number.  Need to figure out why... [XXX]
+	 * It seems to be because the first XTranslateCoordinates() doesn't
+	 * translate the coordinates to be relative to XineramaRoot.
+	 * That in turn is probably because a window is visible in a ws or
+	 * vs where it shouldn't (inconsistent with its occupation).
+	 * A problem of this kind was fixed with f.adoptwindow but remains
+	 * with f.hypermove.
+	 * As a result, the window remains in the original vs/ws and
+	 * is irretrievably moved out of view. [Rhialto]
 	 */
 	if(xl < 0 || yt < 0 || xl > Scr->rootw || yt > Scr->rooth) {
 		int odestx, odesty;
 		int destx, desty;
 		Window cr;
-		virtualScreen *newvs;
+		VirtualScreen *newvs;
 
 		XTranslateCoordinates(dpy, Tmp_win->vs->window, 
 			Scr->XineramaRoot, xl, yt, &odestx, &odesty, &cr);
 
 		newvs = findIfVScreenOf(odestx, odesty);
-		if(newvs && newvs->wsw && newvs->wsw->currentwspc) {
+
+		if (newvs && newvs->wsw && newvs->wsw->currentwspc) {
 			XTranslateCoordinates(dpy, Scr->XineramaRoot, 
 				newvs->window, odestx, odesty, 
 				&destx, &desty, &cr);
@@ -2709,16 +2796,27 @@ void HandleButtonRelease(void)
 			xl = destx;
 			yt = desty;
 		}
-
 	}
-	if (DragWindow == Tmp_win->frame)
+	if (DragWindow == Tmp_win->frame) {
 	    SetupWindow (Tmp_win, xl, yt,
 		       Tmp_win->frame_width, Tmp_win->frame_height, -1);
-	else
+	} else {
 	    XMoveWindow (dpy, DragWindow, xl, yt);
+            if (DragWindow == Tmp_win->icon->w) {
+                Tmp_win->icon->w_x = xl;
+                Tmp_win->icon->w_y = yt;
+	    }
+	}
 
-	if (!Scr->NoRaiseMove) /* && !Scr->OpaqueMove)    opaque already did */
-	    RaiseFrame(DragWindow);
+	if (!Scr->NoRaiseMove) { /* && !Scr->OpaqueMove)    opaque already did */
+	    if (DragWindow == Tmp_win->frame) {
+		OtpRaise(Tmp_win, WinWin);
+	    } else if (Tmp_win->icon && DragWindow == Tmp_win->icon->w) {
+		OtpRaise(Tmp_win, IconWin);
+	    } else {
+		fprintf(stderr, "ERROR -- events.c:2815\n");
+	    }
+	}
 
 	if (!Scr->OpaqueMove)
 	    UninstallRootColormap();
@@ -3088,8 +3186,8 @@ void HandleButtonPress(void)
 		    SetFocus (Tmp_win, CurrentTime);
 		}
 		if (Scr->RaiseOnClick) {
-		    RaiseWindow (Tmp_win);
-		    WMapRaise   (Tmp_win);
+		    OtpRaise (Tmp_win, WinWin);
+		    WMapRaise (Tmp_win);
 		}
 		XSync (dpy, 0);
 		XAllowEvents (dpy, ReplayPointer, CurrentTime);
@@ -3355,7 +3453,7 @@ void HandleEnterNotify(void)
     XEnterWindowEvent *ewp = &Event.xcrossing;
     HENScanArgs scanArgs;
     XEvent dummy;
-    virtualScreen *vs;
+    VirtualScreen *vs;
 
     /*
      * if we aren't in the middle of menu processing
@@ -3504,7 +3602,9 @@ void HandleEnterNotify(void)
 		    Tmp_win->icon &&
 		    ewp->window == Tmp_win->icon->w &&
 		    ewp->detail != NotifyInferior) {
-		    if (Scr->AutoRaiseIcons) XRaiseWindow (dpy, Tmp_win->icon->w);
+		    if (Scr->AutoRaiseIcons) {
+			OtpRaise(Tmp_win, IconWin);
+		    }
 		    ExpandIconTitle (Tmp_win);
 		    return;
 		}
@@ -3883,7 +3983,7 @@ void HandleConfigureRequest(void)
     if (cre->value_mask & CWHeight)
 	fprintf(stderr, "  height = %d\n", cre->height);
     if (cre->value_mask & CWSibling)
-	fprintf(stderr, "  above = 0x%x\n", cre->above);
+	fprintf(stderr, "  above = 0x%x\n", (unsigned)cre->above);
     if (cre->value_mask & CWStackMode)
 	fprintf(stderr, "  stack = %d\n", cre->detail);
 #endif
@@ -3917,12 +4017,27 @@ void HandleConfigureRequest(void)
     if ((cre->value_mask & CWStackMode) && Tmp_win->stackmode) {
 	TwmWindow *otherwin;
 
-	xwc.sibling = (((cre->value_mask & CWSibling) &&
-			(otherwin = GetTwmWindow(cre->above)))
-		       ? otherwin->frame : cre->above);
-	xwc.stack_mode = cre->detail;
-	XConfigureWindow (dpy, Tmp_win->frame, 
-			  cre->value_mask & (CWSibling | CWStackMode), &xwc);
+	if (cre->value_mask & CWSibling) {
+	    otherwin = GetTwmWindow(cre->above);
+            if (otherwin) {
+                OtpForcePlacement (Tmp_win, cre->detail, otherwin);
+            } else {
+                fprintf(stderr, "XConfigureRequest: unkown otherwin\n");
+            }
+	} else {
+	    switch (cre->detail) {
+	    case TopIf:
+	    case Above: OtpRaise(Tmp_win, WinWin);
+		break;
+	    case BottomIf:
+	    case Below: OtpLower(Tmp_win, WinWin);
+		break;
+	    case Opposite: OtpRaiseLower(Tmp_win, WinWin);
+		break;
+	    default:
+		;
+	    }
+	}
 	sendEvent = True;
     }
 
@@ -3959,11 +4074,11 @@ void HandleConfigureRequest(void)
 	Tmp_win->old_bw = cre->border_width;  /* for restoring */
     }
 
-    if (cre->value_mask & CWX) {	/* override even if border change */
+    if ((cre->value_mask & CWX)) {	/* override even if border change */
 	x = cre->x - bw;
 	x -= ((gravx < 0) ? 0 : Tmp_win->frame_bw3D);
     }
-    if (cre->value_mask & CWY) {
+    if ((cre->value_mask & CWY)) {
 	y = cre->y - ((gravy < 0) ? 0 : Tmp_win->title_height) - bw;
 	y -= ((gravy < 0) ? 0 : Tmp_win->frame_bw3D);
     }
@@ -3992,6 +4107,10 @@ void HandleConfigureRequest(void)
      * requested client window width; the inner height is the same as the
      * requested client window height plus any title bar slop.
      */
+#ifdef DEBUG_EVENTS
+    fprintf(stderr, "SetupFrame(x=%d, y=%d, width=%d, height=%d, bw=%d)\n",
+	    x, y, width, height, bw);
+#endif
     SetupFrame (Tmp_win, x, y, width, height, bw, sendEvent);
 }
 
@@ -4033,7 +4152,7 @@ void HandleShapeNotify (void)
 void HandleUnknown(void)
 {
 #ifdef DEBUG_EVENTS
-    fprintf(stderr, "type = %d\n", Event.type);
+    fprintf(stderr, "HandleUnknown: Event.type = %d\n", Event.type);
 #endif
 }
 

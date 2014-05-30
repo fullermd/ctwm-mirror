@@ -71,17 +71,17 @@ extern char NoName[];
 extern int  resizeWhenAdd;
 
 extern void GetGravityOffsets (TwmWindow *tmp, int *xp, int *yp);
-extern TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp);
+#define ADD_WINDOW_NORMAL		0
+#define ADD_WINDOW_ICON_MANAGER		1
+#define ADD_WINDOW_WINDOWBOX		2
+#define ADD_WINDOW_WORKSPACE_MANAGER	3
+extern TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs);
 extern TwmWindow *GetTwmWindow(Window w);
 extern void DeleteHighlightWindows(TwmWindow *tmp_win);
 extern int MappedNotOverride(Window w);
 extern void AddDefaultBindings (void);
 extern void GrabButtons(TwmWindow *tmp_win);
 extern void GrabKeys(TwmWindow *tmp_win);
-#if 0 /* Not implemented! */
-extern void UngrabButtons();
-extern void UngrabKeys();
-#endif
 extern void GetWindowSizeHints(TwmWindow *tmp_win);
 extern void AnimateButton (TBWindow *tbw);
 extern void AnimateHighlight (TwmWindow *t);
@@ -96,7 +96,7 @@ extern unsigned int AddingW;
 extern unsigned int AddingH;
 
 extern void SetHighlightPixmap (char *filename);
-extern int FetchWmColormapWindows (TwmWindow *tmp);
+extern void FetchWmColormapWindows (TwmWindow *tmp);
 extern void FetchWmProtocols (TwmWindow *tmp);
 
 extern TwmColormap *CreateTwmColormap(Colormap c);

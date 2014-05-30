@@ -100,6 +100,8 @@ struct IconMgr
 
 extern int iconmgr_textx;
 extern WList *DownIconManager;
+extern int iconifybox_width;
+extern int iconifybox_height;
 
 extern void CreateIconManagers(void);
 extern IconMgr *AllocateIconManager(char *name, char *geom, char *icon_name,
@@ -117,6 +119,8 @@ extern void NotActiveIconManager(WList *active);
 extern void DrawIconManagerBorder(WList *tmp, int fill);
 extern void SortIconManager(IconMgr *ip);
 extern void PackIconManager(IconMgr *ip);
+extern void PackIconManagers(void);
+extern void dump_iconmanager(IconMgr *mgr, char *label);
 
 
 #endif /* _ICONMGR_ */

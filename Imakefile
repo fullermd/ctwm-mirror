@@ -129,12 +129,12 @@ LOCAL_LIBRARIES = $(IMCONVLIB) $(XPMLIB) $(JPEGLIB) $(XMULIB) $(XTOOLLIB) $(XLIB
            SRCS = gram.tab.c lex.c deftwmrc.c add_window.c gc.c list.c ctwm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
 		cursor.c icons.c workmgr.c windowbox.c clicktofocus.c \
-		vscreen.c session.c mwmhints.c $(GNOMESRC) $(SOUNDSRC)
+		otp.c vscreen.c session.c mwmhints.c $(GNOMESRC) $(SOUNDSRC)
 
            OBJS = gram.tab.o lex.o deftwmrc.o add_window.o gc.o list.o ctwm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
 		cursor.o icons.o workmgr.o windowbox.o clicktofocus.o \
-		vscreen.o session.o mwmhints.o $(GNOMEOBJ) $(SOUNDOBJ)
+		otp.o vscreen.o session.o mwmhints.o $(GNOMEOBJ) $(SOUNDOBJ)
 
   PIXMAPFILES =	xpm/IslandD.xpm        xpm/mail1.xpm          xpm/xgopher.xpm \
 		xpm/IslandW.xpm        xpm/nothing.xpm        xpm/xgrab.xpm \

@@ -28,20 +28,20 @@
 #ifndef _VSCREEN_
 #define _VSCREEN_
 
-struct virtualScreen {
+struct VirtualScreen {
   int   x, y, w, h;		/* x,y relative to XineramaRoot */
   Window window;
   /* Boolean main; */
   struct WorkSpaceWindow *wsw;
-  struct virtualScreen *next;
+  struct VirtualScreen *next;
 };
 
 void InitVirtualScreens (ScreenInfo *scr);
-virtualScreen *findIfVScreenOf (int x, int y);
-virtualScreen *getVScreenOf (int x, int y);
+VirtualScreen *findIfVScreenOf (int x, int y);
+VirtualScreen *getVScreenOf (int x, int y);
 Bool CtwmGetVScreenMap (Display *display, Window rootw,
 			char *outbuf, int *outbuf_len);
 Bool CtwmSetVScreenMap(Display *display, Window rootw,
-		       struct virtualScreen *firstvs);
+		       struct VirtualScreen *firstvs);
 
 #endif /* -VSCREEN- */

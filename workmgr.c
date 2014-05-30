@@ -25,6 +25,7 @@
  */
 #include <stdio.h>
 #include <ctype.h>
+#include <assert.h>
 #include "twm.h"
 #include "util.h"
 #include "parse.h"
@@ -33,6 +34,7 @@
 #include "resize.h"
 #include "add_window.h"
 #include "events.h"
+#include "otp.h"
 #include "clicktofocus.h"
 #include "cursor.h"
 #include "list.h"
@@ -58,11 +60,8 @@ static void fakeRaiseLower ();
 
 #ifdef GNOME
 #  include "gnomewindefs.h" /* include GNOME hints definitions */
-   extern Atom _XA_WIN_WORKSPACE;
-   extern Atom _XA_WIN_STATE;
 #endif /* GNOME */
 
-extern void twmrc_error_prefix (void); /* in gram.c */
 extern char *captivename;
 
 /***********************************************************************
@@ -83,24 +82,27 @@ extern char *captivename;
 #define OCCUPYWINDOW  1
 #define OCCUPYBUTTON  2
 
-static void Vanish			(virtualScreen *vs,
+static void ReparentFrameAndIcon        (TwmWindow *tmp_win);
+static void Vanish			(VirtualScreen *vs,
 					 TwmWindow *tmp_win);
-static void DisplayWin			(virtualScreen *vs,
+static void DisplayWin			(VirtualScreen *vs,
 					 TwmWindow *tmp_win);
-static void CreateWorkSpaceManagerWindow (virtualScreen *vs);
+static void DisplayWinUnchecked		(VirtualScreen *vs,
+					 TwmWindow *tmp_win);
+static void CreateWorkSpaceManagerWindow (VirtualScreen *vs);
 static void CreateOccupyWindow		(void);
 static unsigned int GetMaskFromResource	(TwmWindow *win, char *res);
 static int GetPropertyFromMask		(unsigned int mask, char *prop,
 					 long *gwkspc);
-static void PaintWorkSpaceManagerBorder	(virtualScreen *vs);
+static void PaintWorkSpaceManagerBorder	(VirtualScreen *vs);
 static void PaintButton			(int which,
-					 virtualScreen *vs, Window w,
+					 VirtualScreen *vs, Window w,
 					 char *label,
 					 ColorPair cp, int state);
 static void WMapRemoveFromList		(TwmWindow *win, WorkSpace *ws);
 static int WMapWindowMayBeAdded         (TwmWindow *win);
 static void WMapAddToList		(TwmWindow *win, WorkSpace *ws);
-static void ResizeWorkSpaceManager	(virtualScreen *vs, TwmWindow *win);
+static void ResizeWorkSpaceManager	(VirtualScreen *vs, TwmWindow *win);
 static void ResizeOccupyWindow		(TwmWindow *win);
 static WorkSpace *GetWorkspace		(char *wname);
 static void WMapRedrawWindow		(Window window, int width, int height,
@@ -108,12 +110,7 @@ static void WMapRedrawWindow		(Window window, int width, int height,
 static int CanChangeOccupation          (TwmWindow **twm_winp);
 void safecopy                           (char *dest, char *src, int size);
 
-Atom _XA_WM_OCCUPATION;
-Atom _XA_WM_CURRENTWORKSPACE;
-Atom _XA_WM_WORKSPACESLIST;
-Atom _XA_WM_CTWMSLIST;
-Atom _XA_WM_CTWM_VSCREENMAP;
-Atom _OL_WIN_ATTR;
+static Atom _XA_WM_CTWMSLIST;
 
 int       fullOccupation    = 0;
 int       useBackgroundInfo = False;
@@ -122,8 +119,6 @@ static Cursor handCursor  = (Cursor) 0;
 static Bool DontRedirect (Window window);
 
 extern Bool donttoggleworkspacemanagerstate;
-extern Bool MaybeAnimate;
-extern FILE *tracefile;
 
 void InitWorkSpaceManager (void)
 {
@@ -166,7 +161,7 @@ void InitWorkSpaceManager (void)
 }
 
 void ConfigureWorkSpaceManager (void) {
-    virtualScreen *vs;
+    VirtualScreen *vs;
 
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
 	/*
@@ -186,7 +181,7 @@ void CreateWorkSpaceManager (void)
 {
     char wrkSpcList [512];
     char vsmapbuf    [1024], *vsmap;
-    virtualScreen    *vs;
+    VirtualScreen    *vs;
     WorkSpace        *ws, *fws;
     int len, vsmaplen;
     long junk;
@@ -198,16 +193,6 @@ void CreateWorkSpaceManager (void)
     Scr->workSpaceMgr.buttonFont = Scr->IconManagerFont;
     Scr->workSpaceMgr.cp	 = Scr->IconManagerC;
     if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->workSpaceMgr.cp);
-
-    _XA_WM_OCCUPATION       = XInternAtom (dpy, "WM_OCCUPATION",        False);
-    _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE",  False);
-    _XA_WM_CTWM_VSCREENMAP  = XInternAtom (dpy, "WM_CTWM_VSCREENMAP", False);
-#ifdef GNOME
-    _XA_WM_WORKSPACESLIST   = XInternAtom (dpy, "_WIN_WORKSPACE_NAMES", False);
-#else /* GNOME */
-    _XA_WM_WORKSPACESLIST   = XInternAtom (dpy, "WM_WORKSPACESLIST", False);
-#endif /* GNOME */
-    _OL_WIN_ATTR            = XInternAtom (dpy, "_OL_WIN_ATTR",         False);
 
     NewFontCursor (&handCursor, "top_left_arrow");
 
@@ -268,7 +253,7 @@ void CreateWorkSpaceManager (void)
 		     PropModeReplace, (unsigned char *) wrkSpcList, len);
 }
 
-void GotoWorkSpaceByName (virtualScreen *vs, char *wname)
+void GotoWorkSpaceByName (VirtualScreen *vs, char *wname)
 {
     WorkSpace *ws;
 
@@ -280,7 +265,7 @@ void GotoWorkSpaceByName (virtualScreen *vs, char *wname)
 }
 
 /* 6/19/1999 nhd for GNOME compliance */
-void GotoWorkSpaceByNumber(virtualScreen *vs, int workspacenum)
+void GotoWorkSpaceByNumber(VirtualScreen *vs, int workspacenum)
 {
     WorkSpace *ws;
     if(! Scr->workSpaceManagerActive) return;
@@ -293,7 +278,7 @@ void GotoWorkSpaceByNumber(virtualScreen *vs, int workspacenum)
 }
  /* */
  
-void GotoPrevWorkSpace (virtualScreen *vs)
+void GotoPrevWorkSpace (VirtualScreen *vs)
 {
     WorkSpace *ws1, *ws2;
 
@@ -310,7 +295,7 @@ void GotoPrevWorkSpace (virtualScreen *vs)
     GotoWorkSpace (vs, ws1);
 }
 
-void GotoNextWorkSpace (virtualScreen *vs)
+void GotoNextWorkSpace (VirtualScreen *vs)
 {
     WorkSpace *ws;
     if (! Scr->workSpaceManagerActive) return;
@@ -321,7 +306,7 @@ void GotoNextWorkSpace (virtualScreen *vs)
     GotoWorkSpace (vs, ws);
 }
 
-void GotoRightWorkSpace (virtualScreen *vs)
+void GotoRightWorkSpace (VirtualScreen *vs)
 {
     WorkSpace *ws;
     int number, columns, count;
@@ -344,7 +329,7 @@ void GotoRightWorkSpace (virtualScreen *vs)
     GotoWorkSpaceByNumber(vs, number);
 }
 
-void GotoLeftWorkSpace (virtualScreen *vs)
+void GotoLeftWorkSpace (VirtualScreen *vs)
 {
     WorkSpace *ws;
     int number, columns, count;
@@ -364,7 +349,7 @@ void GotoLeftWorkSpace (virtualScreen *vs)
     GotoWorkSpaceByNumber(vs, number);
 }
 
-void GotoUpWorkSpace (virtualScreen *vs)
+void GotoUpWorkSpace (VirtualScreen *vs)
 {
     WorkSpace *ws;
     int number, lines, columns, count;
@@ -389,7 +374,7 @@ void GotoUpWorkSpace (virtualScreen *vs)
     GotoWorkSpaceByNumber(vs, number);
 }
 
-void GotoDownWorkSpace (virtualScreen *vs)
+void GotoDownWorkSpace (VirtualScreen *vs)
 {
     WorkSpace *ws;
     int number, columns, count;
@@ -410,7 +395,7 @@ void GotoDownWorkSpace (virtualScreen *vs)
     GotoWorkSpaceByNumber(vs, number);
 }
 
-void ShowBackground (virtualScreen *vs)
+void ShowBackground (VirtualScreen *vs)
 {
   static int state = 0;
   TwmWindow *twmWin;
@@ -434,7 +419,7 @@ void ShowBackground (virtualScreen *vs)
   }
 }
 
-void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
+void GotoWorkSpace (VirtualScreen *vs, WorkSpace *ws)
 {
     TwmWindow		 *twmWin;
     WorkSpace		 *oldws, *newws;
@@ -447,8 +432,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     Window		 oldw;
     Window		 neww;
     TwmWindow		 *focuswindow;
-    TwmWindow		 *last_twmWin = NULL;
-    virtualScreen	 *tmpvs;
+    VirtualScreen	 *tmpvs;
 
     if (! Scr->workSpaceManagerActive) return;
     for (tmpvs = Scr->vScreenList; tmpvs != NULL; tmpvs = tmpvs->next) {
@@ -478,32 +462,54 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     }
 
     focuswindow = (TwmWindow *)NULL;
-    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
-	if (twmWin->vs == vs) {
-	  if (!OCCUPY (twmWin, newws)) {
-	    virtualScreen *tvs;
-	    Vanish (vs, twmWin);
-	    for (tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
-	      if (tvs == vs) continue;
-	      if (OCCUPY (twmWin, tvs->wsw->currentwspc)) {
-		DisplayWin (tvs, twmWin);
-		break;
-	      }
-	    }
-	  } else if (twmWin->hasfocusvisible) {
-	      focuswindow = twmWin;
-	      SetFocusVisualAttributes (focuswindow, False);
-	  }
+    /* For better visual effect, the order or map/unmap is important:
+       - map from top to bottom.
+       - unmap from bottom to top.
+       - unmap after mapping.
+       The guiding factor: at any point during the transition, something
+       should be visible only if it was visible before the transition or if
+       it will be visible at the end.  */
+    OtpCheckConsistency();
+
+    for (twmWin = OtpTopWin(); twmWin != NULL;
+	twmWin = OtpNextWinDown (twmWin)) {
+
+	if (OCCUPY (twmWin, newws) && !twmWin->vs) {
+	    DisplayWin (vs, twmWin);
 	}
     }
-    /* Move to the end of the twmWin list */
-    for (twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
-	last_twmWin = twmWin;
+
+    for (twmWin = OtpBottomWin(); twmWin != NULL;
+	twmWin = OtpNextWinUp(twmWin)) {
+	if (twmWin->vs == vs) {
+	    if (!OCCUPY (twmWin, newws)) {
+		VirtualScreen *tvs;
+
+		Vanish (vs, twmWin);
+		/*
+		 * Now that the window has Vanished from one virtual screen,
+		 * check to see if it is wanted on another one.
+		 * This is relatively rare, so don't bother with the
+		 * top-to-bottom order here.
+		 */
+		if (Scr->numVscreens > 1) {
+		    for (tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
+			if (tvs == vs) /* no, not back on the old one */
+			    continue;
+			if (OCCUPY (twmWin, tvs->wsw->currentwspc)) {
+			    DisplayWin (tvs, twmWin);
+			    break;
+			}
+		    }
+		}
+	    } else if (twmWin->hasfocusvisible) {
+		focuswindow = twmWin;
+		SetFocusVisualAttributes (focuswindow, False);
+	    }
+	}
     }
-    /* Iconise in reverse order */
-    for (twmWin = last_twmWin; twmWin != NULL; twmWin = twmWin->prev) {
-	if (OCCUPY (twmWin, newws) && !twmWin->vs) DisplayWin (vs, twmWin);
-    }
+    OtpCheckConsistency();
+
 /*
    Reorganize icon manager window lists
 */
@@ -634,7 +640,7 @@ void GotoWorkSpace (virtualScreen *vs, WorkSpace *ws)
     MaybeAnimate = True;
 }
 
-char *GetCurrentWorkSpaceName (virtualScreen *vs)
+char *GetCurrentWorkSpaceName (VirtualScreen *vs)
 {
     if (! Scr->workSpaceManagerActive) return (NULL);
     if (!vs) vs = Scr->vScreenList;
@@ -746,21 +752,17 @@ void SetupOccupation (TwmWindow *twm_win,
     XWindowAttributes winattrs;
     unsigned long     eventMask;
     XrmDatabase       db = NULL;
-    virtualScreen     *vs;
     long gwkspc = 0; /* for GNOME - which workspace we occupy */
 
     if (! Scr->workSpaceManagerActive) {
 	twm_win->occupation = 1 << 0;   /* occupy workspace #0 */
-	/*
-	 * Choose some valid virtual screen.
-	 * InitVirtualScreens() always seems to set this to non-NULL.
-	 */
-	twm_win->vs = Scr->vScreenList; /* only one virtual screen */
 	/* more?... */
 
 	return;
     }
-    if (twm_win->wspmgr) return;
+
+    if (twm_win->wspmgr)
+	return;
 
     /*twm_win->occupation = twm_win->iswinbox ? fullOccupation : 0;*/
     twm_win->occupation = 0;
@@ -816,25 +818,38 @@ void SetupOccupation (TwmWindow *twm_win,
      * should be a valid occupation bit-field or 0 for the default action
      */
 
-    if (occupation_hint != 0)
+    if (occupation_hint != 0) {
       twm_win->occupation = occupation_hint;
+    }
 
     /*================================================================*/
 
+
     if ((twm_win->occupation & fullOccupation) == 0) {
-      vs = Scr->currentvs;
-      if (vs && vs->wsw->currentwspc) 
+	VirtualScreen *vs = twm_win->vs;
+
 	twm_win->occupation = 1 << vs->wsw->currentwspc->number;
-      else {
-	twm_win->occupation = 1;
-      }
     }
-    twm_win->vs = NULL;
-    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-      if (OCCUPY (twm_win, vs->wsw->currentwspc)) {
-	twm_win->vs = vs;
-	break;
-      }
+    /*
+     * If the occupation would not show it in the current vscreen,
+     * make it vanish.
+     *
+     * If it could be shown in one of the other vscreens, change the vscreen.
+     */
+    if (!OCCUPY(twm_win, twm_win->vs->wsw->currentwspc)) {
+	VirtualScreen *vs;
+
+	twm_win->vs = NULL;
+
+	if (Scr->numVscreens > 1) {
+	    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+		if (OCCUPY (twm_win, vs->wsw->currentwspc)) {
+		    twm_win->vs = vs;
+		    twm_win->parent_vs = vs;
+		    break;
+		}
+	    }
+	}
     }
 	
     len = GetPropertyFromMask (twm_win->occupation, wrkSpcList, &gwkspc);
@@ -939,10 +954,10 @@ Bool RedirectToCaptive (Window window)
     status = XrmGetResource (db, "ctwm.rootWindow", "Ctwm.RootWindow", &str_type, &value);
     if ((status == True) && (value.size != 0)) {
 	char rootw [32];
-	unsigned int scanned;
+	unsigned long int scanned;
 
 	safecopy (rootw, value.addr, sizeof(rootw));
-	if (sscanf (rootw, "%x", &scanned) == 1) {
+	if (sscanf (rootw, "%lx", &scanned) == 1) {
 	    newroot = scanned;
 	    if (XGetWindowAttributes (dpy, newroot, &wa)) {
 		XReparentWindow (dpy, window, newroot, 0, 0);
@@ -1000,6 +1015,7 @@ void Occupy (TwmWindow *twm_win)
     Window     	 junkW, w;
     unsigned int junkK;
     struct OccupyWindow    *occupyWindow;
+    TwmWindow *occupy_twm;
 
     if (!CanChangeOccupation(&twm_win))
 	return;
@@ -1018,16 +1034,20 @@ void Occupy (TwmWindow *twm_win)
     if ((x + xoffset) > Scr->rootw) x = Scr->rootw - xoffset;
     if ((y + yoffset) > Scr->rooth) y = Scr->rooth - yoffset;
 
-    occupyWindow->twm_win->occupation = twm_win->occupation;
-    if (occupyWindow->twm_win->vs != Scr->currentvs) {
-	XReparentWindow(dpy, occupyWindow->twm_win->frame, Scr->Root, x, y);
-	occupyWindow->twm_win->vs = Scr->currentvs;
+    occupy_twm = occupyWindow->twm_win;
+    occupy_twm->occupation = twm_win->occupation;
+    if (occupy_twm->vs != Scr->currentvs) {
+	occupy_twm->vs = Scr->currentvs;
+	occupy_twm->frame_x = x;
+	occupy_twm->frame_y = x;
+	ReparentFrameAndIcon(occupy_twm);
     } else
 	XMoveWindow(dpy, occupyWindow->twm_win->frame, x, y);
 
-    SetMapStateProp (occupyWindow->twm_win, NormalState);
+    SetMapStateProp (occupy_twm, NormalState);
     XMapWindow      (dpy, occupyWindow->w);
-    XMapRaised      (dpy, occupyWindow->twm_win->frame);
+    OtpForcePlacement (occupy_twm, Above, twm_win);
+    XMapWindow      (dpy, occupy_twm->frame);
     occupyWindow->twm_win->mapped = TRUE;
     occupyWin = twm_win;
 }
@@ -1153,7 +1173,7 @@ void ToggleOccupation (char *wname, TwmWindow *twm_win)
     ChangeOccupation (twm_win, newoccupation);
 }
 
-void MoveToNextWorkSpace (virtualScreen *vs, TwmWindow *twm_win)
+void MoveToNextWorkSpace (VirtualScreen *vs, TwmWindow *twm_win)
 {
     WorkSpace *wlist1, *wlist2;
     int newoccupation;
@@ -1171,7 +1191,7 @@ void MoveToNextWorkSpace (virtualScreen *vs, TwmWindow *twm_win)
 }
 
 
-void MoveToNextWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
+void MoveToNextWorkSpaceAndFollow (VirtualScreen *vs, TwmWindow *twm_win)
 {
     if (!CanChangeOccupation(&twm_win))
 	return;
@@ -1179,12 +1199,12 @@ void MoveToNextWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
     MoveToNextWorkSpace(vs, twm_win);
     GotoNextWorkSpace(vs);
 #if 0
-    RaiseWindow(twm_win);	/* XXX really do this? */
+    OtpRaise(twm_win, WinWin);	/* XXX really do this? */
 #endif
 }
 
 
-void MoveToPrevWorkSpace (virtualScreen *vs, TwmWindow *twm_win)
+void MoveToPrevWorkSpace (VirtualScreen *vs, TwmWindow *twm_win)
 {
     WorkSpace *wlist1, *wlist2;
     int newoccupation;
@@ -1205,7 +1225,7 @@ void MoveToPrevWorkSpace (virtualScreen *vs, TwmWindow *twm_win)
     ChangeOccupation (twm_win, newoccupation);
 }
 
-void MoveToPrevWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
+void MoveToPrevWorkSpaceAndFollow (VirtualScreen *vs, TwmWindow *twm_win)
 {
     if (!CanChangeOccupation(&twm_win))
 	return;
@@ -1213,7 +1233,7 @@ void MoveToPrevWorkSpaceAndFollow (virtualScreen *vs, TwmWindow *twm_win)
     MoveToPrevWorkSpace(vs, twm_win);
     GotoPrevWorkSpace(vs);
 #if 0
-    RaiseWindow(twm_win);		/* XXX really do this? */
+    OtpRaise(twm_win, WinWin);		/* XXX really do this? */
 #endif
 }
 
@@ -1266,7 +1286,28 @@ void AllocateOthersIconManagers (void)
     Scr->workSpaceMgr.workSpaceList->iconmgr = Scr->iconmgr;
 }
 
-static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
+static void ReparentFrameAndIcon(TwmWindow *tmp_win)
+{
+    VirtualScreen *vs = tmp_win->vs; /* which virtual screen we want it in */
+
+    /* parent_vs is the current real parent of the window */
+    if (vs != tmp_win->parent_vs) { 
+	struct Icon *icon = tmp_win->icon;
+
+	tmp_win->parent_vs = vs;
+
+	if (icon && icon->w) {
+	    ReparentWindowAndIcon(dpy, tmp_win, vs->window,
+				       tmp_win->frame_x, tmp_win->frame_y,
+				       icon->w_x, icon->w_y);
+	} else {
+	    ReparentWindow(dpy, tmp_win,  WinWin, vs->window,
+				tmp_win->frame_x, tmp_win->frame_y);
+	}
+    }
+}
+
+static void Vanish (VirtualScreen *vs, TwmWindow *tmp_win)
 {
     XWindowAttributes winattrs;
     unsigned long     eventMask;
@@ -1291,12 +1332,13 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
 	IconDown (tmp_win);
     }
 
+#if 0
     /*
-     * XXX - this may need to be tweaked to find the real window at 0x0.
-     * Most people will setup virtualscreens left to right, but some
-     * may not.  The purpose of this is in the event of a ctwm death/restart,
+     * The purpose of this is in the event of a ctwm death/restart,
      * geometries of windows that were on unmapped workspaces will show
      * up where they belong.
+     * XXX - I doubt its usefulness, since still-mapped windows won't
+     * enjoy this "protection", making it suboptimal at best.
      * XXX - XReparentWindow() messes up the stacking order of windows.
      * It should be avoided as much as possible. This already affects
      * switching away from and back to a workspace. Therefore do this only
@@ -1304,27 +1346,33 @@ static void Vanish (virtualScreen *vs, TwmWindow *tmp_win)
      * differs from where the window currently is. (Olaf Seibert).
      */
 
-    if (Scr->vScreenList && Scr->vScreenList->next) {
+    if (Scr->numVscreens > 1) {
 	int x, y;
 	unsigned int junk;
 	Window junkW, w = tmp_win->frame;
-	virtualScreen *firstvs = NULL;
+	VirtualScreen *firstvs = NULL;
 
 	for (firstvs = Scr->vScreenList; firstvs; firstvs = firstvs->next)
 	    if (firstvs->x == 0 && firstvs->y == 0)
 		break;
 	if (firstvs && firstvs != vs) {
-	    XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
-	    XReparentWindow(dpy, w, firstvs->window, x, y);
 	    tmp_win->vs = firstvs;
+	    ReparentFrameAndIcon(tmp_win);
 	}
     }
+#endif
 
-    tmp_win->old_parent_vs = tmp_win->vs;
     tmp_win->vs = NULL;
 }
 
-static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
+static void DisplayWin (VirtualScreen *vs, TwmWindow *tmp_win)
+{
+    OtpCheckConsistency();
+    DisplayWinUnchecked(vs, tmp_win);
+    OtpCheckConsistency();
+}
+
+static void DisplayWinUnchecked (VirtualScreen *vs, TwmWindow *tmp_win)
 {
     XWindowAttributes	winattrs;
     unsigned long	eventMask;
@@ -1335,33 +1383,29 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
      */
     if (vs && tmp_win->vs)
 	return;
+
     tmp_win->vs = vs;
 
     if (!tmp_win->mapped) {
+	ReparentFrameAndIcon(tmp_win);
+
 	if (tmp_win->isicon) {
 	    if (tmp_win->icon_on) {
 		if (tmp_win->icon && tmp_win->icon->w) {
-		    if (vs != tmp_win->old_parent_vs) {
-			int x, y;
-			unsigned int junk;
-			Window junkW, w = tmp_win->icon->w;
-			XGetGeometry (dpy, w, &junkW, &x, &y, &junk, &junk, &junk, &junk);
-			XReparentWindow (dpy, w, vs->window, x, y);
-		    }
 
 		    IconUp (tmp_win);
 		    XMapWindow (dpy, tmp_win->icon->w);
-		    return;
 		}
 	    }
-	}
+	} 
+
 	return;
     }
     if (tmp_win->UnmapByMovingFarAway) {
-        if (vs)		/* XXX I don't believe the handling of UnmapByMovingFarAway is quite correct */
+        if (vs)	{	/* XXX I don't believe the handling of UnmapByMovingFarAway is quite correct */
 	    XReparentWindow (dpy, tmp_win->frame, vs->window,
 		tmp_win->frame_x, tmp_win->frame_y);
-	else
+	} else
 	    XMoveWindow (dpy, tmp_win->frame, tmp_win->frame_x, tmp_win->frame_y);
     } else {
 	if (!tmp_win->squeezed) {
@@ -1371,9 +1415,9 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 	    XMapWindow   (dpy, tmp_win->w);
 	    XSelectInput (dpy, tmp_win->w, eventMask);
 	}
-	if (vs != tmp_win->old_parent_vs) {
-	    XReparentWindow (dpy, tmp_win->frame, vs->window, tmp_win->frame_x, tmp_win->frame_y);
-	}
+
+	ReparentFrameAndIcon(tmp_win);
+	
 	XMapWindow (dpy, tmp_win->frame);
 	SetMapStateProp (tmp_win, NormalState);
     }
@@ -1382,7 +1426,7 @@ static void DisplayWin (virtualScreen *vs, TwmWindow *tmp_win)
 void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
 {
     TwmWindow *t;
-    virtualScreen *vs;
+    VirtualScreen *vs;
     WorkSpace *ws;
     int	      oldoccupation;
     char      namelist [512];
@@ -1440,18 +1484,19 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
 	Vanish (tmp_win->vs, tmp_win);
     }
     /*
-     * If a window occupies multiple workspaces, try to find another workspace
-     * which is currently in another virtual screen, so that the window
-     * can be shown there now.
+     * Try to find an(other) virtual screen which shows a workspace
+     * where the window has occupation, so that the window can be shown
+     * there now.
      */
     if (!tmp_win->vs) {
-      for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
-	if (OCCUPY (tmp_win, vs->wsw->currentwspc)) {
-	  DisplayWin (vs, tmp_win);
-	  break;
+	for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	    if (OCCUPY (tmp_win, vs->wsw->currentwspc)) {
+		DisplayWin (vs, tmp_win);
+		break;
+	    }
 	}
-      }
     }
+
     for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
 	int mask = 1 << ws->number;
 	if (oldoccupation & mask) {
@@ -1463,6 +1508,7 @@ void ChangeOccupation (TwmWindow *tmp_win, int newoccupation)
 	    break;
 	}
     }
+
     len = GetPropertyFromMask (newoccupation, namelist, &gwkspc);
     XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
     eventMask = winattrs.your_event_mask;
@@ -1550,7 +1596,7 @@ void WmgrRedoOccupation (TwmWindow *win)
     if (newoccupation != 0) ChangeOccupation (win, newoccupation);
 }
 
-void WMgrRemoveFromCurrentWorkSpace (virtualScreen *vs, TwmWindow *win)
+void WMgrRemoveFromCurrentWorkSpace (VirtualScreen *vs, TwmWindow *win)
 {
     WorkSpace *ws;
     int	      newoccupation;
@@ -1564,7 +1610,7 @@ void WMgrRemoveFromCurrentWorkSpace (virtualScreen *vs, TwmWindow *win)
     ChangeOccupation (win, newoccupation);
 }
 
-void WMgrAddToCurrentWorkSpaceAndWarp (virtualScreen *vs, char *winname)
+void WMgrAddToCurrentWorkSpaceAndWarp (VirtualScreen *vs, char *winname)
 {
     TwmWindow *tw;
     int       newoccupation;
@@ -1599,7 +1645,7 @@ void WMgrAddToCurrentWorkSpaceAndWarp (virtualScreen *vs, char *winname)
     WarpToWindow (tw, Scr->RaiseOnWarp);
 }
 
-static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
+static void CreateWorkSpaceManagerWindow (VirtualScreen *vs)
 {
     int		  mask;
     int		  lines, vspace, hspace, count, columns;
@@ -1765,14 +1811,13 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
     wmhints.input         = True;
     wmhints.initial_state = NormalState;
     XSetWMHints (dpy, vs->wsw->w, &wmhints);
-    XSaveContext (dpy, vs->wsw->w, VirtScreenContext, (XPointer) vs);
-    tmp_win = AddWindow (vs->wsw->w, 3, Scr->iconmgr);
+    tmp_win = AddWindow (vs->wsw->w, ADD_WINDOW_WORKSPACE_MANAGER,
+			 Scr->iconmgr, vs);
     if (! tmp_win) {
 	fprintf (stderr, "cannot create workspace manager window, exiting...\n");
 	exit (1);
     }
     tmp_win->occupation = fullOccupation;
-    tmp_win->vs = vs;
     tmp_win->attr.width = width;
     tmp_win->attr.height = height;
     ResizeWorkSpaceManager(vs, tmp_win);
@@ -1813,7 +1858,7 @@ static void CreateWorkSpaceManagerWindow (virtualScreen *vs)
     PaintWorkSpaceManager (vs);
 }
 
-void WMgrHandleExposeEvent (virtualScreen *vs, XEvent *event)
+void WMgrHandleExposeEvent (VirtualScreen *vs, XEvent *event)
 {
     WorkSpace *ws;
     Window buttonw;
@@ -1843,7 +1888,7 @@ void WMgrHandleExposeEvent (virtualScreen *vs, XEvent *event)
     }
 }
 
-void PaintWorkSpaceManager (virtualScreen *vs)
+void PaintWorkSpaceManager (VirtualScreen *vs)
 {
     WorkSpace *ws;
 
@@ -1857,7 +1902,7 @@ void PaintWorkSpaceManager (virtualScreen *vs)
     }
 }
 
-static void PaintWorkSpaceManagerBorder (virtualScreen *vs)
+static void PaintWorkSpaceManagerBorder (VirtualScreen *vs)
 {
     int width, height;
 
@@ -1896,7 +1941,7 @@ static void CreateOccupyWindow (void) {
     XWindowAttributes	 wattr;
     unsigned long attrmask;
     OccupyWindow  *occwin;
-    virtualScreen *vs;
+    VirtualScreen *vs;
     XRectangle inc_rect;
     XRectangle logical_rect;
 
@@ -1998,7 +2043,7 @@ static void CreateOccupyWindow (void) {
     wmhints.input         = True;
     wmhints.initial_state = NormalState;
     XSetWMHints (dpy, w, &wmhints);
-    tmp_win = AddWindow (w, FALSE, Scr->iconmgr);
+    tmp_win = AddWindow (w, ADD_WINDOW_NORMAL, Scr->iconmgr, Scr->currentvs);
     if (! tmp_win) {
 	fprintf (stderr, "cannot create occupy window, exiting...\n");
 	exit (1);
@@ -2065,7 +2110,7 @@ void PaintOccupyWindow (void)
 }
 
 static void PaintButton (int which,
-			 virtualScreen *vs, Window w,
+			 VirtualScreen *vs, Window w,
 			 char *label,
 			 ColorPair cp, int state)
 {
@@ -2192,7 +2237,7 @@ static unsigned int GetMaskFromResource (TwmWindow *win, char *res)
 	    break;
 	}
 	if (strcmp (wrkSpcName, "current") == 0) {
-	    virtualScreen *vs = Scr->currentvs;
+	    VirtualScreen *vs = Scr->currentvs;
 	    if (vs) mask |= (1 << vs->wsw->currentwspc->number);
 	    continue;
 	}
@@ -2292,7 +2337,7 @@ void AddToClientsList (char *workspace, char *client)
     AddToList (&ws->clientlist, client, "");
 }
 
-void WMapToggleState (virtualScreen *vs)
+void WMapToggleState (VirtualScreen *vs)
 {
     if (vs->wsw->state == BUTTONSSTATE) {
 	WMapSetMapState (vs);
@@ -2301,7 +2346,7 @@ void WMapToggleState (virtualScreen *vs)
     }
 }
 
-void WMapSetMapState (virtualScreen *vs)
+void WMapSetMapState (VirtualScreen *vs)
 {
     WorkSpace     *ws;
 
@@ -2314,7 +2359,7 @@ void WMapSetMapState (virtualScreen *vs)
     MaybeAnimate = True;
 }
 
-void WMapSetButtonsState (virtualScreen *vs)
+void WMapSetButtonsState (VirtualScreen *vs)
 {
     WorkSpace     *ws;
 
@@ -2378,7 +2423,7 @@ void WMapDestroyWindow (TwmWindow *win)
 
 void WMapMapWindow (TwmWindow *win)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     WorkSpace *ws;
     WinList   wl;
 
@@ -2397,7 +2442,7 @@ void WMapMapWindow (TwmWindow *win)
 
 void WMapSetupWindow (TwmWindow *win, int x, int y, int w, int h)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     WorkSpace     *ws;
     WinList	  wl;
     float	  wf, hf;
@@ -2447,15 +2492,19 @@ void WMapSetupWindow (TwmWindow *win, int x, int y, int w, int h)
 
 void WMapIconify (TwmWindow *win)
 {
+    VirtualScreen *vs;
     WorkSpace *ws;
     WinList    wl;
 
     if (!win->vs) return;
-    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	for (wl = win->vs->wsw->mswl [ws->number]->wl; wl != NULL; wl = wl->next) {
-	    if (win == wl->twm_win) {
-		XUnmapWindow (dpy, wl->w);
-		break;
+
+    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
+	    for (wl = vs->wsw->mswl [ws->number]->wl; wl != NULL; wl = wl->next) {
+		if (win == wl->twm_win) {
+		    XUnmapWindow (dpy, wl->w);
+		    break;
+		}
 	    }
 	}
     }
@@ -2463,19 +2512,23 @@ void WMapIconify (TwmWindow *win)
 
 void WMapDeIconify (TwmWindow *win)
 {
+    VirtualScreen *vs;
     WorkSpace *ws;
     WinList    wl;
 
     if (!win->vs) return;
-    for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
-	for (wl = win->vs->wsw->mswl [ws->number]->wl; wl != NULL; wl = wl->next) {
-	    if (win == wl->twm_win) {
-		if (Scr->NoRaiseDeicon)
-		    XMapWindow (dpy, wl->w);
-		else
-		    XMapRaised (dpy, wl->w);
-		WMapRedrawName (win->vs, wl);
-		break;
+
+    for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
+	for (ws = Scr->workSpaceMgr.workSpaceList; ws != NULL; ws = ws->next) {
+	    for (wl = vs->wsw->mswl [ws->number]->wl; wl != NULL; wl = wl->next) {
+		if (win == wl->twm_win) {
+		    if (Scr->NoRaiseDeicon)
+			XMapWindow (dpy, wl->w);
+		    else
+			XMapRaised (dpy, wl->w);
+		    WMapRedrawName (win->vs, wl);
+		    break;
+		}
 	    }
 	}
     }
@@ -2510,7 +2563,7 @@ void WMapRaise (TwmWindow *win)
 
 void WMapRestack (WorkSpace *ws)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     TwmWindow	*win;
     WinList	wl;
     Window	root;
@@ -2555,7 +2608,7 @@ void WMapRestack (WorkSpace *ws)
 
 void WMapUpdateIconName (TwmWindow *win)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     WorkSpace *ws;
     WinList   wl;
 
@@ -2571,7 +2624,7 @@ void WMapUpdateIconName (TwmWindow *win)
     }
 }
 
-void WMgrHandleKeyReleaseEvent (virtualScreen *vs, XEvent *event)
+void WMgrHandleKeyReleaseEvent (VirtualScreen *vs, XEvent *event)
 {
     char	*keyname;
     KeySym	keysym;
@@ -2592,7 +2645,7 @@ void WMgrHandleKeyReleaseEvent (virtualScreen *vs, XEvent *event)
       }
 }
 
-void WMgrHandleKeyPressEvent (virtualScreen *vs, XEvent *event)
+void WMgrHandleKeyPressEvent (VirtualScreen *vs, XEvent *event)
 {
     WorkSpace *ws;
     int	      len, i, lname;
@@ -2647,7 +2700,7 @@ void WMgrHandleKeyPressEvent (virtualScreen *vs, XEvent *event)
 	PaintButton (WSPCWINDOW, vs, vs->wsw->bswl [ws->number]->w, ws->label, ws->cp, off);
 }
 
-void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
+void WMgrHandleButtonEvent (VirtualScreen *vs, XEvent *event)
 {
     WorkSpaceWindow	*mw;
     WorkSpace		*ws, *oldws, *newws, *cws;
@@ -2657,7 +2710,7 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
     unsigned int	W0, H0, bw;
     int			cont;
     XEvent		ev;
-    Window		w, sw, parent;
+    Window		w = 0, sw, parent;
     int			X0, Y0, X1, Y1, XW, YW, XSW, YSW;
     Position		newX = 0, newY = 0, winX = 0, winY = 0;
     Window		junkW;
@@ -2670,7 +2723,7 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
     Time		etime;
 
     parent   = event->xbutton.window;
-    sw       = event->xbutton.subwindow;
+    sw       = event->xbutton.subwindow;	/* mini-window in ws manager */
     mw       = vs->wsw;
     button   = event->xbutton.button;
     modifier = event->xbutton.state;
@@ -2690,6 +2743,10 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
     }
     if (ws == NULL) return;
     if (sw == (Window) 0) {
+	/*
+	 * If clicked in the workspace but outside a window,
+	 * only switch workspaces.
+	 */
 	GotoWorkSpace (vs, ws);
 	return;
     }
@@ -2716,6 +2773,14 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
     } else {
 	Scr->OpaqueMove = FALSE;
     }
+    /*
+     * Buttons inside the workspace manager, when clicking on the
+     * representation of a window:
+     * 1: drag window to a different workspace
+     * 2: drag a copy of the window to a different workspace
+     *    (show it in both workspaces)
+     * 3: remove the window from this workspace (if it isn't the last).
+     */
     switch (button) {
 	case 1 :
 	    XUnmapWindow (dpy, sw);
@@ -2728,6 +2793,7 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
 	    attrs.event_mask       = ExposureMask;
 	    attrs.background_pixel = wl->cp.back;
 	    attrs.border_pixel     = wl->cp.back;
+	    /* Create a draggable mini-window */
 	    w = XCreateWindow (dpy, mw->w, X1, Y1, W0, H0, bw,
 				CopyFromParent,
 				(unsigned int) CopyFromParent,
@@ -2753,12 +2819,17 @@ void WMgrHandleButtonEvent (virtualScreen *vs, XEvent *event)
 
 	case 3 :
 	    occupation = win->occupation & ~(1 << oldws->number);
-	    ChangeOccupation (win, occupation);
+	    if (occupation != 0) {
+		ChangeOccupation (win, occupation);
+	    }
 	    return;
 	default :
 	    return;
     }
 
+    /*
+     * Keep dragging the representation of the window
+     */
     wf = (float) (mw->wwidth  - 1) / (float) vs->w;
     hf = (float) (mw->wheight - 1) / (float) vs->h;
     XGrabPointer (dpy, mw->w, False, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
@@ -2883,6 +2954,9 @@ move:		XMoveWindow (dpy, w, newX - XW, newY - YW);
 		break;
 	}
     }
+    /*
+     * Finished with dragging (button released).
+     */
     if (realmovemode) {
 	if (Scr->ShowWinWhenMovingInWmgr || alreadyvivible) {
 	    if (Scr->OpaqueMove && !OCCUPY (win, vs->wsw->currentwspc)) {
@@ -2901,6 +2975,7 @@ move:		XMoveWindow (dpy, w, newX - XW, newY - YW);
     XUngrabPointer  (dpy, CurrentTime);
 
     if ((ev.xbutton.time - etime) < 250) {
+	/* Just a quick click or drag */
 	KeyCode control_L_code, control_R_code;
 	KeySym  control_L_sym,  control_R_sym;
 	char keys [32];
@@ -2930,28 +3005,31 @@ move:		XMoveWindow (dpy, w, newX - XW, newY - YW);
     }
     newws = ws;
     switch (button) {
-	case 1 :
-	    if ((newws == NULL) || (newws == oldws) || OCCUPY (wl->twm_win, newws)) {
+	case 1 : /* moving to another workspace */
+	    if ((newws == NULL) || (newws == oldws) ||
+		    OCCUPY (wl->twm_win, newws)) {
 		XMapWindow (dpy, sw);
 		break;
 	    }
 	    occupation = (win->occupation | (1 << newws->number)) & ~(1 << oldws->number);
 	    ChangeOccupation (win, occupation);
 	    if (newws == vs->wsw->currentwspc) {
-		RaiseWindow (win);
+		OtpRaise(win, WinWin);
 		WMapRaise (win);
 	    }
 	    else WMapRestack (newws);
 	    break;
 
-	case 2 :
+	case 2 : /* putting in extra workspace */
 	    if ((newws == NULL) || (newws == oldws) ||
-		OCCUPY (wl->twm_win, newws)) break;
+		    OCCUPY (wl->twm_win, newws)) {
+		break;
+	    }
 
 	    occupation = win->occupation | (1 << newws->number);
 	    ChangeOccupation (win, occupation);
 	    if (newws == vs->wsw->currentwspc) {
-		RaiseWindow (win);
+		OtpRaise(win, WinWin);
 		WMapRaise (win);
 	    }
 	    else WMapRestack (newws);
@@ -2975,7 +3053,7 @@ void InvertColorPair (ColorPair *cp)
     cp->shadd = save;
 }
 
-void WMapRedrawName (virtualScreen *vs, WinList wl)
+void WMapRedrawName (VirtualScreen *vs, WinList wl)
 {
     int       w = wl->width;
     int       h = wl->height;
@@ -2996,7 +3074,6 @@ static void WMapRedrawWindow (Window window, int width, int height,
 {
     int		x, y, strhei, strwid;
     MyFont	font;
-    XFontSetExtents *font_extents;
     XRectangle inc_rect;
     XRectangle logical_rect;
     XFontStruct **xfonts;
@@ -3008,14 +3085,12 @@ static void WMapRedrawWindow (Window window, int width, int height,
     XClearWindow (dpy, window);
     font = Scr->workSpaceMgr.windowFont;
 
-    font_extents = XExtentsOfFontSet(font.font_set);
-    strhei = font_extents->max_logical_extent.height;
-
-    if (strhei > height) return;
-
     XmbTextExtents(font.font_set, label, strlen (label),
 		   &inc_rect, &logical_rect);
     strwid = logical_rect.width;
+    strhei = logical_rect.height;
+    if (strhei > height) return;
+
     x = (width  - strwid) / 2;
     if (x < 1) x = 1;
 
@@ -3044,7 +3119,7 @@ static void WMapRedrawWindow (Window window, int width, int height,
 
 static void WMapAddToList (TwmWindow *win, WorkSpace *ws)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     WinList wl;
     float   wf, hf;
     ColorPair cp;
@@ -3106,7 +3181,7 @@ static void WMapAddToList (TwmWindow *win, WorkSpace *ws)
 
 static void WMapRemoveFromList (TwmWindow *win, WorkSpace *ws)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     WinList wl, *prev;
 
     for (vs = Scr->vScreenList; vs != NULL; vs = vs->next) {
@@ -3128,7 +3203,7 @@ static void WMapRemoveFromList (TwmWindow *win, WorkSpace *ws)
     }
 }
 
-static void ResizeWorkSpaceManager (virtualScreen *vs, TwmWindow *win)
+static void ResizeWorkSpaceManager (VirtualScreen *vs, TwmWindow *win)
 {
     int           bwidth, bheight;
     int		  wwidth, wheight;
@@ -3301,7 +3376,7 @@ void WMapCreateDefaultBackGround (char *border,
 
 Bool AnimateRoot (void)
 {
-    virtualScreen *vs;
+    VirtualScreen *vs;
     ScreenInfo *scr;
     int	       scrnum;
     Image      *image;
@@ -3581,9 +3656,6 @@ CaptiveCTWM GetCaptiveCTWMUnderPointer (void)
 
 void SetNoRedirect (Window window)
 {
-    Atom	_XA_WM_NOREDIRECT;
-
-    _XA_WM_NOREDIRECT = XInternAtom (dpy, "WM_NOREDIRECT", False);
     if (_XA_WM_NOREDIRECT == None) return;
 
     XChangeProperty (dpy, window, _XA_WM_NOREDIRECT, XA_STRING, 8, 
@@ -3597,9 +3669,7 @@ static Bool DontRedirect (Window window)
     unsigned long	len;
     Atom		actual_type;
     int			actual_format;
-    Atom		_XA_WM_NOREDIRECT;
 
-    _XA_WM_NOREDIRECT = XInternAtom (dpy, "WM_NOREDIRECT", True);
     if (_XA_WM_NOREDIRECT == None) return (False);
 
     if (XGetWindowProperty (dpy, window, _XA_WM_NOREDIRECT, 0L, 1L,
