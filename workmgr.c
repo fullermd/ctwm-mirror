@@ -118,8 +118,6 @@ XContext  MapWListContext = (XContext) 0;
 static Cursor handCursor  = (Cursor) 0;
 static Bool DontRedirect (Window window);
 
-extern Bool donttoggleworkspacemanagerstate;
-
 void InitWorkSpaceManager (void)
 {
     Scr->workSpaceMgr.count	    = 0;
@@ -2637,7 +2635,7 @@ void WMgrHandleKeyReleaseEvent (VirtualScreen *vs, XEvent *event)
 	(strcmp (keyname, "Control_L") == 0)) 
       {
 	/* DontToggleWorkSpaceManagerState added 20040607 by dl*/
-	if (!donttoggleworkspacemanagerstate)
+	if (!Scr->DontToggleWorkspaceManagerState)
 	  {
 	    WMapToggleState (vs);
 	  }
@@ -2663,7 +2661,7 @@ void WMgrHandleKeyPressEvent (VirtualScreen *vs, XEvent *event)
 	(strcmp (keyname, "Control_L") == 0)) 
       {
 	/* DontToggleWorkSpaceManagerState added 20040607 by dl*/
-	if (!donttoggleworkspacemanagerstate)
+	if (!Scr->DontToggleWorkspaceManagerState)
 	  {
 	    WMapToggleState (vs);
 	  }

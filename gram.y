@@ -110,7 +110,6 @@ static char *ptr;
 static name_list **list;
 static int cont = 0;
 static int color;
-Bool donttoggleworkspacemanagerstate = FALSE;
 static int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 
@@ -383,7 +382,7 @@ stmt		: error
 						Scr->NoTitlebar = TRUE; }
 		| IGNORE_TRANSIENT	{ list = &Scr->IgnoreTransientL; }
 		  win_list
-		| DONTTOGGLEWORKSPACEMANAGERSTATE  { donttoggleworkspacemanagerstate = TRUE; }
+		| DONTTOGGLEWORKSPACEMANAGERSTATE  { Scr->DontToggleWorkspaceManagerState = TRUE; }
 		| MAKE_TITLE		{ list = &Scr->MakeTitle; }
 		  win_list
 		| START_ICONIFIED	{ list = &Scr->StartIconified; }

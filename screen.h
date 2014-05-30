@@ -462,6 +462,7 @@ struct ScreenInfo
     short IgnoreCaseInMenuSelection;	/* Should we ignore case in menu selection */
     short NoWarpToMenuTitle; /* warp cursor to clipped menu title */
     short NoImagesInWorkSpaceManager;   /* do not display mini images of the desktop background images on WSmap */
+    short DontToggleWorkspaceManagerState;
 
     FuncKey FuncKeyRoot;
     FuncButton FuncButtonRoot;

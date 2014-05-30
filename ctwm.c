@@ -1125,6 +1125,7 @@ static void InitVariables(void)
     Scr->PackNewWindows = False;
     Scr->AlwaysSqueezeToGravity = FALSE;
     Scr->NoWarpToMenuTitle = FALSE;
+    Scr->DontToggleWorkspaceManagerState = False;
 
     Scr->BorderTop    = 0;
     Scr->BorderBottom = 0;
