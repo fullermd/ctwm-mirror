@@ -218,7 +218,7 @@ void InitMenus(void)
  *  Inputs:
  *	name	- the name of the key
  *	cont	- the context to look for the key press in
- *	mods	- modifier keys that need to be pressed
+ *	nmods	- modifier keys that need to be pressed
  *	func	- the function to perform
  *	win_name- the window name (if any)
  *	action	- the action string associated with the function (if any)
@@ -226,7 +226,7 @@ void InitMenus(void)
  ***********************************************************************
  */
 
-Bool AddFuncKey (char *name, int cont, int mods, int func,
+Bool AddFuncKey (char *name, int cont, int nmods, int func,
 		 MenuRoot *menu, char *win_name, char *action)
 {
     FuncKey *tmp;
@@ -248,7 +248,7 @@ Bool AddFuncKey (char *name, int cont, int mods, int func,
     {
 	if (tmp->keysym == keysym &&
 	    tmp->cont == cont &&
-	    tmp->mods == mods)
+	    tmp->mods == nmods)
 	    break;
     }
     if (tmp && addingdefaults) return (True);
@@ -264,7 +264,7 @@ Bool AddFuncKey (char *name, int cont, int mods, int func,
     tmp->keysym = keysym;
     tmp->keycode = keycode;
     tmp->cont = cont;
-    tmp->mods = mods;
+    tmp->mods = nmods;
     tmp->func = func;
     tmp->menu = menu;
     tmp->win_name = win_name;
@@ -281,7 +281,7 @@ Bool AddFuncKey (char *name, int cont, int mods, int func,
  *  Inputs:
  *	num	- the num of the button
  *	cont	- the context to look for the key press in
- *	mods	- modifier keys that need to be pressed
+ *	nmods	- modifier keys that need to be pressed
  *	func	- the function to perform
  *	menu    - the menu (if any)
  *	item	- the menu item (if any)
@@ -289,14 +289,14 @@ Bool AddFuncKey (char *name, int cont, int mods, int func,
  ***********************************************************************
  */
 
-Bool AddFuncButton (int num, int cont, int mods, int func,
+Bool AddFuncButton (int num, int cont, int nmods, int func,
 		    MenuRoot *menu, MenuItem *item)
 {
     FuncButton *tmp;
 
     /* see if there already is a key defined for this context */
     for (tmp = Scr->FuncButtonRoot.next; tmp != NULL; tmp = tmp->next) {
-	if ((tmp->num == num) && (tmp->cont == cont) && (tmp->mods == mods))
+	if ((tmp->num == num) && (tmp->cont == cont) && (tmp->mods == nmods))
 	    break;
     }
     if (tmp && addingdefaults) return (True);
@@ -309,7 +309,7 @@ Bool AddFuncButton (int num, int cont, int mods, int func,
 
     tmp->num  = num;
     tmp->cont = cont;
-    tmp->mods = mods;
+    tmp->mods = nmods;
     tmp->func = func;
     tmp->menu = menu;
     tmp->item = item;
@@ -321,7 +321,7 @@ Bool AddFuncButton (int num, int cont, int mods, int func,
 
 static TitleButton *cur_tb = NULL;
 
-void ModifyCurrentTB(int button, int mods, int func, char *action,
+void ModifyCurrentTB(int button, int nmods, int func, char *action,
 		     MenuRoot *menuroot)
 {
     TitleButtonFunc *tbf;
@@ -331,7 +331,7 @@ void ModifyCurrentTB(int button, int mods, int func, char *action,
 	return;
     }
     for (tbf = cur_tb->funs; tbf; tbf = tbf->next) {
-	if (tbf->num == button && tbf->mods == mods)
+	if (tbf->num == button && tbf->mods == nmods)
 	    break;
     }
     if (!tbf) {
@@ -344,7 +344,7 @@ void ModifyCurrentTB(int button, int mods, int func, char *action,
 	cur_tb->funs = tbf;
     }
     tbf->num = button;
-    tbf->mods = mods;
+    tbf->mods = nmods;
     tbf->func = func;
     tbf->action = action;
     tbf->menuroot = menuroot;

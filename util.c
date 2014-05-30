@@ -1286,6 +1286,7 @@ void Animate (void)
 #endif
 
     MaybeAnimate = False;
+    scr = NULL;
     for (scrnum = 0; scrnum < NumScreens; scrnum++) {
 	if ((scr = ScreenList [scrnum]) == NULL) continue;
 
