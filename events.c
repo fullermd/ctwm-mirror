@@ -1073,7 +1073,7 @@ void HandleKeyPress(void)
 	    return;
 	}
 	else
-	if (keysym == XK_Up) {
+	if (keysym == XK_Up || keysym == XK_BackSpace) {
 	    xx = Event.xkey.x;
 	    yy = Event.xkey.y - Scr->EntryHeight;
 	    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy, &wx, &wy, &junkW);
