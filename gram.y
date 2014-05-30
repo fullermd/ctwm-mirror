@@ -146,7 +146,7 @@ extern int yyparse(void);
 %token <num> DONTSETINACTIVE CHANGE_WORKSPACE_FUNCTION DEICONIFY_FUNCTION ICONIFY_FUNCTION
 %token <num> AUTOSQUEEZE STARTSQUEEZED DONT_SAVE AUTO_LOWER ICONMENU_DONTSHOW WINDOW_BOX
 %token <num> IGNOREMODIFIER WINDOW_GEOMETRIES ALWAYSSQUEEZETOGRAVITY VIRTUAL_SCREENS
-%token <num> IGNORE_TRANSIENT DONTTOGGLEWORKSPACEMANAGERSTATE
+%token <num> IGNORE_TRANSIENT
 %token <ptr> STRING
 
 %type <ptr> string
@@ -382,7 +382,6 @@ stmt		: error
 						Scr->NoTitlebar = TRUE; }
 		| IGNORE_TRANSIENT	{ list = &Scr->IgnoreTransientL; }
 		  win_list
-		| DONTTOGGLEWORKSPACEMANAGERSTATE  { Scr->DontToggleWorkspaceManagerState = TRUE; }
 		| MAKE_TITLE		{ list = &Scr->MakeTitle; }
 		  win_list
 		| START_ICONIFIED	{ list = &Scr->StartIconified; }
