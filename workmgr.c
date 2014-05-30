@@ -2624,23 +2624,17 @@ void WMapUpdateIconName (TwmWindow *win)
 
 void WMgrHandleKeyReleaseEvent (VirtualScreen *vs, XEvent *event)
 {
-    char	*keyname;
     KeySym	keysym;
 
     keysym  = XLookupKeysym ((XKeyEvent*) event, 0);
     if (! keysym) return;
-    keyname = XKeysymToString (keysym);
-    if (! keyname) return;
-    if ((strcmp (keyname, "Control_R") == 0) || 
-	(strcmp (keyname, "Control_L") == 0)) 
-      {
+    if (keysym == XK_Control_L || keysym == XK_Control_R) {
 	/* DontToggleWorkSpaceManagerState added 20040607 by dl*/
-	if (!Scr->DontToggleWorkspaceManagerState)
-	  {
+	if (!Scr->DontToggleWorkspaceManagerState) {
 	    WMapToggleState (vs);
-	  }
+	}
 	return;
-      }
+    }
 }
 
 void WMgrHandleKeyPressEvent (VirtualScreen *vs, XEvent *event)
@@ -2650,21 +2644,15 @@ void WMgrHandleKeyPressEvent (VirtualScreen *vs, XEvent *event)
     char      key [16];
     unsigned char k;
     char      name [128];
-    char      *keyname;
     KeySym    keysym;
 
     keysym  = XLookupKeysym   ((XKeyEvent*) event, 0);
     if (! keysym) return;
-    keyname = XKeysymToString (keysym);
-    if (! keyname) return;
-    if ((strcmp (keyname, "Control_R") == 0) || 
-	(strcmp (keyname, "Control_L") == 0)) 
-      {
+    if (keysym == XK_Control_L || keysym == XK_Control_R) {
 	/* DontToggleWorkSpaceManagerState added 20040607 by dl*/
-	if (!Scr->DontToggleWorkspaceManagerState)
-	  {
+	if (!Scr->DontToggleWorkspaceManagerState) {
 	    WMapToggleState (vs);
-	  }
+	}
 	return;
     }
     if (vs->wsw->state == MAPSTATE) return;
