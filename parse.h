@@ -68,7 +68,6 @@
 #define _PARSE_
 
 extern unsigned int mods_used;
-extern int mods;
 extern int ConstrainedMoveTime;
 extern int RaiseDelay;
 extern void twmrc_error_prefix (void);

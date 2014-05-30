@@ -167,7 +167,6 @@ int yydebug = 1;
 
 static int doparse (int (*ifunc)(void), char *srctypename, char *srcname)
 {
-    mods = 0;
     ptr = 0;
     len = 0;
     twmrc_lineno = 0;
