@@ -246,7 +246,7 @@ else()
 	if(YACC)
 		# Got yacc(1), use it
 		message(STATUS "Found yacc: ${YACC}")
-		add_custom_command(OUTPUT gram.tab.c
+		add_custom_command(OUTPUT gram.tab.c gram.tab.h
 			DEPENDS gram.y
 			COMMAND ${YACC} ${YFLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/gram.y
 		)
