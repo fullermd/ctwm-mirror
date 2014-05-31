@@ -264,7 +264,6 @@ else()
 				COMMAND cp ${GRAM_H} .
 			)
 			add_custom_command(OUTPUT gram.tab.c
-				DEPENDS gram.tab.h
 				DEPENDS ${GRAM_C}
 				COMMAND cp ${GRAM_C} .
 			)
