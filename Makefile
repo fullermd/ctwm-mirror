@@ -8,7 +8,6 @@ build/Makefile cmake: CMakeLists.txt
 
 allclean distclean:
 	rm -rf build/*
-	rm -f ${RELEASE_FILES}
 
 
 # Prebuild these files for releases
@@ -17,9 +16,10 @@ YFLAGS=-d -b gram
 RELEASE_FILES=gram.tab.c gram.tab.h lex.c
 
 release_files: ${RELEASE_FILES}
+release_clean:
+	rm -f ${RELEASE_FILES}
 
 gram.tab.c: gram.tab.h
-
 gram.tab.h: gram.y
 	${YACC} ${YFLAGS} gram.y
 
