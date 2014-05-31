@@ -305,21 +305,23 @@ set_property(SOURCE parse.c APPEND
 
 # Where should we stick manpages?
 if(MANBASE)
-	set(MAN1PATH "${MANBASE}/man1")
+	# Assume the user knows what they're doing
 else()
-	find_file(MAN1PATH man1
+	find_file(MANBASE man
 		PATHS
-			"${CMAKE_INSTALL_PREFIX}/share/man"
-			"${CMAKE_INSTALL_PREFIX}/man"
+			"${CMAKE_INSTALL_PREFIX}/share"
+			"${CMAKE_INSTALL_PREFIX}"
 		NO_DEFAULT_PATH)
 endif(MANBASE)
-if(NOT MAN1PATH)
+
+if(MANBASE)
+	set(MAN1PATH "${MANBASE}/man1")
+	message(STATUS "Installing manpage to ${MAN1PATH}")
+else()
 	message(FATAL_ERROR "Can't figure out where to install manpage; "
 			"try setting MANBASE to something appropriate for your system "
 			"(e.g., /usr/share/man).")
-else()
-	message(STATUS "Installing manpage to ${MAN1PATH}")
-endif(NOT MAN1PATH)
+endif(MANBASE)
 
 
 #
