@@ -212,12 +212,13 @@ find_package(FLEX)
 if(FLEX_FOUND)
 	FLEX_TARGET(ctwm_lexer lex.l ${CMAKE_CURRENT_BINARY_DIR}/lex.c)
 else()
-	# See if we have a pre-build one
+	# See if we have a pre-built one
 	find_file(LEX_C lex.c
 		PATHS ${CMAKE_CURRENT_SOURCE_DIR}
 		NO_DEFAULT_PATH)
 	if(LEX_C)
 		# Make the build process just copy it in
+		message(STATUS "No flex found, using prebuilt lex.c")
 		add_custom_command(OUTPUT lex.c
 			DEPENDS ${LEX_C}
 			COMMAND cp ${LEX_C} .
@@ -257,7 +258,7 @@ else()
 			PATHS ${CMAKE_CURRENT_SOURCE_DIR} NO_DEFAULT_PATH)
 		if(GRAM_C AND GRAM_H)
 			# Got prebuilt ones, use 'em
-			message(STATUS "No yacc, using prebuild gram.tab.*")
+			message(STATUS "No yacc found, using prebuilt gram.tab.*")
 			add_custom_command(OUTPUT gram.tab.h
 				DEPENDS ${GRAM_H}
 				COMMAND cp ${GRAM_H} .
