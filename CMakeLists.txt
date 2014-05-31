@@ -314,7 +314,9 @@ else()
 		NO_DEFAULT_PATH)
 endif(MANBASE)
 if(NOT MAN1PATH)
-	message(FATAL_ERROR "Can't figure out manpath; try setting MANBASE.")
+	message(FATAL_ERROR "Can't figure out where to install manpage; "
+			"try setting MANBASE to something appropriate for your system "
+			"(e.g., /usr/share/man).")
 else()
 	message(STATUS "Installing manpage to ${MAN1PATH}")
 endif(NOT MAN1PATH)
