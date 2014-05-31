@@ -28,7 +28,7 @@ set(CTWMSRC
 	workmgr.c
 )
 
-# Libs
+# Libs to link in (init empty list)
 set(CTWMLIBS)
 
 
