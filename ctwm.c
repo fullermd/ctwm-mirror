@@ -782,7 +782,7 @@ int main(int argc, char **argv, char **environ)
 	JunkY = 0;
 
 	CreateWindowRegions ();
-	AllocateOthersIconManagers ();
+	AllocateOtherIconManagers ();
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
 	MakeWorkspacesMenu ();

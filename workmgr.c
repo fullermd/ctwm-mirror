@@ -1251,7 +1251,7 @@ static WorkSpace *GetWorkspace (char *wname)
     return (ws);
 }
 
-void AllocateOthersIconManagers (void)
+void AllocateOtherIconManagers (void)
 {
     IconMgr   *p = NULL, *ip, *oldp, *oldv;
     WorkSpace *ws;
