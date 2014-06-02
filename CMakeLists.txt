@@ -388,7 +388,6 @@ add_custom_target(man ALL DEPENDS "${MANPAGE}.gz")
 # that install() is defined to run in order, but that only happens when
 # everything is in a single directory.  This will break if/when we start
 # splitting things up...
-# Force some checks before letting 'install' run.
 if(NOT MANBASE)
 	install(CODE "message(FATAL_ERROR \"${manbase_err}\")")
 endif(NOT MANBASE)
