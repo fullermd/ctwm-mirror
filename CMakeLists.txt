@@ -394,20 +394,20 @@ if(NOT MANBASE)
 endif(NOT MANBASE)
 
 # Installing everything
-INSTALL(TARGETS ctwm
+install(TARGETS ctwm
 	DESTINATION bin
 )
 if(USE_XPM)
-	INSTALL(DIRECTORY xpm/
+	install(DIRECTORY xpm/
 		DESTINATION ${PIXMAPDIR}
 		FILES_MATCHING PATTERN "*.xpm"
 	)
 endif(USE_XPM)
-INSTALL(FILES system.ctwmrc
+install(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
 if(MANBASE)
-	INSTALL(FILES "${MANPAGE}.gz"
+	install(FILES "${MANPAGE}.gz"
 		DESTINATION ${MAN1PATH}
 	)
 endif(MANBASE)
