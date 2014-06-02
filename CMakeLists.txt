@@ -318,9 +318,16 @@ if(MANBASE)
 	set(MAN1PATH "${MANBASE}/man1")
 	message(STATUS "Installing manpage to ${MAN1PATH}")
 else()
-	message(FATAL_ERROR "Can't figure out where to install manpage; "
+	# Wacky dance to make sure it's a string rather than a list, or else
+	# some later uses of it (see faked install() below) wind up with
+	# embedded semicolons.  Only way to define it as a plain string with
+	# set() would be as a single crazy long line, so we do a string
+	# replace instead.
+	string(REPLACE ";" " " manbase_err
+			"Can't figure out where to install manpage; "
 			"try setting MANBASE to something appropriate for your system "
 			"(e.g., /usr/share/man).")
+	message(WARNING ${manbase_err})
 endif(MANBASE)
 
 
@@ -374,6 +381,18 @@ add_custom_command(OUTPUT "${MANPAGE}.gz"
 add_custom_target(man ALL DEPENDS "${MANPAGE}.gz")
 
 
+# Cram a warning in about the MANBASE if we couldn't find it.  This is a
+# particularly grody way of doing things, but we can't just add it as a
+# standard target that install depends on (see
+# http://public.kitware.com/Bug/view.php?id=8438).  We rely on the fact
+# that install() is defined to run in order, but that only happens when
+# everything is in a single directory.  This will break if/when we start
+# splitting things up...
+# Force some checks before letting 'install' run.
+if(NOT MANBASE)
+	install(CODE "message(FATAL_ERROR \"${manbase_err}\")")
+endif(NOT MANBASE)
+
 # Installing everything
 INSTALL(TARGETS ctwm
 	DESTINATION bin
@@ -387,6 +406,8 @@ endif(USE_XPM)
 INSTALL(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
-INSTALL(FILES "${MANPAGE}.gz"
-	DESTINATION ${MAN1PATH}
-)
+if(MANBASE)
+	INSTALL(FILES "${MANPAGE}.gz"
+		DESTINATION ${MAN1PATH}
+	)
+endif(MANBASE)
