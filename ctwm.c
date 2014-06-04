@@ -103,6 +103,9 @@
 #ifdef SOUNDS
 #  include "sound.h"
 #endif
+#ifdef EWMH
+#  include "ewmh.h"
+#endif /* EWMH */
 #ifdef VMS
 #  include <stdlib.h>
 #  include <decw$include/Xproto.h>
@@ -468,6 +471,10 @@ int main(int argc, char **argv, char **environ)
     numManaged = 0;
     PreviousScreen = DefaultScreen(dpy);
     FirstScreen = TRUE;
+#ifdef EWMH
+    EwmhInit();
+#endif /* EWMH */
+
     for (scrnum = firstscrn ; scrnum <= lastscrn; scrnum++)
     {
         unsigned long attrmask;
@@ -790,6 +797,10 @@ int main(int argc, char **argv, char **environ)
 #ifdef GNOME
 	InitGnome ();
 #endif /* GNOME */
+#ifdef EWMH
+	EwmhInitScreen(Scr);
+	EwmhInitVirtualRoots(Scr);
+#endif /* EWMH */
 
 	XQueryTree(dpy, Scr->Root, &croot, &parent, &children, &nchildren);
 	/*
