@@ -54,6 +54,7 @@
 
 static Atom MANAGER;
 static Atom NET_SUPPORTED;
+static Atom NET_DESKTOP_VIEWPORT;
 static Atom NET_SUPPORTING_WM_CHECK;
 static Atom NET_VIRTUAL_ROOTS;
 static Atom NET_WM_NAME;
@@ -84,6 +85,7 @@ static void EwmhInitAtoms(void)
 {
     MANAGER           = XInternAtom(dpy, "MANAGER", False);
     NET_SUPPORTED     = XInternAtom(dpy, "_NET_SUPPORTED", False);
+    NET_DESKTOP_VIEWPORT    = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
     NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
     NET_VIRTUAL_ROOTS = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
     NET_WM_NAME       = XInternAtom(dpy, "_NET_WM_NAME", False);
@@ -306,29 +308,51 @@ int EwmhInitScreenEarly(ScreenInfo *scr)
  */
 void EwmhInitScreenLate(ScreenInfo *scr)
 {
-    long data;
+    long data[2];
 
     /* Set _NET_SUPPORTING_WM_CHECK on root window */
-    data = scr->icccm_Window;
-    XChangeProperty(dpy, Scr->XineramaRoot,
+    data[0] = scr->icccm_Window;
+    XChangeProperty(dpy, scr->XineramaRoot,
 			NET_SUPPORTING_WM_CHECK, XA_WINDOW,
 			32, PropModeReplace,
-			(unsigned char *)&data, 1);
+			(unsigned char *)data, 1);
 
     /*
      * Set properties on the window;
      * this also belongs with _NET_SUPPORTING_WM_CHECK
      */
-    XChangeProperty(dpy, Scr->icccm_Window,
+    XChangeProperty(dpy, scr->icccm_Window,
 			NET_WM_NAME, UTF8_STRING,
 			8, PropModeReplace,
 			(unsigned char *)"ctwm", 4);
 
-    data = Scr->icccm_Window;
-    XChangeProperty(dpy, Scr->icccm_Window,
+    data[0] = scr->icccm_Window;
+    XChangeProperty(dpy, scr->icccm_Window,
 			NET_SUPPORTING_WM_CHECK, XA_WINDOW,
 			32, PropModeReplace,
-			(unsigned char *)&data, 1);
+			(unsigned char *)data, 1);
+
+    /*
+     * Add supported properties to the root window.
+     */
+    data[0] = 0;
+    data[1] = 0;
+    XChangeProperty(dpy, scr->XineramaRoot,
+			NET_DESKTOP_VIEWPORT, XA_CARDINAL,
+			32, PropModeReplace,
+			(unsigned char *)data, 2);
+
+
+    long supported[10];
+    int i = 0;
+
+    supported[i++] = NET_SUPPORTING_WM_CHECK;
+    supported[i++] = NET_DESKTOP_VIEWPORT;
+
+    XChangeProperty(dpy, scr->XineramaRoot,
+			NET_SUPPORTED, XA_ATOM,
+			32, PropModeReplace,
+			(unsigned char *)supported, i);
 }
 
 /*
@@ -356,7 +380,7 @@ void EwmhInitVirtualRoots(ScreenInfo *scr)
 	    data[i] = vs->window;
 	}
 
-	XChangeProperty(dpy, Scr->XineramaRoot,
+	XChangeProperty(dpy, scr->XineramaRoot,
 			NET_VIRTUAL_ROOTS, XA_WINDOW,
 			32, PropModeReplace,
 			(unsigned char *)data, numVscreens);
@@ -366,7 +390,7 @@ void EwmhInitVirtualRoots(ScreenInfo *scr)
 	free(data);
 
 	d0 = NET_VIRTUAL_ROOTS;
-	XChangeProperty(dpy, Scr->XineramaRoot,
+	XChangeProperty(dpy, scr->XineramaRoot,
 			    NET_SUPPORTED, XA_ATOM,
 			    32, PropModeAppend,
 			    (unsigned char *)&d0, 1);
@@ -375,7 +399,7 @@ void EwmhInitVirtualRoots(ScreenInfo *scr)
 
 static void EwmhTerminateScreen(ScreenInfo *scr)
 {
-    XDeleteProperty(dpy, Scr->XineramaRoot, NET_SUPPORTED);
+    XDeleteProperty(dpy, scr->XineramaRoot, NET_SUPPORTED);
 
     /*
      * Don't delete scr->icccm_Window; let it be deleted automatically
