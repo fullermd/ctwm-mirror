@@ -197,7 +197,6 @@ XClassHint NoClass;		/* for applications with no class */
 
 XGCValues Gcv;
 
-Window captiveroot;
 char *Home;			/* the HOME environment variable */
 int HomeLen;			/* length of Home */
 
@@ -505,7 +504,6 @@ int main(int argc, char **argv, char **environ)
 	    else {
 		croot = CreateRootWindow (crootx, crooty, crootw, crooth);
 	    }
-	    captiveroot = croot;
 	}
 	else {
 	    croot  = RootWindow (dpy, scrnum);
@@ -625,7 +623,7 @@ int main(int argc, char **argv, char **environ)
 	Scr->d_depth = DefaultDepth(dpy, scrnum);
 	Scr->d_visual = DefaultVisual(dpy, scrnum);
 	Scr->RealRoot = RootWindow (dpy, scrnum);
-	Scr->CaptiveRoot = captiveroot;
+	Scr->CaptiveRoot = captive ? croot : None;
 	Scr->Root = croot;
 	Scr->XineramaRoot = croot;
 	XSaveContext (dpy, Scr->Root, ScreenContext, (XPointer) Scr);
@@ -817,7 +815,7 @@ int main(int argc, char **argv, char **environ)
 	JunkY = 0;
 
 	CreateWindowRegions ();
-	AllocateOthersIconManagers ();
+	AllocateOtherIconManagers ();
 	CreateIconManagers();
 	CreateWorkSpaceManager ();
 	MakeWorkspacesMenu ();

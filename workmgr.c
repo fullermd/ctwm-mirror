@@ -1052,13 +1052,15 @@ void Occupy (TwmWindow *twm_win)
 
     occupy_twm = occupyWindow->twm_win;
     occupy_twm->occupation = twm_win->occupation;
-    if (occupy_twm->vs != Scr->currentvs) {
-	occupy_twm->vs = Scr->currentvs;
+
+    if (occupy_twm->parent_vs != twm_win->parent_vs) {
+	occupy_twm->vs = twm_win->parent_vs;
 	occupy_twm->frame_x = x;
-	occupy_twm->frame_y = x;
+	occupy_twm->frame_y = y;
 	ReparentFrameAndIcon(occupy_twm);
-    } else
+    } else {
 	XMoveWindow(dpy, occupyWindow->twm_win->frame, x, y);
+    }
 
     SetMapStateProp (occupy_twm, NormalState);
     XMapWindow      (dpy, occupyWindow->w);
@@ -1269,7 +1271,7 @@ static WorkSpace *GetWorkspace (char *wname)
     return (ws);
 }
 
-void AllocateOthersIconManagers (void)
+void AllocateOtherIconManagers (void)
 {
     IconMgr   *p = NULL, *ip, *oldp, *oldv;
     WorkSpace *ws;
