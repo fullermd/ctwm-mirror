@@ -39,6 +39,7 @@
 #include "cursor.h"
 #include "list.h"
 #include "workmgr.h"
+#include "ewmh.h"
 #ifdef VMS
 #include <string.h>
 #include <decw$include/Xos.h>
@@ -602,10 +603,27 @@ void GotoWorkSpace (VirtualScreen *vs, WorkSpace *ws)
  * property is used to indicate in which workspace it is contained.
  */
     
-    if (!Scr->CaptiveRoot)
+    if (!captive) {
+	long number = newws->number;
 	XChangeProperty (dpy, Scr->Root, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
-		    PropModeReplace, (unsigned char *) &(newws->number), 1);
+		    PropModeReplace, (unsigned char *) &number, 1);
+    }
 #endif /* GNOME */
+#ifdef EWMH
+    if (!captive) {
+	long number = newws->number;
+	/*
+	 * TODO: this should probably not use Scr->Root but ->XineramaRoot.
+	 * That is the real root window if we're using virtual screens.
+	 * That would need a separate change of the eventMask.
+	 * Also, on the real root it would need values for each of the
+	 * virtual roots, but that doesn't fit in the EWMH ideas.
+	 */
+	XChangeProperty (dpy, Scr->Root, NET_CURRENT_DESKTOP,
+		    XA_CARDINAL, 32,
+		    PropModeReplace, (unsigned char *) &number, 1);
+    }
+#endif /* EWMH */
     XSelectInput(dpy, Scr->Root, eventMask);
 
     /*    XDestroyWindow (dpy, cachew);*/

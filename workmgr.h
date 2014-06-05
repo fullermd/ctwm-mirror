@@ -85,7 +85,7 @@ struct WorkSpaceMgr {
 };
 
 struct WorkSpace {
-  long	              number;
+  int	              number;
   char	              *name;
   char	              *label;
   Image	              *image;

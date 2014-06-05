@@ -53,8 +53,11 @@
 #define DEBUG_EWMH	1
 
 static Atom MANAGER;
-static Atom NET_SUPPORTED;
+       Atom NET_CURRENT_DESKTOP;
+static Atom NET_DESKTOP_GEOMETRY;
 static Atom NET_DESKTOP_VIEWPORT;
+static Atom NET_NUMBER_OF_DESKTOPS;
+static Atom NET_SUPPORTED;
 static Atom NET_SUPPORTING_WM_CHECK;
 static Atom NET_VIRTUAL_ROOTS;
 static Atom NET_WM_NAME;
@@ -83,13 +86,16 @@ static void SendPropertyMessage(Window to, Window about,
 
 static void EwmhInitAtoms(void)
 {
-    MANAGER           = XInternAtom(dpy, "MANAGER", False);
-    NET_SUPPORTED     = XInternAtom(dpy, "_NET_SUPPORTED", False);
+    MANAGER           	= XInternAtom(dpy, "MANAGER", False);
+    NET_CURRENT_DESKTOP = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
+    NET_DESKTOP_GEOMETRY    = XInternAtom(dpy, "_NET_DESKTOP_GEOMETRY", False);
     NET_DESKTOP_VIEWPORT    = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
+    NET_NUMBER_OF_DESKTOPS  = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
+    NET_SUPPORTED     	= XInternAtom(dpy, "_NET_SUPPORTED", False);
     NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
-    NET_VIRTUAL_ROOTS = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
-    NET_WM_NAME       = XInternAtom(dpy, "_NET_WM_NAME", False);
-    UTF8_STRING       = XInternAtom(dpy, "UTF8_STRING", False);
+    NET_VIRTUAL_ROOTS   = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
+    NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
+    UTF8_STRING         = XInternAtom(dpy, "UTF8_STRING", False);
 }
 
 static int caughtError;
@@ -342,12 +348,44 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 			32, PropModeReplace,
 			(unsigned char *)data, 2);
 
+    data[0] = scr->rootw;
+    data[1] = scr->rooth;
+    XChangeProperty(dpy, scr->XineramaRoot,
+			NET_DESKTOP_GEOMETRY, XA_CARDINAL,
+			32, PropModeReplace,
+			(unsigned char *)data, 2);
+
+    if (scr->workSpaceManagerActive) {
+	data[0] = scr->workSpaceMgr.count;
+    } else {
+	data[0] = 1;
+    }
+
+    XChangeProperty(dpy, scr->XineramaRoot,
+			NET_NUMBER_OF_DESKTOPS, XA_CARDINAL,
+			32, PropModeReplace,
+			(unsigned char *)data, 1);
+
+    if (scr->workSpaceManagerActive) {
+	/* TODO: this is for the first Virtual Screen only... */
+	//data[0] = scr->workSpaceMgr.workSpaceWindowList->currentwspc->number;
+	data[0] = 0;
+    } else {
+	data[0] = 0;
+    }
+    XChangeProperty(dpy, scr->XineramaRoot,
+			NET_CURRENT_DESKTOP, XA_CARDINAL,
+			32, PropModeReplace,
+			(unsigned char *)data, 1);
 
     long supported[10];
     int i = 0;
 
     supported[i++] = NET_SUPPORTING_WM_CHECK;
     supported[i++] = NET_DESKTOP_VIEWPORT;
+    supported[i++] = NET_NUMBER_OF_DESKTOPS;
+    supported[i++] = NET_CURRENT_DESKTOP;
+    supported[i++] = NET_DESKTOP_GEOMETRY;
 
     XChangeProperty(dpy, scr->XineramaRoot,
 			NET_SUPPORTED, XA_ATOM,
@@ -361,10 +399,17 @@ void EwmhInitScreenLate(ScreenInfo *scr)
  * This applies only if we have multiple virtual screens.
  *
  * Also record this as a supported atom in _NET_SUPPORTED.
+ *
+ * Really, our virtual screens (with their virtual root windows) don't quite
+ * fit in the EWMH idiom. Several root window properties (such as
+ * _NET_CURRENT_DESKTOP) are more appropriate on the virtual root windows. But
+ * that is not where other clients would look for them.
+ *
+ * The idea seems to be that the virtual roots as used for workspaces (desktops
+ * in EWMH terminology) are only mapped one at a time.
  */
-void EwmhInitVirtualRoots(ScreenInfo *scr)
-{
-    int numVscreens = scr->numVscreens;
+void EwmhInitVirtualRoots(ScreenInfo *scr) { int numVscreens =
+    scr->numVscreens;
 
     if (numVscreens > 1) {
 	long *data;
@@ -437,4 +482,26 @@ void EwhmSelectionClear(XSelectionClearEvent *sev)
     fprintf(stderr, "sev->window = %x\n", (unsigned)sev->window);
 #endif
     Done(0);
+}
+
+/*
+ * When accepting client messages to the root window,
+ * be accepting and accept both the real root window and the
+ * current virtual screen.
+ *
+ * Should perhaps also accept any other virtual screen.
+ */
+int EwmhClientMessage(XClientMessageEvent *msg)
+{
+    if (msg->window != Scr->XineramaRoot &&
+	msg->window != Scr->Root) {
+	return False;
+    }
+
+    if (msg->message_type == NET_CURRENT_DESKTOP) {
+	GotoWorkSpaceByNumber (Scr->currentvs, msg->data.l[0]);
+	return True;
+    }
+
+    return False;
 }

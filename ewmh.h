@@ -32,12 +32,15 @@
 
 #include "types.h"
 
+extern Atom NET_CURRENT_DESKTOP;
+
 extern void EwmhInit(void);
 extern int EwmhInitScreenEarly(ScreenInfo *scr);
 extern void EwmhInitScreenLate(ScreenInfo *scr);
 extern void EwmhInitVirtualRoots(ScreenInfo *scr);
 extern void EwmhTerminate(void);
 extern void EwhmSelectionClear(XSelectionClearEvent *sev);
+extern int EwmhClientMessage(XClientMessageEvent *msg);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */

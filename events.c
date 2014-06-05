@@ -2006,6 +2006,13 @@ void HandleClientMessage(void)
 	}
 	return;
     }
+
+#ifdef EWMH
+    if (EwmhClientMessage(&Event.xclient)) {
+	return;
+    }
+#endif
+
 #ifdef GNOME
     /* 6/19/1999 nhd for GNOME compliance */
     if (Event.xclient.message_type == _XA_WIN_WORKSPACE) {
