@@ -168,7 +168,7 @@ void OccupyAll (TwmWindow *twm_win);
 void AddToWorkSpace (char *wname, TwmWindow *twm_win);
 void RemoveFromWorkSpace (char *wname, TwmWindow *twm_win);
 void ToggleOccupation (char *wname, TwmWindow *twm_win);
-void AllocateOthersIconManagers (void);
+void AllocateOtherIconManagers (void);
 void ChangeOccupation (TwmWindow *tmp_win, int newoccupation);
 void WmgrRedoOccupation (TwmWindow *win);
 void WMgrRemoveFromCurrentWorkSpace (VirtualScreen *vs, TwmWindow *win);

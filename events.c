@@ -123,7 +123,6 @@ XEvent ButtonEvent;		/* button press event */
 XEvent Event;			/* the current event */
 TwmWindow *Tmp_win;		/* the current twm window */
 
-extern Window captiveroot;
 Window DragWindow;		/* variables used in moving windows */
 int origDragX;
 int origDragY;
