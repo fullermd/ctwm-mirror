@@ -470,6 +470,9 @@ struct ScreenInfo
 #ifdef GNOME
     GnomeData *gnomedata;
 #endif /* GNOME */
+#ifdef EWMH
+    Window icccm_Window;	/* ICCCM sections 4.3, 2.8 */
+#endif /* EWMH */
 };
 
 extern int captive;

@@ -541,6 +541,9 @@ extern char **Environ;
 
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;
+#ifdef EWMH
+extern int ewmh_replace;
+#endif /* EWMH */
 
 #define ResetError() (ErrorOccurred = False)
 

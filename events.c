@@ -95,6 +95,7 @@
 #include "icons.h"
 #include "iconmgr.h"
 #include "version.h"
+#include "ewmh.h"
 
 #ifdef VMS
 #include <starlet.h>
@@ -150,6 +151,7 @@ int Cancel = FALSE;
 void HandleCreateNotify(void);
 void HandleShapeNotify (void);
 void HandleFocusChange (void);
+void HandleSelectionClear (void);
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
@@ -279,6 +281,9 @@ void InitEvents(void)
     EventHandler[CirculateNotify] = HandleCirculateNotify;
     if (HasShape)
 	EventHandler[ShapeEventBase+ShapeNotify] = HandleShapeNotify;
+#if EWMH
+    EventHandler[SelectionClear] = HandleSelectionClear;
+#endif
 }
 
 
@@ -4138,6 +4143,25 @@ void HandleShapeNotify (void)
     Tmp_win->wShaped = sev->shaped;
     SetFrameShape (Tmp_win);
 }
+
+
+/***********************************************************************
+ *
+ *  Procedure:
+ *	HandleSelectionClear - selection lost event handler
+ *
+ ***********************************************************************
+ */
+#ifdef EWMH
+void HandleSelectionClear(void)
+{
+    XSelectionClearEvent    *sev = (XSelectionClearEvent *) &Event;
+
+    if (sev->window == Scr->icccm_Window) {
+	EwhmSelectionClear(sev);
+    }
+}
+#endif
 
 
 

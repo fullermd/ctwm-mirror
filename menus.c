@@ -4404,6 +4404,11 @@ static void Identify (TwmWindow *t)
     (void) strcat (Info[n], "GNOME");
     first = False;
 #endif
+#ifdef EWMH
+    if (!first) (void) strcat(Info[n], ", ");
+    (void) strcat (Info[n], "EWMH");
+    first = False;
+#endif
 #ifdef SOUNDS
     if (!first) (void) strcat(Info[n], ", ");
     (void) strcat (Info[n], "SOUNDS");

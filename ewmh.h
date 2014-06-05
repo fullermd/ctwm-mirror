@@ -33,8 +33,11 @@
 #include "types.h"
 
 extern void EwmhInit(void);
-extern void EwmhInitScreen(ScreenInfo *scr);
+extern int EwmhInitScreenEarly(ScreenInfo *scr);
+extern void EwmhInitScreenLate(ScreenInfo *scr);
 extern void EwmhInitVirtualRoots(ScreenInfo *scr);
+extern void EwmhTerminate(void);
+extern void EwhmSelectionClear(XSelectionClearEvent *sev);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */
