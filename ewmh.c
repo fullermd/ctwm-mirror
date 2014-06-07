@@ -26,9 +26,17 @@
  */
 
 /*
- * Implements some of the Extended Window Manager Hints, as (poorly)
- * documented at
+ * Implements some of the Extended Window Manager Hints, as (extremely
+ * poorly) documented at
  * http://standards.freedesktop.org/wm-spec/wm-spec-1.3.html .
+ * In fact, the wiki page that refers to that as being the current version
+ * (http://www.freedesktop.org/wiki/Specifications/wm-spec/)
+ * neglects to tell us there are newer versions 1.4 and 1.5 at
+ * http://standards.freedesktop.org/wm-spec/wm-spec-1.5.html
+ * (which has a listable directory that I discovered by accident).
+ * The same wiki page also has lots of dead links to a CVS repository.
+ * Nevertheless, it is where one ends up if one starts at
+ * http://www.freedesktop.org/wiki/Specifications/ .
  *
  * EWMH is an extension to the ICCCM (Inter-Client Communication
  * Conventions Manual).
