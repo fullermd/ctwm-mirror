@@ -123,7 +123,6 @@ XEvent ButtonEvent;		/* button press event */
 XEvent Event;			/* the current event */
 TwmWindow *Tmp_win;		/* the current twm window */
 
-extern Window captiveroot;
 Window DragWindow;		/* variables used in moving windows */
 int origDragX;
 int origDragY;
@@ -1060,7 +1059,7 @@ void HandleKeyPress(void)
 	keynam = XKeysymToString (keysym);
 	if (! keynam) return;
 
-	if (!strcmp (keynam, "Down") || !strcmp (keynam, "space")) {
+	if (keysym == XK_Down || keysym == XK_space) {
 	    xx = Event.xkey.x;
 	    yy = Event.xkey.y + Scr->EntryHeight;
 	    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy, &wx, &wy, &junkW);
@@ -1073,7 +1072,7 @@ void HandleKeyPress(void)
 	    return;
 	}
 	else
-	if (!strcmp (keynam, "Up")) {
+	if (keysym == XK_Up || keysym == XK_BackSpace) {
 	    xx = Event.xkey.x;
 	    yy = Event.xkey.y - Scr->EntryHeight;
 	    XTranslateCoordinates (dpy, Scr->Root, ActiveMenu->w, xx, yy, &wx, &wy, &junkW);
@@ -1086,11 +1085,11 @@ void HandleKeyPress(void)
 	    return;
 	}
 	else
-	if (!strcmp (keynam, "Right") || !strcmp (keynam, "Return")) {
+	if (keysym == XK_Right || keysym == XK_Return) {
 	    item = ActiveItem;
 	}
 	else
-	if (!strcmp (keynam, "Left") || !strcmp(keynam, "Escape")) {
+	if (keysym == XK_Left || keysym == XK_Escape) {
 	    MenuRoot *menu;
 
 	    if (ActiveMenu->pinned) return;
@@ -1352,16 +1351,14 @@ void HandleKeyPress(void)
      */
     if (Tmp_win)
     {
-        /* if (Tmp_win == Scr->currentvs->wsw->twm_win) */
-	if (Tmp_win->wspmgr) {
+	if (Context == C_WORKSPACE) {
 	  WMgrHandleKeyPressEvent (Scr->currentvs, &Event);
 	  return;
         }
-        if (Tmp_win->icon && ((Event.xany.window == Tmp_win->icon->w) ||
-	    (Event.xany.window == Tmp_win->frame) ||
-	    (Event.xany.window == Tmp_win->title_w) ||
-	    (Tmp_win->iconmanagerlist &&
-	     (Event.xany.window == Tmp_win->iconmanagerlist->w))))
+        if (Context == C_ICON ||
+	    Context == C_FRAME ||
+	    Context == C_TITLE ||
+	    Context == C_ICONMGR)
         {
             Event.xkey.window = Tmp_win->w;
             XSendEvent(dpy, Tmp_win->w, False, KeyPressMask, &Event);
@@ -3078,7 +3075,7 @@ void HandleButtonPress(void)
 	if (Event.xbutton.window == ActiveMenu->w) {
 	    modifier = (Event.xbutton.state & mods_used);
 	    modifier = set_mask_ignore (modifier);
-	    if ((ActiveItem && (ActiveItem->func == F_TITLE)) || (modifier == 8)) {
+	    if ((ActiveItem && (ActiveItem->func == F_TITLE)) || (modifier == Mod1Mask)) {
 		MoveMenu (&Event);
 		/*ButtonPressed = -1;*/
 	    }

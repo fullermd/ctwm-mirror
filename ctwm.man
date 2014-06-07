@@ -12,7 +12,7 @@
 .if t .sp .5
 ..
 .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH CTWM 1 "Version 3.7"
+.TH CTWM 1 "Version 3.8.2"
 .SH NAME
 ctwm \- Claude's Tab Window Manager for the X Window System
 .SH SYNTAX
