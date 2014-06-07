@@ -32,6 +32,14 @@ set(CTWMSRC
 set(CTWMLIBS)
 
 
+# Guard against in-tree builds
+string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insrc)
+if(insrc)
+	message(FATAL_ERROR "Please build out of tree; don't run cmake "
+			"directly in the source tree.")
+endif(insrc)
+
+
 #
 # Define options
 # These can be set at the command line; e.g., "cmake -DUSE_JPEG=OFF"
