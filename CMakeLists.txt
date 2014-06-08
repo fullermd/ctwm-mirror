@@ -99,7 +99,7 @@ if(USE_XPM)
 	set_property(SOURCE parse.c ctwm.c APPEND
 		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
 	)
-	message(STATUS "Enabling XPM support.")
+	message(STATUS "Enabling XPM support: ${X11_Xpm_LIB}.")
 endif(USE_XPM)
 
 set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
