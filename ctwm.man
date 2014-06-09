@@ -16,7 +16,7 @@
 .SH NAME
 ctwm \- Claude's Tab Window Manager for the X Window System
 .SH SYNTAX
-\fIctwm \fP[\-display \fIdpy\fP] [\-s] [\-cfgchk] [\-f \fIinitfile\fP] [\-v] [\-n] [\-k] [\-K m4file] [\-w [win\-id]]
+\fIctwm \fP[\-display \fIdpy\fP] [\-\-replace] [\-s] [\-cfgchk] [\-f \fIinitfile\fP] [\-v] [\-n] [\-k] [\-K m4file] [\-w [win\-id]]
 .PP
 .SH DESCRIPTION
 \fIctwm\fP is a window manager for the X Window System.  It provides
@@ -82,6 +82,12 @@ to touch the bottom the screen.
 .TP 8
 .B \-display \fIdpy\fP
 This option specifies the X server to use.
+.TP 8
+.B \-\-replace
+This option indicates that it is not an error if a window manager
+is already running.
+In that case, the existing window manager is asked to quit,
+and ctwm takes its place.
 .TP 8
 .B \-s
 This option indicates that only the default screen (as specified by
