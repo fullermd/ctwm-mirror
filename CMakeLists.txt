@@ -332,7 +332,7 @@ else()
 	# set() would be as a single crazy long line, so we do a string
 	# replace instead.
 	string(REPLACE ";" " " manbase_err
-			"Can't figure out where to install manpage; "
+			"Can't figure out where to install manpage: "
 			"try setting MANBASE to something appropriate for your system "
 			"(e.g., /usr/share/man).")
 	message(WARNING ${manbase_err})
