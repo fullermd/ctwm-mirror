@@ -1617,13 +1617,17 @@ void HandlePropertyNotify(void)
 	if (Tmp_win->wmhints) XFree ((char *) Tmp_win->wmhints);
 	Tmp_win->wmhints = XGetWMHints(dpy, Event.xany.window);
 
-	if (Tmp_win->wmhints && (Tmp_win->wmhints->flags & WindowGroupHint)) {
+	if (!Tmp_win->wmhints) {
+	    break;
+	}
+
+	if (Tmp_win->wmhints->flags & WindowGroupHint) {
 	    Tmp_win->group = Tmp_win->wmhints->window_group;
 	    if (Tmp_win->group && !GetTwmWindow(Tmp_win->group))
 		Tmp_win->group = 0;	/* see comment in AddWindow() */
 	}
 
-	if (!Tmp_win->forced && Tmp_win->wmhints &&
+	if (!Tmp_win->forced && 
 	    Tmp_win->wmhints->flags & IconWindowHint) {
 	    if (Tmp_win->icon && Tmp_win->icon->w) {
 	    	int icon_x, icon_y;
@@ -1679,7 +1683,7 @@ void HandlePropertyNotify(void)
 	    }
 	}
 
-	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced && Tmp_win->wmhints &&
+	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced &&
 	    (Tmp_win->wmhints->flags & IconPixmapHint)) {
 	    int x;
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
@@ -1739,7 +1743,7 @@ void HandlePropertyNotify(void)
 	    XMapSubwindows (dpy, Tmp_win->icon->w);
 	    RedoIconName();
 	}
-	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced && Tmp_win->wmhints &&
+	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced &&
 	    (Tmp_win->wmhints->flags & IconMaskHint)) {
 	    int x;
 	    Pixmap mask;
@@ -1768,7 +1772,7 @@ void HandlePropertyNotify(void)
 		RedoIconName ();
 	    }
 	}
-	if (Tmp_win->wmhints && (Tmp_win->wmhints->flags & IconPixmapHint)) {
+	if (Tmp_win->wmhints->flags & IconPixmapHint) {
 	    AutoPopupMaybe(Tmp_win);
 	}
 
