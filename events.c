@@ -1686,10 +1686,12 @@ void HandlePropertyNotify(void)
 	if (Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced &&
 	    (Tmp_win->wmhints->flags & IconPixmapHint)) {
 	    int x;
+	    unsigned int IconDepth;
+
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
 			       &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon->width, 
 			       (unsigned int *)&Tmp_win->icon->height, &JunkBW,
-				&JunkDepth)) {
+				&IconDepth)) {
 		return;
 	    }
 
@@ -1698,7 +1700,7 @@ void HandlePropertyNotify(void)
 
 	    FB(Tmp_win->icon->iconc.fore, Tmp_win->icon->iconc.back);
 
-	    if (JunkDepth == Scr->d_depth)
+	    if (IconDepth == Scr->d_depth)
 		XCopyArea  (dpy, Tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
 			0,0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0);
 	    else
@@ -1748,20 +1750,21 @@ void HandlePropertyNotify(void)
 	    int x;
 	    Pixmap mask;
 	    GC gc;
+	    unsigned int IconWidth, IconHeight, IconDepth;
 
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_mask, &JunkRoot,
-			       &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW,
-			       &JunkDepth)) {
+			       &JunkX, &JunkY, &IconWidth, &IconHeight, &JunkBW,
+			       &IconDepth)) {
 		return;
 	    }
-	    if (JunkDepth != 1) return;
+	    if (IconDepth != 1) return;
 
-	    mask = XCreatePixmap (dpy, Scr->Root, JunkWidth, JunkHeight, 1);
+	    mask = XCreatePixmap (dpy, Scr->Root, IconWidth, IconHeight, 1);
 	    if (!mask) return;
 	    gc = XCreateGC (dpy, mask, 0, NULL);
 	    if (!gc) return;
 	    XCopyArea (dpy, Tmp_win->wmhints->icon_mask, mask, gc,
-		       0, 0, JunkWidth, JunkHeight, 0, 0);
+		       0, 0, IconWidth, IconHeight, 0, 0);
 	    XFreeGC (dpy, gc);
 	    x = GetIconOffset (Tmp_win->icon);
 	    XShapeCombineMask (dpy, Tmp_win->icon->bm_w, ShapeBounding, 0, 0, mask, ShapeSet);
