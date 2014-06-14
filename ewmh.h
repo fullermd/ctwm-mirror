@@ -41,6 +41,7 @@ extern void EwmhInitVirtualRoots(ScreenInfo *scr);
 extern void EwmhTerminate(void);
 extern void EwhmSelectionClear(XSelectionClearEvent *sev);
 extern int EwmhClientMessage(XClientMessageEvent *msg);
+extern Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */

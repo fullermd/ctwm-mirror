@@ -67,6 +67,7 @@
 #include "otp.h"
 #include "list.h"
 #include "parse.h"
+#include "ewmh.h"
 #include "util.h"
 
 #define iconWidth(w)	(w->icon->border_width * 2 + \
@@ -511,6 +512,17 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	    tmp_win->forced = TRUE;
 	}
     }
+
+#ifdef EWMH
+    if (image == None) {
+	image = EwhmGetIcon(Scr, tmp_win);
+	if (image != None) {
+	    icon->width   = image->width;
+	    icon->height  = image->height;
+	    icon->image   = image;
+	}
+    }
+#endif /* EWMH */
 
     /* if the pixmap is still NULL, we didn't get one from the above code,
      * that could mean that ForceIcon was not set, or that the window

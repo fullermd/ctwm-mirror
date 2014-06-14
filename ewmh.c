@@ -48,6 +48,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -57,6 +58,7 @@
 #include "twm.h"
 #include "screen.h"
 #include "events.h"
+#include "util.h"
 
 #define DEBUG_EWMH	1
 
@@ -68,6 +70,7 @@ static Atom NET_NUMBER_OF_DESKTOPS;
 static Atom NET_SUPPORTED;
 static Atom NET_SUPPORTING_WM_CHECK;
 static Atom NET_VIRTUAL_ROOTS;
+static Atom NET_WM_ICON;
 static Atom NET_WM_NAME;
 static Atom UTF8_STRING;
 
@@ -102,6 +105,7 @@ static void EwmhInitAtoms(void)
     NET_SUPPORTED     	= XInternAtom(dpy, "_NET_SUPPORTED", False);
     NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
     NET_VIRTUAL_ROOTS   = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
+    NET_WM_ICON         = XInternAtom(dpy, "_NET_WM_ICON", False);
     NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
     UTF8_STRING         = XInternAtom(dpy, "UTF8_STRING", False);
 }
@@ -394,6 +398,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
     supported[i++] = NET_NUMBER_OF_DESKTOPS;
     supported[i++] = NET_CURRENT_DESKTOP;
     supported[i++] = NET_DESKTOP_GEOMETRY;
+    supported[i++] = NET_WM_ICON;
 
     XChangeProperty(dpy, scr->XineramaRoot,
 			NET_SUPPORTED, XA_ATOM,
@@ -512,4 +517,213 @@ int EwmhClientMessage(XClientMessageEvent *msg)
     }
 
     return False;
+}
+
+uint16_t *buffer_16bpp;
+uint32_t *buffer_32bpp;
+
+static void convert_for_16 (int w, int x, int y, int argb)
+{
+    int r = (argb >> 16) & 0xFF;
+    int g = (argb >>  8) & 0xFF;
+    int b = (argb >>  0) & 0xFF;
+    buffer_16bpp [y * w + x] = ((r >> 3) << 11) + ((g >> 2) << 5) + (b >> 3);
+}
+
+static void convert_for_32 (int w, int x, int y, int argb)
+{
+    buffer_32bpp [y * w + x] = argb & 0x00FFFFFF;
+}
+
+/*
+ * The format of the NET_WM_ICON property is
+ *
+ * [0] width
+ * [1] height
+ *     height repetitions of
+ *         row, which is
+ *         	width repetitions of
+ *         		pixel: ARGB
+ * repeat for next size.
+ *
+ */
+
+Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
+{
+    Atom actual_type;
+    int actual_format;
+    unsigned long nitems, bytes_after;
+    unsigned long *prop;
+
+    /*
+     * Some programs have an an icon of 256x256, which takes 64 K cardinals...
+     */
+
+    if (XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
+	    0, 128*1024, False, XA_CARDINAL, 
+	    &actual_type, &actual_format, &nitems,
+	    &bytes_after, (unsigned char **)&prop) != Success || nitems == 0) {
+	return NULL;
+    }
+
+    if (actual_format != 32) {
+	XFree(prop);
+	return NULL;
+    }
+    
+    fprintf(stderr, "NET_WM_ICON data fetched\n");
+    /*
+     * Usually the icons are square, but that is not a rule.
+     * So we measure the area instead.
+     *
+     * Approach wanted size from both directions and at the end,
+     * choose the "nearest".
+     * 
+     */
+    int wanted_width = 48;
+    int wanted_height = 48;
+
+    int wanted_area = wanted_width * wanted_height;
+    int smaller = 0, larger = 999999;
+
+    int offset = 0;
+    int smaller_offset = -1, larger_offset = -1;
+    int i = 0;
+
+    while (i + 2 < nitems) {
+	offset = i;
+
+	int w = prop[i++];
+	int h = prop[i++];
+	int size = w * h;
+
+	fprintf(stderr, "[%d] w=%d h=%d\n", offset, w, h);
+	if (i + size > nitems) {
+	    fprintf(stderr, "not enough data: %d + %d > %ld \n", i, size, nitems);
+	    break;
+	}
+
+	int area = w * h;
+
+	if (area == wanted_area) {
+	    fprintf(stderr, "exact match [%d] w=%d h=%d\n", offset, w, h);
+	    smaller_offset = offset;
+	    larger_offset = -1;
+	    break;
+	} else if (area < wanted_area) {
+	    if (area > smaller) {
+		fprintf(stderr, "increase smaller, was [%d]\n", smaller_offset);
+		smaller = area;
+		smaller_offset = offset;
+	    }
+	} else { /* area > wanted_area */
+	    if (area < larger) {
+		fprintf(stderr, "decrease larger, was [%d]\n", larger_offset);
+		larger = area;
+		larger_offset = offset;
+	    }
+	}
+
+	i += size;
+    }
+
+    if (smaller_offset >= 0) {
+	if (larger_offset >= 0) {
+	    /* choose the nearest */
+	    fprintf(stderr, "choose nearest %d %d\n", smaller, larger);
+	    if ((double)larger / wanted_area > (double)wanted_area / smaller) {
+		offset = smaller_offset;
+	    } else {
+		offset = larger_offset;
+	    }
+	} else {
+	    /* choose smaller */
+	    fprintf(stderr, "choose smaller %d\n", smaller);
+	    offset = smaller_offset;
+	}
+    } else if (larger_offset >= 0) {
+	/* choose larger */
+	fprintf(stderr, "choose larger %d\n", larger);
+	offset = larger_offset;
+    } else {
+	/* no icons found at all? */
+	fprintf(stderr, "nothing to choose from\n");
+	XFree(prop);
+	return NULL;
+    }
+
+    int width = prop[offset];
+    int height = prop[offset + 1];
+    fprintf(stderr, "Chosen [%d] w=%d h=%d\n", offset, width, height);
+    offset += 2;
+
+    XImage *ximage = NULL;
+    void (*store_data) (int w, int x, int y, int argb);
+
+    /** XXX sort of duplicated from util.c:LoadJpegImage() */
+    if (scr->d_depth == 16) {
+	store_data = convert_for_16;
+	buffer_16bpp = (uint16_t *) malloc (width * height * 2);
+	buffer_32bpp = NULL;
+	ximage = XCreateImage (dpy, CopyFromParent, scr->d_depth, ZPixmap, 0,
+		(char *) buffer_16bpp, width, height, 16, width * 2);
+    } else if (scr->d_depth == 24 || scr->d_depth == 32) {
+	store_data = convert_for_32;
+	buffer_32bpp = malloc (width * height * sizeof(buffer_32bpp[0]));
+	buffer_16bpp = NULL;
+	ximage = XCreateImage (dpy, CopyFromParent, scr->d_depth, ZPixmap, 0,
+		(char *) buffer_32bpp, width, height, 32, width * 4);
+    } else {
+	fprintf (stderr, "Screen unsupported depth for 32-bit icon: %d\n", scr->d_depth);
+	XFree(prop);
+	return NULL;
+    }
+    if (ximage == NULL) {
+	fprintf (stderr, "cannot create image for icon\n");
+	XFree(prop);
+	return NULL;
+    }
+
+    int x, y, transparency = 0;
+    int rowbytes = (width + 7) / 8;
+    unsigned char *maskbits = (unsigned char *) calloc (height, rowbytes);
+
+    for (y = 0; y < height; y++) {
+	for (x = 0; x < width; x++) {
+	    unsigned long argb = prop[offset++];
+	    //fprintf (stderr, "[%d] (%d,%d) argb=%08lX\n", offset - 1, x, y, argb);
+	    store_data(width, x, y, argb);
+	    int opaque = ((argb >> 24) & 0xFF) >= 0x80;
+	    if (opaque) {
+		maskbits [rowbytes * y + (x/8)] |= 0x01 << (x % 8);
+	    } else {
+		transparency = 1;
+	    }
+	}
+    }
+
+    GC gc = DefaultGC (dpy, scr->screen);
+    Pixmap pixret = XCreatePixmap (dpy, scr->Root, width, height, scr->d_depth);
+    XPutImage (dpy, pixret, gc, ximage, 0, 0, 0, 0, width, height);
+    XDestroyImage (ximage); /* also frees buffer_{16,32}bpp */
+    ximage = NULL;
+
+    Pixmap mask = None;
+    if (transparency) {
+	mask = XCreatePixmapFromBitmapData(dpy, scr->Root, (char *)maskbits,
+		    width, height, 1, 0, 1);
+    }
+    free(maskbits);
+
+    Image *image = calloc(1, sizeof(Image));
+
+    image->width  = width;
+    image->height = height;
+    image->pixmap = pixret;
+    image->mask   = mask;
+    image->next   = None;
+
+    XFree(prop);
+
+    return image;
 }
