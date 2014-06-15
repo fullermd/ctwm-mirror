@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -546,21 +547,26 @@ static void convert_for_32 (int w, int x, int y, int argb)
  *         		pixel: ARGB
  * repeat for next size.
  *
+ * Some icons can be 256x256 CARDINALs which is 65536 CARDINALS!
+ * Therefore we fetch in pieces and skip the pixels of large icons
+ * until needed.
+ *
+ * First scan all sizes. Keep a record of the closest smaller and larger
+ * size. At the end, choose from one of those.
+ * FInally, go and fetch the pixel data.
  */
 
 Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 {
+    int fetch_offset;
     Atom actual_type;
     int actual_format;
     unsigned long nitems, bytes_after;
     unsigned long *prop;
 
-    /*
-     * Some programs have an an icon of 256x256, which takes 64 K cardinals...
-     */
-
+    fetch_offset = 0;
     if (XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
-	    0, 128*1024, False, XA_CARDINAL, 
+	    fetch_offset, 8*1024, False, XA_CARDINAL, 
 	    &actual_type, &actual_format, &nitems,
 	    &bytes_after, (unsigned char **)&prop) != Success || nitems == 0) {
 	return NULL;
@@ -590,42 +596,64 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     int smaller_offset = -1, larger_offset = -1;
     int i = 0;
 
-    while (i + 2 < nitems) {
+    for (;;) {
 	offset = i;
 
 	int w = prop[i++];
 	int h = prop[i++];
 	int size = w * h;
 
-	fprintf(stderr, "[%d] w=%d h=%d\n", offset, w, h);
-	if (i + size > nitems) {
-	    fprintf(stderr, "not enough data: %d + %d > %ld \n", i, size, nitems);
-	    break;
-	}
+	fprintf(stderr, "[%d+%d] w=%d h=%d\n", fetch_offset, offset, w, h);
 
 	int area = w * h;
 
 	if (area == wanted_area) {
-	    fprintf(stderr, "exact match [%d] w=%d h=%d\n", offset, w, h);
-	    smaller_offset = offset;
+	    fprintf(stderr, "exact match [%d+%d=%d] w=%d h=%d\n", fetch_offset, offset, fetch_offset + offset, w, h);
+	    smaller_offset = fetch_offset + offset;
+	    smaller = area;
 	    larger_offset = -1;
 	    break;
 	} else if (area < wanted_area) {
 	    if (area > smaller) {
 		fprintf(stderr, "increase smaller, was [%d]\n", smaller_offset);
 		smaller = area;
-		smaller_offset = offset;
+		smaller_offset = fetch_offset + offset;
 	    }
 	} else { /* area > wanted_area */
 	    if (area < larger) {
 		fprintf(stderr, "decrease larger, was [%d]\n", larger_offset);
 		larger = area;
-		larger_offset = offset;
+		larger_offset = fetch_offset + offset;
 	    }
 	}
 
+	if (i + size + 2 > nitems) {
+	    fprintf(stderr, "not enough data: %d + %d > %ld \n", i, size, nitems);
+
+#if 1
+	    if (i + size + 2 <= nitems + bytes_after / 4) {
+		/* we can fetch some more... */
+		XFree(prop);
+		fetch_offset += i + size;
+		if (XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
+			fetch_offset, 8*1024, False, XA_CARDINAL, 
+			&actual_type, &actual_format, &nitems,
+			&bytes_after, (unsigned char **)&prop) != Success) {
+		    continue;
+		}
+		i = 0;
+		continue;
+	    }
+#endif
+	    break;
+	}
 	i += size;
     }
+
+    /*
+     * Choose which icon approximates our desired size best.
+     */
+    int area = 0;
 
     if (smaller_offset >= 0) {
 	if (larger_offset >= 0) {
@@ -633,18 +661,22 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	    fprintf(stderr, "choose nearest %d %d\n", smaller, larger);
 	    if ((double)larger / wanted_area > (double)wanted_area / smaller) {
 		offset = smaller_offset;
+		area = smaller;
 	    } else {
 		offset = larger_offset;
+		area = larger;
 	    }
 	} else {
 	    /* choose smaller */
-	    fprintf(stderr, "choose smaller %d\n", smaller);
+	    fprintf(stderr, "choose smaller (only) %d\n", smaller);
 	    offset = smaller_offset;
+	    area = smaller;
 	}
     } else if (larger_offset >= 0) {
 	/* choose larger */
-	fprintf(stderr, "choose larger %d\n", larger);
+	fprintf(stderr, "choose larger (only) %d\n", larger);
 	offset = larger_offset;
+	area = larger;
     } else {
 	/* no icons found at all? */
 	fprintf(stderr, "nothing to choose from\n");
@@ -652,10 +684,30 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	return NULL;
     }
 
-    int width = prop[offset];
-    int height = prop[offset + 1];
-    fprintf(stderr, "Chosen [%d] w=%d h=%d\n", offset, width, height);
-    offset += 2;
+    /*
+     * Now fetch the pixels.
+     */
+
+    fprintf(stderr, "offset = %d fetch_offset = %d\n", offset, fetch_offset);
+    fprintf(stderr, "offset + area = %d fetch_offset + nitems = %ld\n", offset + area, fetch_offset + nitems);
+    if (offset < fetch_offset ||
+	offset + area > fetch_offset + nitems) {
+	XFree(prop);
+	fetch_offset = offset;
+	fprintf(stderr, "refetching from %d\n", fetch_offset);
+	if (XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
+		fetch_offset, 2 + area, False, XA_CARDINAL, 
+		&actual_type, &actual_format, &nitems,
+		&bytes_after, (unsigned char **)&prop) != Success) {
+	    return NULL;
+	}
+    }
+
+    i = offset - fetch_offset;
+    int width = prop[i++];
+    int height = prop[i++];
+    fprintf(stderr, "Chosen [%d] w=%d h=%d area=%d\n", offset, width, height, area);
+    assert (width * height == area);
 
     XImage *ximage = NULL;
     void (*store_data) (int w, int x, int y, int argb);
@@ -690,7 +742,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 
     for (y = 0; y < height; y++) {
 	for (x = 0; x < width; x++) {
-	    unsigned long argb = prop[offset++];
+	    unsigned long argb = prop[i++];
 	    //fprintf (stderr, "[%d] (%d,%d) argb=%08lX\n", offset - 1, x, y, argb);
 	    store_data(width, x, y, argb);
 	    int opaque = ((argb >> 24) & 0xFF) >= 0x80;
