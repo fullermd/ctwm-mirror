@@ -532,16 +532,18 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
      */
     if (image == None && tmp_win->wmhints &&
 	tmp_win->wmhints->flags & IconPixmapHint) {
+	unsigned int IconDepth, IconWidth, IconHeight;
+
 	if (XGetGeometry(dpy, tmp_win->wmhints->icon_pixmap,
-		&JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth)) {
+		&JunkRoot, &JunkX, &JunkY, &IconWidth, &IconHeight, &JunkBW, &IconDepth)) {
 	    image = (Image *) malloc (sizeof (Image));
-	    image->width  = JunkWidth;
-	    image->height = JunkHeight;
+	    image->width  = IconWidth;
+	    image->height = IconHeight;
 	    image->pixmap = XCreatePixmap (dpy, Scr->Root, image->width,
 					image->height, Scr->d_depth);
 	    image->mask   = None;
 	    image->next   = None;
-	    if (JunkDepth == Scr->d_depth) 
+	    if (IconDepth == Scr->d_depth) 
 		XCopyArea  (dpy, tmp_win->wmhints->icon_pixmap, image->pixmap, Scr->NormalGC,
 			0, 0, image->width, image->height, 0, 0);
 	    else
@@ -553,16 +555,16 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 
 	    if ((tmp_win->wmhints->flags & IconMaskHint) &&
 		XGetGeometry(dpy, tmp_win->wmhints->icon_mask,
-		    &JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth) &&
-		(JunkDepth == 1)) {
+		    &JunkRoot, &JunkX, &JunkY, &IconWidth, &IconHeight, &JunkBW, &IconDepth) &&
+		(IconDepth == 1)) {
 		GC gc;
 
-		image->mask = XCreatePixmap (dpy, Scr->Root, JunkWidth, JunkHeight, 1);
+		image->mask = XCreatePixmap (dpy, Scr->Root, IconWidth, IconHeight, 1);
 		if (image->mask) {
 		    gc = XCreateGC (dpy, image->mask, 0, NULL);
 		    if (gc) {
 			XCopyArea (dpy, tmp_win->wmhints->icon_mask, image->mask, gc,
-				0, 0, JunkWidth, JunkHeight, 0, 0);
+				0, 0, IconWidth, IconHeight, 0, 0);
 			XFreeGC (dpy, gc);
 		    }
 		}
