@@ -1627,6 +1627,10 @@ void HandlePropertyNotify(void)
 		Tmp_win->group = 0;	/* see comment in AddWindow() */
 	}
 
+	if (Tmp_win->icon && Tmp_win->icon->match == match_net_wm_icon) {
+	    Tmp_win->wmhints->flags &= ~(IconWindowHint | IconPixmapHint | IconMaskHint);
+	}
+
 	if (!Tmp_win->forced && 
 	    Tmp_win->wmhints->flags & IconWindowHint) {
 	    if (Tmp_win->icon && Tmp_win->icon->w) {
