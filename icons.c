@@ -455,6 +455,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     int x;
     Icon	*icon;
     Image	*image = None;
+    char        *pattern;
 
     icon = (Icon*) malloc (sizeof (struct Icon));
 
@@ -474,12 +475,13 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     FB(icon->iconc.fore, icon->iconc.back);
 
     icon->match   = match_none;
-    icon->pattern = NULL;
     icon->image   = None;
     icon->ir      = (IconRegion*) 0;
 
     tmp_win->forced = FALSE;
     tmp_win->icon_not_ours = FALSE;
+
+    pattern = NULL;
 
     /* now go through the steps to get an icon window,  if ForceIcon is 
      * set, then no matter what else is defined, the bitmap from the
@@ -490,19 +492,19 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 
 	icon_name = LookInNameList (Scr->IconNames, tmp_win->icon_name);
         if (icon_name != NULL) {
-	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
+	    pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
 	    icon->match = match_icon;
 	}
         if (icon->match == match_none)
 	    icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
         if ((icon->match == match_none) && (icon_name != NULL)) {
-	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
+	    pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
 	    icon->match = match_name;
 	}
         if (icon->match == match_none)
 	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
         if ((icon->match == match_none) && (icon_name != NULL)) {
-	    icon->pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+	    pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
 	    icon->match = match_class;
 	}
 	if ((image  = GetImage (icon_name, icon->iconc)) != None) {
@@ -576,22 +578,22 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	char *icon_name;
 
 	icon->match   = match_none;
-	icon->pattern = NULL;
+	pattern = NULL;
 	icon_name = LookInNameList(Scr->IconNames, tmp_win->icon_name);
         if (icon_name != NULL) {
-	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
+	    pattern =  LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
 	    icon->match = match_icon;
 	}
         if (icon->match == match_none)
 	    icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
         if ((icon->match == match_none) && (icon_name != NULL)) {
-	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
+	    pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
 	    icon->match = match_name;
 	}
         if (icon->match == match_none)
 	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
         if ((icon->match == match_none) && (icon_name != NULL)) {
-	    icon->pattern = LookPatternInList (Scr->IconNames,
+	    pattern = LookPatternInList (Scr->IconNames,
 				tmp_win->full_name, &tmp_win->class);
 	    icon->match = match_class;
 	}
@@ -763,7 +765,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     }
 
     if (icon->match != match_none)
-	AddToList (&tmp_win->iconslist, icon->pattern, (char*) icon);
+	AddToList (&tmp_win->iconslist, pattern, (char*) icon);
 
     tmp_win->icon = icon;
     /* I need to figure out where to put the icon window now, because 

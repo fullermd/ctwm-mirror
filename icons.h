@@ -76,7 +76,6 @@ struct Icon
     int		w_height;	/* height of the icon window */
     int		width;          /* width of the icon bitmap */
     int		height;         /* height of the icon bitmap */
-    char	*pattern;	/* Why this icon was choosed */
     Pixel	border;		/* border color */
     ColorPair	iconc;
     Bool	has_title, title_shrunk;
