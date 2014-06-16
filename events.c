@@ -108,7 +108,6 @@ static void CtwmNextEvent (Display *display, XEvent  *event);
 static void RedoIcon(void);
 static void do_key_menu (MenuRoot *menu,	/* menu to pop up */
 			 Window w);		/* invoking window or None */
-void RedoIconName(void);
 
 #ifdef SOUNDS
 #include "sounds.h"
@@ -1805,6 +1804,11 @@ void HandlePropertyNotify(void)
 	  ChangeOccupation (Tmp_win, GetMaskFromProperty (prop, nitems));
 	  XFree ((char *)prop);
 	}
+#ifdef EWMH
+	else if (EwmhHandlePropertyNotify(&Event.xproperty, Tmp_win)) {
+	    /* event handled */
+	}
+#endif /* EWMH */
 #ifdef GNOME
 	else if (Event.xproperty.atom == _XA_WIN_WORKSPACE){
 	  if(XGetWindowProperty(dpy, Tmp_win->w, Event.xproperty.atom, 0L, 32, False,

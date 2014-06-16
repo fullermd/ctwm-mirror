@@ -42,6 +42,7 @@ extern void EwmhTerminate(void);
 extern void EwhmSelectionClear(XSelectionClearEvent *sev);
 extern int EwmhClientMessage(XClientMessageEvent *msg);
 extern Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win);
+extern int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */

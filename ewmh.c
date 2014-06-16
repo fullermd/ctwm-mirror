@@ -59,6 +59,7 @@
 #include "twm.h"
 #include "screen.h"
 #include "events.h"
+#include "icons.h"
 #include "util.h"
 
 #define DEBUG_EWMH	1
@@ -537,7 +538,7 @@ static void convert_for_32 (int w, int x, int y, int argb)
 }
 
 /*
- * The format of the NET_WM_ICON property is
+ * The format of the _NET_WM_ICON property is
  *
  * [0] width
  * [1] height
@@ -577,7 +578,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	return NULL;
     }
     
-    fprintf(stderr, "NET_WM_ICON data fetched\n");
+    fprintf(stderr, "_NET_WM_ICON data fetched\n");
     /*
      * Usually the icons are square, but that is not a rule.
      * So we measure the area instead.
@@ -689,9 +690,9 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
      */
 
     fprintf(stderr, "offset = %d fetch_offset = %d\n", offset, fetch_offset);
-    fprintf(stderr, "offset + area = %d fetch_offset + nitems = %ld\n", offset + area, fetch_offset + nitems);
+    fprintf(stderr, "offset + 2 + area = %d fetch_offset + nitems = %ld\n", offset + 2 + area, fetch_offset + nitems);
     if (offset < fetch_offset ||
-	offset + area > fetch_offset + nitems) {
+	offset + 2 + area > fetch_offset + nitems) {
 	XFree(prop);
 	fetch_offset = offset;
 	fprintf(stderr, "refetching from %d\n", fetch_offset);
@@ -745,7 +746,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	    unsigned long argb = prop[i++];
 	    //fprintf (stderr, "[%d] (%d,%d) argb=%08lX\n", offset - 1, x, y, argb);
 	    store_data(width, x, y, argb);
-	    int opaque = ((argb >> 24) & 0xFF) >= 0x80;
+	    int opaque = ((argb >> 24) & 0xFF) >= 0x80; /* arbitrary cutoff */
 	    if (opaque) {
 		maskbits [rowbytes * y + (x/8)] |= 0x01 << (x % 8);
 	    } else {
@@ -778,4 +779,65 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     XFree(prop);
 
     return image;
+}
+
+int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
+{
+    if (event->atom == NET_WM_ICON) {
+	unsigned long valuemask;		/* mask for create windows */
+	XSetWindowAttributes attributes;	/* attributes for create windows */
+	Icon *icon = twm_win->icon;
+
+	fprintf(stderr, "EwmhHandlePropertyNotify: NET_WM_ICON\n");
+	/*
+	 * If there is no icon yet, we'll look at this property
+	 * later, if and when we do create an icon.
+	 */
+	if (!icon || icon->match != match_net_wm_icon) {
+	    fprintf(stderr, "no icon, or not match_net_wm_icon\n");
+	    return 1;
+	}
+
+	Image *image = EwhmGetIcon(Scr, twm_win);
+
+	/* TODO: de-duplicate with handling of XA_WM_HINTS */
+	Image *old_image = icon->image;
+	icon->image = image;
+
+	if (twm_win->icon->bm_w)
+	    XDestroyWindow(dpy, twm_win->icon->bm_w);
+
+	valuemask = CWBackPixmap;
+	attributes.background_pixmap = image->pixmap;
+
+	int x = GetIconOffset (twm_win->icon);
+	twm_win->icon->bm_w =
+	  XCreateWindow (dpy, twm_win->icon->w, x, 0,
+			 (unsigned int) twm_win->icon->width,
+			 (unsigned int) twm_win->icon->height,
+			 (unsigned int) 0, Scr->d_depth,
+			 (unsigned int) CopyFromParent, Scr->d_visual,
+			 valuemask, &attributes);
+
+	if (image->mask) {
+	    XShapeCombineMask (dpy, twm_win->icon->bm_w, ShapeBounding, 0, 0, image->mask, ShapeSet);
+	    XShapeCombineMask (dpy, twm_win->icon->w,    ShapeBounding, x, 0, image->mask, ShapeSet);
+	} else {
+	    XRectangle rect;
+
+	    rect.x      = x;
+	    rect.y      = 0;
+	    rect.width  = twm_win->icon->width;
+	    rect.height = twm_win->icon->height;
+	    XShapeCombineRectangles (dpy, twm_win->icon->w, ShapeBounding, 0,
+				    0, &rect, 1, ShapeUnion, 0);
+	}
+	XMapSubwindows (dpy, twm_win->icon->w);
+	RedoIconName();
+
+	FreeImage(old_image);
+
+	return 1;
+    }
+    return 0;
 }

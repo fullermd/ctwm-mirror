@@ -169,6 +169,7 @@ struct Image {
 };
 
 extern Image *GetImage (char *name, ColorPair cp);
+extern void FreeImage (Image *image);
 
 extern unsigned char *GetWMPropertyString(Window w, Atom prop);
 extern void FreeWMPropertyString(char *prop);

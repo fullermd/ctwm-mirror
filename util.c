@@ -210,8 +210,6 @@ static Image  *Create3DBoxImage (ColorPair cp);
 static void PaintAllDecoration (void);
 static void PaintTitleButtons (TwmWindow *tmp_win);
 
-static void FreeImage (Image *image);
-
 static void swapshort (char *bp, unsigned n);
 static void swaplong (char *bp, unsigned n);
 
@@ -3384,7 +3382,7 @@ Image *GetImage (char *name, ColorPair cp)
     return (image);
 }
 
-static void FreeImage (Image *image)
+void FreeImage (Image *image)
 {
     Image *im, *im2;
 

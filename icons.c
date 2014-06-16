@@ -524,6 +524,9 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     }
 
 #ifdef EWMH
+    /*
+     * Look to see if there is a _NET_WM_ICON property to provide an icon.
+     */
     if (image == None) {
 	image = EwhmGetIcon(Scr, tmp_win);
 	if (image != None) {
