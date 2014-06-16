@@ -59,7 +59,10 @@
 #ifndef ICONS_H
 #define ICONS_H
 
-typedef enum {match_none, match_class, match_name, match_icon} Matchtype;
+typedef enum {
+    match_none, match_class, match_name, match_icon,
+    match_net_wm_icon
+} Matchtype;
 
 struct Icon
 {

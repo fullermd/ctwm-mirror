@@ -446,6 +446,38 @@ FreeIconRegions()
 }
 #endif
 
+static Image *LookupIconNameOrClass(TwmWindow *tmp_win, Icon *icon, char **pattern)
+{
+    char *icon_name;
+    Image *image;
+
+    icon_name = LookInNameList (Scr->IconNames, tmp_win->icon_name);
+    if (icon_name != NULL) {
+	*pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
+	icon->match = match_icon;
+    }
+    if (icon->match == match_none)
+	icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
+    if ((icon->match == match_none) && (icon_name != NULL)) {
+	*pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
+	icon->match = match_name;
+    }
+    if (icon->match == match_none)
+	icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+    if ((icon->match == match_none) && (icon_name != NULL)) {
+	*pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+	icon->match = match_class;
+    }
+    if ((image  = GetImage (icon_name, icon->iconc)) != None) {
+	icon->image  = image;
+	icon->width  = image->width;
+	icon->height = image->height;
+	tmp_win->forced = TRUE;
+    }
+
+    return image;
+}
+
 void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 {
     unsigned long event_mask;
@@ -488,37 +520,14 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
      * .twmrc file is used
      */
     if (Scr->ForceIcon) {
-	char *icon_name;
-
-	icon_name = LookInNameList (Scr->IconNames, tmp_win->icon_name);
-        if (icon_name != NULL) {
-	    pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
-	    icon->match = match_icon;
-	}
-        if (icon->match == match_none)
-	    icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
-        if ((icon->match == match_none) && (icon_name != NULL)) {
-	    pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
-	    icon->match = match_name;
-	}
-        if (icon->match == match_none)
-	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
-        if ((icon->match == match_none) && (icon_name != NULL)) {
-	    pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
-	    icon->match = match_class;
-	}
-	if ((image  = GetImage (icon_name, icon->iconc)) != None) {
-	    icon->image  = image;
-	    icon->width  = image->width;
-	    icon->height = image->height;
-	    tmp_win->forced = TRUE;
-	}
+	image = LookupIconNameOrClass(tmp_win, icon, &pattern);
     }
 
 #ifdef EWMH
     if (image == None) {
 	image = EwhmGetIcon(Scr, tmp_win);
 	if (image != None) {
+	    icon->match   = match_net_wm_icon;
 	    icon->width   = image->width;
 	    icon->height  = image->height;
 	    icon->image   = image;
@@ -577,34 +586,9 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
      * if ForceIcon is not set
      */
     if (image == None && !Scr->ForceIcon) {
-	char *icon_name;
-
 	icon->match   = match_none;
 	pattern = NULL;
-	icon_name = LookInNameList(Scr->IconNames, tmp_win->icon_name);
-        if (icon_name != NULL) {
-	    pattern =  LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
-	    icon->match = match_icon;
-	}
-        if (icon->match == match_none)
-	    icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
-        if ((icon->match == match_none) && (icon_name != NULL)) {
-	    pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
-	    icon->match = match_name;
-	}
-        if (icon->match == match_none)
-	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
-        if ((icon->match == match_none) && (icon_name != NULL)) {
-	    pattern = LookPatternInList (Scr->IconNames,
-				tmp_win->full_name, &tmp_win->class);
-	    icon->match = match_class;
-	}
-	if ((image = GetImage (icon_name, icon->iconc)) != None) {
-	    icon->image  = image;
-	    icon->width  = image->width;
-	    icon->height = image->height;
-	    tmp_win->forced = TRUE;
-	}
+	image = LookupIconNameOrClass(tmp_win, icon, &pattern);
     }
 
     /* if we still don't have an icon, assign the UnknownIcon */
@@ -766,7 +750,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	}
     }
 
-    if (icon->match != match_none)
+    if (pattern != NULL)
 	AddToList (&tmp_win->iconslist, pattern, (char*) icon);
 
     tmp_win->icon = icon;
