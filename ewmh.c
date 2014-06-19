@@ -585,12 +585,8 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
      *
      * Approach wanted size from both directions and at the end,
      * choose the "nearest".
-     * 
      */
-    int wanted_width = 48;
-    int wanted_height = 48;
-
-    int wanted_area = wanted_width * wanted_height;
+    int wanted_area = Scr->PreferredIconWidth * Scr->PreferredIconHeight;
     int smaller = 0, larger = 999999;
 
     int offset = 0;

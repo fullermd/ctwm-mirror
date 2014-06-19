@@ -238,6 +238,10 @@ struct ScreenInfo
     short TitleJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
     short IconifyStyle;         /* ICONIFY_* */
     int   MaxIconTitleWidth;	/* */
+#ifdef EWMH
+    int PreferredIconWidth;	/* Desired icon size: width */
+    int PreferredIconHeight;	/* Desired icon size: height */
+#endif
 
     Cursor TitleCursor;		/* title bar cursor */
     Cursor FrameCursor;		/* frame cursor */

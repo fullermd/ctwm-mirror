@@ -1162,6 +1162,8 @@ static void InitVariables(void)
     Scr->AlwaysSqueezeToGravity = FALSE;
     Scr->NoWarpToMenuTitle = FALSE;
     Scr->DontToggleWorkspaceManagerState = False;
+    Scr->PreferredIconWidth = 48;
+    Scr->PreferredIconHeight = 48;
 
     Scr->BorderTop    = 0;
     Scr->BorderBottom = 0;

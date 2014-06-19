@@ -652,6 +652,7 @@ typedef struct _TwmKeyword {
 #define kws_WMgrButtonStyle		17
 #define kws_WorkSpaceFont               18
 #define kws_IconifyStyle                19
+#define kws_IconSize                    20
 
 #define kwss_RandomPlacement		1
 
@@ -946,6 +947,7 @@ static TwmKeyword keytable[] = {
     { "iconregionalignement",	SKEYWORD, kws_IconRegionAlignement },
     { "iconregionjustification",SKEYWORD, kws_IconRegionJustification },
     { "icons",			ICONS, 0 },
+    { "iconsize",		SKEYWORD, kws_IconSize },
     { "ignorecaseinmenuselection",	KEYWORD, kw0_IgnoreCaseInMenuSelection },
     { "ignorelockmodifier",	KEYWORD, kw0_IgnoreLockModifier },
     { "ignoremodifier",		IGNOREMODIFIER, 0 },
@@ -1607,6 +1609,18 @@ int do_string_keyword (int keyword, char *s)
 	  if (strcmp (s,   "sweep") == 0) Scr->IconifyStyle = ICONIFY_SWEEP;
 	  return 1;
 	}
+
+#ifdef EWMH
+      case kws_IconSize:
+	if (sscanf(s, "%dx%d", &Scr->PreferredIconWidth, &Scr->PreferredIconHeight) == 2) {
+	    /* ok */
+	} else if (sscanf(s, "%d", &Scr->PreferredIconWidth) == 1) {
+	    Scr->PreferredIconHeight = Scr->PreferredIconWidth;
+	} else {
+	    Scr->PreferredIconHeight = Scr->PreferredIconWidth = 48;
+	}
+	return 1;
+#endif
     }
     return 0;
 }
