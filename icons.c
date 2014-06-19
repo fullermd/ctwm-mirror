@@ -816,9 +816,8 @@ void DeleteIcon(Icon *icon)
     if (icon->w && !icon->w_not_ours) {
 	XDestroyWindow(dpy, icon->w);
     }
-    if (icon->match == match_icon_pixmap_hint) {
-	free(icon->image);	/* don't XFreePixmap(): not our Pixmaps */
-    } else if (icon->match == match_net_wm_icon) {
+    if (icon->match == match_icon_pixmap_hint ||
+        icon->match == match_net_wm_icon) {
 	FreeImage(icon->image);
     }
     /* match_list ands match_unknown_default need not be freed */
@@ -850,6 +849,7 @@ void DeleteIconsList(TwmWindow *tmp_win)
 	if (icon != tmp_win->icon) {
 	    DeleteIcon(icon);
 	}
+	free(nptr->name);
 	free((char *) nptr);
 	nptr = next;
     }

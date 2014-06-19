@@ -62,10 +62,10 @@
 /* Where dit the Image for the Icon come from? */
 typedef enum {
     match_none,
-    match_list,			/* shared Image */
-    match_icon_pixmap_hint,	/* Pixmap not ours, but Image is */
-    match_net_wm_icon,
-    match_unknown_default,	/* shared Image */
+    match_list,			/* shared Image: iconslist and Scr->ImageCache */
+    match_icon_pixmap_hint,	/* Pixmap copied from IconPixmapHint */
+    match_net_wm_icon,		/* Pixmap created from NET_WM_ICON */
+    match_unknown_default,	/* shared Image: Scr->UnknownImage */
 } Matchtype;
 
 struct Icon

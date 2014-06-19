@@ -281,6 +281,7 @@ void FreeList(name_list **list)
     for (nptr = *list; nptr != NULL; )
     {
 	tmp = nptr->next;
+	free(nptr->name);
 	free((char *) nptr);
 	nptr = tmp;
     }
