@@ -59,9 +59,13 @@
 #ifndef ICONS_H
 #define ICONS_H
 
+/* Where dit the Image for the Icon come from? */
 typedef enum {
-    match_none, match_class, match_name, match_icon,
-    match_net_wm_icon
+    match_none,
+    match_list,			/* shared Image */
+    match_icon_pixmap_hint,	/* Pixmap not ours, but Image is */
+    match_net_wm_icon,
+    match_unknown_default,	/* shared Image */
 } Matchtype;
 
 struct Icon
@@ -81,9 +85,10 @@ struct Icon
     int		height;         /* height of the icon bitmap */
     Pixel	border;		/* border color */
     ColorPair	iconc;
-    Bool	has_title, title_shrunk;
     int		border_width;
     struct IconRegion	*ir;
+    short	has_title, title_shrunk;
+    short	w_not_ours;     /* Icon.w comes from IconWindowHint */
 };
 
 struct IconRegion
@@ -113,6 +118,7 @@ extern name_list **AddIconRegion(char *geom, int grav1, int grav2,
 				 int stepx, int stepy,
 				 char *ijust, char *just, char *align);
 extern void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y);
+extern void DeleteIcon(Icon *icon);
 extern void DeleteIconsList(TwmWindow *tmp_win);
 extern void ShrinkIconTitle (TwmWindow *tmp_win);
 extern void ExpandIconTitle (TwmWindow *tmp_win);

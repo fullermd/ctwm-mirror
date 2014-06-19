@@ -741,6 +741,11 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     int rowbytes = (width + 7) / 8;
     unsigned char *maskbits = (unsigned char *) calloc (height, rowbytes);
 
+    /*
+     * Copy all ARGB pixels to the pixmap (the RGB part), and the bitmap (the
+     * Alpha, or opaqueness part). If any pixels are transparent, we're going
+     * to need a shape.
+     */
     for (y = 0; y < height; y++) {
 	for (x = 0; x < width; x++) {
 	    unsigned long argb = prop[i++];

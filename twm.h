@@ -363,7 +363,6 @@ struct TwmWindow
     short auto_raise;		/* should we auto-raise this window ? */
     short auto_lower;		/* should we auto-lower this window ? */
     short forced;		/* has had an icon forced upon it */
-    short icon_not_ours;	/* icon pixmap or window supplied to us */
     short icon_moved;		/* user explicitly moved the icon */
     short highlight;		/* should highlight this window */
     short stackmode;		/* honor stackmode requests */

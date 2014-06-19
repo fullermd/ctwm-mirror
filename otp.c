@@ -983,6 +983,29 @@ void OtpAdd (TwmWindow *twm_win, WinType wintype)
     OtpCheckConsistency();
 }
 
+void OtpReassignIcon (TwmWindow *twm_win, Icon *old_icon)
+{
+    if (old_icon != NULL) {
+	/* Transfer OWL to new Icon */
+	Icon *new_icon = twm_win->icon;
+	if (new_icon != NULL) {
+	    new_icon->otp = old_icon->otp;
+	    old_icon->otp = NULL;
+	}
+    } else {
+	/* Create a new OWL for this Icon */
+	OtpAdd (twm_win, IconWin);
+    }
+}
+
+void OtpFreeIcon (TwmWindow *twm_win)
+{
+    /* Remove the icon's OWL, if any */
+    Icon *cur_icon = twm_win->icon;
+    if (cur_icon != NULL) {
+	OtpRemove(twm_win, IconWin);
+    }
+}
 
 name_list **OtpScrSwitchingL (ScreenInfo *scr, WinType wintype)
 {

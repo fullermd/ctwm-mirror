@@ -2728,10 +2728,10 @@ static void PaintAllDecoration (void)
 	}
 	else
 	if ((tmp_win->icon_on == TRUE)  &&
-		!tmp_win->icon_not_ours &&
 		!Scr->NoIconTitlebar    &&
 		tmp_win->icon           &&
 		tmp_win->icon->w        &&
+		!tmp_win->icon->w_not_ours &&
 		! LookInList (Scr->NoIconTitle, tmp_win->full_name, &tmp_win->class)) {
 	    PaintIcon (tmp_win);
 	}

@@ -1659,7 +1659,7 @@ void HandlePropertyNotify(void)
 		 * Now, if the old window isn't ours, unmap it, otherwise
 		 * just get rid of it completely.
 		 */
-		if (Tmp_win->icon_not_ours) {
+		if (Tmp_win->icon->w_not_ours) {
 		    if (Tmp_win->icon->w != Tmp_win->wmhints->icon_window)
 			XUnmapWindow(dpy, Tmp_win->icon->w);
 		} else
@@ -1669,7 +1669,7 @@ void HandlePropertyNotify(void)
 		 * The new icon window isn't our window, so note that fact
 		 * so that we don't treat it as ours.
 		 */
-		Tmp_win->icon_not_ours = TRUE;
+		Tmp_win->icon->w_not_ours = TRUE;
 
 		/*
 		 * Now make the new window the icon window for this window,
@@ -1826,10 +1826,14 @@ void HandlePropertyNotify(void)
 
 static void RedoIcon(void)
 {
-    Icon *icon;
+    Icon *icon, *old_icon;
     char *pattern;
 
-    if (Tmp_win->icon_not_ours) {
+    old_icon = Tmp_win->icon;
+
+    if (old_icon && (
+	     old_icon->w_not_ours ||
+	     old_icon->match != match_list)) {
 	RedoIconName ();
 	return;
     }
@@ -1858,12 +1862,14 @@ static void RedoIcon(void)
 	    IconDown (Tmp_win);
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
 	    Tmp_win->icon = icon;
+	    OtpReassignIcon(Tmp_win, old_icon);
 	    IconUp (Tmp_win);
 	    OtpRaise(Tmp_win, IconWin);
 	    XMapWindow (dpy, Tmp_win->icon->w);
         }
 	else {
 	    Tmp_win->icon = icon;
+	    OtpReassignIcon(Tmp_win, old_icon);
 	}
 	RedoIconName ();
     }
@@ -1871,11 +1877,23 @@ static void RedoIcon(void)
 	if (Tmp_win->icon_on && visible (Tmp_win)) {
 	    IconDown (Tmp_win);
 	    if (Tmp_win->icon && Tmp_win->icon->w) XUnmapWindow (dpy, Tmp_win->icon->w);
+	    /*
+	     * If the icon name/class was found on one of the above lists,
+	     * the call to CreateIconWindow() will find it again there
+	     * and keep track of it on Tmp_win->iconslist for eventual
+	     * deallocation. (It is now checked that the current struct
+	     * Icon is also already on that list)
+	     */
+	    OtpFreeIcon(Tmp_win);
+	    int saveForceIcon = Scr->ForceIcon;
+	    Scr->ForceIcon = True;
 	    CreateIconWindow (Tmp_win, -100, -100);
+	    Scr->ForceIcon = saveForceIcon;
 	    OtpRaise(Tmp_win, IconWin);
  	    XMapWindow (dpy, Tmp_win->icon->w);
 	}
 	else {
+	    OtpFreeIcon(Tmp_win);
 	    Tmp_win->icon = (Icon*) 0;
 	    WMapUpdateIconName (Tmp_win);
 	}
@@ -1911,7 +1929,7 @@ void RedoIconName(void)
 
     if (!Tmp_win->icon  || !Tmp_win->icon->w) goto wmapupd;
 
-    if (Tmp_win->icon_not_ours) goto wmapupd;
+    if (Tmp_win->icon->w_not_ours) goto wmapupd;
 
     XmbTextExtents(Scr->IconFont.font_set,
 		   Tmp_win->icon_name, strlen(Tmp_win->icon_name),
@@ -2360,12 +2378,13 @@ void HandleDestroyNotify(void)
      * Icons are not child windows.
      */
     XDestroyWindow(dpy, Tmp_win->frame);
+    DeleteIconsList (Tmp_win);					/* 14 */
     if (Tmp_win->icon) {
-	if (Tmp_win->icon->w && !Tmp_win->icon_not_ours) {
-	    XDestroyWindow(dpy, Tmp_win->icon->w);
+	Icon *icon = Tmp_win->icon;
+	if (icon->w && !icon->w_not_ours) {
 	    IconDown (Tmp_win);
 	}
-	free (Tmp_win->icon);
+	DeleteIcon(icon);
 	Tmp_win->icon = NULL;
     }
     Tmp_win->occupation = 0;
@@ -2398,7 +2417,6 @@ void HandleDestroyNotify(void)
 	Tmp_win->squeeze_info = NULL;
     }
     DeleteHighlightWindows(Tmp_win);				/* 13 */
-    DeleteIconsList (Tmp_win);					/* 14 */
 
     free((char *)Tmp_win);
     Tmp_win = NULL;

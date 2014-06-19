@@ -448,36 +448,41 @@ FreeIconRegions()
 
 static Image *LookupIconNameOrClass(TwmWindow *tmp_win, Icon *icon, char **pattern)
 {
-    char *icon_name;
+    char *icon_name = NULL;
     Image *image;
+    int matched = match_none;
 
     icon_name = LookInNameList (Scr->IconNames, tmp_win->icon_name);
     if (icon_name != NULL) {
 	*pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
-	icon->match = match_icon;
+	matched = match_list;
     }
 
-    if (icon->match == match_none) {
+    if (matched == match_none) {
 	icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
 	if (icon_name != NULL) {
 	    *pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
-	    icon->match = match_name;
+	    matched = match_list;
 	}
     }
 
-    if (icon->match == match_none) {
+    if (matched == match_none) {
 	icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
 	if (icon_name != NULL) {
 	    *pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
-	    icon->match = match_class;
+	    matched = match_list;
 	}
     }
 
     if ((image  = GetImage (icon_name, icon->iconc)) != None) {
+	icon->match  = matched;
 	icon->image  = image;
 	icon->width  = image->width;
 	icon->height = image->height;
 	tmp_win->forced = TRUE;
+    } else {
+	icon->match = match_none;
+	*pattern = NULL;
     }
 
     return image;
@@ -500,6 +505,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     icon->border	= Scr->IconBorderColor;
     icon->iconc.fore	= Scr->IconC.fore;
     icon->iconc.back	= Scr->IconC.back;
+    icon->title_shrunk  = False;
 
     GetColorFromList(Scr->IconBorderColorL, tmp_win->full_name, &tmp_win->class,
 	&icon->border);
@@ -516,7 +522,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     icon->ir      = (IconRegion*) 0;
 
     tmp_win->forced = FALSE;
-    tmp_win->icon_not_ours = FALSE;
+    icon->w_not_ours = FALSE;
 
     pattern = NULL;
 
@@ -569,6 +575,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 
 	    icon->width   = image->width;
 	    icon->height  = image->height;
+	    icon->match   = match_icon_pixmap_hint;
 
 	    if ((tmp_win->wmhints->flags & IconMaskHint) &&
 		XGetGeometry(dpy, tmp_win->wmhints->icon_mask,
@@ -594,8 +601,6 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
      * if ForceIcon is not set
      */
     if (image == None && !Scr->ForceIcon) {
-	icon->match   = match_none;
-	pattern = NULL;
 	image = LookupIconNameOrClass(tmp_win, icon, &pattern);
     }
 
@@ -603,6 +608,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     if (image == None && Scr->UnknownImage != None)
     {
 	image = Scr->UnknownImage;
+	icon->match   = match_unknown_default;
 	icon->width   = image->width;
 	icon->height  = image->height;
 	icon->image   = image;
@@ -673,8 +679,8 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	}
 	else
 	{
-	    tmp_win->icon_not_ours = TRUE;
 	    image = None;
+	    icon->w_not_ours = TRUE;
 	    icon->width  = icon->w_width;
 	    icon->height = icon->w_height;
 	    icon->image  = image;
@@ -705,7 +711,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	event_mask |= EnterWindowMask | LeaveWindowMask;
     event_mask |= KeyPressMask | ButtonPressMask | ButtonReleaseMask;
 
-    if (tmp_win->icon_not_ours) {
+    if (icon->w_not_ours) {
 	XWindowAttributes wattr;
 
         XGetWindowAttributes(dpy, icon->w, &wattr);
@@ -805,13 +811,49 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
     MaybeAnimate = True;
 }
 
+void DeleteIcon(Icon *icon)
+{
+    if (icon->w && !icon->w_not_ours) {
+	XDestroyWindow(dpy, icon->w);
+    }
+    if (icon->match == match_icon_pixmap_hint) {
+	free(icon->image);	/* don't XFreePixmap(): not our Pixmaps */
+    } else if (icon->match == match_net_wm_icon) {
+	FreeImage(icon->image);
+    }
+    /* match_list ands match_unknown_default need not be freed */
+    free(icon);
+}
+
+/*
+ * Delete TwmWindow.iconslist.
+ * Call it before deleting TwmWindow.icon, since we need to check
+ * that we're not deleting that Icon.
+ */
 void DeleteIconsList(TwmWindow *tmp_win)
 {
     /*
      * Only the list itself needs to be freed, since the pointers it
      * contains point into various lists that belong to Scr.
+     *
+     * Rhialto: Hmmmm not quite sure about that! CreateIconWindow() above
+     * always allocates a struct Icon, and doesn't attach it to Scr...
+     * It is probably correct for the Image pointers inside those Icons though.
      */
-    FreeList(&tmp_win->iconslist);
+    name_list *nptr;
+    name_list *next;
+
+    for (nptr = tmp_win->iconslist; nptr != NULL; )
+    {
+	next = nptr->next;
+	Icon *icon = (Icon *)nptr->ptr;
+	if (icon != tmp_win->icon) {
+	    DeleteIcon(icon);
+	}
+	free((char *) nptr);
+	nptr = next;
+    }
+    tmp_win->iconslist = NULL;
 }
 
 void ShrinkIconTitle (TwmWindow *tmp_win)

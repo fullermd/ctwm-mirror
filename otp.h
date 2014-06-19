@@ -69,6 +69,9 @@ extern void OtpToggleSwitching(TwmWindow*, WinType);
 extern void OtpRecomputeValues(TwmWindow*);
 extern void OtpForcePlacement(TwmWindow*, int, TwmWindow*);
 
+extern void OtpReassignIcon (TwmWindow *twm_win, Icon *old_icon);
+extern void OtpFreeIcon (TwmWindow *twm_win);
+
 /* functions to manage the preferences. The second arg specifies icon prefs */
 extern void OtpScrInitData(ScreenInfo*);
 extern name_list **OtpScrSwitchingL(ScreenInfo*, WinType);
