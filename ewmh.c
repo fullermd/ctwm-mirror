@@ -156,9 +156,9 @@ static void GenerateTimestamp(ScreenInfo *scr)
     }
 
     if (found) {
-#if DEBUG_EWMH
+#ifdef DEBUG_EWMH
 	fprintf(stderr, "GenerateTimestamp: time = %ld, timeout left = %d\n", event.xproperty.time, timeout);
-#endif
+#endif /* DEBUG_EWMH */
 	if (lastTimestamp < event.xproperty.time) {
 	    lastTimestamp = event.xproperty.time;
 	}
@@ -181,17 +181,10 @@ static int EwmhReplaceWM(ScreenInfo *scr)
     snprintf(atomname, sizeof(atomname), "WM_S%d", scr->screen);
     wmAtom = XInternAtom(dpy, atomname, False);
 
-#if DEBUG_EWMH
-    fprintf(stderr, "EwmhReplaceWM: Atom %s = %d\n", atomname, (int)wmAtom);
-#endif
     selectionOwner = XGetSelectionOwner(dpy, wmAtom);
-    fprintf(stderr, "EwmhReplaceWM: selectionOwner = %x\n", (unsigned)selectionOwner);
     if (selectionOwner == scr->icccm_Window) {
 	selectionOwner = None;
     }
-#if DEBUG_EWMH
-    fprintf(stderr, "EwmhReplaceWM: selectionOwner = %x\n", (unsigned)selectionOwner);
-#endif
 
     if (selectionOwner != None) {
 	XErrorHandler oldHandler;
@@ -221,9 +214,6 @@ static int EwmhReplaceWM(ScreenInfo *scr)
 	}
     }
 
-#if DEBUG_EWMH
-    fprintf(stderr, "EwmhReplaceWM: call XSetSelectionOwner\n");
-#endif
     XSetSelectionOwner(dpy, wmAtom, scr->icccm_Window, CurrentTime);
 
     if (XGetSelectionOwner(dpy, wmAtom) != scr->icccm_Window) {
@@ -231,9 +221,6 @@ static int EwmhReplaceWM(ScreenInfo *scr)
 		scr->screen);
 	return False;
     }
-#if DEBUG_EWMH
-    fprintf(stderr, "EwmhReplaceWM: we are XSetSelectionOwner\n");
-#endif
 
     /*
      * If there was a previous selection owner, wait for it
@@ -288,7 +275,7 @@ int EwmhInitScreenEarly(ScreenInfo *scr)
 {
     XSetWindowAttributes attrib;
 
-#if DEBUG_EWMH
+#ifdef DEBUG_EWMH
     fprintf(stderr, "EwmhInitScreenEarly: XCreateWindow\n");
 #endif
     attrib.event_mask = PropertyChangeMask;
@@ -303,20 +290,20 @@ int EwmhInitScreenEarly(ScreenInfo *scr)
     XMapWindow(dpy, scr->icccm_Window);
     XLowerWindow(dpy, scr->icccm_Window);
 
-#if DEBUG_EWMH
+#ifdef DEBUG_EWMH
     fprintf(stderr, "EwmhInitScreenEarly: call EwmhReplaceWM\n");
 #endif
     if (!EwmhReplaceWM(scr)) {
 	XDestroyWindow(dpy, scr->icccm_Window);
 	scr->icccm_Window = None;
 
-#if DEBUG_EWMH
+#ifdef DEBUG_EWMH
 	fprintf(stderr, "EwmhInitScreenEarly: return False\n");
 #endif
 	return False;
     }
 
-#if DEBUG_EWMH
+#ifdef DEBUG_EWMH
     fprintf(stderr, "EwmhInitScreenEarly: return True\n");
 #endif
     return True;
@@ -493,7 +480,7 @@ void EwmhTerminate(void)
 
 void EwhmSelectionClear(XSelectionClearEvent *sev)
 {
-#if DEBUG_EWMH
+#ifdef DEBUG_EWMH
     fprintf(stderr, "sev->window = %x\n", (unsigned)sev->window);
 #endif
     Done(0);
@@ -578,7 +565,9 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	return NULL;
     }
     
+#ifdef DEBUG_EWMH
     fprintf(stderr, "_NET_WM_ICON data fetched\n");
+#endif
     /*
      * Usually the icons are square, but that is not a rule.
      * So we measure the area instead.
@@ -600,34 +589,43 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	int h = prop[i++];
 	int size = w * h;
 
+#ifdef DEBUG_EWMH
 	fprintf(stderr, "[%d+%d] w=%d h=%d\n", fetch_offset, offset, w, h);
+#endif
 
 	int area = w * h;
 
 	if (area == wanted_area) {
+#ifdef DEBUG_EWMH
 	    fprintf(stderr, "exact match [%d+%d=%d] w=%d h=%d\n", fetch_offset, offset, fetch_offset + offset, w, h);
+#endif /* DEBUG_EWMH */
 	    smaller_offset = fetch_offset + offset;
 	    smaller = area;
 	    larger_offset = -1;
 	    break;
 	} else if (area < wanted_area) {
 	    if (area > smaller) {
+#ifdef DEBUG_EWMH
 		fprintf(stderr, "increase smaller, was [%d]\n", smaller_offset);
+#endif /* DEBUG_EWMH */
 		smaller = area;
 		smaller_offset = fetch_offset + offset;
 	    }
 	} else { /* area > wanted_area */
 	    if (area < larger) {
+#ifdef DEBUG_EWMH
 		fprintf(stderr, "decrease larger, was [%d]\n", larger_offset);
+#endif /* DEBUG_EWMH */
 		larger = area;
 		larger_offset = fetch_offset + offset;
 	    }
 	}
 
 	if (i + size + 2 > nitems) {
+#ifdef DEBUG_EWMH
 	    fprintf(stderr, "not enough data: %d + %d > %ld \n", i, size, nitems);
+#endif /* DEBUG_EWMH */
 
-#if 1
 	    if (i + size + 2 <= nitems + bytes_after / 4) {
 		/* we can fetch some more... */
 		XFree(prop);
@@ -641,7 +639,6 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 		i = 0;
 		continue;
 	    }
-#endif
 	    break;
 	}
 	i += size;
@@ -655,7 +652,9 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     if (smaller_offset >= 0) {
 	if (larger_offset >= 0) {
 	    /* choose the nearest */
+#ifdef DEBUG_EWMH
 	    fprintf(stderr, "choose nearest %d %d\n", smaller, larger);
+#endif /* DEBUG_EWMH */
 	    if ((double)larger / wanted_area > (double)wanted_area / smaller) {
 		offset = smaller_offset;
 		area = smaller;
@@ -665,18 +664,24 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	    }
 	} else {
 	    /* choose smaller */
+#ifdef DEBUG_EWMH
 	    fprintf(stderr, "choose smaller (only) %d\n", smaller);
+#endif /* DEBUG_EWMH */
 	    offset = smaller_offset;
 	    area = smaller;
 	}
     } else if (larger_offset >= 0) {
 	/* choose larger */
+#ifdef DEBUG_EWMH
 	fprintf(stderr, "choose larger (only) %d\n", larger);
+#endif /* DEBUG_EWMH */
 	offset = larger_offset;
 	area = larger;
     } else {
 	/* no icons found at all? */
+#ifdef DEBUG_EWMH
 	fprintf(stderr, "nothing to choose from\n");
+#endif /* DEBUG_EWMH */
 	XFree(prop);
 	return NULL;
     }
@@ -685,13 +690,17 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
      * Now fetch the pixels.
      */
 
+#ifdef DEBUG_EWMH
     fprintf(stderr, "offset = %d fetch_offset = %d\n", offset, fetch_offset);
     fprintf(stderr, "offset + 2 + area = %d fetch_offset + nitems = %ld\n", offset + 2 + area, fetch_offset + nitems);
+#endif /* DEBUG_EWMH */
     if (offset < fetch_offset ||
 	offset + 2 + area > fetch_offset + nitems) {
 	XFree(prop);
 	fetch_offset = offset;
+#ifdef DEBUG_EWMH
 	fprintf(stderr, "refetching from %d\n", fetch_offset);
+#endif /* DEBUG_EWMH */
 	if (XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
 		fetch_offset, 2 + area, False, XA_CARDINAL, 
 		&actual_type, &actual_format, &nitems,
@@ -703,7 +712,9 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     i = offset - fetch_offset;
     int width = prop[i++];
     int height = prop[i++];
+#ifdef DEBUG_EWMH
     fprintf(stderr, "Chosen [%d] w=%d h=%d area=%d\n", offset, width, height, area);
+#endif /* DEBUG_EWMH */
     assert (width * height == area);
 
     XImage *ximage = NULL;
@@ -723,12 +734,16 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	ximage = XCreateImage (dpy, CopyFromParent, scr->d_depth, ZPixmap, 0,
 		(char *) buffer_32bpp, width, height, 32, width * 4);
     } else {
+#ifdef DEBUG_EWMH
 	fprintf (stderr, "Screen unsupported depth for 32-bit icon: %d\n", scr->d_depth);
+#endif /* DEBUG_EWMH */
 	XFree(prop);
 	return NULL;
     }
     if (ximage == NULL) {
+#ifdef DEBUG_EWMH
 	fprintf (stderr, "cannot create image for icon\n");
+#endif /* DEBUG_EWMH */
 	XFree(prop);
 	return NULL;
     }
@@ -789,13 +804,17 @@ int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 	XSetWindowAttributes attributes;	/* attributes for create windows */
 	Icon *icon = twm_win->icon;
 
+#ifdef DEBUG_EWMH
 	fprintf(stderr, "EwmhHandlePropertyNotify: NET_WM_ICON\n");
+#endif /* DEBUG_EWMH */
 	/*
 	 * If there is no icon yet, we'll look at this property
 	 * later, if and when we do create an icon.
 	 */
 	if (!icon || icon->match != match_net_wm_icon) {
+#ifdef DEBUG_EWMH
 	    fprintf(stderr, "no icon, or not match_net_wm_icon\n");
+#endif /* DEBUG_EWMH */
 	    return 1;
 	}
 
