@@ -893,6 +893,18 @@ to use  the icon bitmap in the file \(oqxterm.icon\(cq.If \fBForceIcons\fP is
 specified, this bitmap will be used even if the client has requested its
 own icon pixmap.
 
+.IP "\fBIconSize\fP \fIstring\fP" 8
+(Only with EWMH support)
+string is of the form
+"\fIwidth\fPx\fIheight\fP" 
+or
+"\fIsize\fP"
+for a square size.
+This indicates the preferred size of icons selected from the EWMH window
+property _NET_WM_ICON.
+If an icon with the exact size is not available, one with the nearest (area)
+size will be chosen.
+
 .IP "\fBIgnoreCaseInMenuSelection\fP" 8
 Used when moving the pointer inside a menu with the keyboard. When you
 type a letter, the pointer goes to the next entry beginning with this
