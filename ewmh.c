@@ -369,7 +369,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 
     if (scr->workSpaceManagerActive) {
 	/* TODO: this is for the first Virtual Screen only... */
-	//data[0] = scr->workSpaceMgr.workSpaceWindowList->currentwspc->number;
+	/*data[0] = scr->workSpaceMgr.workSpaceWindowList->currentwspc->number; */
 	data[0] = 0;
     } else {
 	data[0] = 0;
@@ -552,6 +552,25 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     unsigned long nitems, bytes_after;
     unsigned long *prop;
 
+    int wanted_area;
+    int smaller, larger;
+    int offset;
+    int smaller_offset, larger_offset;
+    int i;
+
+    int area, width, height;
+
+    XImage *ximage;
+    void (*store_data) (int w, int x, int y, int argb);
+    int x, y, transparency;
+    int rowbytes;
+    unsigned char *maskbits;
+
+    GC gc;
+    Pixmap pixret;
+    Pixmap mask;
+    Image *image;
+
     fetch_offset = 0;
     if (XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
 	    fetch_offset, 8*1024, False, XA_CARDINAL, 
@@ -575,12 +594,13 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
      * Approach wanted size from both directions and at the end,
      * choose the "nearest".
      */
-    int wanted_area = Scr->PreferredIconWidth * Scr->PreferredIconHeight;
-    int smaller = 0, larger = 999999;
-
-    int offset = 0;
-    int smaller_offset = -1, larger_offset = -1;
-    int i = 0;
+    wanted_area = Scr->PreferredIconWidth * Scr->PreferredIconHeight;
+    smaller = 0;
+    larger = 999999;
+    offset = 0;
+    smaller_offset = -1;
+    larger_offset = -1;
+    i = 0;
 
     for (;;) {
 	offset = i;
@@ -589,11 +609,12 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	int h = prop[i++];
 	int size = w * h;
 
+	area = w * h;
+
 #ifdef DEBUG_EWMH
 	fprintf(stderr, "[%d+%d] w=%d h=%d\n", fetch_offset, offset, w, h);
 #endif
 
-	int area = w * h;
 
 	if (area == wanted_area) {
 #ifdef DEBUG_EWMH
@@ -647,7 +668,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     /*
      * Choose which icon approximates our desired size best.
      */
-    int area = 0;
+    area = 0;
 
     if (smaller_offset >= 0) {
 	if (larger_offset >= 0) {
@@ -710,15 +731,14 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     }
 
     i = offset - fetch_offset;
-    int width = prop[i++];
-    int height = prop[i++];
+    width = prop[i++];
+    height = prop[i++];
 #ifdef DEBUG_EWMH
     fprintf(stderr, "Chosen [%d] w=%d h=%d area=%d\n", offset, width, height, area);
 #endif /* DEBUG_EWMH */
     assert (width * height == area);
 
-    XImage *ximage = NULL;
-    void (*store_data) (int w, int x, int y, int argb);
+    ximage = NULL;
 
     /** XXX sort of duplicated from util.c:LoadJpegImage() */
     if (scr->d_depth == 16) {
@@ -748,9 +768,9 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	return NULL;
     }
 
-    int x, y, transparency = 0;
-    int rowbytes = (width + 7) / 8;
-    unsigned char *maskbits = (unsigned char *) calloc (height, rowbytes);
+    transparency = 0;
+    rowbytes = (width + 7) / 8;
+    maskbits = (unsigned char *) calloc (height, rowbytes);
 
     /*
      * Copy all ARGB pixels to the pixmap (the RGB part), and the bitmap (the
@@ -760,7 +780,6 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     for (y = 0; y < height; y++) {
 	for (x = 0; x < width; x++) {
 	    unsigned long argb = prop[i++];
-	    //fprintf (stderr, "[%d] (%d,%d) argb=%08lX\n", offset - 1, x, y, argb);
 	    store_data(width, x, y, argb);
 	    int opaque = ((argb >> 24) & 0xFF) >= 0x80; /* arbitrary cutoff */
 	    if (opaque) {
@@ -771,20 +790,20 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	}
     }
 
-    GC gc = DefaultGC (dpy, scr->screen);
-    Pixmap pixret = XCreatePixmap (dpy, scr->Root, width, height, scr->d_depth);
+    gc = DefaultGC (dpy, scr->screen);
+    pixret = XCreatePixmap (dpy, scr->Root, width, height, scr->d_depth);
     XPutImage (dpy, pixret, gc, ximage, 0, 0, 0, 0, width, height);
     XDestroyImage (ximage); /* also frees buffer_{16,32}bpp */
     ximage = NULL;
 
-    Pixmap mask = None;
+    mask = None;
     if (transparency) {
 	mask = XCreatePixmapFromBitmapData(dpy, scr->Root, (char *)maskbits,
 		    width, height, 1, 0, 1);
     }
     free(maskbits);
 
-    Image *image = calloc(1, sizeof(Image));
+    image = calloc(1, sizeof(Image));
 
     image->width  = width;
     image->height = height;
