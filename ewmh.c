@@ -412,8 +412,9 @@ void EwmhInitScreenLate(ScreenInfo *scr)
  * The idea seems to be that the virtual roots as used for workspaces (desktops
  * in EWMH terminology) are only mapped one at a time.
  */
-void EwmhInitVirtualRoots(ScreenInfo *scr) { int numVscreens =
-    scr->numVscreens;
+void EwmhInitVirtualRoots(ScreenInfo *scr)
+{
+    int numVscreens = scr->numVscreens;
 
     if (numVscreens > 1) {
 	long *data;
