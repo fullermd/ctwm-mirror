@@ -76,6 +76,8 @@ static Atom NET_WM_ICON;
 static Atom NET_WM_NAME;
 static Atom UTF8_STRING;
 
+static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width, int height);
+
 static void SendPropertyMessage(Window to, Window about,
 	Atom messagetype,
 	long l0, long l1, long l2, long l3, long l4,
@@ -508,22 +510,6 @@ int EwmhClientMessage(XClientMessageEvent *msg)
     return False;
 }
 
-uint16_t *buffer_16bpp;
-uint32_t *buffer_32bpp;
-
-static void convert_for_16 (int w, int x, int y, int argb)
-{
-    int r = (argb >> 16) & 0xFF;
-    int g = (argb >>  8) & 0xFF;
-    int b = (argb >>  0) & 0xFF;
-    buffer_16bpp [y * w + x] = ((r >> 3) << 11) + ((g >> 2) << 5) + (b >> 3);
-}
-
-static void convert_for_32 (int w, int x, int y, int argb)
-{
-    buffer_32bpp [y * w + x] = argb & 0x00FFFFFF;
-}
-
 /*
  * The format of the _NET_WM_ICON property is
  *
@@ -559,17 +545,6 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     int i;
 
     int area, width, height;
-
-    XImage *ximage;
-    void (*store_data) (int w, int x, int y, int argb);
-    int x, y, transparency;
-    int rowbytes;
-    unsigned char *maskbits;
-
-    GC gc;
-    Pixmap pixret;
-    Pixmap mask;
-    Image *image;
 
     fetch_offset = 0;
     if (XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
@@ -738,6 +713,43 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 #endif /* DEBUG_EWMH */
     assert (width * height == area);
 
+    Image *image = ExtractIcon(scr, &prop[i], width, height);
+
+    XFree(prop);
+
+    return image;
+}
+
+static uint16_t *buffer_16bpp;
+static uint32_t *buffer_32bpp;
+
+static void convert_for_16 (int w, int x, int y, int argb)
+{
+    int r = (argb >> 16) & 0xFF;
+    int g = (argb >>  8) & 0xFF;
+    int b = (argb >>  0) & 0xFF;
+    buffer_16bpp [y * w + x] = ((r >> 3) << 11) + ((g >> 2) << 5) + (b >> 3);
+}
+
+static void convert_for_32 (int w, int x, int y, int argb)
+{
+    buffer_32bpp [y * w + x] = argb & 0x00FFFFFF;
+}
+
+static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width, int height)
+{
+    XImage *ximage;
+    void (*store_data) (int w, int x, int y, int argb);
+    int x, y, transparency;
+    int rowbytes;
+    unsigned char *maskbits;
+
+    GC gc;
+    Pixmap pixret;
+    Pixmap mask;
+    Image *image;
+    int i;
+
     ximage = NULL;
 
     /** XXX sort of duplicated from util.c:LoadJpegImage() */
@@ -777,6 +789,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
      * Alpha, or opaqueness part). If any pixels are transparent, we're going
      * to need a shape.
      */
+    i = 0;
     for (y = 0; y < height; y++) {
 	for (x = 0; x < width; x++) {
 	    unsigned long argb = prop[i++];
@@ -810,8 +823,6 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
     image->pixmap = pixret;
     image->mask   = mask;
     image->next   = None;
-
-    XFree(prop);
 
     return image;
 }
