@@ -279,7 +279,7 @@ void InitEvents(void)
     EventHandler[CirculateNotify] = HandleCirculateNotify;
     if (HasShape)
 	EventHandler[ShapeEventBase+ShapeNotify] = HandleShapeNotify;
-#if EWMH
+#ifdef EWMH
     EventHandler[SelectionClear] = HandleSelectionClear;
 #endif
 }

@@ -539,7 +539,7 @@ int main(int argc, char **argv, char **environ)
 	attrmask = ColormapChangeMask | EnterWindowMask | PropertyChangeMask |
 		   SubstructureRedirectMask | KeyPressMask | ButtonPressMask |
 		   ButtonReleaseMask;
-#if EWMH
+#ifdef EWMH
 	attrmask |= StructureNotifyMask;
 #endif /* EWMH */
 	if (captive) attrmask |= StructureNotifyMask;
@@ -1162,8 +1162,10 @@ static void InitVariables(void)
     Scr->AlwaysSqueezeToGravity = FALSE;
     Scr->NoWarpToMenuTitle = FALSE;
     Scr->DontToggleWorkspaceManagerState = False;
+#ifdef EWMH
     Scr->PreferredIconWidth = 48;
     Scr->PreferredIconHeight = 48;
+#endif
 
     Scr->BorderTop    = 0;
     Scr->BorderBottom = 0;
@@ -1325,7 +1327,7 @@ SIGNAL_T Done(int signum)
     play_exit_sound();
 #endif
     Reborder (CurrentTime);
-#if EWMH
+#ifdef EWMH
     EwmhTerminate();
 #endif /* EWMH */
 #if defined(VMS) && EXIT_ENDSESSION /* was: #ifdef VMS */

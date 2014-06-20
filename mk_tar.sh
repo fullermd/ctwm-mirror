@@ -24,6 +24,7 @@ mkdir -m755 $dir
 
 # Copy the pertinent files in
 find * \
+	\! -name build \
 	\! -name STATUS \! -name TABLE \
 	\! -name Makefile \
 	\! -name Imakefile.local \! -name descrip.local \
