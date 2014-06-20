@@ -379,14 +379,22 @@ endif(DO_LIBCTWM)
 set(MANPAGE ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1)
 configure_file(ctwm.man ${MANPAGE} @ONLY)
 
-# Compress
-find_program(GZIP_CMD gzip)
-add_custom_command(OUTPUT "${MANPAGE}.gz"
-	DEPENDS ${MANPAGE}
-	COMMAND ${GZIP_CMD} -nc ${MANPAGE} > ${MANPAGE}.gz
-	COMMENT "Building ${MANPAGE}.gz"
-)
-add_custom_target(man ALL DEPENDS "${MANPAGE}.gz")
+# Compress (conditionally).  We could add more magic to allow different
+# automatic compression, but that's probably way more involved than we
+# need to bother with.  Most systems use gzip, and for the few that
+# don't, the packagers can use NOMANCOMPRESS and handle it out of band.
+if(NOT NOMANCOMPRESS)
+	find_program(GZIP_CMD gzip)
+	add_custom_command(OUTPUT "${MANPAGE}.gz"
+		DEPENDS ${MANPAGE}
+		COMMAND ${GZIP_CMD} -nc ${MANPAGE} > ${MANPAGE}.gz
+		COMMENT "Building ${MANPAGE}.gz"
+	)
+	add_custom_target(man ALL DEPENDS "${MANPAGE}.gz")
+	set(INSTMAN "${MANPAGE}.gz")
+else()
+	set(INSTMAN ${MANPAGE})
+ENDif(NOT NOMANCOMPRESS)
 
 
 # Cram a warning in about the MANBASE if we couldn't find it.  This is a
@@ -414,7 +422,7 @@ install(FILES system.ctwmrc
 	DESTINATION ${CONFDIR}
 )
 if(MANBASE)
-	install(FILES "${MANPAGE}.gz"
+	install(FILES ${INSTMAN}
 		DESTINATION ${MAN1PATH}
 	)
 endif(MANBASE)
