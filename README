@@ -100,9 +100,17 @@ systems should fall into this.
 
 funny prompt> make
 
-If you need to make changes, you'll want to run cmake manually first
 
-funny prompt> cd build && cmake -DUSE_XPM=OFF -DM4_CMD=superm4 ..
+If you need to add special config, you'll have to pass extra bits to
+cmake via an invocation like
+
+funny prompt> make CMAKE_EXTRAS="-DUSE_XPM=OFF -DM4_CMD=superm4"
+
+
+Though in more complicated cases it may be simpler to just invoke cmake
+directly:
+
+funny prompt> ( cd build ; cmake -DUSE_XPM=OFF -DM4_CMD=superm4 .. )
 funny prompt> make
 
 
