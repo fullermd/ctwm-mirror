@@ -12,7 +12,7 @@ build ctwm.  See the `README` file for how to run it.
 ### Other Visible Changes
 
 1. Selected a number of cleanups from Stefan Monnier
-    <monnier@IRO.UMontreal.CA>, including rate-limiting of animations
+    <<monnier@IRO.UMontreal.CA>>, including rate-limiting of animations
     using a new `_XA_WM_END_OF_ANIMATION` message.  Font height is
     estimated based on used characters only.  Added some similar changes,
     improved the prevention of placing windows off-screen, the
@@ -20,7 +20,7 @@ build ctwm.  See the `README` file for how to run it.
     `f.adoptwindow`. More virtual screen tweaks/fixes.
 
 1. Added the remaining OnTopPriority changes from Stefan Monnier
-    <monnier@IRO.UMontreal.CA>: AutoPopup, AutoPriority, OnTopPriority,
+    <<monnier@IRO.UMontreal.CA>>: AutoPopup, AutoPriority, OnTopPriority,
     PrioritySwitching, f.changepriority, f.priorityswitching,
     f.setpriority, f.switchpriority, f.tinylower, f.tinyraise. Currently
     consistency checking code is enabled, which will terminate with an
@@ -105,7 +105,7 @@ build ctwm.  See the `README` file for how to run it.
     workspace. This significantly reduces the amount of mouse use.
     [Martin Blais]
 
-1. f.fill patch from Matthias Kretschmer <kretschm@cs.uni-bonn.de>.
+1. f.fill patch from Matthias Kretschmer <<kretschm@cs.uni-bonn.de>>.
     Without the patch, you might get windows which are increased by
     two times the border width more than it should be.  Additionally
     if you place a window with no/not much size contrainst like
@@ -125,7 +125,7 @@ build ctwm.  See the `README` file for how to run it.
     [Richard Levitte]
 
 1. Fixed several memory leaks found by
-    "Nadav Har'El" <nyh@math.technion.ac.il>.
+    "Nadav Har'El" <<nyh@math.technion.ac.il>>.
     [Olaf "Rhialto" Seibert]
 
 1. Merged in the `f.movetitlebar` command. By default this is bound to
@@ -375,7 +375,7 @@ build ctwm.  See the `README` file for how to run it.
 
 
 1. **[ At this point, Claude has stopped working on CTWM, and the project
-    is now in the hands of Richard Levitte <richard@levitte.org>. ]**
+    is now in the hands of Richard Levitte <<richard@levitte.org>>. ]**
 
 1. Changed Imakefile to support a distribution target.
 
@@ -642,7 +642,7 @@ build ctwm.  See the `README` file for how to run it.
 ## 3.6  (2002-08-08 or earlier)
 
 1. Fix line numbers for errors when using m4 preprocessor. Send thanks
-    to Josh Wilmes <josh@hitchhiker.org>.
+    to Josh Wilmes <<josh@hitchhiker.org>>.
 
 1. Fix the way menu entries are selected with the keyboard. Now
     when you type a letter, the pointer moves to the next entry
@@ -652,9 +652,9 @@ build ctwm.  See the `README` file for how to run it.
 
 1. New keyword: DontSave.  Takes a window list as argument. All listed
     windows won't have their characteristics saved for the session manager.
-    Patch from Matthias Baake <Matthias.Baake@gmx.de>
+    Patch from Matthias Baake <<Matthias.Baake@gmx.de>>
 
-1. Also from Matthias Baake <Matthias.Baake@gmx.de>:
+1. Also from Matthias Baake <<Matthias.Baake@gmx.de>>:
     With the new keywords BorderLeft, BorderRight, BorderBottom and
     BorderTop (each of them is optional with a default value of 0 and
     takes a nonnegative integer as argument) you can declare a border
@@ -663,17 +663,17 @@ build ctwm.  See the `README` file for how to run it.
     f.forcemove to override them.
 
 1. Sloppy Focus added with keyword "SloppyFocus" in configuration file
-    (DINH V. Hoa <dinh@enserb.fr>).
+    (DINH V. Hoa <<dinh@enserb.fr>>).
 
 1. The keyword "ClickToFocus" has been correctly implemented
-    (DINH V. Hoa <dinh@enserb.fr>).
+    (DINH V. Hoa <<dinh@enserb.fr>>).
 
 1. The keyword "IgnoreModifier" has been added, to use this feature, you
     have to add a line `IgnoreModifier { lock m2 }` in the configuration
     file.  All bindings (buttons and keys) will ignore the modifiers you
     specified. It is useful when you use caps locks or num locks. You
     don't need IgnoreLockModifier any more with this option.  (DINH V.
-    Hoa <dinh@enserb.fr>).
+    Hoa <<dinh@enserb.fr>>).
 
 1. New keyword: WindowBox.  Creates a new window called a box, where
     all the client windows that match the windows list are opened in,
@@ -732,7 +732,7 @@ build ctwm.  See the `README` file for how to run it.
 1. `f.ring`: Selects a window and adds it to the WarpRing, or removes it if
     it was already in the ring. This command makes f.warpring much more
     useful, by making its configuration dynamic (thanks to Philip Kizer
-    <pckizer@tamu.edu>).
+    <<pckizer@tamu.edu>>).
 
 1. f.jumpleft, f.jumpright, f.jumpup, f.jumpdown : takes one integer
     argument (the step). These function are designed to be bound to keys,
@@ -819,13 +819,13 @@ build ctwm.  See the `README` file for how to run it.
     started even if you go elsewhere before it actually shows up.
 
 1. Fixes for the VMS version. From Richard Levitte - VMS Whacker
-    <levitte@lp.se>.
+    <<levitte@lp.se>>.
 
-1. Better I18N. From Toshiya Yasukawa <t-yasuka@dd.iij4u.or.jp>. (Define
+1. Better I18N. From Toshiya Yasukawa <<t-yasuka@dd.iij4u.or.jp>>. (Define
     I18N in Imakefile to activate it).
 
 1. Better Session Management interface. Patches from Matthew McNeill
-    <M.R.McNeill@durham.ac.uk>.
+    <<M.R.McNeill@durham.ac.uk>>.
 
 1. new flag : `-name`, useful only for captive Ctwm. Sets the name of the
     captive root window. Useful too for next point. If no name is
@@ -877,7 +877,7 @@ build ctwm.  See the `README` file for how to run it.
 1. AutoFocusToTransients
     Transient windows get focus automatically when created.  Useful with
     programs that have keyboard shortcuts that pop up windows.  (patch
-    from Kai Grossjohann <grossjohann@charly.cs.uni-dortmund.de>).
+    from Kai Grossjohann <<grossjohann@charly.cs.uni-dortmund.de>>).
 
 1. PackNewWindows
     Use f.movepack algorithm instead of f.move when opening a new window.
@@ -964,30 +964,30 @@ build ctwm.  See the `README` file for how to run it.
 
     Using these colors, I have built some 3d XPM files for various
     titlebars while still keeping the ability to change titlebar colors.
-    [Matt Wormley <mwormley@airship.ardfa.calpoly.edu>]
+    [Matt Wormley <<mwormley@airship.ardfa.calpoly.edu>>]
 
 1. Added a keyword to the .ctwmrc file: "UseSunkTitlePixmap".  This
     makes it so the shadows are inversed for title pixmaps when focus is
     lost.  This is similar to having the SunkFocusWindowTitle, but it
     makes your 3d XPM sink instead of just the whole bar.
-    [Matt Wormley <mwormley@airship.ardfa.calpoly.edu>]
+    [Matt Wormley <<mwormley@airship.ardfa.calpoly.edu>>]
 
 1. Added 3 new builtin 3d buttons for "Iconify", "Resize" and "Box". They
     are available with the :xpm: identifier in the .ctwmrc file.
-    [Matt Wormley <mwormley@airship.ardfa.calpoly.edu>]
+    [Matt Wormley <<mwormley@airship.ardfa.calpoly.edu>>]
 
 1. Added another keyword to the .ctwmrc file: "WorkSpaceFont". This
     allows you to specify the font to use in the workspace manager.
-    [Matt Wormley <mwormley@airship.ardfa.calpoly.edu>]
+    [Matt Wormley <<mwormley@airship.ardfa.calpoly.edu>>]
 
 1. 8 new xpm pixmaps for buttons, title highlite, etc... :
     3dcircle.xpm 3ddimple.xpm 3ddot.xpm 3dfeet.xpm 3dleopard.xpm 3dpie.xpm
     3dpyramid.xpm 3dslant.xpm
-    [Matt Wormley <mwormley@airship.ardfa.calpoly.edu>]
+    [Matt Wormley <<mwormley@airship.ardfa.calpoly.edu>>]
 
 1. 2 new functions : f.forwmapiconmgr and f.backmapiconmgr, similar to
     f.forwiconmgr and f.backiconmgr but only stops on mapped windows.
-    [Scott Bolte <scottb@cirque.moneng.mei.com>]
+    [Scott Bolte <<scottb@cirque.moneng.mei.com>>]
 
 1. Last minute: PixmapDirectory now accept a colon separated list of
     directories.
@@ -1052,7 +1052,7 @@ build ctwm.  See the `README` file for how to run it.
 
     Do what you expect.
 
-1. The function f.raiseicons (from Rickard Westman <ricwe@ida.liu.se>).
+1. The function f.raiseicons (from Rickard Westman <<ricwe@ida.liu.se>>).
     Raises all icons.
 
 1. A new keyword: IconRegionAlignement. Like IconRegionJustification
@@ -1060,12 +1060,12 @@ build ctwm.  See the `README` file for how to run it.
     "border".
 
 1. f.addtoworkspace, f.removefromworkspace and f.toggleoccupation. (idea
-    from Kai Grossjohann <grossjoh@linus.informatik.uni-dortmund.de>). They
+    from Kai Grossjohann <<grossjoh@linus.informatik.uni-dortmund.de>>). They
     take one argument that is a workspace name. When applied to a window,
     they add to, remove from, or toggle the occupation of this window in
     this workspace.
 
-1. AlwaysOnTop (from Stefan Monnier <monnier@di.epfl.ch>). Accept a list
+1. AlwaysOnTop (from Stefan Monnier <<monnier@di.epfl.ch>>). Accept a list
     of windows as argument. Ctwm will do it's best to keep these windows
     on top of the screen. Not perfect.
 
@@ -1145,13 +1145,13 @@ build ctwm.  See the `README` file for how to run it.
         }
 
     The old syntax is of course accepted.
-    Patch from Stefan Monnier <Stefan_Monnier@NIAGARA.NECTAR.CS.CMU.EDU>.
+    Patch from Stefan Monnier <<Stefan_Monnier@NIAGARA.NECTAR.CS.CMU.EDU>>.
 
 1. A lot of new animated title buttons : `%xpm:menu-up`, `%xpm:menu-down`,
     `%xpm:resize-out-top`, `%xpm:resize-in-top`, `%xpm:resize-out-bot`,
     `%xpm:resize-in-bot`, `%xpm:maze-out`, `%xpm:maze-in`, `%xpm:zoom-out`,
     `%xpm:zoom-in` and `%xpm:zoom-inout`. From Stefan Monnier
-    <Stefan_Monnier@NIAGARA.NECTAR.CS.CMU.EDU>.
+    <<Stefan_Monnier@NIAGARA.NECTAR.CS.CMU.EDU>>.
 
 1. 2 new builtin menus: TwmAllWindows and TwmWorkspaces. Guess what they
     do.
@@ -1165,7 +1165,7 @@ build ctwm.  See the `README` file for how to run it.
     Control-the-second-letter activates it, and if this first letter is space,
     then the second letter activates it.
 
-1. Support for VMS. Patch from Peter Chang <peterc@v2.ph.man.ac.uk>.
+1. Support for VMS. Patch from Peter Chang <<peterc@v2.ph.man.ac.uk>>.
     Completely untested. If you have problems to build on VMS ask
     Peter Chang.
 
@@ -1180,7 +1180,7 @@ build ctwm.  See the `README` file for how to run it.
 1. The files `background[1-7].xpm` and `background9.xpm` have been
     removed from the distribution. Someone tells me that they are
     copyrighted. I tried to contact him in order to join his copyright,
-    but his mail address is invalid.  <desktop-textures@avernus.com>.
+    but his mail address is invalid.  <<desktop-textures@avernus.com>>.
     Most of these backgrounds and much more can be obtained in the AIcons
     package on ftp.x.org. Particularly in cl-bgnd/Textures: bg_blu.gif,
     concrete.gif, marble1.gif, sharks.gif bg_grn.gif, granite_dark.gif,
@@ -1237,7 +1237,7 @@ build ctwm.  See the `README` file for how to run it.
 1. flex is now supported.
 
 1. The IconRegion keyword now support an optionnal winlist argument.
-    Thanks to Mike Hoswell <hoswell@ncar.ucar.edu> for adding this.
+    Thanks to Mike Hoswell <<hoswell@ncar.ucar.edu>> for adding this.
 
 1. f.separator now works (does something) with 3D menus.
 
@@ -1261,7 +1261,7 @@ build ctwm.  See the `README` file for how to run it.
 
 1. A new keyword : NoBorder with a window list argument. These windows
     won't have borders. Thanks to J.P. Albers van der Linden
-    <albers@pasichva.serigate.philips.nl> for this patch.
+    <<albers@pasichva.serigate.philips.nl>> for this patch.
 
 1. Ctwm has a new option selectable with the flag `-w`, if used, ctwm
     will not take over the whole screen(s), instead it will create a new
@@ -1289,7 +1289,7 @@ build ctwm.  See the `README` file for how to run it.
 
 1. Now, WindowRing can be specified without argument, in this case all
     the windows are in the ring. (Alec Wolman
-    <wolman@blue.cs.washington.edu>)
+    <<wolman@blue.cs.washington.edu>>)
 
 1. New keyword: WarpRingOnScreen, if present, tells ctwm that f.warpring
     should warp pointer only to windows visible in the current workspace.
@@ -1365,7 +1365,7 @@ build ctwm.  See the `README` file for how to run it.
     name selector part in the menu is not used. f.separator works only
     with conventionnal menus, not with 3D menus.
 
-1. Thanks to <bret@essex.ac.uk>, the man page is integrated with the
+1. Thanks to <<bret@essex.ac.uk>>, the man page is integrated with the
     original twm one, and is of a much better quality.
 
 1. While moving a window, the position is displayed in a similar way as
@@ -1720,8 +1720,8 @@ try to use the same few already used in the example icons.
 
         * f.togglestate: You can guess.
 
-1. AutoRaise with RaiseDelay.  Thanks to Johan Vromans <jv@mh.nl> who
-    gave me this patch.  I think Warren Jessop <whj@cs.washington.edu>
+1. AutoRaise with RaiseDelay.  Thanks to Johan Vromans <<jv@mh.nl>> who
+    gave me this patch.  I think Warren Jessop <<whj@cs.washington.edu>>
     wrote it for twm.
 
 
