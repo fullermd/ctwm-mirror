@@ -68,10 +68,6 @@
 #ifndef _UTIL_
 #define _UTIL_
 
-#if defined(VMS) || defined(ultrix) || defined(sequent) || defined(sony_news) || defined(riscix)
-#   define strdup(s) ((char*) strcpy ((char*) malloc (strlen (s) + 1), s))
-#endif
-
 #ifndef MAX
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #endif
