@@ -82,7 +82,7 @@ build ctwm.  See the `README` file for how to run it.
     maintained across workspaces.
     [Matthew Fuller]
 
-1. Quite a bunch of compiler warnings.
+1. Quiet a bunch of compiler warnings.
     [Matthew Fuller]
 
 1. Make sure we fully initialize our WorkSpaceWindow structure so
