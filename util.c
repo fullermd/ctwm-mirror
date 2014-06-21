@@ -168,10 +168,6 @@ struct jpeg_error {
 typedef struct jpeg_error *jerr_ptr;
 #endif /* JPEG */
 
-#ifdef IMCONV
-#   include "im.h"
-#   include "sdsc.h"
-#endif
 
 #define MAXANIMATIONSPEED 20
 
@@ -185,10 +181,6 @@ static Image *GetXwdImage(char  *name, ColorPair cp);
 static Image *LoadXpmImage(char  *name, ColorPair cp);
 static Image *GetXpmImage(char  *name, ColorPair cp);
 static void   xpmErrorMessage(int status, char *name, char *fullname);
-#endif
-#ifdef IMCONV
-static Image *GetImconvImage(char *filename,
-                             unsigned int *widthp, unsigned int *heightp);
 #endif
 static Pixmap CreateXLogoPixmap(unsigned int *widthp, unsigned int *heightp);
 static Pixmap CreateResizePixmap(unsigned int *widthp, unsigned int *heightp);
@@ -3640,16 +3632,6 @@ Image *GetImage(char *name, ColorPair cp)
 		}
 		else
 #endif
-#ifdef IMCONV
-			if(strncmp(name, "im:", 3) == 0) {
-				if((image = (Image *) LookInNameList(*list, name)) == None) {
-					if((image = GetImconvImage(&name [3])) != None) {
-						AddToList(list, name, (char *) image);
-					}
-				}
-			}
-			else
-#endif
 #if !defined(VMS) || defined(HAVE_XWDFILE_H)
 				if((strncmp(name, "xwd:", 4) == 0) || (name [0] == '|')) {
 					int startn = (name [0] == '|') ? 0 : 4;
@@ -4146,237 +4128,6 @@ static void compress(XImage *image, XColor *colors, int *ncolors)
 }
 #endif
 
-#ifdef IMCONV
-
-static void free_images();
-
-static Image *GetImconvImage(char *filename,
-                             unsigned int *widthp, unsigned int *heightp)
-{
-	TagTable            *toolInTable;
-	ImVfb               *sourceVfb;
-	ImVfbPtr            vptr;
-	ImClt               *clt;
-	int                 i, j, ij, k, retval;
-
-	XColor              colors [256];
-	unsigned            buffer_size;
-	XImage              *image;
-	unsigned char       *imagedata;
-	Pixmap              pixret;
-	Visual              *visual;
-	int                 w, h, depth, ncolors;
-	int                 scrn;
-	Colormap            cmap;
-	Colormap            stdcmap = Scr->RootColormaps.cwins[0]->colormap->c;
-	GC                  gc;
-	unsigned char       red, green, blue;
-	int                 icol;
-	char                *fullname;
-
-	TagEntry            *dataEntry;
-	FILE                *fp;
-	char                the_format[1024];
-	char                *tmp_format;
-	Image               *ret;
-
-	if(*filename == NULL) {
-		return (None);
-	}
-	fullname = ExpandPixmapPath(filename);
-	if(! fullname) {
-		return (None);
-	}
-
-	fp = fopen(fullname, "r");
-	if(!fp) {
-		if(reportfilenotfound) {
-			fprintf(stderr, "Cannot open the image %s\n", filename);
-		}
-		free(fullname);
-		return (None);
-	}
-	if((toolInTable = TagTableAlloc()) == TAGTABLENULL) {
-		fprintf(stderr, "TagTableAlloc failed\n");
-		free_images(toolInTable);
-		free(fullname);
-		return (None);
-	}
-	if((tmp_format = ImFileQFFormat(fp, fullname)) == NULL)  {
-		fprintf(stderr, "Cannot determine image type of %s\n", filename);
-		free_images(toolInTable);
-		free(fullname);
-		return (None);
-	}
-	strcpy(the_format, tmp_format);
-	retval = ImFileFRead(fp, the_format, NULL, toolInTable);
-	if(retval < 0) {
-		fprintf(stderr, "Cannot read image file %s: ", fullname);
-		switch(ImErrNo) {
-			case IMESYS:
-				fprintf(stderr, "System call error\n");
-				break;
-			case IMEMALLOC:
-				fprintf(stderr, "Cannot allocate memory\n");
-				break;
-			case IMEFORMAT:
-				fprintf(stderr, "Data in file is corrupt\n");
-				break;
-			case IMENOREAD:
-				fprintf(stderr, "Sorry, this format is write-only\n");
-				break;
-			case IMEMAGIC:
-				fprintf(stderr, "Bad magic number in image file\n");
-				break;
-			case IMEDEPTH:
-				fprintf(stderr, "Unknown image depth\n");
-				break;
-			default:
-				fprintf(stderr, "Unknown error\n");
-				break;
-		}
-		free_images(toolInTable);
-		free(fullname);
-		return (None);
-	}
-
-	if(TagTableQNEntry(toolInTable, "image vfb") == 0)  {
-		fprintf(stderr, "Image file %s contains no images\n", fullname);
-		free_images(toolInTable);
-		free(fullname);
-		return (None);
-	}
-	dataEntry = TagTableQDirect(toolInTable, "image vfb", 0);
-	TagEntryQValue(dataEntry, &sourceVfb);
-	fclose(fp);
-
-	w = ImVfbQWidth(sourceVfb);
-	h = ImVfbQHeight(sourceVfb);
-	depth = 8 * ImVfbQNBytes(sourceVfb);
-	if(depth != 8) {
-		fprintf(stderr,
-		        "I don't know yet how to deal with images not of 8 planes depth\n");
-		free_images(toolInTable);
-		return (None);
-	}
-
-	*width  = w;
-	*height = h;
-
-	scrn   = Scr->screen;
-	cmap   = AlternateCmap ? AlternateCmap : stdcmap;
-	visual = Scr->d_visual;
-	gc     = DefaultGC(dpy, scrn);
-
-	buffer_size = w * h;
-	imagedata = (unsigned char *) malloc(buffer_size);
-	if(imagedata == (unsigned char *) 0) {
-		fprintf(stderr, "Can't alloc enough space for background images\n");
-		free_images(toolInTable);
-		return (None);
-	}
-
-	clt  = ImVfbQClt(sourceVfb);
-	vptr = ImVfbQFirst(sourceVfb);
-	ncolors = 0;
-	for(i = 0; i < h - 1; i++) {
-		for(j = 0; j < w; j++) {
-			ij = (i * w) + j;
-			red   = ImCltQRed(ImCltQPtr(clt, ImVfbQIndex(sourceVfb, vptr)));
-			green = ImCltQGreen(ImCltQPtr(clt, ImVfbQIndex(sourceVfb, vptr)));
-			blue  = ImCltQBlue(ImCltQPtr(clt, ImVfbQIndex(sourceVfb, vptr)));
-			for(k = 0; k < ncolors; k++) {
-				if((colors [k].red   == red) &&
-				                (colors [k].green == green) &&
-				                (colors [k].blue  == blue)) {
-					icol = k;
-					break;
-				}
-			}
-			if(k == ncolors) {
-				icol = ncolors;
-				ncolors++;
-			}
-			imagedata [ij] = icol;
-			colors [icol].red   = red;
-			colors [icol].green = green;
-			colors [icol].blue  = blue;
-			ImVfbSInc(sourceVfb, vptr);
-		}
-	}
-	for(i = 0; i < ncolors; i++) {
-		colors [i].red   *= 256;
-		colors [i].green *= 256;
-		colors [i].blue  *= 256;
-	}
-	for(i = 0; i < ncolors; i++) {
-		if(! XAllocColor(dpy, cmap, &(colors [i]))) {
-			fprintf(stderr, "can't alloc color for image %s\n", filename);
-		}
-	}
-	for(i = 0; i < buffer_size; i++) {
-		imagedata [i] = (unsigned char) colors [imagedata [i]].pixel;
-	}
-
-	image  = XCreateImage(dpy, visual, depth, ZPixmap, 0, (char *) imagedata, w, h,
-	                      8, 0);
-	if(w > Scr->rootw) {
-		w = Scr->rootw;
-	}
-	if(h > Scr->rooth) {
-		h = Scr->rooth;
-	}
-
-	if((w > (Scr->rootw / 2)) || (h > (Scr->rooth / 2))) {
-		int x, y;
-
-		pixret = XCreatePixmap(dpy, Scr->Root, Scr->rootw, Scr->rooth, depth);
-		x = (Scr->rootw  - w) / 2;
-		y = (Scr->rooth - h) / 2;
-		XFillRectangle(dpy, pixret, gc, 0, 0, Scr->rootw, Scr->rooth);
-		XPutImage(dpy, pixret, gc, image, 0, 0, x, y, w, h);
-		ret->width  = Scr->rootw;
-		ret->height = Scr->rooth;
-	}
-	else {
-		pixret = XCreatePixmap(dpy, Scr->Root, w, h, depth);
-		XPutImage(dpy, pixret, gc, image, 0, 0, 0, 0, w, h);
-		ret->width  = w;
-		ret->height = h;
-	}
-	XFree(image);
-	ret = (Image *) malloc(sizeof(Image));
-	ret->pixmap = pixret;
-	ret->mask   = None;
-	ret->next   = None;
-	return (ret);
-
-}
-
-static void free_images(table)
-TagTable *table;
-{
-	int         i, n;
-	ImVfb       *v;
-	ImClt       *c;
-	TagEntry    *dataEntry;
-
-	n = TagTableQNEntry(table, "image vfb");
-	for(i = 0 ; i < n ; i++) {
-		dataEntry = TagTableQDirect(table, "image vfb", i);
-		TagEntryQValue(dataEntry, &v);
-		ImVfbFree(v);
-	}
-	n = TagTableQNEntry(table, "image clt");
-	for(i = 0 ; i < n ; i++) {
-		dataEntry = TagTableQDirect(table, "image clt", i);
-		TagEntryQValue(dataEntry, &c);
-		ImCltFree(c);
-	}
-	TagTableFree(table);
-}
-
-#endif
 
 static void swapshort(char *bp, unsigned n)
 {
