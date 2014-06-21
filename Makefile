@@ -17,7 +17,7 @@ doc_clean:
 	rm -f ${DOC_FILES}
 
 README.html: README
-	multimarkdown -o README.html README
+	multimarkdown -ao README.html README
 
 # Reindent files
 indent:
