@@ -1033,9 +1033,11 @@ name_list **OtpScrSwitchingL(ScreenInfo *scr, WinType wintype)
 
 void OtpScrSetSwitching(ScreenInfo *scr, WinType wintype, Bool switching)
 {
+#ifndef NDEBUG
 	OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
 
 	assert(prefs != NULL);
+#endif
 
 	scr->OTP->switching = switching;
 }
