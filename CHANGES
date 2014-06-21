@@ -39,6 +39,7 @@ build ctwm.  See the `README` file for how to run it.
     to generate the proper output are in the source tree.
 
 
+
 ## 3.8.2  (2014-05-18)
 
 1. Various code cleanups.
@@ -738,6 +739,7 @@ build ctwm.  See the `README` file for how to run it.
     they move the current window (step * {X,Y}MoveGrid) pixels in the
     corresponding direction. stopping when the window encounters another
     window (ala f.pack).
+
 
 
 ## 3.5  (1997-11-27 or earlier)
