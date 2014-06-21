@@ -24,11 +24,11 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -87,355 +87,395 @@
 /***********************************************************************
  *
  *  Procedure:
- *	AddToList - add a window name to the appropriate list
+ *      AddToList - add a window name to the appropriate list
  *
  *  Inputs:
- *	list	- the address of the pointer to the head of a list
- *	name	- a pointer to the name of the window
- *	ptr	- pointer to list dependent data
+ *      list    - the address of the pointer to the head of a list
+ *      name    - a pointer to the name of the window
+ *      ptr     - pointer to list dependent data
  *
  *  Special Considerations
- *	If the list does not use the ptr value, a non-null value 
- *	should be placed in it.  LookInList returns this ptr value
- *	and procedures calling LookInList will check for a non-null 
- *	return value as an indication of success.
+ *      If the list does not use the ptr value, a non-null value
+ *      should be placed in it.  LookInList returns this ptr value
+ *      and procedures calling LookInList will check for a non-null
+ *      return value as an indication of success.
  *
  ***********************************************************************
  */
 
 void AddToList(name_list **list_head, char *name, char *ptr)
 {
-    name_list *nptr;
+	name_list *nptr;
 
-    if (!list_head) return;	/* ignore empty inserts */
+	if(!list_head) {
+		return;        /* ignore empty inserts */
+	}
 
-    nptr = (name_list *)malloc(sizeof(name_list));
-    if (nptr == NULL)
-    {
-	twmrc_error_prefix();
-	fprintf (stderr, "unable to allocate %lu bytes for name_list\n",
-		 (unsigned long) sizeof(name_list));
-	Done(0);
-    }
+	nptr = (name_list *)malloc(sizeof(name_list));
+	if(nptr == NULL) {
+		twmrc_error_prefix();
+		fprintf(stderr, "unable to allocate %lu bytes for name_list\n",
+		        (unsigned long) sizeof(name_list));
+		Done(0);
+	}
 
-    nptr->next = *list_head;
+	nptr->next = *list_head;
 #ifdef VMS
-    {
-        char *ftemp;
-        ftemp = (char *) malloc((strlen(name)+1)*sizeof(char));
-        nptr->name = strcpy (ftemp,name);
-    }
+	{
+		char *ftemp;
+		ftemp = (char *) malloc((strlen(name) + 1) * sizeof(char));
+		nptr->name = strcpy(ftemp, name);
+	}
 #else
-    nptr->name = (char*) strdup (name);
+	nptr->name = (char *) strdup(name);
 #endif
-    nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
-    *list_head = nptr;
-}    
+	nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
+	*list_head = nptr;
+}
 
 /***********************************************************************
  *
  *  Procedure:
- *	LookInList - look through a list for a window name, or class
+ *      LookInList - look through a list for a window name, or class
  *
  *  Returned Value:
- *	the ptr field of the list structure or NULL if the name 
- *	or class was not found in the list
+ *      the ptr field of the list structure or NULL if the name
+ *      or class was not found in the list
  *
  *  Inputs:
- *	list	- a pointer to the head of a list
- *	name	- a pointer to the name to look for
- *	class	- a pointer to the class to look for
+ *      list    - a pointer to the head of a list
+ *      name    - a pointer to the name to look for
+ *      class   - a pointer to the class to look for
  *
  ***********************************************************************
  */
 
 void *LookInList(name_list *list_head, char *name, XClassHint *class)
 {
-    name_list *nptr;
+	name_list *nptr;
 
-    /* look for the name first */
-    for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	if (match (nptr->name, name))
-	    return (nptr->ptr);
+	/* look for the name first */
+	for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+		if(match(nptr->name, name)) {
+			return (nptr->ptr);
+		}
 
-    if (class)
-    {
-	/* look for the res_name next */
-	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (match (nptr->name, class->res_name))
-		return (nptr->ptr);
+	if(class) {
+		/* look for the res_name next */
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+			if(match(nptr->name, class->res_name)) {
+				return (nptr->ptr);
+			}
 
-	/* finally look for the res_class */
-	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (match (nptr->name, class->res_class))
-		return (nptr->ptr);
-    }
-    return (NULL);
+		/* finally look for the res_class */
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+			if(match(nptr->name, class->res_class)) {
+				return (nptr->ptr);
+			}
+	}
+	return (NULL);
 }
 
 void *LookInNameList(name_list *list_head, char *name)
 {
-    return (LookInList(list_head, name, NULL));
+	return (LookInList(list_head, name, NULL));
 }
 
 void *LookPatternInList(name_list *list_head, char *name, XClassHint *class)
 {
-    name_list *nptr;
+	name_list *nptr;
 
-    for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	if (match (nptr->name, name))
-	    return (nptr->name);
+	for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+		if(match(nptr->name, name)) {
+			return (nptr->name);
+		}
 
-    if (class)
-    {
-	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (match (nptr->name, class->res_name))
-		return (nptr->name);
+	if(class) {
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+			if(match(nptr->name, class->res_name)) {
+				return (nptr->name);
+			}
 
-	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (match (nptr->name, class->res_class))
-		return (nptr->name);
-    }
-    return (NULL);
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+			if(match(nptr->name, class->res_class)) {
+				return (nptr->name);
+			}
+	}
+	return (NULL);
 }
 
-void *LookPatternInNameList (name_list *list_head, char *name)
+void *LookPatternInNameList(name_list *list_head, char *name)
 {
-    return (LookPatternInList(list_head, name, NULL));
+	return (LookPatternInList(list_head, name, NULL));
 }
 
 /***********************************************************************
  *
  *  Procedure:
- *	GetColorFromList - look through a list for a window name, or class
+ *      GetColorFromList - look through a list for a window name, or class
  *
  *  Returned Value:
- *	TRUE if the name was found
- *	FALSE if the name was not found
+ *      TRUE if the name was found
+ *      FALSE if the name was not found
  *
  *  Inputs:
- *	list	- a pointer to the head of a list
- *	name	- a pointer to the name to look for
- *	class	- a pointer to the class to look for
+ *      list    - a pointer to the head of a list
+ *      name    - a pointer to the name to look for
+ *      class   - a pointer to the class to look for
  *
  *  Outputs:
- *	ptr	- fill in the list value if the name was found
+ *      ptr     - fill in the list value if the name was found
  *
  ***********************************************************************
  */
 
 int GetColorFromList(name_list *list_head, char *name,
-		     XClassHint *class, Pixel *ptr)
+                     XClassHint *class, Pixel *ptr)
 {
-    int save;
-    name_list *nptr;
+	int save;
+	name_list *nptr;
 
-    for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	if (match (nptr->name, name))
-	{
-	    save = Scr->FirstTime;
-	    Scr->FirstTime = TRUE;
-	    GetColor(Scr->Monochrome, ptr, nptr->ptr);
-	    Scr->FirstTime = save;
-	    return (TRUE);
+	for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+		if(match(nptr->name, name)) {
+			save = Scr->FirstTime;
+			Scr->FirstTime = TRUE;
+			GetColor(Scr->Monochrome, ptr, nptr->ptr);
+			Scr->FirstTime = save;
+			return (TRUE);
+		}
+
+	if(class) {
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+			if(match(nptr->name, class->res_name)) {
+				save = Scr->FirstTime;
+				Scr->FirstTime = TRUE;
+				GetColor(Scr->Monochrome, ptr, nptr->ptr);
+				Scr->FirstTime = save;
+				return (TRUE);
+			}
+
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+			if(match(nptr->name, class->res_class)) {
+				save = Scr->FirstTime;
+				Scr->FirstTime = TRUE;
+				GetColor(Scr->Monochrome, ptr, nptr->ptr);
+				Scr->FirstTime = save;
+				return (TRUE);
+			}
 	}
-
-    if (class)
-    {
-	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (match (nptr->name, class->res_name))
-	    {
-		save = Scr->FirstTime;
-		Scr->FirstTime = TRUE;
-		GetColor(Scr->Monochrome, ptr, nptr->ptr);
-		Scr->FirstTime = save;
-		return (TRUE);
-	    }
-
-	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (match (nptr->name, class->res_class))
-	    {
-		save = Scr->FirstTime;
-		Scr->FirstTime = TRUE;
-		GetColor(Scr->Monochrome, ptr, nptr->ptr);
-		Scr->FirstTime = save;
-		return (TRUE);
-	    }
-    }
-    return (FALSE);
+	return (FALSE);
 }
 
 /***********************************************************************
  *
  *  Procedure:
- *	FreeList - free up a list
+ *      FreeList - free up a list
  *
  ***********************************************************************
  */
 
 void FreeList(name_list **list)
 {
-    name_list *nptr;
-    name_list *tmp;
+	name_list *nptr;
+	name_list *tmp;
 
-    for (nptr = *list; nptr != NULL; )
-    {
-	tmp = nptr->next;
-	free((char *) nptr);
-	nptr = tmp;
-    }
-    *list = NULL;
+	for(nptr = *list; nptr != NULL;) {
+		tmp = nptr->next;
+		free((char *) nptr);
+		nptr = tmp;
+	}
+	*list = NULL;
 }
 
 #ifdef USE_GNU_REGEX
 
 #define MAXPATLEN 256
 
-int match (pattern, string)
-     char *pattern, *string;
+int match(pattern, string)
+char *pattern, *string;
 {
-  regex_t preg;
-  int error;
+	regex_t preg;
+	int error;
 
-  if ((pattern == NULL) || (string == NULL)) return 0;
-  error = regcomp (&preg, pattern, REG_EXTENDED | REG_NOSUB);
-  if (error != 0) {
-    char buf [256];
-    (void) regerror (error, &preg, buf, sizeof buf);
-    fprintf (stderr, "%s : %s\n", buf, pattern);
-    return 0;
-  }
-  error = regexec (&preg, string, 5, 0, 0);
-  regfree (&preg);
-  if (error == 0) return 1;
-  return 0;
+	if((pattern == NULL) || (string == NULL)) {
+		return 0;
+	}
+	error = regcomp(&preg, pattern, REG_EXTENDED | REG_NOSUB);
+	if(error != 0) {
+		char buf [256];
+		(void) regerror(error, &preg, buf, sizeof buf);
+		fprintf(stderr, "%s : %s\n", buf, pattern);
+		return 0;
+	}
+	error = regexec(&preg, string, 5, 0, 0);
+	regfree(&preg);
+	if(error == 0) {
+		return 1;
+	}
+	return 0;
 }
 
 #else
 
 
 
-int regex_match (char *p, char *t);
-int regex_match_after_star (char *p, char *t);
+int regex_match(char *p, char *t);
+int regex_match_after_star(char *p, char *t);
 
-#if 0				/* appears not to be used anywhere */
-static int is_pattern (char *p)
+#if 0                           /* appears not to be used anywhere */
+static int is_pattern(char *p)
 {
-    while ( *p ) {
-	switch ( *p++ ) {
-	    case '?':
-	    case '*':
-	    case '[':
-		return TRUE;
-	    case '\\':
-		if ( !*p++ ) return FALSE;
+	while(*p) {
+		switch(*p++) {
+			case '?':
+			case '*':
+			case '[':
+				return TRUE;
+			case '\\':
+				if(!*p++) {
+					return FALSE;
+				}
+		}
 	}
-    }
-    return FALSE;
+	return FALSE;
 }
 #endif
 
 #define ABORT 2
 
-int regex_match (char *p, char *t)
+int regex_match(char *p, char *t)
 {
-    register char range_start, range_end;
-    int invert;
-    int member_match;
-    int loop;
+	register char range_start, range_end;
+	int invert;
+	int member_match;
+	int loop;
 
-    for ( ; *p; p++, t++ ) {
-	if (!*t)  return ( *p == '*' && *++p == '\0' ) ? TRUE : ABORT;
-	switch ( *p ) {
-	    case '?':
-		break;
-	    case '*':
-		return regex_match_after_star (p, t);
-	    case '[': {
-		p++;
-		invert = FALSE;
-		if ( *p == '!' || *p == '^') {
-		    invert = TRUE;
-		    p++;
+	for(; *p; p++, t++) {
+		if(!*t) {
+			return (*p == '*' && *++p == '\0') ? TRUE : ABORT;
 		}
-		if ( *p == ']' ) return ABORT;
-		member_match = FALSE;
-		loop = TRUE;
-		while ( loop ) {
-		    if (*p == ']') {
-			loop = FALSE;
-			continue;
-		    }
-		    if (*p == '\\') range_start = range_end = *++p;
-		    else range_start = range_end = *p;
-		    if (!range_start) return ABORT;
-		    if (*++p == '-') {
-			range_end = *++p;
-			if (range_end == '\0' || range_end == ']') return ABORT;
-			if (range_end == '\\') range_end = *++p;
-			p++;
-		    }
-		    if ( range_start < range_end  ) {
-			if (*t >= range_start && *t <= range_end) {
-			    member_match = TRUE;
-			    loop = FALSE;
+		switch(*p) {
+			case '?':
+				break;
+			case '*':
+				return regex_match_after_star(p, t);
+			case '[': {
+				p++;
+				invert = FALSE;
+				if(*p == '!' || *p == '^') {
+					invert = TRUE;
+					p++;
+				}
+				if(*p == ']') {
+					return ABORT;
+				}
+				member_match = FALSE;
+				loop = TRUE;
+				while(loop) {
+					if(*p == ']') {
+						loop = FALSE;
+						continue;
+					}
+					if(*p == '\\') {
+						range_start = range_end = *++p;
+					}
+					else {
+						range_start = range_end = *p;
+					}
+					if(!range_start) {
+						return ABORT;
+					}
+					if(*++p == '-') {
+						range_end = *++p;
+						if(range_end == '\0' || range_end == ']') {
+							return ABORT;
+						}
+						if(range_end == '\\') {
+							range_end = *++p;
+						}
+						p++;
+					}
+					if(range_start < range_end) {
+						if(*t >= range_start && *t <= range_end) {
+							member_match = TRUE;
+							loop = FALSE;
+						}
+					}
+					else {
+						if(*t >= range_end && *t <= range_start) {
+							member_match = TRUE;
+							loop = FALSE;
+						}
+					}
+				}
+				if((invert && member_match) || !(invert || member_match)) {
+					return (FALSE);
+				}
+				if(member_match) {
+					while(*p != ']') {
+						if(!*p) {
+							return (ABORT);
+						}
+						if(*p == '\\') {
+							p++;
+						}
+						p++;
+					}
+				}
+				break;
 			}
-		    }
-		    else {
-			if (*t >= range_end && *t <= range_start) {
-			    member_match = TRUE;
-			    loop = FALSE;
-			}
-		    }
-		}
-		if ((invert && member_match) || !(invert || member_match)) return (FALSE);
-		if (member_match) {
-		    while (*p != ']') {
-			if (!*p) return (ABORT);
-			if (*p == '\\')  p++;
-			p++;
-		    }
-		}
-		break;
-	    }
-	    case '\\':
-		p++;
+			case '\\':
+				p++;
 
-	    default:
-		if (*p != *t) return (FALSE);
+			default:
+				if(*p != *t) {
+					return (FALSE);
+				}
+		}
 	}
-    }
-    return (!*t);
+	return (!*t);
 }
 
-int regex_match_after_star (char *p, char *t)
+int regex_match_after_star(char *p, char *t)
 {
-    register int mat;
-    register int nextp;
+	register int mat;
+	register int nextp;
 
-    while ((*p == '?') || (*p == '*')) {
-	if (*p == '?') {
-	    if ( !*t++ ) return ABORT;
+	while((*p == '?') || (*p == '*')) {
+		if(*p == '?') {
+			if(!*t++) {
+				return ABORT;
+			}
+		}
+		p++;
 	}
-	p++;
-    }
-    if ( !*p ) return TRUE;
+	if(!*p) {
+		return TRUE;
+	}
 
-    nextp = *p;
-    if (nextp == '\\') nextp = p[1];
+	nextp = *p;
+	if(nextp == '\\') {
+		nextp = p[1];
+	}
 
-    mat = FALSE;
-    while (mat == FALSE) {
-	if ( nextp == *t || nextp == '[' ) mat = regex_match(p, t);
-	if ( !*t++ ) mat = ABORT;
-    }
-    return (mat);
+	mat = FALSE;
+	while(mat == FALSE) {
+		if(nextp == *t || nextp == '[') {
+			mat = regex_match(p, t);
+		}
+		if(!*t++) {
+			mat = ABORT;
+		}
+	}
+	return (mat);
 }
 
-int match (char *p, char *t)
+int match(char *p, char *t)
 {
-    if ((p == NULL) || (t == NULL)) return (FALSE);
-    return ((regex_match (p,t) == TRUE) ? TRUE : FALSE);
+	if((p == NULL) || (t == NULL)) {
+		return (FALSE);
+	}
+	return ((regex_match(p, t) == TRUE) ? TRUE : FALSE);
 }
 
 #endif

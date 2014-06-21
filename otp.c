@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992, 2005 Stefan Monnier.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -41,17 +41,17 @@
 #include "list.h"
 #include "events.h"
 
-#define DEBUG_OTP	0
+#define DEBUG_OTP       0
 #if DEBUG_OTP
-#define DPRINTF(x)	fprintf x 
+#define DPRINTF(x)      fprintf x
 #else
 #define DPRINTF(x)
 #endif
 
 #if defined(NDEBUG)
-# define CHECK_OTP	0
+# define CHECK_OTP      0
 #else
-# define CHECK_OTP	1
+# define CHECK_OTP      1
 #endif
 
 /* number of priorities known to ctwm: [0..ONTOP_MAX] */
@@ -59,26 +59,26 @@
 #define OTP_MAX (OTP_ZERO * 2)
 
 struct OtpWinList {
-    OtpWinList *above;
-    OtpWinList *below;
-    TwmWindow  *twm_win;
-    WinType	type;
-    Bool	switching;
-    int		priority;
+	OtpWinList *above;
+	OtpWinList *below;
+	TwmWindow  *twm_win;
+	WinType     type;
+	Bool        switching;
+	int         priority;
 };
 
 struct OtpPreferences {
-    name_list  *priorityL[OTP_MAX + 1];
-    int		priority;
-    name_list  *switchingL;
-    Bool	switching;
+	name_list  *priorityL[OTP_MAX + 1];
+	int         priority;
+	name_list  *switchingL;
+	Bool        switching;
 };
 
 typedef struct Box {
-    int x;
-    int y;
-    int width;
-    int height;
+	int x;
+	int y;
+	int width;
+	int height;
 } Box;
 
 
@@ -86,267 +86,272 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot);
 
 static OtpWinList *bottomOwl = NULL;
 
-static Box BoxOfOwl (OtpWinList *owl)
+static Box BoxOfOwl(OtpWinList *owl)
 {
-    Box b;
+	Box b;
 
-    switch (owl->type) {
-    case IconWin:
-        {
-            Icon *icon = owl->twm_win->icon;
-            
-            b.x = icon->w_x;
-            b.y = icon->w_y;
-            b.width = icon->w_width;
-            b.height = icon->w_height;
-            break;
-        }
-    case WinWin:
-        {
-            TwmWindow *twm_win = owl->twm_win;
-            
-            b.x = twm_win->frame_x;
-            b.y = twm_win->frame_y;
-            b.width = twm_win->frame_width;
-            b.height = twm_win->frame_height;
-            break;
-        }
-    default:
-        assert(False);
-    }
-    return b;
+	switch(owl->type) {
+		case IconWin: {
+			Icon *icon = owl->twm_win->icon;
+
+			b.x = icon->w_x;
+			b.y = icon->w_y;
+			b.width = icon->w_width;
+			b.height = icon->w_height;
+			break;
+		}
+		case WinWin: {
+			TwmWindow *twm_win = owl->twm_win;
+
+			b.x = twm_win->frame_x;
+			b.y = twm_win->frame_y;
+			b.width = twm_win->frame_width;
+			b.height = twm_win->frame_height;
+			break;
+		}
+		default:
+			assert(False);
+	}
+	return b;
 }
 
 
-static Bool BoxesIntersect (Box *b1, Box *b2)
+static Bool BoxesIntersect(Box *b1, Box *b2)
 {
-    Bool interX = (b1->x + b1->width > b2->x) && (b2->x + b2->width > b1->x);
-    Bool interY = (b1->y + b1->height > b2->y) && (b2->y + b2->height > b1->y);
+	Bool interX = (b1->x + b1->width > b2->x) && (b2->x + b2->width > b1->x);
+	Bool interY = (b1->y + b1->height > b2->y) && (b2->y + b2->height > b1->y);
 
-    return (interX && interY);
+	return (interX && interY);
 }
 
 
-static Bool isIntersectingWith (OtpWinList *owl1, OtpWinList *owl2)
+static Bool isIntersectingWith(OtpWinList *owl1, OtpWinList *owl2)
 {
-    Box b1 = BoxOfOwl(owl1);
-    Box b2 = BoxOfOwl(owl2);
-    
-    return BoxesIntersect(&b1, &b2);
+	Box b1 = BoxOfOwl(owl1);
+	Box b2 = BoxOfOwl(owl2);
+
+	return BoxesIntersect(&b1, &b2);
 }
 
 
-static Bool isOnScreen (OtpWinList *owl)
+static Bool isOnScreen(OtpWinList *owl)
 {
-    TwmWindow *twm_win = owl->twm_win;
-    
-    return (((owl->type == IconWin) ? twm_win->iconified : twm_win->mapped)
-	    && OCCUPY(twm_win, Scr->currentvs->wsw->currentwspc));
+	TwmWindow *twm_win = owl->twm_win;
+
+	return (((owl->type == IconWin) ? twm_win->iconified : twm_win->mapped)
+	        && OCCUPY(twm_win, Scr->currentvs->wsw->currentwspc));
 }
 
 
-Bool isTransientOf (TwmWindow *trans, TwmWindow *main)
+Bool isTransientOf(TwmWindow *trans, TwmWindow *main)
 {
-    return (trans->transient && trans->transientfor == main->w);
+	return (trans->transient && trans->transientfor == main->w);
 }
 
-Bool isGroupLeader (TwmWindow *twm_win)
+Bool isGroupLeader(TwmWindow *twm_win)
 {
-    return ((twm_win->group == 0)
-            || (twm_win->group == twm_win->w));
+	return ((twm_win->group == 0)
+	        || (twm_win->group == twm_win->w));
 }
 
-Bool isGroupLeaderOf (TwmWindow *leader, TwmWindow *twm_win)
+Bool isGroupLeaderOf(TwmWindow *leader, TwmWindow *twm_win)
 {
-    return (isGroupLeader(leader)
-            && !isGroupLeader(twm_win)
-            && (leader->group == twm_win->group));
+	return (isGroupLeader(leader)
+	        && !isGroupLeader(twm_win)
+	        && (leader->group == twm_win->group));
 }
 
-Bool isSmallTransientOf (TwmWindow *trans, TwmWindow *main)
+Bool isSmallTransientOf(TwmWindow *trans, TwmWindow *main)
 {
-    int trans_area, main_area;
+	int trans_area, main_area;
 
-    if (isTransientOf(trans, main)) {
-	assert(trans->frame);
-	trans_area = trans->frame_width * trans->frame_height;
-	main_area = main->frame_width * main->frame_height;
+	if(isTransientOf(trans, main)) {
+		assert(trans->frame);
+		trans_area = trans->frame_width * trans->frame_height;
+		main_area = main->frame_width * main->frame_height;
 
-	return (trans_area < ((main_area * Scr->TransientOnTop) / 100));
-    } else {
-	return False;
-    }
+		return (trans_area < ((main_area * Scr->TransientOnTop) / 100));
+	}
+	else {
+		return False;
+	}
 }
 
 static Window WindowOfOwl(OtpWinList *owl)
 {
-    return (owl->type == IconWin)
-	? owl->twm_win->icon->w : owl->twm_win->frame;
+	return (owl->type == IconWin)
+	       ? owl->twm_win->icon->w : owl->twm_win->frame;
 }
 
 Bool OtpCheckConsistency(void)
 {
 #if DEBUG_OTP
-    VirtualScreen *tvs;
-    Bool result = TRUE;
+	VirtualScreen *tvs;
+	Bool result = TRUE;
 
-    for (tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
-	fprintf(stderr, "OtpCheckConsistencyVS: vs:(x,y)=(%d,%d)\n",
-		tvs->x, tvs->y);
-	result = result && OtpCheckConsistencyVS(tvs, tvs->window);
-    }
-    return result;
+	for(tvs = Scr->vScreenList; tvs != NULL; tvs = tvs->next) {
+		fprintf(stderr, "OtpCheckConsistencyVS: vs:(x,y)=(%d,%d)\n",
+		        tvs->x, tvs->y);
+		result = result && OtpCheckConsistencyVS(tvs, tvs->window);
+	}
+	return result;
 #else
-    return OtpCheckConsistencyVS(Scr->currentvs, Scr->Root);
+	return OtpCheckConsistencyVS(Scr->currentvs, Scr->Root);
 #endif
 }
 
 static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
 {
 #if CHECK_OTP
-    OtpWinList *owl;
-    TwmWindow *twm_win;
-    Window root, parent, *children;
-    unsigned int nchildren;
-    int priority = 0;
-    int stack = -1;
-    int nwins = 0;
+	OtpWinList *owl;
+	TwmWindow *twm_win;
+	Window root, parent, *children;
+	unsigned int nchildren;
+	int priority = 0;
+	int stack = -1;
+	int nwins = 0;
 
-    XQueryTree(dpy, vroot, &root, &parent, &children, &nchildren);
+	XQueryTree(dpy, vroot, &root, &parent, &children, &nchildren);
 
 #if DEBUG_OTP
-    {
-	int i;
-	fprintf(stderr, "XQueryTree: %d children:\n", nchildren);
+	{
+		int i;
+		fprintf(stderr, "XQueryTree: %d children:\n", nchildren);
 
-	for (i = 0; i < nchildren; i++) {
-	    fprintf(stderr, "[%d]=%x ", i, (unsigned int)children[i]);
+		for(i = 0; i < nchildren; i++) {
+			fprintf(stderr, "[%d]=%x ", i, (unsigned int)children[i]);
+		}
+		fprintf(stderr, "\n");
 	}
-	fprintf(stderr, "\n");
-    }
 #endif
 
-    for (owl = bottomOwl; owl != NULL; owl = owl->above) {
-        twm_win = owl->twm_win;
+	for(owl = bottomOwl; owl != NULL; owl = owl->above) {
+		twm_win = owl->twm_win;
 
-        /* check the back arrows are correct */
-	assert(((owl->type == IconWin) && (owl == twm_win->icon->otp))
-               || ((owl->type == WinWin) && (owl == twm_win->otp)));
+		/* check the back arrows are correct */
+		assert(((owl->type == IconWin) && (owl == twm_win->icon->otp))
+		       || ((owl->type == WinWin) && (owl == twm_win->otp)));
 
-	/* check the doubly linked list's consistency */
-	if (owl->below == NULL) {
-	    assert(owl == bottomOwl);
-	} else {
-	    assert(owl->below->above == owl);
-	}
+		/* check the doubly linked list's consistency */
+		if(owl->below == NULL) {
+			assert(owl == bottomOwl);
+		}
+		else {
+			assert(owl->below->above == owl);
+		}
 
-	/* check the ordering of the priority */
-	assert(owl->priority <= OTP_MAX);
-	assert(owl->priority >= priority);
-	priority = owl->priority;
+		/* check the ordering of the priority */
+		assert(owl->priority <= OTP_MAX);
+		assert(owl->priority >= priority);
+		priority = owl->priority;
 
 #if DEBUG_OTP
 
-	fprintf(stderr, "checking owl: pri %d w=%x stack=%d",
-		priority, (unsigned int)WindowOfOwl(owl), stack);
-	if (twm_win) {
-	    fprintf(stderr, " title=%s occupation=%x ",
-		    twm_win->full_name,
-		    (unsigned int)twm_win->occupation);
-	    if (owl->twm_win->vs) {
-		fprintf(stderr, " vs:(x,y)=(%d,%d)",
-		    twm_win->vs->x,
-		    twm_win->vs->y);
-	    } else {
-		fprintf(stderr, " vs:NULL");
-	    }
-	    if (owl->twm_win->parent_vs) {
-		fprintf(stderr, " parent_vs:(x,y)=(%d,%d)",
-		    twm_win->parent_vs->x,
-		    twm_win->parent_vs->y);
-	    } else {
-		fprintf(stderr, " parent_vs:NULL");
-	    }
-	}
-	fprintf(stderr, " %s\n", (owl->type == WinWin ? "Window" : "Icon"));
+		fprintf(stderr, "checking owl: pri %d w=%x stack=%d",
+		        priority, (unsigned int)WindowOfOwl(owl), stack);
+		if(twm_win) {
+			fprintf(stderr, " title=%s occupation=%x ",
+			        twm_win->full_name,
+			        (unsigned int)twm_win->occupation);
+			if(owl->twm_win->vs) {
+				fprintf(stderr, " vs:(x,y)=(%d,%d)",
+				        twm_win->vs->x,
+				        twm_win->vs->y);
+			}
+			else {
+				fprintf(stderr, " vs:NULL");
+			}
+			if(owl->twm_win->parent_vs) {
+				fprintf(stderr, " parent_vs:(x,y)=(%d,%d)",
+				        twm_win->parent_vs->x,
+				        twm_win->parent_vs->y);
+			}
+			else {
+				fprintf(stderr, " parent_vs:NULL");
+			}
+		}
+		fprintf(stderr, " %s\n", (owl->type == WinWin ? "Window" : "Icon"));
 #endif
 
-        /* count the number of twm windows */
-        if (owl->type == WinWin) {
-	    nwins++;
-	}
+		/* count the number of twm windows */
+		if(owl->type == WinWin) {
+			nwins++;
+		}
 
-	if (twm_win->winbox) {
-	    /*
-	     * We can't check windows in a WindowBox, since they are
-	     * not direct children of the Root window.
-	     * (How they otherwise work with priorities is also an
-	     * interesting question.)
-	     */
-	    DPRINTF((stderr, "Can't check this window, it is in a WinBox\n"));
-	    continue;
-	}
+		if(twm_win->winbox) {
+			/*
+			 * We can't check windows in a WindowBox, since they are
+			 * not direct children of the Root window.
+			 * (How they otherwise work with priorities is also an
+			 * interesting question.)
+			 */
+			DPRINTF((stderr, "Can't check this window, it is in a WinBox\n"));
+			continue;
+		}
 
-	/*
-	 * Check only windows from the current vitual screen; the others
-	 * won't show up in the tree from XQueryTree().
-	 */
-	if (currentvs == twm_win->parent_vs) {
-	    /* check the window's existence. */
-	    Window windowOfOwl = WindowOfOwl(owl);
-	    
+		/*
+		 * Check only windows from the current vitual screen; the others
+		 * won't show up in the tree from XQueryTree().
+		 */
+		if(currentvs == twm_win->parent_vs) {
+			/* check the window's existence. */
+			Window windowOfOwl = WindowOfOwl(owl);
+
 #if DEBUG_OTP
-	    int i;
-	    for (i = 0; i < nchildren && windowOfOwl != children[i];) {
-		i++;
-	    }
-	    fprintf(stderr, "search for owl in stack -> i=%d\n", i);
-	    assert (i > stack && "Window not in good place in stack");
-	    assert (i < nchildren && "Window was not found in stack");
-	    if (0) {
-		char buf[128];
-		snprintf(buf, 128, "xwininfo -all -id %d", (int)windowOfOwl);
-		system(buf);
-	    }
+			int i;
+			for(i = 0; i < nchildren && windowOfOwl != children[i];) {
+				i++;
+			}
+			fprintf(stderr, "search for owl in stack -> i=%d\n", i);
+			assert(i > stack && "Window not in good place in stack");
+			assert(i < nchildren && "Window was not found in stack");
+			if(0) {
+				char buf[128];
+				snprintf(buf, 128, "xwininfo -all -id %d", (int)windowOfOwl);
+				system(buf);
+			}
 
-	    /* we know that this always increases stack (assert i>stack) */
-	    stack = i;
+			/* we know that this always increases stack (assert i>stack) */
+			stack = i;
 #else /* DEBUG_OTP */
-	    /* check against the Xserver's stack */
-	    do {
-		stack++;
-		DPRINTF((stderr, "stack++: children[%d] = %x\n", stack, (unsigned int)children[stack]));
-		assert(stack < nchildren);
-	    } while (windowOfOwl != children[stack]);
+			/* check against the Xserver's stack */
+			do {
+				stack++;
+				DPRINTF((stderr, "stack++: children[%d] = %x\n", stack,
+				         (unsigned int)children[stack]));
+				assert(stack < nchildren);
+			}
+			while(windowOfOwl != children[stack]);
 #endif /* DEBUG_OTP */
+		}
 	}
-    }
 
-    XFree(children);
+	XFree(children);
 
-    /* by decrementing nwins, check that all the wins are in our list */
-    for (twm_win = Scr->FirstWindow; twm_win != NULL; twm_win = twm_win->next) {
-        nwins--;
-    }
-    /* if we just removed a win, it might still be somewhere, hence the -1 */
-    assert((nwins <= 0) && (nwins >= -1));
+	/* by decrementing nwins, check that all the wins are in our list */
+	for(twm_win = Scr->FirstWindow; twm_win != NULL; twm_win = twm_win->next) {
+		nwins--;
+	}
+	/* if we just removed a win, it might still be somewhere, hence the -1 */
+	assert((nwins <= 0) && (nwins >= -1));
 #endif
-    return True;
+	return True;
 }
 
 
-static void RemoveOwl (OtpWinList *owl)
+static void RemoveOwl(OtpWinList *owl)
 {
-    if (owl->above != NULL) {
-	owl->above->below = owl->below;
-    }
-    if (owl->below != NULL) {
-	owl->below->above = owl->above;
-    } else {
-	bottomOwl = owl->above;
-    }
-    owl->below = NULL;
-    owl->above = NULL;
+	if(owl->above != NULL) {
+		owl->above->below = owl->below;
+	}
+	if(owl->below != NULL) {
+		owl->below->above = owl->above;
+	}
+	else {
+		bottomOwl = owl->above;
+	}
+	owl->below = NULL;
+	owl->above = NULL;
 }
 
 
@@ -358,352 +363,371 @@ static void RemoveOwl (OtpWinList *owl)
  */
 static OtpWinList *GetOwlAtOrBelowInVS(OtpWinList *owl, VirtualScreen *vs)
 {
-    while (owl != NULL && owl->twm_win->parent_vs != vs) {
-	owl = owl->below;
-    }
+	while(owl != NULL && owl->twm_win->parent_vs != vs) {
+		owl = owl->below;
+	}
 
-    return owl;
+	return owl;
 }
 
 
-static void InsertOwlAbove (OtpWinList *owl, OtpWinList *other_owl)
+static void InsertOwlAbove(OtpWinList *owl, OtpWinList *other_owl)
 {
 #if DEBUG_OTP
-    fprintf(stderr, "InsertOwlAbove owl->priority=%d w=%x parent_vs:(x,y)=(%d,%d)",
-	    owl->priority,
-	    (unsigned int)WindowOfOwl(owl),
-	    owl->twm_win->parent_vs->x,
-	    owl->twm_win->parent_vs->y);
-    if (other_owl != NULL) {
-	fprintf(stderr, "other_owl->priority=%d w=%x parent_vs:(x,y)=(%d,%d)",
-		other_owl->priority,
-		(unsigned int)WindowOfOwl(other_owl),
-		owl->twm_win->parent_vs->x,
-		owl->twm_win->parent_vs->y);
-    }
-    fprintf(stderr, "\n");
+	fprintf(stderr, "InsertOwlAbove owl->priority=%d w=%x parent_vs:(x,y)=(%d,%d)",
+	        owl->priority,
+	        (unsigned int)WindowOfOwl(owl),
+	        owl->twm_win->parent_vs->x,
+	        owl->twm_win->parent_vs->y);
+	if(other_owl != NULL) {
+		fprintf(stderr, "other_owl->priority=%d w=%x parent_vs:(x,y)=(%d,%d)",
+		        other_owl->priority,
+		        (unsigned int)WindowOfOwl(other_owl),
+		        owl->twm_win->parent_vs->x,
+		        owl->twm_win->parent_vs->y);
+	}
+	fprintf(stderr, "\n");
 #endif
 
-    assert(owl->above == NULL);
-    assert(owl->below == NULL);
+	assert(owl->above == NULL);
+	assert(owl->below == NULL);
 
 
-    if (other_owl == NULL) {
-	DPRINTF((stderr, "Bottom-most window overall\n"));
-        /* special case for the lowest window overall */
-        assert(owl->priority <= bottomOwl->priority);
+	if(other_owl == NULL) {
+		DPRINTF((stderr, "Bottom-most window overall\n"));
+		/* special case for the lowest window overall */
+		assert(owl->priority <= bottomOwl->priority);
 
-        /* pass the action to the Xserver */
-        XLowerWindow(dpy, WindowOfOwl(owl));
+		/* pass the action to the Xserver */
+		XLowerWindow(dpy, WindowOfOwl(owl));
 
-        /* update the list */
-        owl->above = bottomOwl;
-        owl->above->below = owl;
-        bottomOwl = owl;
-    } else {
-	OtpWinList *vs_owl = GetOwlAtOrBelowInVS(other_owl, owl->twm_win->parent_vs);
-
-	assert(owl->priority >= other_owl->priority);
-	if (other_owl->above != NULL) {
-	    assert(owl->priority <= other_owl->above->priority);
+		/* update the list */
+		owl->above = bottomOwl;
+		owl->above->below = owl;
+		bottomOwl = owl;
 	}
+	else {
+		OtpWinList *vs_owl = GetOwlAtOrBelowInVS(other_owl, owl->twm_win->parent_vs);
 
-	if (vs_owl == NULL) {
-	    DPRINTF((stderr, "Bottom-most window in VirtualScreen\n"));
-	    /* special case for the lowest window in this virtual screen */
+		assert(owl->priority >= other_owl->priority);
+		if(other_owl->above != NULL) {
+			assert(owl->priority <= other_owl->above->priority);
+		}
 
-	    /* pass the action to the Xserver */
-	    XLowerWindow(dpy, WindowOfOwl(owl));
-	} else {
-	    XWindowChanges xwc;
-	    int xwcm;
+		if(vs_owl == NULL) {
+			DPRINTF((stderr, "Bottom-most window in VirtualScreen\n"));
+			/* special case for the lowest window in this virtual screen */
 
-	    DPRINTF((stderr, "General case\n"));
-	    /* general case */
-	    assert(vs_owl->priority <= other_owl->priority);
-	    assert(owl->twm_win->parent_vs == vs_owl->twm_win->parent_vs);
-	
-	    /* pass the action to the Xserver */
-	    xwcm = CWStackMode | CWSibling;
-	    xwc.sibling = WindowOfOwl(vs_owl);
-	    xwc.stack_mode = Above;
-	    XConfigureWindow(dpy, WindowOfOwl(owl), xwcm, &xwc);
+			/* pass the action to the Xserver */
+			XLowerWindow(dpy, WindowOfOwl(owl));
+		}
+		else {
+			XWindowChanges xwc;
+			int xwcm;
+
+			DPRINTF((stderr, "General case\n"));
+			/* general case */
+			assert(vs_owl->priority <= other_owl->priority);
+			assert(owl->twm_win->parent_vs == vs_owl->twm_win->parent_vs);
+
+			/* pass the action to the Xserver */
+			xwcm = CWStackMode | CWSibling;
+			xwc.sibling = WindowOfOwl(vs_owl);
+			xwc.stack_mode = Above;
+			XConfigureWindow(dpy, WindowOfOwl(owl), xwcm, &xwc);
+		}
+
+		/* update the list */
+		owl->below = other_owl;
+		owl->above = other_owl->above;
+		owl->below->above = owl;
+		if(owl->above != NULL) {
+			owl->above->below = owl;
+		}
 	}
-
-	/* update the list */
-	owl->below = other_owl;
-	owl->above = other_owl->above;
-	owl->below->above = owl;
-	if (owl->above != NULL) owl->above->below = owl;
-    }
 }
 
 
 /* should owl stay above other_owl if other_owl was raised ? */
-static Bool shouldStayAbove (OtpWinList *owl, OtpWinList *other_owl)
+static Bool shouldStayAbove(OtpWinList *owl, OtpWinList *other_owl)
 {
-    return ((owl->type == WinWin)
-            && (other_owl->type == WinWin)
-            && isSmallTransientOf(owl->twm_win, other_owl->twm_win));
+	return ((owl->type == WinWin)
+	        && (other_owl->type == WinWin)
+	        && isSmallTransientOf(owl->twm_win, other_owl->twm_win));
 }
 
 
-static void RaiseSmallTransientsOfAbove (OtpWinList *owl, OtpWinList *other_owl)
+static void RaiseSmallTransientsOfAbove(OtpWinList *owl, OtpWinList *other_owl)
 {
-    OtpWinList *trans_owl, *tmp_owl;
+	OtpWinList *trans_owl, *tmp_owl;
 
-    /* the icons have no transients and we can't have windows below NULL */
-    if ((owl->type != WinWin) || other_owl == NULL) return;
-    
-    /* beware: we modify the list as we scan it. This is the reason for tmp */
-    for (trans_owl = other_owl->below; trans_owl != NULL; trans_owl = tmp_owl) {
-        tmp_owl = trans_owl->below;
-	if (shouldStayAbove(trans_owl, owl)) {
-	    RemoveOwl(trans_owl);
-	    trans_owl->priority = owl->priority;
-	    InsertOwlAbove(trans_owl, other_owl);
+	/* the icons have no transients and we can't have windows below NULL */
+	if((owl->type != WinWin) || other_owl == NULL) {
+		return;
 	}
-    }
-}
 
-
-static OtpWinList *OwlRightBelow (int priority)
-{
-    OtpWinList *owl1, *owl2;
-
-    /* in case there isn't anything below */
-    if (priority <= bottomOwl->priority) return NULL;
-
-    for (owl1 = bottomOwl, owl2 = owl1->above;
-         (owl2 != NULL) && (owl2->priority < priority);
-         owl1 = owl2, owl2 = owl2->above);
-
-    assert(owl2 == owl1->above);
-    assert(owl1->priority < priority);
-    assert((owl2 == NULL) || (owl2->priority >= priority));
-
-
-    return owl1;
-}
-
-static void InsertOwl (OtpWinList *owl, int where)
-{
-    OtpWinList *other_owl;
-    int priority;
-
-    DPRINTF((stderr, "InsertOwl %s\n",
-	     (where == Above) ? "Above" :
-	     (where == Below) ? "Below" :
-			       "???"));	       
-    assert(owl->above == NULL);
-    assert(owl->below == NULL);
-    assert((where == Above) || (where == Below));
-
-    priority = (where == Above) ? owl->priority : owl->priority - 1;
-    
-    if (bottomOwl == NULL) {
-	/* for the first window: just insert it in the list */
-	bottomOwl = owl;
-    } else {
-        other_owl = OwlRightBelow(priority + 1);
-
-        /* make sure other_owl is not one of the transients */
-        while ((other_owl != NULL)
-               && shouldStayAbove(other_owl, owl)) {
-            other_owl->priority = owl->priority;
-            other_owl = other_owl->below;
-        }
-
-        /* raise the transient windows that should stay on top */
-        RaiseSmallTransientsOfAbove(owl, other_owl);
-
-        /* now go ahead and put the window where it should go */
-        InsertOwlAbove(owl, other_owl);
-    }
-}
-
-
-static void SetOwlPriority (OtpWinList *owl, int new_pri)
-{
-    int old_pri;
-    DPRINTF((stderr, "SetOwlPriority(%d)\n", new_pri));
-
-    /* make sure the values are within bounds */
-    if (new_pri < 0) new_pri = 0;
-    if (new_pri > OTP_MAX) new_pri = OTP_MAX;
-
-    old_pri = owl->priority;
-
-    RemoveOwl(owl);
-    owl->priority = new_pri;
-    InsertOwl(owl, (new_pri < old_pri) ? Below : Above);
-
-    assert(owl->priority == new_pri);
-}
-
-
-static void TryToMoveTransientsOfTo (OtpWinList *owl, int priority)
-{
-    OtpWinList *other_owl, *tmp_owl;
-    
-    /* the icons have no transients */
-    if (owl->type != WinWin) return;
-
-    other_owl = OwlRightBelow(owl->priority);
-    other_owl = (other_owl == NULL) ? bottomOwl : other_owl->above;
-    assert(other_owl->priority >= owl->priority);
-
-    /* !beware! we're changing the list as we scan it, hence the tmp_owl */
-    while ((other_owl != NULL) && (other_owl->priority == owl->priority)) {
-        tmp_owl = other_owl->above;
-        if ((other_owl->type == WinWin)
-            && isTransientOf(other_owl->twm_win, owl->twm_win)) {
-            SetOwlPriority(other_owl, priority);
-        }
-        other_owl = tmp_owl;
-    }
-}
-
-static void TryToSwitch (OtpWinList *owl, int where)
-{
-    int priority;
-
-    if (!owl->switching) return;
-
-    priority = OTP_MAX - owl->priority;
-    if (((where == Above) && (priority > owl->priority)) ||
-        ((where == Below) && (priority < owl->priority))) {
-        TryToMoveTransientsOfTo(owl, priority);
-        owl->priority = priority;
-    }
-}
-
-static void RaiseOwl (OtpWinList *owl)
-{
-    TryToSwitch(owl, Above);
-    RemoveOwl(owl);
-    InsertOwl(owl, Above);
-}
-
-
-static void LowerOwl (OtpWinList *owl)
-{
-    TryToSwitch(owl, Below);
-    RemoveOwl(owl);
-    InsertOwl(owl, Below);
-}
-
-static Bool isHiddenBy (OtpWinList *owl, OtpWinList *other_owl)
-{
-    /* doesn't check that owl is on screen */
-    return (isOnScreen(other_owl)
-            && isIntersectingWith(owl, other_owl));
-}
-
-static void TinyRaiseOwl (OtpWinList *owl)
-{
-    OtpWinList *other_owl = owl->above;
-    
-    while ((other_owl != NULL) && (other_owl->priority == owl->priority)) {
-        if (isHiddenBy(owl, other_owl)
-            && !shouldStayAbove(other_owl, owl)) {
-            RemoveOwl(owl);
-            RaiseSmallTransientsOfAbove(owl, other_owl);
-            InsertOwlAbove(owl, other_owl);
-            return;
-        } else {
-            other_owl = other_owl->above;
-        }
-    }
-}
-
-static void TinyLowerOwl (OtpWinList *owl)
-{
-    OtpWinList *other_owl = owl->below;
-    
-    while ((other_owl != NULL) && (other_owl->priority == owl->priority)) {
-        if (isHiddenBy(owl, other_owl)) {
-            RemoveOwl(owl);
-            InsertOwlAbove(owl, other_owl->below);
-            return;
-        } else {
-            other_owl = other_owl->below;
-        }
-    }
-}
-
-static void RaiseLowerOwl (OtpWinList *owl)
-{
-    OtpWinList *other_owl;
-    int priority;
-
-    priority = MAX(owl->priority, OTP_MAX - owl->priority);
-    
-    for (other_owl = owl->above;
-	 (other_owl != NULL) && (other_owl->priority <= priority);
-	 other_owl = other_owl->above) {
-	if (isHiddenBy(owl, other_owl)
-            && !shouldStayAbove(other_owl, owl)) {
-	    RaiseOwl(owl);
-	    return;
+	/* beware: we modify the list as we scan it. This is the reason for tmp */
+	for(trans_owl = other_owl->below; trans_owl != NULL; trans_owl = tmp_owl) {
+		tmp_owl = trans_owl->below;
+		if(shouldStayAbove(trans_owl, owl)) {
+			RemoveOwl(trans_owl);
+			trans_owl->priority = owl->priority;
+			InsertOwlAbove(trans_owl, other_owl);
+		}
 	}
-    }
-    LowerOwl(owl);
 }
 
 
-void OtpRaise (TwmWindow *twm_win, WinType wintype)
+static OtpWinList *OwlRightBelow(int priority)
 {
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    assert(owl != NULL);
+	OtpWinList *owl1, *owl2;
 
-    RaiseOwl(owl);
+	/* in case there isn't anything below */
+	if(priority <= bottomOwl->priority) {
+		return NULL;
+	}
 
-    OtpCheckConsistency();
+	for(owl1 = bottomOwl, owl2 = owl1->above;
+	                (owl2 != NULL) && (owl2->priority < priority);
+	                owl1 = owl2, owl2 = owl2->above);
+
+	assert(owl2 == owl1->above);
+	assert(owl1->priority < priority);
+	assert((owl2 == NULL) || (owl2->priority >= priority));
+
+
+	return owl1;
+}
+
+static void InsertOwl(OtpWinList *owl, int where)
+{
+	OtpWinList *other_owl;
+	int priority;
+
+	DPRINTF((stderr, "InsertOwl %s\n",
+	         (where == Above) ? "Above" :
+	         (where == Below) ? "Below" :
+	         "???"));
+	assert(owl->above == NULL);
+	assert(owl->below == NULL);
+	assert((where == Above) || (where == Below));
+
+	priority = (where == Above) ? owl->priority : owl->priority - 1;
+
+	if(bottomOwl == NULL) {
+		/* for the first window: just insert it in the list */
+		bottomOwl = owl;
+	}
+	else {
+		other_owl = OwlRightBelow(priority + 1);
+
+		/* make sure other_owl is not one of the transients */
+		while((other_owl != NULL)
+		                && shouldStayAbove(other_owl, owl)) {
+			other_owl->priority = owl->priority;
+			other_owl = other_owl->below;
+		}
+
+		/* raise the transient windows that should stay on top */
+		RaiseSmallTransientsOfAbove(owl, other_owl);
+
+		/* now go ahead and put the window where it should go */
+		InsertOwlAbove(owl, other_owl);
+	}
 }
 
 
-void OtpLower (TwmWindow *twm_win, WinType wintype)
+static void SetOwlPriority(OtpWinList *owl, int new_pri)
 {
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    assert(owl != NULL);
+	int old_pri;
+	DPRINTF((stderr, "SetOwlPriority(%d)\n", new_pri));
 
-    LowerOwl(owl);
+	/* make sure the values are within bounds */
+	if(new_pri < 0) {
+		new_pri = 0;
+	}
+	if(new_pri > OTP_MAX) {
+		new_pri = OTP_MAX;
+	}
 
-    OtpCheckConsistency();
+	old_pri = owl->priority;
+
+	RemoveOwl(owl);
+	owl->priority = new_pri;
+	InsertOwl(owl, (new_pri < old_pri) ? Below : Above);
+
+	assert(owl->priority == new_pri);
 }
 
 
-void OtpRaiseLower (TwmWindow *twm_win, WinType wintype)
+static void TryToMoveTransientsOfTo(OtpWinList *owl, int priority)
 {
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    assert(owl != NULL);
+	OtpWinList *other_owl, *tmp_owl;
 
-    RaiseLowerOwl(owl);
+	/* the icons have no transients */
+	if(owl->type != WinWin) {
+		return;
+	}
 
-    OtpCheckConsistency();
+	other_owl = OwlRightBelow(owl->priority);
+	other_owl = (other_owl == NULL) ? bottomOwl : other_owl->above;
+	assert(other_owl->priority >= owl->priority);
+
+	/* !beware! we're changing the list as we scan it, hence the tmp_owl */
+	while((other_owl != NULL) && (other_owl->priority == owl->priority)) {
+		tmp_owl = other_owl->above;
+		if((other_owl->type == WinWin)
+		                && isTransientOf(other_owl->twm_win, owl->twm_win)) {
+			SetOwlPriority(other_owl, priority);
+		}
+		other_owl = tmp_owl;
+	}
+}
+
+static void TryToSwitch(OtpWinList *owl, int where)
+{
+	int priority;
+
+	if(!owl->switching) {
+		return;
+	}
+
+	priority = OTP_MAX - owl->priority;
+	if(((where == Above) && (priority > owl->priority)) ||
+	                ((where == Below) && (priority < owl->priority))) {
+		TryToMoveTransientsOfTo(owl, priority);
+		owl->priority = priority;
+	}
+}
+
+static void RaiseOwl(OtpWinList *owl)
+{
+	TryToSwitch(owl, Above);
+	RemoveOwl(owl);
+	InsertOwl(owl, Above);
 }
 
 
-void OtpTinyRaise (TwmWindow *twm_win, WinType wintype)
+static void LowerOwl(OtpWinList *owl)
 {
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    assert(owl != NULL);
+	TryToSwitch(owl, Below);
+	RemoveOwl(owl);
+	InsertOwl(owl, Below);
+}
 
-    TinyRaiseOwl(owl);
+static Bool isHiddenBy(OtpWinList *owl, OtpWinList *other_owl)
+{
+	/* doesn't check that owl is on screen */
+	return (isOnScreen(other_owl)
+	        && isIntersectingWith(owl, other_owl));
+}
 
-    OtpCheckConsistency();
+static void TinyRaiseOwl(OtpWinList *owl)
+{
+	OtpWinList *other_owl = owl->above;
+
+	while((other_owl != NULL) && (other_owl->priority == owl->priority)) {
+		if(isHiddenBy(owl, other_owl)
+		                && !shouldStayAbove(other_owl, owl)) {
+			RemoveOwl(owl);
+			RaiseSmallTransientsOfAbove(owl, other_owl);
+			InsertOwlAbove(owl, other_owl);
+			return;
+		}
+		else {
+			other_owl = other_owl->above;
+		}
+	}
+}
+
+static void TinyLowerOwl(OtpWinList *owl)
+{
+	OtpWinList *other_owl = owl->below;
+
+	while((other_owl != NULL) && (other_owl->priority == owl->priority)) {
+		if(isHiddenBy(owl, other_owl)) {
+			RemoveOwl(owl);
+			InsertOwlAbove(owl, other_owl->below);
+			return;
+		}
+		else {
+			other_owl = other_owl->below;
+		}
+	}
+}
+
+static void RaiseLowerOwl(OtpWinList *owl)
+{
+	OtpWinList *other_owl;
+	int priority;
+
+	priority = MAX(owl->priority, OTP_MAX - owl->priority);
+
+	for(other_owl = owl->above;
+	                (other_owl != NULL) && (other_owl->priority <= priority);
+	                other_owl = other_owl->above) {
+		if(isHiddenBy(owl, other_owl)
+		                && !shouldStayAbove(other_owl, owl)) {
+			RaiseOwl(owl);
+			return;
+		}
+	}
+	LowerOwl(owl);
 }
 
 
-void OtpTinyLower (TwmWindow *twm_win, WinType wintype)
+void OtpRaise(TwmWindow *twm_win, WinType wintype)
 {
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    assert(owl != NULL);
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	assert(owl != NULL);
 
-    TinyLowerOwl(owl);
+	RaiseOwl(owl);
 
-    OtpCheckConsistency();
+	OtpCheckConsistency();
+}
+
+
+void OtpLower(TwmWindow *twm_win, WinType wintype)
+{
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	assert(owl != NULL);
+
+	LowerOwl(owl);
+
+	OtpCheckConsistency();
+}
+
+
+void OtpRaiseLower(TwmWindow *twm_win, WinType wintype)
+{
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	assert(owl != NULL);
+
+	RaiseLowerOwl(owl);
+
+	OtpCheckConsistency();
+}
+
+
+void OtpTinyRaise(TwmWindow *twm_win, WinType wintype)
+{
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	assert(owl != NULL);
+
+	TinyRaiseOwl(owl);
+
+	OtpCheckConsistency();
+}
+
+
+void OtpTinyLower(TwmWindow *twm_win, WinType wintype)
+{
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	assert(owl != NULL);
+
+	TinyLowerOwl(owl);
+
+	OtpCheckConsistency();
 }
 
 
@@ -725,25 +749,25 @@ void OtpTinyLower (TwmWindow *twm_win, WinType wintype)
 
 void OtpCirculateSubwindows(VirtualScreen *vs, int direction)
 {
-    Window w = vs->window;
-    XWindowAttributes winattrs;
-    Bool circulated;
+	Window w = vs->window;
+	XWindowAttributes winattrs;
+	Bool circulated;
 
-    DPRINTF((stderr, "OtpCirculateSubwindows %d\n", direction));
+	DPRINTF((stderr, "OtpCirculateSubwindows %d\n", direction));
 
-    XGetWindowAttributes (dpy, w, &winattrs);
-    XSelectInput (dpy, w, winattrs.your_event_mask | SubstructureNotifyMask);
-    XCirculateSubwindows(dpy, w, direction);
-    XSelectInput (dpy, w, winattrs.your_event_mask);
-    /*
-     * Now we should get the CirculateNotify event.
-     * It usually seems to arrive soon enough, but just to be sure, look
-     * ahead in the message queue to see if it can be expedited.
-     */
-    circulated = XCheckTypedWindowEvent (dpy, w, CirculateNotify, &Event);
-    if (circulated) {
-	HandleCirculateNotify();
-    }
+	XGetWindowAttributes(dpy, w, &winattrs);
+	XSelectInput(dpy, w, winattrs.your_event_mask | SubstructureNotifyMask);
+	XCirculateSubwindows(dpy, w, direction);
+	XSelectInput(dpy, w, winattrs.your_event_mask);
+	/*
+	 * Now we should get the CirculateNotify event.
+	 * It usually seems to arrive soon enough, but just to be sure, look
+	 * ahead in the message queue to see if it can be expedited.
+	 */
+	circulated = XCheckTypedWindowEvent(dpy, w, CirculateNotify, &Event);
+	if(circulated) {
+		HandleCirculateNotify();
+	}
 }
 
 /*
@@ -751,414 +775,441 @@ void OtpCirculateSubwindows(VirtualScreen *vs, int direction)
  * enforce the priority by possibly restacking the window again.
  */
 
-void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win, WinType wintype, int place)
+void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win,
+                              WinType wintype, int place)
 {
-    switch (place) {
-	case PlaceOnTop:
-	    OtpRaise(twm_win, wintype);
-	    break;
-	case PlaceOnBottom:
-	    OtpLower(twm_win, wintype);
-	    break;
-	default:
-	    DPRINTF((stderr, "OtpHandleCirculateNotify: place=%d\n", place));
-	    assert(0 && "OtpHandleCirculateNotify: place equals PlaceOnTop nor PlaceOnBottom");
-    }
-}
-
-void OtpSetPriority (TwmWindow *twm_win, WinType wintype, int new_pri)
-{
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    int priority = OTP_ZERO + new_pri;
-
-    DPRINTF((stderr, "OtpSetPriority: new_pri=%d\n", new_pri));
-    assert(owl != NULL);
-
-    if (ABS(new_pri) > OTP_ZERO) {
-        DPRINTF((stderr, "invalid OnTopPriority value: %d\n", new_pri));
-    } else {
-        TryToMoveTransientsOfTo(owl, priority);
-        SetOwlPriority (owl, priority);
-    }
-
-    OtpCheckConsistency();
-}
-
-
-void OtpChangePriority (TwmWindow *twm_win, WinType wintype, int relpriority)
-{
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    int priority = owl->priority + relpriority;
-
-    TryToMoveTransientsOfTo(owl, priority);
-    SetOwlPriority(owl, priority);
-
-    OtpCheckConsistency();
-}
-
-
-void OtpSwitchPriority (TwmWindow *twm_win, WinType wintype)
-{
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    int priority = OTP_MAX - owl->priority;
-
-    assert(owl != NULL);
-
-    TryToMoveTransientsOfTo(owl, priority);
-    SetOwlPriority(owl, priority);
-
-    OtpCheckConsistency();
-}
-
-
-void OtpToggleSwitching (TwmWindow *twm_win, WinType wintype)
-{
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    assert(owl != NULL);
-
-    owl->switching = !owl->switching;
-
-    OtpCheckConsistency();
-}
-
-
-void OtpForcePlacement (TwmWindow *twm_win, int where, TwmWindow *other_win)
-{
-    OtpWinList *owl = twm_win->otp;
-    OtpWinList *other_owl = other_win->otp;
-
-    assert(twm_win->otp != NULL);
-    assert(other_win->otp != NULL);
-
-    if (where == BottomIf) where = Below;
-    if (where != Below) where = Above;
-
-    /* remove the owl to change it */
-    RemoveOwl(owl);
-
-    /* set the priority to keep the state consistent */
-    owl->priority = other_owl->priority;
-
-    /* put the owl back into the list */
-    if (where == Below) other_owl = other_owl->below;
-    InsertOwlAbove(owl, other_owl);
-
-    OtpCheckConsistency();
-}
-
-
-static void ApplyPreferences (OtpPreferences *prefs, OtpWinList *owl)
-{
-    int i;
-    TwmWindow *twm_win = owl->twm_win;
-
-    /* check PrioritySwitch */
-    if (LookInList(prefs->switchingL, twm_win->full_name, &twm_win->class)) {
-	owl->switching = !prefs->switching;
-    }
-
-    /* check OnTopPriority */
-    for (i = 0; i <= OTP_MAX; i++) {
-	if (LookInList(prefs->priorityL[i],
-		       twm_win->full_name, &twm_win->class)) {
-	    owl->priority = i;
+	switch(place) {
+		case PlaceOnTop:
+			OtpRaise(twm_win, wintype);
+			break;
+		case PlaceOnBottom:
+			OtpLower(twm_win, wintype);
+			break;
+		default:
+			DPRINTF((stderr, "OtpHandleCirculateNotify: place=%d\n", place));
+			assert(0 &&
+			       "OtpHandleCirculateNotify: place equals PlaceOnTop nor PlaceOnBottom");
 	}
-    }
 }
 
-static void RecomputeOwlValues (OtpPreferences *prefs, OtpWinList *owl)
+void OtpSetPriority(TwmWindow *twm_win, WinType wintype, int new_pri)
 {
-    int old_pri;
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	int priority = OTP_ZERO + new_pri;
 
-    old_pri = owl->priority;
-    ApplyPreferences(prefs, owl);
-    if (old_pri != owl->priority) {
-        RemoveOwl(owl);
-        InsertOwl(owl, Above);
-    }
-}
+	DPRINTF((stderr, "OtpSetPriority: new_pri=%d\n", new_pri));
+	assert(owl != NULL);
 
-void OtpRecomputeValues (TwmWindow *twm_win)
-{
-    assert(twm_win->otp != NULL);
+	if(ABS(new_pri) > OTP_ZERO) {
+		DPRINTF((stderr, "invalid OnTopPriority value: %d\n", new_pri));
+	}
+	else {
+		TryToMoveTransientsOfTo(owl, priority);
+		SetOwlPriority(owl, priority);
+	}
 
-    RecomputeOwlValues(Scr->OTP, twm_win->otp);
-    if (twm_win->icon != NULL)
-        RecomputeOwlValues(Scr->IconOTP, twm_win->icon->otp);
-
-    OtpCheckConsistency();
+	OtpCheckConsistency();
 }
 
 
-static void free_OtpWinList (OtpWinList *owl)
+void OtpChangePriority(TwmWindow *twm_win, WinType wintype, int relpriority)
 {
-    assert(owl->above == NULL);
-    assert(owl->below == NULL);
-    free(owl);
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	int priority = owl->priority + relpriority;
+
+	TryToMoveTransientsOfTo(owl, priority);
+	SetOwlPriority(owl, priority);
+
+	OtpCheckConsistency();
 }
 
 
-void OtpRemove (TwmWindow *twm_win, WinType wintype)
+void OtpSwitchPriority(TwmWindow *twm_win, WinType wintype)
 {
-    OtpWinList **owlp;
-    owlp = (wintype == IconWin) ? &twm_win->icon->otp : &twm_win->otp;
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	int priority = OTP_MAX - owl->priority;
 
-    assert(*owlp != NULL);
+	assert(owl != NULL);
 
-    RemoveOwl(*owlp);
-    free_OtpWinList(*owlp);
-    *owlp = NULL;
+	TryToMoveTransientsOfTo(owl, priority);
+	SetOwlPriority(owl, priority);
 
-    OtpCheckConsistency();
+	OtpCheckConsistency();
 }
 
 
-static OtpWinList *new_OtpWinList (TwmWindow *twm_win,
-				   WinType wintype,
-				   Bool switching,
-				   int priority)
+void OtpToggleSwitching(TwmWindow *twm_win, WinType wintype)
 {
-    OtpWinList *owl = (OtpWinList*)malloc(sizeof(OtpWinList));
-    
-    owl->above = NULL;
-    owl->below = NULL;
-    owl->twm_win = twm_win;
-    owl->type = wintype;
-    owl->switching = switching;
-    owl->priority = priority;
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	assert(owl != NULL);
 
-    return owl;
-}
+	owl->switching = !owl->switching;
 
-static OtpWinList *AddNewOwl (TwmWindow *twm_win, WinType wintype, OtpWinList *parent)
-{
-    OtpWinList *owl;
-    OtpPreferences *prefs = (wintype == IconWin) ? Scr->IconOTP : Scr->OTP;
-
-    /* make the new owl */
-    owl = new_OtpWinList(twm_win, wintype,
-                         prefs->switching, prefs->priority);
-
-    /* inherit the default attributes from the parent window if appropriate */
-    if (parent != NULL) {
-	owl->priority = parent->priority;
-	owl->switching = parent->switching;
-    }
-
-    /* now see if the preferences have something to say */
-    if (! (parent != NULL && twm_win->transient)) {
-        ApplyPreferences(prefs, owl);
-    }
-
-    /* finally put the window where it should go */
-    InsertOwl(owl, Above);
-
-    return owl;
-}
-
-void OtpAdd (TwmWindow *twm_win, WinType wintype)
-{
-    TwmWindow *other_win;
-    OtpWinList *parent = NULL;
-    OtpWinList **owlp;
-    owlp = (wintype == IconWin) ? &twm_win->icon->otp : &twm_win->otp;
-
-    assert(*owlp == NULL);
-
-    /* in case it's a transient, find the parent */
-    if (wintype == WinWin && (twm_win->transient || !isGroupLeader(twm_win))) {
-	other_win = Scr->FirstWindow;
-	while (other_win != NULL
-               && !isTransientOf(twm_win, other_win)
-               && !isGroupLeaderOf(other_win, twm_win))
-	    other_win = other_win->next;
-        if (other_win != NULL)
-            parent = other_win->otp;
-    }
-
-    /* make the new owl */
-    *owlp = AddNewOwl(twm_win, wintype, parent);
-
-    assert(*owlp != NULL);
-    OtpCheckConsistency();
+	OtpCheckConsistency();
 }
 
 
-name_list **OtpScrSwitchingL (ScreenInfo *scr, WinType wintype)
+void OtpForcePlacement(TwmWindow *twm_win, int where, TwmWindow *other_win)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
+	OtpWinList *owl = twm_win->otp;
+	OtpWinList *other_owl = other_win->otp;
 
-    assert(prefs != NULL);
+	assert(twm_win->otp != NULL);
+	assert(other_win->otp != NULL);
 
-    return &(prefs->switchingL);
+	if(where == BottomIf) {
+		where = Below;
+	}
+	if(where != Below) {
+		where = Above;
+	}
+
+	/* remove the owl to change it */
+	RemoveOwl(owl);
+
+	/* set the priority to keep the state consistent */
+	owl->priority = other_owl->priority;
+
+	/* put the owl back into the list */
+	if(where == Below) {
+		other_owl = other_owl->below;
+	}
+	InsertOwlAbove(owl, other_owl);
+
+	OtpCheckConsistency();
 }
 
 
-void OtpScrSetSwitching (ScreenInfo *scr, WinType wintype, Bool switching)
+static void ApplyPreferences(OtpPreferences *prefs, OtpWinList *owl)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
+	int i;
+	TwmWindow *twm_win = owl->twm_win;
 
-    assert(prefs != NULL);
+	/* check PrioritySwitch */
+	if(LookInList(prefs->switchingL, twm_win->full_name, &twm_win->class)) {
+		owl->switching = !prefs->switching;
+	}
 
-    scr->OTP->switching = switching;
+	/* check OnTopPriority */
+	for(i = 0; i <= OTP_MAX; i++) {
+		if(LookInList(prefs->priorityL[i],
+		                twm_win->full_name, &twm_win->class)) {
+			owl->priority = i;
+		}
+	}
+}
+
+static void RecomputeOwlValues(OtpPreferences *prefs, OtpWinList *owl)
+{
+	int old_pri;
+
+	old_pri = owl->priority;
+	ApplyPreferences(prefs, owl);
+	if(old_pri != owl->priority) {
+		RemoveOwl(owl);
+		InsertOwl(owl, Above);
+	}
+}
+
+void OtpRecomputeValues(TwmWindow *twm_win)
+{
+	assert(twm_win->otp != NULL);
+
+	RecomputeOwlValues(Scr->OTP, twm_win->otp);
+	if(twm_win->icon != NULL) {
+		RecomputeOwlValues(Scr->IconOTP, twm_win->icon->otp);
+	}
+
+	OtpCheckConsistency();
 }
 
 
-void OtpScrSetZero (ScreenInfo *scr, WinType wintype, int priority)
+static void free_OtpWinList(OtpWinList *owl)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
-
-    assert(prefs != NULL);
-
-    if (ABS(priority) > OTP_ZERO) {
-        fprintf(stderr, "invalid OnTopPriority value: %d\n", priority);
-        return;
-    }
-
-    prefs->priority = priority + OTP_ZERO;
+	assert(owl->above == NULL);
+	assert(owl->below == NULL);
+	free(owl);
 }
 
 
-name_list **OtpScrPriorityL (ScreenInfo *scr, WinType wintype, int priority)
+void OtpRemove(TwmWindow *twm_win, WinType wintype)
 {
-    OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
+	OtpWinList **owlp;
+	owlp = (wintype == IconWin) ? &twm_win->icon->otp : &twm_win->otp;
 
-    assert(prefs != NULL);
+	assert(*owlp != NULL);
 
-    if (ABS(priority) > OTP_ZERO) {
-	fprintf(stderr, "invalid OnTopPriority value: %d\n", priority);
-	priority = 0;
-    }
-    return &(prefs->priorityL[priority + OTP_ZERO]);
+	RemoveOwl(*owlp);
+	free_OtpWinList(*owlp);
+	*owlp = NULL;
+
+	OtpCheckConsistency();
 }
 
 
-static OtpPreferences *new_OtpPreferences (void)
+static OtpWinList *new_OtpWinList(TwmWindow *twm_win,
+                                  WinType wintype,
+                                  Bool switching,
+                                  int priority)
 {
-    OtpPreferences *pref = (OtpPreferences*)malloc(sizeof(OtpPreferences));
-    int i;
+	OtpWinList *owl = (OtpWinList *)malloc(sizeof(OtpWinList));
 
-    /* initialize default values */
-    for (i = 0; i <= OTP_MAX; i++)
-	pref->priorityL[i] = NULL;
-    pref->priority = OTP_ZERO;
-    pref->switchingL = NULL;
-    pref->switching = False;
+	owl->above = NULL;
+	owl->below = NULL;
+	owl->twm_win = twm_win;
+	owl->type = wintype;
+	owl->switching = switching;
+	owl->priority = priority;
 
-    return pref;
+	return owl;
 }
 
-static void free_OtpPreferences (OtpPreferences *pref)
+static OtpWinList *AddNewOwl(TwmWindow *twm_win, WinType wintype,
+                             OtpWinList *parent)
 {
-    int i;
+	OtpWinList *owl;
+	OtpPreferences *prefs = (wintype == IconWin) ? Scr->IconOTP : Scr->OTP;
 
-    FreeList(&pref->switchingL);
-    for (i = 0; i <= OTP_MAX; i++)
-	FreeList(&pref->priorityL[i]);
+	/* make the new owl */
+	owl = new_OtpWinList(twm_win, wintype,
+	                     prefs->switching, prefs->priority);
 
-    free(pref);
+	/* inherit the default attributes from the parent window if appropriate */
+	if(parent != NULL) {
+		owl->priority = parent->priority;
+		owl->switching = parent->switching;
+	}
+
+	/* now see if the preferences have something to say */
+	if(!(parent != NULL && twm_win->transient)) {
+		ApplyPreferences(prefs, owl);
+	}
+
+	/* finally put the window where it should go */
+	InsertOwl(owl, Above);
+
+	return owl;
 }
 
-void OtpScrInitData (ScreenInfo *scr)
+void OtpAdd(TwmWindow *twm_win, WinType wintype)
 {
-    if (scr->OTP != NULL)
-	free_OtpPreferences(scr->OTP);
-    if (scr->IconOTP != NULL)
-	free_OtpPreferences(scr->IconOTP);
-    scr->OTP = new_OtpPreferences();
-    scr->IconOTP = new_OtpPreferences();
+	TwmWindow *other_win;
+	OtpWinList *parent = NULL;
+	OtpWinList **owlp;
+	owlp = (wintype == IconWin) ? &twm_win->icon->otp : &twm_win->otp;
+
+	assert(*owlp == NULL);
+
+	/* in case it's a transient, find the parent */
+	if(wintype == WinWin && (twm_win->transient || !isGroupLeader(twm_win))) {
+		other_win = Scr->FirstWindow;
+		while(other_win != NULL
+		                && !isTransientOf(twm_win, other_win)
+		                && !isGroupLeaderOf(other_win, twm_win)) {
+			other_win = other_win->next;
+		}
+		if(other_win != NULL) {
+			parent = other_win->otp;
+		}
+	}
+
+	/* make the new owl */
+	*owlp = AddNewOwl(twm_win, wintype, parent);
+
+	assert(*owlp != NULL);
+	OtpCheckConsistency();
+}
+
+
+name_list **OtpScrSwitchingL(ScreenInfo *scr, WinType wintype)
+{
+	OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
+
+	assert(prefs != NULL);
+
+	return &(prefs->switchingL);
+}
+
+
+void OtpScrSetSwitching(ScreenInfo *scr, WinType wintype, Bool switching)
+{
+	OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
+
+	assert(prefs != NULL);
+
+	scr->OTP->switching = switching;
+}
+
+
+void OtpScrSetZero(ScreenInfo *scr, WinType wintype, int priority)
+{
+	OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
+
+	assert(prefs != NULL);
+
+	if(ABS(priority) > OTP_ZERO) {
+		fprintf(stderr, "invalid OnTopPriority value: %d\n", priority);
+		return;
+	}
+
+	prefs->priority = priority + OTP_ZERO;
+}
+
+
+name_list **OtpScrPriorityL(ScreenInfo *scr, WinType wintype, int priority)
+{
+	OtpPreferences *prefs = (wintype == IconWin) ? scr->IconOTP : scr->OTP;
+
+	assert(prefs != NULL);
+
+	if(ABS(priority) > OTP_ZERO) {
+		fprintf(stderr, "invalid OnTopPriority value: %d\n", priority);
+		priority = 0;
+	}
+	return &(prefs->priorityL[priority + OTP_ZERO]);
+}
+
+
+static OtpPreferences *new_OtpPreferences(void)
+{
+	OtpPreferences *pref = (OtpPreferences *)malloc(sizeof(OtpPreferences));
+	int i;
+
+	/* initialize default values */
+	for(i = 0; i <= OTP_MAX; i++) {
+		pref->priorityL[i] = NULL;
+	}
+	pref->priority = OTP_ZERO;
+	pref->switchingL = NULL;
+	pref->switching = False;
+
+	return pref;
+}
+
+static void free_OtpPreferences(OtpPreferences *pref)
+{
+	int i;
+
+	FreeList(&pref->switchingL);
+	for(i = 0; i <= OTP_MAX; i++) {
+		FreeList(&pref->priorityL[i]);
+	}
+
+	free(pref);
+}
+
+void OtpScrInitData(ScreenInfo *scr)
+{
+	if(scr->OTP != NULL) {
+		free_OtpPreferences(scr->OTP);
+	}
+	if(scr->IconOTP != NULL) {
+		free_OtpPreferences(scr->IconOTP);
+	}
+	scr->OTP = new_OtpPreferences();
+	scr->IconOTP = new_OtpPreferences();
 }
 
 int ReparentWindow(Display *display, TwmWindow *twm_win, WinType wintype,
-		   Window parent, int x, int y)
+                   Window parent, int x, int y)
 {
-    int result;
-    OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
-    OtpWinList *other = owl->below;
-    assert(owl != NULL);
+	int result;
+	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
+	OtpWinList *other = owl->below;
+	assert(owl != NULL);
 
-    DPRINTF((stderr, "ReparentWindow: w=%x type=%d\n", (unsigned int)WindowOfOwl(owl), wintype));
-    result = XReparentWindow(display, WindowOfOwl(owl), parent, x, y);
-    /* The raise was already done by XReparentWindow, so this call
-       just re-places the window at the right spot in the list
-       and enforces priority settings. */
-    RemoveOwl(owl);
-    InsertOwlAbove(owl, other);
-    OtpCheckConsistency();
-    return result;
+	DPRINTF((stderr, "ReparentWindow: w=%x type=%d\n",
+	         (unsigned int)WindowOfOwl(owl), wintype));
+	result = XReparentWindow(display, WindowOfOwl(owl), parent, x, y);
+	/* The raise was already done by XReparentWindow, so this call
+	   just re-places the window at the right spot in the list
+	   and enforces priority settings. */
+	RemoveOwl(owl);
+	InsertOwlAbove(owl, other);
+	OtpCheckConsistency();
+	return result;
 }
 
 int ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
-		   Window parent, int win_x, int win_y, int icon_x, int icon_y)
+                          Window parent, int win_x, int win_y, int icon_x, int icon_y)
 {
-    int result;
-    OtpWinList *win_owl = twm_win->otp;
-    assert(twm_win->icon != NULL);
-    OtpWinList *icon_owl = twm_win->icon->otp;
-    assert(win_owl != NULL);
-    assert(icon_owl != NULL);
-    OtpWinList *below_win = win_owl->below;
-    OtpWinList *below_icon = icon_owl->below;
+	int result;
+	OtpWinList *win_owl = twm_win->otp;
+	assert(twm_win->icon != NULL);
+	OtpWinList *icon_owl = twm_win->icon->otp;
+	assert(win_owl != NULL);
+	assert(icon_owl != NULL);
+	OtpWinList *below_win = win_owl->below;
+	OtpWinList *below_icon = icon_owl->below;
 
-    DPRINTF((stderr, "ReparentWindowAndIcon %x\n", (unsigned int)twm_win->frame));
-    result = XReparentWindow(display, twm_win->frame, parent, win_x, win_y);
-    result = XReparentWindow(display, twm_win->icon->w, parent, icon_x, icon_y);
-    /* The raise was already done by XReparentWindow, so this call
-       just re-places the window at the right spot in the list
-       and enforces priority settings. */
-    RemoveOwl(win_owl);
-    RemoveOwl(icon_owl);
-    if (below_win != icon_owl) {
-	/*
-	 * Only insert the window above something if it isn't the icon,
-	 * because that isn't back yet.
-	 */
-	InsertOwlAbove(win_owl, below_win);
-	InsertOwlAbove(icon_owl, below_icon);
-    } else {
-	/* In such a case, do it in the opposite order. */
-	InsertOwlAbove(icon_owl, below_icon);
-	InsertOwlAbove(win_owl, below_win);
-    }
-    OtpCheckConsistency();
-    return result;
+	DPRINTF((stderr, "ReparentWindowAndIcon %x\n", (unsigned int)twm_win->frame));
+	result = XReparentWindow(display, twm_win->frame, parent, win_x, win_y);
+	result = XReparentWindow(display, twm_win->icon->w, parent, icon_x, icon_y);
+	/* The raise was already done by XReparentWindow, so this call
+	   just re-places the window at the right spot in the list
+	   and enforces priority settings. */
+	RemoveOwl(win_owl);
+	RemoveOwl(icon_owl);
+	if(below_win != icon_owl) {
+		/*
+		 * Only insert the window above something if it isn't the icon,
+		 * because that isn't back yet.
+		 */
+		InsertOwlAbove(win_owl, below_win);
+		InsertOwlAbove(icon_owl, below_icon);
+	}
+	else {
+		/* In such a case, do it in the opposite order. */
+		InsertOwlAbove(icon_owl, below_icon);
+		InsertOwlAbove(win_owl, below_win);
+	}
+	OtpCheckConsistency();
+	return result;
 }
 
 /* Iterators.  */
 TwmWindow *OtpBottomWin()
 {
-    OtpWinList *owl = bottomOwl;
-    while (owl && owl->type != WinWin) owl = owl->above;
-    return owl ? owl->twm_win : NULL;
+	OtpWinList *owl = bottomOwl;
+	while(owl && owl->type != WinWin) {
+		owl = owl->above;
+	}
+	return owl ? owl->twm_win : NULL;
 }
 
 TwmWindow *OtpTopWin()
 {
-    OtpWinList *owl = bottomOwl, *top = NULL;
-    while (owl) {
-	if (owl->type == WinWin) top = owl;
-	owl = owl->above;
-    }
-    return top ? top->twm_win : NULL;
+	OtpWinList *owl = bottomOwl, *top = NULL;
+	while(owl) {
+		if(owl->type == WinWin) {
+			top = owl;
+		}
+		owl = owl->above;
+	}
+	return top ? top->twm_win : NULL;
 }
 
 TwmWindow *OtpNextWinUp(TwmWindow *twm_win)
 {
-    OtpWinList *owl = twm_win->otp->above;
-    while (owl && owl->type != WinWin) owl = owl->above;
-    return owl ? owl->twm_win : NULL;
+	OtpWinList *owl = twm_win->otp->above;
+	while(owl && owl->type != WinWin) {
+		owl = owl->above;
+	}
+	return owl ? owl->twm_win : NULL;
 }
 
 TwmWindow *OtpNextWinDown(TwmWindow *twm_win)
 {
-    OtpWinList *owl = twm_win->otp->below;
-    while (owl && owl->type != WinWin) owl = owl->below;
-    return owl ? owl->twm_win : NULL;
+	OtpWinList *owl = twm_win->otp->below;
+	while(owl && owl->type != WinWin) {
+		owl = owl->below;
+	}
+	return owl ? owl->twm_win : NULL;
 }
 
 int OtpGetPriority(TwmWindow *twm_win)
 {
-    OtpWinList *owl = twm_win->otp;
+	OtpWinList *owl = twm_win->otp;
 
-    return owl->priority - OTP_ZERO;
+	return owl->priority - OTP_ZERO;
 }

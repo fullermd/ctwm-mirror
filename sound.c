@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -24,7 +24,7 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 /*
- * These routines were extracted from the sound hack for olvwm3.3 by 
+ * These routines were extracted from the sound hack for olvwm3.3 by
  * Andrew "Ender" Scherpbier (turtle@sciences.sdsu.edu)
  * and modified by J.E. Sacco (jsacco @ssl.com)
  */
@@ -36,45 +36,44 @@
 
 #include "sound.h"
 
-char *eventNames[] =
-{
-    "<EventZero>",
-    "<EventOne>",
-    "KeyPress",
-    "KeyRelease",
-    "ButtonPress",
-    "ButtonRelease",
-    "MotionNotify",
-    "EnterNotify",
-    "LeaveNotify",
-    "FocusIn",
-    "FocusOut",
-    "KeymapNotify",
-    "Expose",
-    "GraphicsExpose",
-    "NoExpose",
-    "VisibilityNotify",
-    "CreateNotify",
-    "DestroyNotify",
-    "UnmapNotify",
-    "MapNotify",
-    "MapRequest",
-    "ReparentNotify",
-    "ConfigureNotify",
-    "ConfigureRequest",
-    "GravityNotify",
-    "ResizeRequest",
-    "CirculateNotify",
-    "CirculateRequest",
-    "PropertyNotify",
-    "SelectionClear",
-    "SelectionRequest",
-    "SelectionNotify",
-    "ColormapNotify",
-    "ClientMessage",
-    "MappingNotify",
-    "Startup",
-    "Shutdown"
+char *eventNames[] = {
+	"<EventZero>",
+	"<EventOne>",
+	"KeyPress",
+	"KeyRelease",
+	"ButtonPress",
+	"ButtonRelease",
+	"MotionNotify",
+	"EnterNotify",
+	"LeaveNotify",
+	"FocusIn",
+	"FocusOut",
+	"KeymapNotify",
+	"Expose",
+	"GraphicsExpose",
+	"NoExpose",
+	"VisibilityNotify",
+	"CreateNotify",
+	"DestroyNotify",
+	"UnmapNotify",
+	"MapNotify",
+	"MapRequest",
+	"ReparentNotify",
+	"ConfigureNotify",
+	"ConfigureRequest",
+	"GravityNotify",
+	"ResizeRequest",
+	"CirculateNotify",
+	"CirculateRequest",
+	"PropertyNotify",
+	"SelectionClear",
+	"SelectionRequest",
+	"SelectionNotify",
+	"ColormapNotify",
+	"ClientMessage",
+	"MappingNotify",
+	"Startup",
+	"Shutdown"
 };
 
 #define NEVENTS         (sizeof(eventNames) / sizeof(char *))
@@ -84,8 +83,8 @@ RPLAY *rp[NEVENTS];
 static int need_sound_init = 1;
 static int sound_fd = 0;
 static int sound_state = 1;
-static int startup_sound = NEVENTS -2;
-static int exit_sound = NEVENTS -1;
+static int startup_sound = NEVENTS - 2;
+static int exit_sound = NEVENTS - 1;
 static char hostname[200];
 
 /*
@@ -94,80 +93,90 @@ static char hostname[200];
 static char *
 trim_spaces(char *str)
 {
-    if (str != NULL) {
-	char *p = str + strlen(str);
-	while(*str != '\0' && *str != '\r' && *str != '\n' && isspace(*str))
-	    str++;
-	/* Assume all line end characters are at the end */
-	while(p > str && isspace(p[-1]))
-	    p--;
-	*p = '\0';
-    }
-    return str;
+	if(str != NULL) {
+		char *p = str + strlen(str);
+		while(*str != '\0' && *str != '\r' && *str != '\n' && isspace(*str)) {
+			str++;
+		}
+		/* Assume all line end characters are at the end */
+		while(p > str && isspace(p[-1])) {
+			p--;
+		}
+		*p = '\0';
+	}
+	return str;
 }
 
 /*
  * initialize
  */
 static void
-sound_init (void)
+sound_init(void)
 {
-    int i;
-    FILE *fl;
-    char buffer[100];
-    char *token;
-    char *home;
-    char soundfile [256];
+	int i;
+	FILE *fl;
+	char buffer[100];
+	char *token;
+	char *home;
+	char soundfile [256];
 
-    need_sound_init = 0;
-    if (sound_fd == 0) {
-        if (hostname[0] == '\0') {
-		strcpy(hostname, rplay_default_host());
-	}
-	
-        if ((sound_fd = rplay_open (hostname)) < 0)
-		rplay_perror ("create");
-    }
-
-    /*
-     * Destroy any old sounds
-     */
-    for (i = 0; i < NEVENTS; i++) {
-        if (rp[i] != NULL)
-	    rplay_destroy (rp[i]);
-	rp[i] = NULL;
-    }
-
-    /*
-     * Now read the file which contains the sounds
-     */
-    soundfile [0] = '\0';
-    if ((home = getenv ("HOME")) != NULL) strcpy (soundfile, home);
-    strcat (soundfile, "/.ctwm-sounds");
-    fl = fopen (soundfile, "r");
-    if (fl == NULL)
-	return;
-    while (fgets (buffer, 100, fl) != NULL) {
-	token = trim_spaces(strtok (buffer, ": \t"));
-	if (token == NULL || *token == '#')
-	    continue;
-	for (i = 0; i < NEVENTS; i++) {
-	    if (strcmp (token, eventNames[i]) == 0) {
-		token = trim_spaces(strtok (NULL, "\r\n"));
-		if (token == NULL || *token == '#')
-		    continue;
-		rp[i] = rplay_create (RPLAY_PLAY);
-		if (rp[i] == NULL) {
-		    rplay_perror ("create");
-		    continue;
+	need_sound_init = 0;
+	if(sound_fd == 0) {
+		if(hostname[0] == '\0') {
+			strcpy(hostname, rplay_default_host());
 		}
-		if (rplay_set(rp[i], RPLAY_INSERT, 0, RPLAY_SOUND, token, NULL)
-		    < 0)
-		    rplay_perror ("rplay");
-	    }
+
+		if((sound_fd = rplay_open(hostname)) < 0) {
+			rplay_perror("create");
+		}
 	}
-    }
-    fclose (fl);
+
+	/*
+	 * Destroy any old sounds
+	 */
+	for(i = 0; i < NEVENTS; i++) {
+		if(rp[i] != NULL) {
+			rplay_destroy(rp[i]);
+		}
+		rp[i] = NULL;
+	}
+
+	/*
+	 * Now read the file which contains the sounds
+	 */
+	soundfile [0] = '\0';
+	if((home = getenv("HOME")) != NULL) {
+		strcpy(soundfile, home);
+	}
+	strcat(soundfile, "/.ctwm-sounds");
+	fl = fopen(soundfile, "r");
+	if(fl == NULL) {
+		return;
+	}
+	while(fgets(buffer, 100, fl) != NULL) {
+		token = trim_spaces(strtok(buffer, ": \t"));
+		if(token == NULL || *token == '#') {
+			continue;
+		}
+		for(i = 0; i < NEVENTS; i++) {
+			if(strcmp(token, eventNames[i]) == 0) {
+				token = trim_spaces(strtok(NULL, "\r\n"));
+				if(token == NULL || *token == '#') {
+					continue;
+				}
+				rp[i] = rplay_create(RPLAY_PLAY);
+				if(rp[i] == NULL) {
+					rplay_perror("create");
+					continue;
+				}
+				if(rplay_set(rp[i], RPLAY_INSERT, 0, RPLAY_SOUND, token, NULL)
+				                < 0) {
+					rplay_perror("rplay");
+				}
+			}
+		}
+	}
+	fclose(fl);
 }
 
 
@@ -175,40 +184,46 @@ sound_init (void)
  * Play sound
  */
 void
-play_sound (int snd)
+play_sound(int snd)
 {
-    if (snd > NEVENTS) return;
-    if (sound_state == 0)
-	return;
+	if(snd > NEVENTS) {
+		return;
+	}
+	if(sound_state == 0) {
+		return;
+	}
 
-    if (need_sound_init)
-	sound_init ();
+	if(need_sound_init) {
+		sound_init();
+	}
 
-    if (rp[snd] == NULL)
-	return;
-    if (rplay (sound_fd, rp[snd]) < 0)
-	rplay_perror ("create");
+	if(rp[snd] == NULL) {
+		return;
+	}
+	if(rplay(sound_fd, rp[snd]) < 0) {
+		rplay_perror("create");
+	}
 }
 
 void
 play_startup_sound(void)
 {
-    play_sound(startup_sound);
+	play_sound(startup_sound);
 }
 
 void
 play_exit_sound(void)
 {
-    play_sound(exit_sound);
+	play_sound(exit_sound);
 }
 
 /*
  * Toggle the sound on/off
  */
 void
-toggle_sound (void)
+toggle_sound(void)
 {
-    sound_state ^= 1;
+	sound_state ^= 1;
 }
 
 
@@ -216,9 +231,9 @@ toggle_sound (void)
  * Re-read the sounds mapping file
  */
 void
-reread_sounds (void)
+reread_sounds(void)
 {
-    sound_init ();
+	sound_init();
 }
 
 /*
@@ -228,8 +243,7 @@ void
 set_sound_host(char *host)
 {
 	strcpy(hostname, host);
-	if (sound_fd != 0)
-	{
+	if(sound_fd != 0) {
 		rplay_close(sound_fd);
 	}
 	sound_fd = 0;

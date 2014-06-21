@@ -15,14 +15,14 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL M.I.T.
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -50,52 +50,51 @@
  *
  * Icon Manager includes
  *
- * 09-Mar-89 Tom LaStrange		File Created
+ * 09-Mar-89 Tom LaStrange              File Created
  *
  ***********************************************************************/
 
 #ifndef _ICONMGR_
 #define _ICONMGR_
 
-struct WList
-{
-    struct WList *next;
-    struct WList *prev;
-    struct WList *nextv;		/* pointer to the next virtual Wlist C.L. */
-    struct TwmWindow *twm;
-    struct IconMgr *iconmgr;
-    Window w;
-    Window icon;
-    int x, y, width, height;
-    int row, col;
-    int me;
-    ColorPair cp;
-    Pixel highlight;
-    Pixmap iconifypm;
-    unsigned top, bottom;
-    short active;
-    short down;
+struct WList {
+	struct WList *next;
+	struct WList *prev;
+	struct WList *nextv;                /* pointer to the next virtual Wlist C.L. */
+	struct TwmWindow *twm;
+	struct IconMgr *iconmgr;
+	Window w;
+	Window icon;
+	int x, y, width, height;
+	int row, col;
+	int me;
+	ColorPair cp;
+	Pixel highlight;
+	Pixmap iconifypm;
+	unsigned top, bottom;
+	short active;
+	short down;
 };
 
-struct IconMgr
-{
-    struct IconMgr *next;		/* pointer to the next icon manager */
-    struct IconMgr *prev;		/* pointer to the previous icon mgr */
-    struct IconMgr *lasti;		/* pointer to the last icon mgr */
-    struct IconMgr *nextv;		/* pointer to the next virtual icon mgr C.L. */
-    struct WList *first;		/* first window in the list */
-    struct WList *last;			/* last window in the list */
-    struct WList *active;		/* the active entry */
-    TwmWindow *twm_win;			/* back pointer to the new parent */
-    struct ScreenInfo *scr;		/* the screen this thing is on */
-    int vScreen;			/* the virtual screen this thing is on */
-    Window w;				/* this icon manager window */
-    char *geometry;			/* geometry string */
-    char *name;
-    char *icon_name;
-    int x, y, width, height;
-    int columns, cur_rows, cur_columns;
-    int count;
+struct IconMgr {
+	struct IconMgr *next;               /* pointer to the next icon manager */
+	struct IconMgr *prev;               /* pointer to the previous icon mgr */
+	struct IconMgr *lasti;              /* pointer to the last icon mgr */
+	struct IconMgr
+			*nextv;              /* pointer to the next virtual icon mgr C.L. */
+	struct WList *first;                /* first window in the list */
+	struct WList *last;                 /* last window in the list */
+	struct WList *active;               /* the active entry */
+	TwmWindow *twm_win;                 /* back pointer to the new parent */
+	struct ScreenInfo *scr;             /* the screen this thing is on */
+	int vScreen;                        /* the virtual screen this thing is on */
+	Window w;                           /* this icon manager window */
+	char *geometry;                     /* geometry string */
+	char *name;
+	char *icon_name;
+	int x, y, width, height;
+	int columns, cur_rows, cur_columns;
+	int count;
 };
 
 extern int iconmgr_textx;
@@ -105,7 +104,7 @@ extern int iconifybox_height;
 
 extern void CreateIconManagers(void);
 extern IconMgr *AllocateIconManager(char *name, char *geom, char *icon_name,
-				    int columns);
+                                    int columns);
 extern void MoveIconManager(int dir);
 extern void MoveMappedIconManager(int dir);
 extern void JumpIconManager(register int dir);

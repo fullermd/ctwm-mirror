@@ -1,4 +1,4 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 2014 Olaf Seibert
@@ -44,69 +44,70 @@ static Atom MOTIF_WM_HINTS = None;
 
 int GetMWMHints(Window w, MotifWmHints *mwmHints)
 {
-    int success;
-    Atom actual_type;
-    int actual_format;
-    unsigned long nitems;
-    unsigned long bytes_after;
-    unsigned long *prop = NULL;
+	int success;
+	Atom actual_type;
+	int actual_format;
+	unsigned long nitems;
+	unsigned long bytes_after;
+	unsigned long *prop = NULL;
 
-    /* Defaults for when not found */
-    mwmHints->flags = 0;
-    mwmHints->functions = 0;
-    mwmHints->decorations = 0;
+	/* Defaults for when not found */
+	mwmHints->flags = 0;
+	mwmHints->functions = 0;
+	mwmHints->decorations = 0;
 #ifdef FULL_MWM_DATA
-    mwmHints->input_mode = 0;
-    mwmHints->status = 0;
+	mwmHints->input_mode = 0;
+	mwmHints->status = 0;
 #endif
 
-    if (MOTIF_WM_HINTS == (Atom)None) {
-	MOTIF_WM_HINTS = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
-    }
+	if(MOTIF_WM_HINTS == (Atom)None) {
+		MOTIF_WM_HINTS = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
+	}
 
-    success = XGetWindowProperty(
-			dpy, w, MOTIF_WM_HINTS,
-			0, 5, 		/* long_offset, long long_length, */
-			False,		/* Bool delete, */
-			AnyPropertyType,/* Atom req_type */
-			&actual_type, 	/* Atom *actual_type_return, */
-			&actual_format, /* int *actual_format_return, */
-			&nitems, 	/* unsigned long *nitems_return,  */
-			&bytes_after, 	/* unsigned long * */
-			(unsigned char **)&prop);	/* unsigned char ** */
+	success = XGetWindowProperty(
+	                  dpy, w, MOTIF_WM_HINTS,
+	                  0, 5,           /* long_offset, long long_length, */
+	                  False,          /* Bool delete, */
+	                  AnyPropertyType,/* Atom req_type */
+	                  &actual_type,   /* Atom *actual_type_return, */
+	                  &actual_format, /* int *actual_format_return, */
+	                  &nitems,        /* unsigned long *nitems_return,  */
+	                  &bytes_after,   /* unsigned long * */
+	                  (unsigned char **)&prop);       /* unsigned char ** */
 
-    if (success == Success &&
-	    actual_type == MOTIF_WM_HINTS &&
-	    actual_format == 32 &&
-	    nitems >= 3) {
-	mwmHints->flags = (int)prop[0];
-	mwmHints->functions = (int)prop[1];
-	mwmHints->decorations = (int)prop[2];
+	if(success == Success &&
+	                actual_type == MOTIF_WM_HINTS &&
+	                actual_format == 32 &&
+	                nitems >= 3) {
+		mwmHints->flags = (int)prop[0];
+		mwmHints->functions = (int)prop[1];
+		mwmHints->decorations = (int)prop[2];
 #ifdef FULL_MWM_DATA
-	mwmHints->input_mode = (int)prop[3];
-	mwmHints->status = (int)prop[4];
+		mwmHints->input_mode = (int)prop[3];
+		mwmHints->status = (int)prop[4];
 #endif
 
-	if (mwmHints->flags & MWM_HINTS_FUNCTIONS) {
-	    if (mwmHints->functions & MWM_FUNC_ALL) {
-		mwmHints->functions ^= ~0;
-	    }
+		if(mwmHints->flags & MWM_HINTS_FUNCTIONS) {
+			if(mwmHints->functions & MWM_FUNC_ALL) {
+				mwmHints->functions ^= ~0;
+			}
+		}
+		if(mwmHints->flags & MWM_HINTS_DECORATIONS) {
+			if(mwmHints->decorations & MWM_DECOR_ALL) {
+				mwmHints->decorations ^= ~0;
+			}
+		}
+
+		success = True;
 	}
-	if (mwmHints->flags & MWM_HINTS_DECORATIONS) {
-	    if (mwmHints->decorations & MWM_DECOR_ALL) {
-		mwmHints->decorations ^= ~0;
-	    }
+	else {
+		success = False;
 	}
 
-	success = True;
-    } else {
-	success = False;
-    }
+	if(prop != NULL) {
+		XFree(prop);
+	}
 
-    if (prop != NULL) {
-    	XFree(prop);
-    }
-
-    return success;
+	return success;
 }
 

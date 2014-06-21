@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -32,21 +32,21 @@
 #include <lnmdef.h>
 #include <descrip.h>
 
-static struct dsc$descriptor_s create_descriptor (string)
+static struct dsc$descriptor_s create_descriptor(string)
 char *string;
 {
-   struct dsc$descriptor_s descrip_string;
+	struct dsc$descriptor_s descrip_string;
 
-   /* build it */
+	/* build it */
 
-   descrip_string.dsc$b_dtype	= DSC$K_DTYPE_T;
-   descrip_string.dsc$b_class	= DSC$K_CLASS_S;
-   descrip_string.dsc$w_length	= strlen(string);
-   descrip_string.dsc$a_pointer	= string;
+	descrip_string.dsc$b_dtype   = DSC$K_DTYPE_T;
+	descrip_string.dsc$b_class   = DSC$K_CLASS_S;
+	descrip_string.dsc$w_length  = strlen(string);
+	descrip_string.dsc$a_pointer = string;
 
-   /* return it */
+	/* return it */
 
-   return (descrip_string);
+	return (descrip_string);
 }
 
 int GetLogical(Logical_Name, outbuf)
@@ -57,48 +57,50 @@ char *Logical_Name, *outbuf;
 	int i;
 	static char retbuf[256];
 	char *rptr;
-        struct dsc$descriptor_s search_list = create_descriptor("LNM$FILE_DEV");
-        struct dsc$descriptor_s logical_name = create_descriptor(Logical_Name);
+	struct dsc$descriptor_s search_list = create_descriptor("LNM$FILE_DEV");
+	struct dsc$descriptor_s logical_name = create_descriptor(Logical_Name);
 	struct {
-	    short len;
-	    short code;
-	    char *buf;
-	    short *retlen;
+		short len;
+		short code;
+		char *buf;
+		short *retlen;
 	} ItmLst[] = { {255, LNM$_STRING, retbuf, &len},
-		       {0, 0, (char *)0, 0}
+		{0, 0, (char *)0, 0}
 	};
 
-	static long attr=LNM$M_CASE_BLIND;
+	static long attr = LNM$M_CASE_BLIND;
 
 	istatus = sys$trnlnm(&attr,
-			     &search_list,
-			     &logical_name,
-			     0,
-			     ItmLst);
+	                     &search_list,
+	                     &logical_name,
+	                     0,
+	                     ItmLst);
 
-	if (!(istatus&1)) {
-	    return(istatus);
-	} else {
-	    retbuf[len] = '\0';
-	    rptr = retbuf;
-	    if (*rptr == 27)	/* process permanent file */
-               rptr += 4;	/* skip past it the iff */
-	    strcpy (outbuf, rptr);
-	    return(1);
+	if(!(istatus & 1)) {
+		return(istatus);
+	}
+	else {
+		retbuf[len] = '\0';
+		rptr = retbuf;
+		if(*rptr == 27) {   /* process permanent file */
+			rptr += 4;        /* skip past it the iff */
+		}
+		strcpy(outbuf, rptr);
+		return(1);
 	}
 }
 
-CreateLogical(name,table,definition, accmode)
+CreateLogical(name, table, definition, accmode)
 char *name, *table, *definition;
 int  accmode;
 {
-	struct dsc$descriptor_s table_name = create_descriptor (table);
-	struct dsc$descriptor_s logical_name = create_descriptor (name);
+	struct dsc$descriptor_s table_name = create_descriptor(table);
+	struct dsc$descriptor_s logical_name = create_descriptor(name);
 	struct {
-	    short len;
-	    short item;
-	    char *buffer;
-	    short *buflen;
+		short len;
+		short item;
+		char *buffer;
+		short *buflen;
 	} itmlst[2];
 	itmlst[0].len = strlen(definition);
 	itmlst[0].item = LNM$_STRING;
@@ -107,20 +109,20 @@ int  accmode;
 	itmlst[1].len = itmlst[1].item = 0;
 
 	(void) sys$crelnm(0, &table_name,
-			  &logical_name,
-			  &accmode, itmlst);
+	                  &logical_name,
+	                  &accmode, itmlst);
 }
 
 /*
- *	Routine to delete logical names
+ *      Routine to delete logical names
  */
 
-DeleteLogical(name,table)
+DeleteLogical(name, table)
 char *name, *table;
 {
-	struct dsc$descriptor_s table_name = create_descriptor (table);
-	struct dsc$descriptor_s logical_name = create_descriptor (name);
+	struct dsc$descriptor_s table_name = create_descriptor(table);
+	struct dsc$descriptor_s logical_name = create_descriptor(name);
 	(void) sys$dellnm(&table_name,
-			  &logical_name,
-			  0);
+	                  &logical_name,
+	                  0);
 }

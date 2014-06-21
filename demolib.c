@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -37,91 +37,91 @@
 Window awindow = 0x5c0000d;
 char *awspc1 = "lecom", *awspc2 = "root";
 
-main (argc, argv)
+main(argc, argv)
 int argc;
 char **argv;
 {
-    Display *dpy;
-    Window w;
-    char   **wlist, **wl, **occupation;
-    char   *cur;
-    int    status;
+	Display *dpy;
+	Window w;
+	char   **wlist, **wl, **occupation;
+	char   *cur;
+	int    status;
 
-    dpy = XOpenDisplay (NULL);
-    if (dpy == NULL) {
-	fprintf (stderr, "Can't open display\n");
-	exit (1);
-    }
+	dpy = XOpenDisplay(NULL);
+	if(dpy == NULL) {
+		fprintf(stderr, "Can't open display\n");
+		exit(1);
+	}
 
-/****************************************************************/
+	/****************************************************************/
 
-    if (! CtwmIsRunning) {
-	fprintf (stderr, "ctwm is not running\n");
-	exit (1);
-    }
+	if(! CtwmIsRunning) {
+		fprintf(stderr, "ctwm is not running\n");
+		exit(1);
+	}
 
-/****************************************************************/
+	/****************************************************************/
 
-    wlist = CtwmListWorkspaces (dpy, 0);
-    if (wlist == (char**) 0) {
-	fprintf (stderr, "cannot obtain workspaces list\n");
-	exit (1);
-    }
-    printf ("list of workspaces : ");
-    wl = wlist;
-    while (*wl) {
-	printf ("\"%s\" ", *wl++);
-    }
-    printf ("\n");
+	wlist = CtwmListWorkspaces(dpy, 0);
+	if(wlist == (char **) 0) {
+		fprintf(stderr, "cannot obtain workspaces list\n");
+		exit(1);
+	}
+	printf("list of workspaces : ");
+	wl = wlist;
+	while(*wl) {
+		printf("\"%s\" ", *wl++);
+	}
+	printf("\n");
 
-/****************************************************************/
+	/****************************************************************/
 
-    cur = CtwmCurrentWorkspace (dpy, 0);
-    if (cur == NULL) {
-	fprintf (stderr, "cannot obtain current workspace\n");
-	exit (1);
-    }
-    printf ("current workspace : %s\n", cur);
+	cur = CtwmCurrentWorkspace(dpy, 0);
+	if(cur == NULL) {
+		fprintf(stderr, "cannot obtain current workspace\n");
+		exit(1);
+	}
+	printf("current workspace : %s\n", cur);
 
-/****************************************************************/
+	/****************************************************************/
 
-    status = CtwmChangeWorkspace (dpy, 0, awspc1);
-    if (! status) {
-	fprintf (stderr, "cannot change the current workspace\n");
-	exit (1);
-    }
+	status = CtwmChangeWorkspace(dpy, 0, awspc1);
+	if(! status) {
+		fprintf(stderr, "cannot change the current workspace\n");
+		exit(1);
+	}
 
-/****************************************************************/
+	/****************************************************************/
 
-    wlist = CtwmCurrentOccupation (dpy, awindow);
-    if (wlist == (char**) 0) {
-	fprintf (stderr, "cannot obtain occupation of window  %x\n", awindow);
-	exit (1);
-    }
-    printf ("Occupation of window %d : ", awindow);
-    wl = wlist;
-    while (*wl) {
-	printf ("\"%s\" ", *wl++);
-    }
-    printf ("\n");
+	wlist = CtwmCurrentOccupation(dpy, awindow);
+	if(wlist == (char **) 0) {
+		fprintf(stderr, "cannot obtain occupation of window  %x\n", awindow);
+		exit(1);
+	}
+	printf("Occupation of window %d : ", awindow);
+	wl = wlist;
+	while(*wl) {
+		printf("\"%s\" ", *wl++);
+	}
+	printf("\n");
 
-/****************************************************************/
+	/****************************************************************/
 
-    occupation = (char**) malloc (3 * sizeof (char*));
-    occupation [0] = awspc1;
-    occupation [1] = awspc2;
-    occupation [2] = NULL;
-    status = CtwmSetOccupation (dpy, awindow, occupation);
-    if (! status) {
-	fprintf (stderr, "cannot change the occupation of window %x\n", awindow);
-    }
-    printf ("occupation of window %x changed to \"lecom\", \"root\"\n", awindow);
+	occupation = (char **) malloc(3 * sizeof(char *));
+	occupation [0] = awspc1;
+	occupation [1] = awspc2;
+	occupation [2] = NULL;
+	status = CtwmSetOccupation(dpy, awindow, occupation);
+	if(! status) {
+		fprintf(stderr, "cannot change the occupation of window %x\n", awindow);
+	}
+	printf("occupation of window %x changed to \"lecom\", \"root\"\n", awindow);
 
-/****************************************************************/
-    status = CtwmAddToCurrentWorkspace (dpy, awindow);
-    if (! status) {
-	fprintf (stderr, "cannot change the occupation of window %x\n", awindow);
-    }
-    printf ("window %x now occupy the current workspace\n", awindow);
+	/****************************************************************/
+	status = CtwmAddToCurrentWorkspace(dpy, awindow);
+	if(! status) {
+		fprintf(stderr, "cannot change the occupation of window %x\n", awindow);
+	}
+	printf("window %x now occupy the current workspace\n", awindow);
 }
 

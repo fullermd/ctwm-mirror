@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -40,6 +40,6 @@
 
 extern void NewFontCursor(Cursor *cp, char *str);
 extern int NewBitmapCursor(Cursor *cp, char *source, char *mask);
-extern Cursor MakeStringCursor (char *string);
+extern Cursor MakeStringCursor(char *string);
 #endif /* _CURSOR_ */
 
