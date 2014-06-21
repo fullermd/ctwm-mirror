@@ -10,6 +10,15 @@ allclean distclean:
 	rm -rf build/*
 
 
+# Build documentation files
+DOC_FILES=README.html
+docs: ${DOC_FILES}
+doc_clean:
+	rm -f ${DOC_FILES}
+
+README.html: README
+	multimarkdown -o README.html README
+
 # Reindent files
 indent:
 	astyle -n --options=ctwm.astyle *.h *.c
@@ -19,8 +28,8 @@ YACC?=/usr/bin/yacc
 YFLAGS=-d -b gram
 RELEASE_FILES=gram.tab.c gram.tab.h lex.c
 
-release_files: ${RELEASE_FILES}
-release_clean:
+release_files: ${RELEASE_FILES} ${DOC_FILES}
+release_clean: doc_clean
 	rm -f ${RELEASE_FILES}
 
 gram.tab.c: gram.tab.h
