@@ -1779,3 +1779,6 @@ VirtualScreens {
 
     3 - Icon manager windows are no longer included in the window ring
 	(that had confusing effects on the focus sequence).
+
+    4 - The build system has been changed to cmake, retiring the old
+	imake-based build.
