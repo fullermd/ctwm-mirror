@@ -155,4 +155,6 @@ Additional information can be found from the project webpage, at
 <http://www.ctwm.org/>.
 
 
-{>> vim:expandtab:ft=markdown: <<}
+{>>
+ vim:expandtab:ft=markdown:
+<<}
