@@ -2193,13 +2193,7 @@ static void CreateWindowTitlebarButtons(TwmWindow *tmp_win)
 
 void SetHighlightPixmap(char *filename)
 {
-#ifdef VMS
-	char *ftemp;
-	ftemp = (char *) malloc((strlen(filename) + 1) * sizeof(char));
-	Scr->HighlightPixmapName = strcpy(ftemp, filename);
-#else
 	Scr->HighlightPixmapName = (char *) strdup(filename);
-#endif
 }
 
 
