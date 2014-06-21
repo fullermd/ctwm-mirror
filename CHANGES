@@ -9,7 +9,7 @@ The old `imake` build system has been replaced by a new structure using
 `cmake`.  This makes [cmake](http://www.cmake.org/) a requirement to
 build ctwm.  See the `README` file for how to run it.
 
-### Other Visible Changes
+### User Visible Changes
 
 1. Selected a number of cleanups from Stefan Monnier
     <<monnier@IRO.UMontreal.CA>>, including rate-limiting of animations
