@@ -24,11 +24,11 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -64,25 +64,24 @@
 #ifndef _LIST_
 #define _LIST_
 
-struct name_list
-{
-    name_list *next;		/* pointer to the next name */
-    char *name;			/* the name of the window */
-    char *ptr;			/* list dependent data */
+struct name_list {
+	name_list *next;            /* pointer to the next name */
+	char *name;                 /* the name of the window */
+	char *ptr;                  /* list dependent data */
 };
 
-extern void	AddToList(name_list **list_head, char *name, char *ptr);
-extern void*	LookInList(name_list *list_head, char *name,
-			   XClassHint *class);
-extern void*	LookInNameList(name_list *list_head, char *name);
-extern void*	LookPatternInList(name_list *list_head, char *name,
-				  XClassHint *class);
-extern void*	LookPatternInNameList(name_list *list_head, char *name);
-extern int	GetColorFromList(name_list *list_head, char *name,
-				 XClassHint *class, Pixel *ptr);
-extern void	FreeList(name_list **list);
+extern void     AddToList(name_list **list_head, char *name, char *ptr);
+extern void    *LookInList(name_list *list_head, char *name,
+                           XClassHint *class);
+extern void    *LookInNameList(name_list *list_head, char *name);
+extern void    *LookPatternInList(name_list *list_head, char *name,
+                                  XClassHint *class);
+extern void    *LookPatternInNameList(name_list *list_head, char *name);
+extern int      GetColorFromList(name_list *list_head, char *name,
+                                 XClassHint *class, Pixel *ptr);
+extern void     FreeList(name_list **list);
 
-extern int	match (char *pattern, char *string);
+extern int      match(char *pattern, char *string);
 
 #endif /* _LIST_ */
 

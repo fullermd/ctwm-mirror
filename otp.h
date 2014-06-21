@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992, 2005, 2007 Stefan Monnier.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -42,43 +42,44 @@ typedef enum WinType { WinWin, IconWin } WinType;
 
 /* Wrapper functions to maintain the internal list uptodate.  */
 extern int ReparentWindow(Display *display, TwmWindow *twm_win,
-			  WinType wintype, Window parent, int x, int y);
+                          WinType wintype, Window parent, int x, int y);
 extern int ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
-		   Window parent, int win_x, int win_y, int icon_x, int icon_y);
+                                 Window parent, int win_x, int win_y, int icon_x, int icon_y);
 
 /* misc functions that are not specific to OTP */
-extern Bool isTransientOf(TwmWindow*, TwmWindow*);
-extern Bool isSmallTransientOf(TwmWindow*, TwmWindow*);
-extern Bool isGroupLeaderOf(TwmWindow*, TwmWindow*);
-extern Bool isGroupLeader(TwmWindow*);
+extern Bool isTransientOf(TwmWindow *, TwmWindow *);
+extern Bool isSmallTransientOf(TwmWindow *, TwmWindow *);
+extern Bool isGroupLeaderOf(TwmWindow *, TwmWindow *);
+extern Bool isGroupLeader(TwmWindow *);
 
 /* functions to "move" windows */
-extern void OtpRaise(TwmWindow*, WinType);
-extern void OtpLower(TwmWindow*, WinType);
-extern void OtpRaiseLower(TwmWindow*, WinType);
-extern void OtpTinyRaise(TwmWindow*, WinType);
-extern void OtpTinyLower(TwmWindow*, WinType);
+extern void OtpRaise(TwmWindow *, WinType);
+extern void OtpLower(TwmWindow *, WinType);
+extern void OtpRaiseLower(TwmWindow *, WinType);
+extern void OtpTinyRaise(TwmWindow *, WinType);
+extern void OtpTinyLower(TwmWindow *, WinType);
 extern void OtpCirculateSubwindows(VirtualScreen *vs, int direction);
-extern void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win, WinType wintype, int place);
+extern void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win,
+                                     WinType wintype, int place);
 
 /* functions to change a window's OTP value */
-extern void OtpSetPriority(TwmWindow*, WinType, int);
-extern void OtpChangePriority(TwmWindow*, WinType, int);
-extern void OtpSwitchPriority(TwmWindow*, WinType);
-extern void OtpToggleSwitching(TwmWindow*, WinType);
-extern void OtpRecomputeValues(TwmWindow*);
-extern void OtpForcePlacement(TwmWindow*, int, TwmWindow*);
+extern void OtpSetPriority(TwmWindow *, WinType, int);
+extern void OtpChangePriority(TwmWindow *, WinType, int);
+extern void OtpSwitchPriority(TwmWindow *, WinType);
+extern void OtpToggleSwitching(TwmWindow *, WinType);
+extern void OtpRecomputeValues(TwmWindow *);
+extern void OtpForcePlacement(TwmWindow *, int, TwmWindow *);
 
 /* functions to manage the preferences. The second arg specifies icon prefs */
-extern void OtpScrInitData(ScreenInfo*);
-extern name_list **OtpScrSwitchingL(ScreenInfo*, WinType);
-extern name_list **OtpScrPriorityL(ScreenInfo*, WinType, int);
-extern void OtpScrSetSwitching(ScreenInfo*, WinType, Bool);
-extern void OtpScrSetZero(ScreenInfo*, WinType, int);
+extern void OtpScrInitData(ScreenInfo *);
+extern name_list **OtpScrSwitchingL(ScreenInfo *, WinType);
+extern name_list **OtpScrPriorityL(ScreenInfo *, WinType, int);
+extern void OtpScrSetSwitching(ScreenInfo *, WinType, Bool);
+extern void OtpScrSetZero(ScreenInfo *, WinType, int);
 
 /* functions to inform OTP-manager of window creation/destruction */
-extern void OtpAdd(TwmWindow*, WinType);
-extern void OtpRemove(TwmWindow*, WinType);
+extern void OtpAdd(TwmWindow *, WinType);
+extern void OtpRemove(TwmWindow *, WinType);
 
 /* Iterators.  */
 extern TwmWindow *OtpBottomWin(void);

@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -37,60 +37,60 @@ int strcmp(); /* missing from string.h in AUX 2.0 */
 Atom     _XA_WM_CURRENTWORKSPACE, _XA_WM_OCCUPATION;
 Display *dpy;
 
-main (argc, argv)
+main(argc, argv)
 int argc;
 char **argv;
 {
-    Window w;
+	Window w;
 
-    dpy = XOpenDisplay (NULL);
-    if (dpy == NULL) {
-	fprintf (stderr, "Can't open display\n");
-	exit (1);
-    }
+	dpy = XOpenDisplay(NULL);
+	if(dpy == NULL) {
+		fprintf(stderr, "Can't open display\n");
+		exit(1);
+	}
 
-    switch (argc) {
-	case 2:
-	    gotoWorkspace (argv [1]);
-	    break;
+	switch(argc) {
+		case 2:
+			gotoWorkspace(argv [1]);
+			break;
 
-	case 3:
-	    sscanf (argv [1], "%x", &w);
-	    changeOccupation (w, argv [2]);
-	    break;
+		case 3:
+			sscanf(argv [1], "%x", &w);
+			changeOccupation(w, argv [2]);
+			break;
 
-	default:
-	    fprintf (stderr, "usage %s name\n", argv [0]);
-	    break;
+		default:
+			fprintf(stderr, "usage %s name\n", argv [0]);
+			break;
 
-    }
+	}
 }
 
-gotoWorkspace (name)
+gotoWorkspace(name)
 char *name;
 {
-    _XA_WM_CURRENTWORKSPACE = XInternAtom (dpy, "WM_CURRENTWORKSPACE", True);
-    if (_XA_WM_CURRENTWORKSPACE == None) {
-	fprintf (stderr, "Can't get WM_CURRENTWORKSPACE atom\n");
-	exit (1);
-    }
+	_XA_WM_CURRENTWORKSPACE = XInternAtom(dpy, "WM_CURRENTWORKSPACE", True);
+	if(_XA_WM_CURRENTWORKSPACE == None) {
+		fprintf(stderr, "Can't get WM_CURRENTWORKSPACE atom\n");
+		exit(1);
+	}
 
-    XChangeProperty (dpy, RootWindow (dpy, 0), _XA_WM_CURRENTWORKSPACE, XA_STRING, 8, 
-		     PropModeReplace, (unsigned char *) name, strlen (name));
-    XFlush (dpy);
+	XChangeProperty(dpy, RootWindow(dpy, 0), _XA_WM_CURRENTWORKSPACE, XA_STRING, 8,
+	                PropModeReplace, (unsigned char *) name, strlen(name));
+	XFlush(dpy);
 }
 
-changeOccupation (w, occup)
+changeOccupation(w, occup)
 Window w;
 char *occup;
 {
-    _XA_WM_OCCUPATION = XInternAtom (dpy, "WM_OCCUPATION", True);
-    if (_XA_WM_OCCUPATION == None) {
-	fprintf (stderr, "Can't get WM_WORKSPACES atom\n");
-	exit (1);
-    }
+	_XA_WM_OCCUPATION = XInternAtom(dpy, "WM_OCCUPATION", True);
+	if(_XA_WM_OCCUPATION == None) {
+		fprintf(stderr, "Can't get WM_WORKSPACES atom\n");
+		exit(1);
+	}
 
-    XChangeProperty (dpy, w, _XA_WM_OCCUPATION, XA_STRING, 8, 
-		     PropModeReplace, (unsigned char *) occup, strlen (occup));
-    XFlush (dpy);
+	XChangeProperty(dpy, w, _XA_WM_OCCUPATION, XA_STRING, 8,
+	                PropModeReplace, (unsigned char *) occup, strlen(occup));
+	XFlush(dpy);
 }

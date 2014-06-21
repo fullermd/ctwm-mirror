@@ -24,11 +24,11 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -79,75 +79,88 @@ extern void twmrc_error_prefix(void);
 /***********************************************************************
  *
  *  Procedure:
- *	CreateGCs - open fonts and create all the needed GC's.  I only
- *		    want to do this once, hence the first_time flag.
+ *      CreateGCs - open fonts and create all the needed GC's.  I only
+ *                  want to do this once, hence the first_time flag.
  *
  ***********************************************************************
  */
 
 void CreateGCs(void)
 {
-    static ScreenInfo *prevScr = NULL;
-    XGCValues	    gcv;
-    unsigned long   gcm;
-    static unsigned char greypattern [] = {0x0f, 0x05, 0x0f, 0x0a};
-    Pixmap        greypixmap;
-    static char	dashlist [2] = {1, 1};
+	static ScreenInfo *prevScr = NULL;
+	XGCValues       gcv;
+	unsigned long   gcm;
+	static unsigned char greypattern [] = {0x0f, 0x05, 0x0f, 0x0a};
+	Pixmap        greypixmap;
+	static char dashlist [2] = {1, 1};
 
-    if (!Scr->FirstTime || prevScr == Scr)
-	return;
+	if(!Scr->FirstTime || prevScr == Scr) {
+		return;
+	}
 
-    prevScr = Scr;
+	prevScr = Scr;
 
-    /* create GC's */
+	/* create GC's */
 
-    gcm = 0;
-    gcm |= GCFunction;	    gcv.function = GXxor;
-    gcm |= GCLineWidth;	    gcv.line_width = 0;
-    gcm |= GCForeground;    gcv.foreground = Scr->XORvalue;
-    gcm |= GCSubwindowMode; gcv.subwindow_mode = IncludeInferiors;
+	gcm = 0;
+	gcm |= GCFunction;
+	gcv.function = GXxor;
+	gcm |= GCLineWidth;
+	gcv.line_width = 0;
+	gcm |= GCForeground;
+	gcv.foreground = Scr->XORvalue;
+	gcm |= GCSubwindowMode;
+	gcv.subwindow_mode = IncludeInferiors;
 
-    Scr->DrawGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
+	Scr->DrawGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
 
-    gcm = 0;
-    gcm |= GCForeground;    gcv.foreground = Scr->MenuC.fore;
-    gcm |= GCBackground;    gcv.background = Scr->MenuC.back;
+	gcm = 0;
+	gcm |= GCForeground;
+	gcv.foreground = Scr->MenuC.fore;
+	gcm |= GCBackground;
+	gcv.background = Scr->MenuC.back;
 
-    Scr->MenuGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
+	Scr->MenuGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
 
-    gcm = 0;
-    gcm |= GCPlaneMask;	    gcv.plane_mask = AllPlanes;
-    /*
-     * Prevent GraphicsExpose and NoExpose events.  We'd only get NoExpose
-     * events anyway;  they cause BadWindow errors from XGetWindowAttributes
-     * call in FindScreenInfo (events.c) (since drawable is a pixmap).
-     */
-    gcm |= GCGraphicsExposures;  gcv.graphics_exposures = False;
-    gcm |= GCLineWidth;	    gcv.line_width = 0;
+	gcm = 0;
+	gcm |= GCPlaneMask;
+	gcv.plane_mask = AllPlanes;
+	/*
+	 * Prevent GraphicsExpose and NoExpose events.  We'd only get NoExpose
+	 * events anyway;  they cause BadWindow errors from XGetWindowAttributes
+	 * call in FindScreenInfo (events.c) (since drawable is a pixmap).
+	 */
+	gcm |= GCGraphicsExposures;
+	gcv.graphics_exposures = False;
+	gcm |= GCLineWidth;
+	gcv.line_width = 0;
 
-    Scr->NormalGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
+	Scr->NormalGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
 
-    greypixmap = XCreatePixmapFromBitmapData(dpy, Scr->Root,
-				(char *) greypattern, 4, 4, 1, 0, 1);
+	greypixmap = XCreatePixmapFromBitmapData(dpy, Scr->Root,
+	                (char *) greypattern, 4, 4, 1, 0, 1);
 
-    if (Scr->Monochrome != COLOR) {
-	gcm  = 0;
-	gcm |= GCStipple;	gcv.stipple    = greypixmap;
-	gcm |= GCFillStyle;	gcv.fill_style = FillOpaqueStippled;
-	gcm |= GCForeground;	gcv.foreground = Scr->Black;
-	gcm |= GCBackground;	gcv.background = Scr->White;
-	Scr->BorderGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
-	XSetDashes (dpy, Scr->BorderGC, 1, dashlist, 2);
-    }
-    else
-    if (Scr->BeNiceToColormap) {
-	gcm  = 0;
-	gcm |= GCLineStyle;
-	gcv.line_style = LineDoubleDash;
-	Scr->BorderGC = XCreateGC (dpy, Scr->Root, gcm, &gcv);
-	XSetDashes (dpy, Scr->BorderGC, 0, dashlist, 2);
-    }
-    else {
-	Scr->BorderGC = XCreateGC (dpy, Scr->Root, 0, (XGCValues*) 0);
-    }
+	if(Scr->Monochrome != COLOR) {
+		gcm  = 0;
+		gcm |= GCStipple;
+		gcv.stipple    = greypixmap;
+		gcm |= GCFillStyle;
+		gcv.fill_style = FillOpaqueStippled;
+		gcm |= GCForeground;
+		gcv.foreground = Scr->Black;
+		gcm |= GCBackground;
+		gcv.background = Scr->White;
+		Scr->BorderGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
+		XSetDashes(dpy, Scr->BorderGC, 1, dashlist, 2);
+	}
+	else if(Scr->BeNiceToColormap) {
+		gcm  = 0;
+		gcm |= GCLineStyle;
+		gcv.line_style = LineDoubleDash;
+		Scr->BorderGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
+		XSetDashes(dpy, Scr->BorderGC, 0, dashlist, 2);
+	}
+	else {
+		Scr->BorderGC = XCreateGC(dpy, Scr->Root, 0, (XGCValues *) 0);
+	}
 }

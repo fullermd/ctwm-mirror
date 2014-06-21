@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -40,13 +40,13 @@
 #ifndef _WINDOW_BOX_
 #define _WINDOW_BOX_
 
-extern name_list **addWindowBox (char *boxname, char *geometry);
-extern void createWindowBoxes (void);
-extern WindowBox *findWindowBox (TwmWindow *twmwin);
+extern name_list **addWindowBox(char *boxname, char *geometry);
+extern void createWindowBoxes(void);
+extern WindowBox *findWindowBox(TwmWindow *twmwin);
 
-extern void ConstrainedToWinBox (TwmWindow *twmwin,
-				 int x, int y, int *nx, int *ny);
-extern void fittocontent (TwmWindow *twmwin);
+extern void ConstrainedToWinBox(TwmWindow *twmwin,
+                                int x, int y, int *nx, int *ny);
+extern void fittocontent(TwmWindow *twmwin);
 
 #endif /* _WINDOW_BOX_ */
 
