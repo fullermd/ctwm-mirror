@@ -10,6 +10,11 @@ allclean distclean:
 	rm -rf build/*
 
 
+# Reindent files
+indent:
+	astyle -n --options=ctwm.astyle *.h *.c
+
+
 # Build documentation files
 DOC_FILES=README.html CHANGES.html
 docs: ${DOC_FILES}
@@ -20,10 +25,6 @@ README.html: README
 	multimarkdown -ao README.html README
 CHANGES.html: CHANGES
 	multimarkdown -ao CHANGES.html CHANGES
-
-# Reindent files
-indent:
-	astyle -n --options=ctwm.astyle *.h *.c
 
 # Prebuild these files for releases
 YACC?=/usr/bin/yacc
