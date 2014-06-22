@@ -1945,10 +1945,8 @@ static void CreateWorkSpaceManagerWindow(VirtualScreen *vs)
 
 	vs->wsw->width   = Dummy;
 	vs->wsw->height  = Dummy;
-	vs->wsw->bswl    = (ButtonSubwindow **)
-	                   malloc(Scr->workSpaceMgr.count * sizeof(ButtonSubwindow *));
-	vs->wsw->mswl    = (MapSubwindow **)
-	                   malloc(Scr->workSpaceMgr.count * sizeof(MapSubwindow *));
+	vs->wsw->bswl = calloc(Scr->workSpaceMgr.count, sizeof(ButtonSubwindow *));
+	vs->wsw->mswl = calloc(Scr->workSpaceMgr.count, sizeof(MapSubwindow *));
 
 	vs->wsw->w = XCreateSimpleWindow(dpy, Scr->Root, x, y, width, height, 0,
 	                                 Scr->Black, cp.back);
