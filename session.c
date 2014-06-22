@@ -604,8 +604,7 @@ int ReadWinConfigEntry(FILE *configFile, unsigned short version,
 			entry->wm_command = NULL;
 		}
 		else {
-			entry->wm_command = (char **) malloc(entry->wm_command_count *
-			                                     sizeof(char *));
+			entry->wm_command = calloc(entry->wm_command_count, sizeof(char *));
 
 			if(!entry->wm_command) {
 				goto give_up;
@@ -698,7 +697,7 @@ give_up:
 	if(entry->wm_name) {
 		free(entry->wm_name);
 	}
-	if(entry->wm_command_count) {
+	if(entry->wm_command_count && entry->wm_command) {
 		for(i = 0; i < entry->wm_command_count; i++)
 			if(entry->wm_command[i]) {
 				free(entry->wm_command[i]);
