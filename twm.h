@@ -89,6 +89,14 @@
 #define WithdrawnState 0
 #endif
 
+/*
+ * This appears to be the standard way of testing this for portability,
+ * though calling it GNUC is sorta non-portable portability   :)
+ */
+#ifndef __GNUC__
+#define  __attribute__(x)  /*NOTHING*/
+#endif
+
 #define MAXVIRTUALSCREENS (sizeof (int))
 
 #define PIXEL_ALREADY_TYPEDEFED         /* for Xmu/Drawing.h */
@@ -480,7 +488,7 @@ extern void free();
 #endif
 #endif
 extern void Reborder(Time tim);
-extern SIGNAL_T Done(int signum);
+extern SIGNAL_T Done(int signum) __attribute__((noreturn));
 void ComputeCommonTitleOffsets(void);
 void ComputeWindowTitleOffsets(TwmWindow *tmp_win, unsigned int width,
                                Bool squeeze);
