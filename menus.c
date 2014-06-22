@@ -490,9 +490,16 @@ void InitTitlebarButtons(void)
 		tb->image = GetImage(tb->name, Scr->TitleC);
 		if(!tb->image) {
 			tb->image = GetImage(TBPM_QUESTION, Scr->TitleC);
-			if(!tb->image) {            /* cannot happen (see util.c) */
+			if(!tb->image) {
+				/*
+				 * (sorta) Can't Happen.  Calls a static function that
+				 * builds from static data, so could only possibly fail
+				 * if XCreateBitmapFromData() failed (which should be
+				 * vanishingly rare; memory allocation failures etc).
+				 */
 				fprintf(stderr, "%s:  unable to add titlebar button \"%s\"\n",
 				        ProgramName, tb->name);
+				continue;
 			}
 		}
 		tb->width  = tb->image->width;
