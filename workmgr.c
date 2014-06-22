@@ -1039,6 +1039,7 @@ Bool RedirectToCaptive(Window window)
 		atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(cctwm) + 1);
 		sprintf(atomname, "WM_CTWM_ROOT_%s", cctwm);
 		_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, False);
+		free(atomname);
 
 		if(XGetWindowProperty(dpy, Scr->Root, _XA_WM_CTWM_ROOT,
 		                      0L, 1L, False, AnyPropertyType, &actual_type, &actual_format,
@@ -3893,7 +3894,7 @@ static void SetCaptivesList(int scrnum, char **clist)
 		XDeleteProperty(dpy, root, _XA_WM_CTWMSLIST);
 		return;
 	}
-	slist = (char *) malloc(len * sizeof(char));
+	slist = calloc(len, sizeof(char));
 	cl = clist;
 	s  = slist;
 	while(*cl) {
@@ -3904,6 +3905,7 @@ static void SetCaptivesList(int scrnum, char **clist)
 	}
 	XChangeProperty(dpy, root, _XA_WM_CTWMSLIST, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) slist, len);
+	free(slist);
 }
 
 static void freeCaptiveList(char **clist)
@@ -4033,6 +4035,7 @@ void RemoveFromCaptiveList(void)
 	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
 	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
 	_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, True);
+	free(atomname);
 	if(_XA_WM_CTWM_ROOT == None) {
 		return;
 	}
