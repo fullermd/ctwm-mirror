@@ -1422,6 +1422,11 @@ void Animate(void)
 	AnimationPending = False;
 #endif
 
+	/* Impossible? */
+	if(NumScreens < 1) {
+		return;
+	}
+
 	MaybeAnimate = False;
 	scr = NULL;
 	for(scrnum = 0; scrnum < NumScreens; scrnum++) {
