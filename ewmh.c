@@ -72,6 +72,7 @@ static Atom NET_NUMBER_OF_DESKTOPS;
 static Atom NET_SUPPORTED;
 static Atom NET_SUPPORTING_WM_CHECK;
 static Atom NET_VIRTUAL_ROOTS;
+static Atom NET_WM_DESKTOP;
 static Atom NET_WM_ICON;
 static Atom NET_WM_NAME;
 static Atom UTF8_STRING;
@@ -110,6 +111,7 @@ static void EwmhInitAtoms(void)
 	NET_SUPPORTED       = XInternAtom(dpy, "_NET_SUPPORTED", False);
 	NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
 	NET_VIRTUAL_ROOTS   = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
+	NET_WM_DESKTOP      = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	NET_WM_ICON         = XInternAtom(dpy, "_NET_WM_ICON", False);
 	NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
 	UTF8_STRING         = XInternAtom(dpy, "UTF8_STRING", False);
@@ -394,6 +396,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_CURRENT_DESKTOP;
 	supported[i++] = NET_DESKTOP_GEOMETRY;
 	supported[i++] = NET_WM_ICON;
+	supported[i++] = NET_WM_DESKTOP;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -916,3 +919,66 @@ int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 	return 0;
 }
 
+void EwmhSet_NET_WM_DESKTOP(TwmWindow *twm_win)
+{
+	WorkSpace *ws;
+
+	VirtualScreen *vs = twm_win->vs;
+	if(vs != NULL) {
+		ws = vs->wsw->currentwspc;
+	}
+
+	EwmhSet_NET_WM_DESKTOP_ws(twm_win, ws);
+}
+
+void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws)
+{
+	long workspaces[MAXWORKSPACE];
+	int n = 0;
+
+	if(!Scr->workSpaceManagerActive) {
+		workspaces[n++] = 0;
+	}
+	else if(twm_win->occupation == fullOccupation) {
+		workspaces[n++] = 0xFFFFFFFF;
+	}
+	else {
+		/*
+		 * Our windows can occupy multiple workspaces ("virtual desktops" in
+		 * EWMH terminology) at once. Extend the _NET_WM_DESKTOP property
+		 * by setting it to multiple CARDINALs if this occurs.
+		 * Put the currently visible workspace (if any) first.
+		 */
+		int occupation = twm_win->occupation;
+
+		/*
+		 * Set visible workspace number.
+		 */
+		if(ws != NULL) {
+			int wsn = ws->number;
+
+			workspaces[n++] = wsn;
+			occupation &= ~(1 << wsn);
+		}
+
+		/*
+		 * Set any other workspace numbers.
+		 */
+		if(occupation != 0) {
+			int i;
+			int mask = 1;
+
+			for(i = 0; i < MAXWORKSPACE; i++) {
+				if(occupation & mask) {
+					workspaces[n++] = i;
+				}
+				mask <<= 1;
+			}
+		}
+	}
+
+	XChangeProperty(dpy, twm_win->w,
+	                NET_WM_DESKTOP, XA_CARDINAL,
+	                32, PropModeReplace,
+	                (unsigned char *)workspaces, n);
+}

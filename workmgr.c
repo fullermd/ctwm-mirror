@@ -531,8 +531,19 @@ void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
 	for(twmWin = OtpTopWin(); twmWin != NULL;
 	                twmWin = OtpNextWinDown(twmWin)) {
 
-		if(OCCUPY(twmWin, newws) && !twmWin->vs) {
-			DisplayWin(vs, twmWin);
+		if(OCCUPY(twmWin, newws)) {
+			if(!twmWin->vs) {
+				DisplayWin(vs, twmWin);
+			}
+#ifdef EWMH
+			if(OCCUPY(twmWin, oldws)) {
+				/*
+				 * If the window remains visible, re-order the workspace
+				 * numbers in NET_WM_DESKTOP.
+				 */
+				EwmhSet_NET_WM_DESKTOP_ws(twmWin, newws);
+			}
+#endif
 		}
 	}
 
@@ -682,12 +693,11 @@ void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
 	}
 #endif /* GNOME */
 #ifdef EWMH
-	if(!captive) {
+	{
 		long number = newws->number;
 		/*
 		 * TODO: this should probably not use Scr->Root but ->XineramaRoot.
 		 * That is the real root window if we're using virtual screens.
-		 * That would need a separate change of the eventMask.
 		 * Also, on the real root it would need values for each of the
 		 * virtual roots, but that doesn't fit in the EWMH ideas.
 		 */
@@ -966,6 +976,9 @@ void SetupOccupation(TwmWindow *twm_win,
 
 	XChangeProperty(dpy, twm_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) wrkSpcList, len);
+#ifdef EWMH
+	EwmhSet_NET_WM_DESKTOP(twm_win);
+#endif
 #ifdef GNOME
 	XChangeProperty(dpy, twm_win->w, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
 	                PropModeReplace, (unsigned char *)(&gwkspc), 1);
@@ -1639,6 +1652,9 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 
 		XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
 		                PropModeReplace, (unsigned char *) namelist, len);
+#ifdef EWMH
+		EwmhSet_NET_WM_DESKTOP(tmp_win);
+#endif
 #ifdef GNOME
 		XChangeProperty(dpy, tmp_win->w, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
 		                PropModeReplace, (unsigned char *)(&gwkspc), 1);
@@ -1708,6 +1724,9 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 	XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) namelist, len);
 
+#ifdef EWMH
+	EwmhSet_NET_WM_DESKTOP(tmp_win);
+#endif
 #ifdef GNOME
 	/* Tell GNOME where this window lives */
 	XChangeProperty(dpy, tmp_win->w, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,

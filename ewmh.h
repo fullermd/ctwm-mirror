@@ -43,6 +43,8 @@ extern void EwhmSelectionClear(XSelectionClearEvent *sev);
 extern int EwmhClientMessage(XClientMessageEvent *msg);
 extern Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win);
 extern int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win);
+extern void EwmhSet_NET_WM_DESKTOP(TwmWindow *twm_win);
+extern void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */

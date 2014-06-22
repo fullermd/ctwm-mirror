@@ -226,4 +226,6 @@ extern void ShowBackground(VirtualScreen *vs);
 
 Bool visible(TwmWindow *tmp_win);
 
+extern int fullOccupation;
+
 #endif /* _WORKMGR_ */
