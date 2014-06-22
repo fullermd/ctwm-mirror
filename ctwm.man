@@ -293,10 +293,6 @@ Is defined only if \fIctwm\fP was compiled with XPM.
 Is defined only if \fIctwm\fP was compiled with JPEG.
 
 .TP 16
-.B "IMCONV"
-Is defined only if \fIctwm\fP was compiled with IMCONV.
-
-.TP 16
 .B "GNOME"
 Is defined only if \fIctwm\fP was compiled with GNOME.
 
@@ -1226,7 +1222,7 @@ Icons
 }
 .EE
 N.B This is only valid if your version of \fIctwm\fP has been compiled with the
-right extension (XPM, JPEG or IMCONV options).
+right extension (XPM or JPEG).
 
 .IP "\fBPrioritySwitching\fP [\fBIcons\fP] { \fIwin-list\fP }" 8
 Specifies that the windows in \fIwin-list\fP can switch priority. This means
@@ -1650,7 +1646,7 @@ foreground color of the corresponding root screen.
 .TP 8
 .B "pixmap\-root:"
 pixmap to display on the corresponding root screen, either the name of
-a bitmap, xpm:xpmfile, xwd:xwdfile, jpeg:jpgfile, im:imfile or |command_that
+a bitmap, xpm:xpmfile, xwd:xwdfile, jpeg:jpgfile, or |command_that
 generate_xwd.
 .RE
 .IP
