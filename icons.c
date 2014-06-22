@@ -800,6 +800,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	/* I need to figure out where to put the icon window now, because
 	 * getting here means that I am going to make the icon visible
 	 */
+	final_x = final_y = 0;
 	if(tmp_win->wmhints &&
 	                tmp_win->wmhints->flags & IconPositionHint) {
 		final_x = tmp_win->wmhints->icon_x;
@@ -808,9 +809,6 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	else {
 		if(visible(tmp_win)) {
 			PlaceIcon(tmp_win, def_x, def_y, &final_x, &final_y);
-		}
-		else {
-			final_x = 0;
 		}
 	}
 
