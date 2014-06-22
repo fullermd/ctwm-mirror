@@ -48,22 +48,6 @@ GOAL=
 # USER_.
 
 # ----------------------------------------------------------------------
-# Feature: Use IMCONV features.
-# Uhmm, I really don't know what this is about. -- Richard Levitte
-#
-# The make variables USER_IMCONVLIBDIR and USER_IMCONVINCDIR can be
-# used to configure library search paths and include file search paths
-# to find the imconv libraries and header files.
-#
-# Example:
-#
-# IMCONV = 1
-# USER_IMCONVLIBDIR = LOCAL_LIBRARIES:
-# USER_IMCONVINCDIR = LOCAL_INCLUDES:
-#
-IMCONV =
-
-# ----------------------------------------------------------------------
 # Feature: Use sounds
 # If you want sound support through librplay, defined USE_SOUND.
 #

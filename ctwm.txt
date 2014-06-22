@@ -30,9 +30,8 @@ DESCRIPTION
      several virtual screens (workspaces). It is heavily inspired
      from the Hewlett-Packard vuewm window manager. In  addition,
      ctwm can use coloured, shaped icons and background root pix-
-     maps in XPM format [from Arnaud Le Hors],any  format  under-
-     stood  by  the  imconv package [from the San Diego Supercom-
-     puter Center] and xwd files. Ctwm can  be  compiled  to  use
+     maps in XPM format [from Arnaud Le Hors],
+     and xwd files. Ctwm can  be  compiled  to  use
      both, either or none of the above icon/pixmap formats.
 
      This program  is  usually  started  by  the  user's  session
@@ -1341,8 +1340,8 @@ VMS specific:
              find non-X11 bitmap files.  Whenever you want to use
              a image file that is not an X11  bitmap,  specify  :
              xpm:filename (for xpm files) or xwd:filename for xwd
-             files, or im:filename (for other files supported  by
-             the  imconv package), or |command for an on the file
+             files,
+             or |command for an on the file
              generated xwd file. Use the % character  to  specify
              an  animation. path can be a colon separated list of
              directories.  Example :
