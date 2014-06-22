@@ -757,18 +757,8 @@ void AddWorkSpace(char *name, char *background, char *foreground,
 	fullOccupation |= (1 << wsnum);
 	ws = (WorkSpace *) malloc(sizeof(WorkSpace));
 	ws->FirstWindowRegion = NULL;
-#if 0 /* def VMS */
-	{
-		char *ftemp;
-		ftemp = (char *) malloc((strlen(name) + 1) * sizeof(char));
-		ws->name = strcpy(ftemp, name);
-		ftemp = (char *) malloc((strlen(name) + 1) * sizeof(char));
-		ws->label = strcpy(ftemp, name);
-	}
-#else
 	ws->name  = (char *) strdup(name);
 	ws->label = (char *) strdup(name);
-#endif
 	ws->clientlist = NULL;
 	ws->save_focus = NULL;
 

@@ -120,15 +120,7 @@ void AddToList(name_list **list_head, char *name, char *ptr)
 	}
 
 	nptr->next = *list_head;
-#ifdef VMS
-	{
-		char *ftemp;
-		ftemp = (char *) malloc((strlen(name) + 1) * sizeof(char));
-		nptr->name = strcpy(ftemp, name);
-	}
-#else
 	nptr->name = (char *) strdup(name);
-#endif
 	nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
 	*list_head = nptr;
 }
