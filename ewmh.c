@@ -850,6 +850,7 @@ int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 		unsigned long valuemask;                /* mask for create windows */
 		XSetWindowAttributes attributes;        /* attributes for create windows */
 		Icon *icon = twm_win->icon;
+		int x;
 
 #ifdef DEBUG_EWMH
 		fprintf(stderr, "EwmhHandlePropertyNotify: NET_WM_ICON\n");
@@ -868,8 +869,12 @@ int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 		Image *image = EwhmGetIcon(Scr, twm_win);
 
 		/* TODO: de-duplicate with handling of XA_WM_HINTS */
-		Image *old_image = icon->image;
-		icon->image = image;
+		{
+			Image *old_image = icon->image;
+			icon->image = image;
+			FreeImage(old_image);
+		}
+
 
 		if(twm_win->icon->bm_w) {
 			XDestroyWindow(dpy, twm_win->icon->bm_w);
@@ -878,7 +883,7 @@ int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 		valuemask = CWBackPixmap;
 		attributes.background_pixmap = image->pixmap;
 
-		int x = GetIconOffset(twm_win->icon);
+		x = GetIconOffset(twm_win->icon);
 		twm_win->icon->bm_w =
 		        XCreateWindow(dpy, twm_win->icon->w, x, 0,
 		                      (unsigned int) twm_win->icon->width,
@@ -906,9 +911,8 @@ int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 		XMapSubwindows(dpy, twm_win->icon->w);
 		RedoIconName();
 
-		FreeImage(old_image);
-
 		return 1;
 	}
 	return 0;
 }
+
