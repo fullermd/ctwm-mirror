@@ -4740,7 +4740,9 @@ static Image *LoadJpegImage(char *name)
 		image->width  = width;
 		image->height = height;
 	}
-	XDestroyImage(ximage);
+	if(ximage) {
+		XDestroyImage(ximage);
+	}
 	image->pixmap = pixret;
 	image->mask   = None;
 	image->next   = None;
