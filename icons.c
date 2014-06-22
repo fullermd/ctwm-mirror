@@ -438,7 +438,6 @@ name_list **AddIconRegion(char *geom,
 	}
 	ir->TitleJustification = tmp;
 
-	tmp = ParseJustification(just);
 	if((tmp = ParseJustification(just)) < 0) {
 		twmrc_error_prefix();
 		fprintf(stderr, "ignoring invalid IconRegion argument \"%s\"\n", just);
