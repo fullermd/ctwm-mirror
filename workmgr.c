@@ -1782,6 +1782,10 @@ void WMgrRemoveFromCurrentWorkSpace(VirtualScreen *vs, TwmWindow *win)
 	int       newoccupation;
 
 	ws = vs->wsw->currentwspc;
+	if(!ws) {
+		/* Impossible? */
+		return;
+	}
 	if(! OCCUPY(win, ws)) {
 		return;
 	}
