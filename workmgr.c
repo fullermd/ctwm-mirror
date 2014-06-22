@@ -4003,28 +4003,32 @@ void RemoveFromCaptiveList(void)
 		return;
 	}
 	clist = GetCaptivesList(scrnum);
-	cl = clist;
-	count = 0;
-	while(*cl) {
-		count++;
-		cl++;
-	}
-	newclist = (char **) malloc(count * sizeof(char *));
-	cl = clist;
-	count = 0;
-	while(*cl) {
-		if(!strcmp(*cl, captivename)) {
+
+	/* Make sure there's something to do before trying to do it */
+	if(clist && *clist) {
+		cl = clist;
+		count = 0;
+		while(*cl) {
+			count++;
 			cl++;
-			continue;
 		}
-		newclist [count++] = *cl;
-		cl++;
+		newclist = (char **) malloc(count * sizeof(char *));
+		cl = clist;
+		count = 0;
+		while(*cl) {
+			if(!strcmp(*cl, captivename)) {
+				cl++;
+				continue;
+			}
+			newclist [count++] = *cl;
+			cl++;
+		}
+		newclist [count] = (char *) 0;
+		SetCaptivesList(scrnum, newclist);
+		free(newclist);
 	}
-	newclist [count] = (char *) 0;
-	SetCaptivesList(scrnum, newclist);
 	freeCaptiveList(clist);
 	free(clist);
-	free(newclist);
 
 	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
 	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
