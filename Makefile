@@ -10,6 +10,10 @@ allclean distclean:
 	rm -rf build/*
 
 
+# Reindent files
+indent:
+	astyle -n --options=ctwm.astyle *.h *.c
+
 # Prebuild these files for releases
 YACC?=/usr/bin/yacc
 YFLAGS=-d -b gram
