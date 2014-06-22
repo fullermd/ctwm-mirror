@@ -15,14 +15,14 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL M.I.T.
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -61,69 +61,68 @@
 
 /* Where dit the Image for the Icon come from? */
 typedef enum {
-    match_none,
-    match_list,			/* shared Image: iconslist and Scr->ImageCache */
-    match_icon_pixmap_hint,	/* Pixmap copied from IconPixmapHint */
-    match_net_wm_icon,		/* Pixmap created from NET_WM_ICON */
-    match_unknown_default,	/* shared Image: Scr->UnknownImage */
+	match_none,
+	match_list,                 /* shared Image: iconslist and Scr->ImageCache */
+	match_icon_pixmap_hint,     /* Pixmap copied from IconPixmapHint */
+	match_net_wm_icon,          /* Pixmap created from NET_WM_ICON */
+	match_unknown_default,      /* shared Image: Scr->UnknownImage */
 } Matchtype;
 
-struct Icon
-{
-    Matchtype	match;
-    Window	w;		/* the icon window */
-    OtpWinList *otp;		/* OnTopPriority info for the icon */
-    Window	bm_w;		/* the icon bitmap window */
-    Image	*image;		/* image icon structure */
-    int		x;		/* icon text x coordinate */
-    int		y;		/* icon text y coordiante */
-    int		w_x;            /* x coor of the icon window !!untested!! */
-    int		w_y;            /* y coor of the icon window !!untested!! */
-    int		w_width;	/* width of the icon window */
-    int		w_height;	/* height of the icon window */
-    int		width;          /* width of the icon bitmap */
-    int		height;         /* height of the icon bitmap */
-    Pixel	border;		/* border color */
-    ColorPair	iconc;
-    int		border_width;
-    struct IconRegion	*ir;
-    short	has_title, title_shrunk;
-    short	w_not_ours;     /* Icon.w comes from IconWindowHint */
+struct Icon {
+	Matchtype   match;
+	Window      w;              /* the icon window */
+	OtpWinList *otp;            /* OnTopPriority info for the icon */
+	Window      bm_w;           /* the icon bitmap window */
+	Image       *image;         /* image icon structure */
+	int         x;              /* icon text x coordinate */
+	int         y;              /* icon text y coordiante */
+	int         w_x;            /* x coor of the icon window !!untested!! */
+	int         w_y;            /* y coor of the icon window !!untested!! */
+	int         w_width;        /* width of the icon window */
+	int         w_height;       /* height of the icon window */
+	int         width;          /* width of the icon bitmap */
+	int         height;         /* height of the icon bitmap */
+	Pixel       border;         /* border color */
+	ColorPair   iconc;
+	int         border_width;
+	struct IconRegion   *ir;
+	short       has_title, title_shrunk;
+	short       w_not_ours;     /* Icon.w comes from IconWindowHint */
 };
 
-struct IconRegion
-{
-    struct IconRegion	*next;
-    int			x, y, w, h;
-    int			grav1, grav2;
-    int			stepx, stepy;		/* allocation granularity */
-    short		TitleJustification;	/* J_LEFT, J_CENTER or J_RIGHT */
-    short		Justification;		/* J_LEFT, J_CENTER J_RIGHT or J_BORDER */
-    short		Alignement;		/* J_TOP, J_CENTER, J_BOTTOM or J_BORDER */
-    name_list           *clientlist;
-    struct IconEntry	*entries;
+struct IconRegion {
+	struct IconRegion   *next;
+	int                 x, y, w, h;
+	int                 grav1, grav2;
+	int                 stepx, stepy;           /* allocation granularity */
+	short               TitleJustification;     /* J_LEFT, J_CENTER or J_RIGHT */
+	short
+	Justification;          /* J_LEFT, J_CENTER J_RIGHT or J_BORDER */
+	short
+	Alignement;             /* J_TOP, J_CENTER, J_BOTTOM or J_BORDER */
+	name_list           *clientlist;
+	struct IconEntry    *entries;
 };
 
-struct IconEntry
-{
-    struct IconEntry	*next;
-    int			x, y, w, h;
-    TwmWindow		*twm_win;
-    short 		used;
+struct IconEntry {
+	struct IconEntry    *next;
+	int                 x, y, w, h;
+	TwmWindow           *twm_win;
+	short               used;
 };
 
-extern int IconUp (TwmWindow *tmp_win);
-extern void IconDown (TwmWindow *tmp_win);
+extern int IconUp(TwmWindow *tmp_win);
+extern void IconDown(TwmWindow *tmp_win);
 extern name_list **AddIconRegion(char *geom, int grav1, int grav2,
-				 int stepx, int stepy,
-				 char *ijust, char *just, char *align);
+                                 int stepx, int stepy,
+                                 char *ijust, char *just, char *align);
 extern void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y);
 extern void DeleteIcon(Icon *icon);
 extern void DeleteIconsList(TwmWindow *tmp_win);
-extern void ShrinkIconTitle (TwmWindow *tmp_win);
-extern void ExpandIconTitle (TwmWindow *tmp_win);
-extern void ReshapeIcon (Icon *icon);
-extern int GetIconOffset (Icon *icon);
-extern Bool AnimateIcons (ScreenInfo *scr, Icon *icon);
+extern void ShrinkIconTitle(TwmWindow *tmp_win);
+extern void ExpandIconTitle(TwmWindow *tmp_win);
+extern void ReshapeIcon(Icon *icon);
+extern int GetIconOffset(Icon *icon);
+extern Bool AnimateIcons(ScreenInfo *scr, Icon *icon);
 
 #endif /* ICONS_H */

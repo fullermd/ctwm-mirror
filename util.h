@@ -24,11 +24,11 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -57,7 +57,7 @@
  *
  * utility routines header file
  *
- * 28-Oct-87 Thomas E. LaStrange		File created
+ * 28-Oct-87 Thomas E. LaStrange                File created
  *
  ***********************************************************************/
 
@@ -88,12 +88,12 @@
  * undefined." In particular, an argument of type "char" is problematic
  * (gcc:  warning: array subscript has type 'char').
  */
-#define Isascii(c)	isascii((int)(unsigned char)(c))
-#define Isdigit(c)	isdigit((int)(unsigned char)(c))
-#define Islower(c)	islower((int)(unsigned char)(c))
-#define Isupper(c)	isupper((int)(unsigned char)(c))
-#define Tolower(c)	tolower((int)(unsigned char)(c))
-#define Toupper(c)	toupper((int)(unsigned char)(c))
+#define Isascii(c)      isascii((int)(unsigned char)(c))
+#define Isdigit(c)      isdigit((int)(unsigned char)(c))
+#define Islower(c)      islower((int)(unsigned char)(c))
+#define Isupper(c)      isupper((int)(unsigned char)(c))
+#define Tolower(c)      tolower((int)(unsigned char)(c))
+#define Toupper(c)      toupper((int)(unsigned char)(c))
 
 extern int Animating;
 extern Bool AnimationActive;
@@ -105,77 +105,77 @@ extern Bool AnimationPending;
 extern struct timeval AnimateTimeout;
 #endif /* USE_SIGNALS */
 
-extern void	Zoom(Window wf, Window wt);
-extern void	MoveOutline(Window root,
-			    int x, int y, int width, int height,
-			    int bw, int th);
-extern Pixmap	GetBitmap(char *name);
-extern Pixmap	FindBitmap(char *name,
-			   unsigned int *widthp, unsigned int *heightp);
-extern void	GetUnknownIcon(char *name);
-extern char	*ExpandFilename(char *name);
-extern char	*ExpandFilePath(char *path);
-extern char	*ExpandPixmapPath (char *name);
+extern void     Zoom(Window wf, Window wt);
+extern void     MoveOutline(Window root,
+                            int x, int y, int width, int height,
+                            int bw, int th);
+extern Pixmap   GetBitmap(char *name);
+extern Pixmap   FindBitmap(char *name,
+                           unsigned int *widthp, unsigned int *heightp);
+extern void     GetUnknownIcon(char *name);
+extern char     *ExpandFilename(char *name);
+extern char     *ExpandFilePath(char *path);
+extern char     *ExpandPixmapPath(char *name);
 
-void MaskScreen (char *file);
-void UnmaskScreen (void);
-void StartAnimation (void);
-void StopAnimation (void);
-void SetAnimationSpeed (int speed);
-void ModifyAnimationSpeed (int incr);
-void Animate (void);
-void TryToAnimate (void);
-void InsertRGBColormap (Atom a, XStandardColormap *maps, int nmaps,
-			Bool replace);
-void RemoveRGBColormap (Atom a);
-void LocateStandardColormaps (void);
-void GetColor (int kind, Pixel *what, char *name);
-void GetShadeColors (ColorPair *cp);
+void MaskScreen(char *file);
+void UnmaskScreen(void);
+void StartAnimation(void);
+void StopAnimation(void);
+void SetAnimationSpeed(int speed);
+void ModifyAnimationSpeed(int incr);
+void Animate(void);
+void TryToAnimate(void);
+void InsertRGBColormap(Atom a, XStandardColormap *maps, int nmaps,
+                       Bool replace);
+void RemoveRGBColormap(Atom a);
+void LocateStandardColormaps(void);
+void GetColor(int kind, Pixel *what, char *name);
+void GetShadeColors(ColorPair *cp);
 void GetFont(MyFont *font);
 Bool UpdateFont(MyFont *font, int height);
-void SetFocusVisualAttributes (TwmWindow *tmp_win, Bool focus);
-void move_to_after (TwmWindow *t, TwmWindow *after);
-void SetFocus (TwmWindow *tmp_win, Time tim);
+void SetFocusVisualAttributes(TwmWindow *tmp_win, Bool focus);
+void move_to_after(TwmWindow *t, TwmWindow *after);
+void SetFocus(TwmWindow *tmp_win, Time tim);
 Pixmap CreateMenuIcon(int height, unsigned int *widthp, unsigned int *heightp);
-Pixmap Create3DMenuIcon (unsigned int height,
-			 unsigned int *widthp, unsigned int *heightp,
-			 ColorPair cp);
-Pixmap Create3DIconManagerIcon (ColorPair cp);
-void Draw3DBorder (Window w,
-		   int x, int y, int width, int height, int bw,
-		   ColorPair cp,
-		   int state, int fill, int forcebw);
-void Draw3DCorner (Window w,
-		   int x, int y, int width, int height, int thick, int bw,
-		   ColorPair cp,
-		   int type);
-void PaintBorders (TwmWindow *tmp_win, Bool focus);
-void PaintTitle (TwmWindow *tmp_win);
-void PaintIcon (TwmWindow *tmp_win);
-void PaintTitleButton (TwmWindow *tmp_win, TBWindow  *tbw);
-void AdoptWindow (void);
-void RescueWindows (void);
-void DebugTrace (char *file);
-void SetBorderCursor (TwmWindow *tmp_win, int x, int y);
+Pixmap Create3DMenuIcon(unsigned int height,
+                        unsigned int *widthp, unsigned int *heightp,
+                        ColorPair cp);
+Pixmap Create3DIconManagerIcon(ColorPair cp);
+void Draw3DBorder(Window w,
+                  int x, int y, int width, int height, int bw,
+                  ColorPair cp,
+                  int state, int fill, int forcebw);
+void Draw3DCorner(Window w,
+                  int x, int y, int width, int height, int thick, int bw,
+                  ColorPair cp,
+                  int type);
+void PaintBorders(TwmWindow *tmp_win, Bool focus);
+void PaintTitle(TwmWindow *tmp_win);
+void PaintIcon(TwmWindow *tmp_win);
+void PaintTitleButton(TwmWindow *tmp_win, TBWindow  *tbw);
+void AdoptWindow(void);
+void RescueWindows(void);
+void DebugTrace(char *file);
+void SetBorderCursor(TwmWindow *tmp_win, int x, int y);
 
 extern int HotX, HotY;
 
 struct Image {
-    Pixmap pixmap;
-    Pixmap mask;
-    int    width;
-    int    height;
-    Image *next;
+	Pixmap pixmap;
+	Pixmap mask;
+	int    width;
+	int    height;
+	Image *next;
 };
 
-extern Image *GetImage (char *name, ColorPair cp);
-extern void FreeImage (Image *image);
+extern Image *GetImage(char *name, ColorPair cp);
+extern void FreeImage(Image *image);
 
 extern unsigned char *GetWMPropertyString(Window w, Atom prop);
 extern void FreeWMPropertyString(char *prop);
-extern void ConstrainByBorders1 (int *left, int width, int *top, int height);
-extern void ConstrainByBorders (TwmWindow *twmwin,
-				int *left, int width,
-				int *top, int height);
+extern void ConstrainByBorders1(int *left, int width, int *top, int height);
+extern void ConstrainByBorders(TwmWindow *twmwin,
+                               int *left, int width,
+                               int *top, int height);
 
 #endif /* _UTIL_ */

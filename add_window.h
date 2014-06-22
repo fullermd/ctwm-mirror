@@ -24,11 +24,11 @@
 /**    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE    **/
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -70,38 +70,39 @@
 extern char NoName[];
 extern int  resizeWhenAdd;
 
-extern void GetGravityOffsets (TwmWindow *tmp, int *xp, int *yp);
-#define ADD_WINDOW_NORMAL		0
-#define ADD_WINDOW_ICON_MANAGER		1
-#define ADD_WINDOW_WINDOWBOX		2
-#define ADD_WINDOW_WORKSPACE_MANAGER	3
-extern TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs);
+extern void GetGravityOffsets(TwmWindow *tmp, int *xp, int *yp);
+#define ADD_WINDOW_NORMAL               0
+#define ADD_WINDOW_ICON_MANAGER         1
+#define ADD_WINDOW_WINDOWBOX            2
+#define ADD_WINDOW_WORKSPACE_MANAGER    3
+extern TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp,
+                            VirtualScreen *vs);
 extern TwmWindow *GetTwmWindow(Window w);
 extern void DeleteHighlightWindows(TwmWindow *tmp_win);
 extern int MappedNotOverride(Window w);
-extern void AddDefaultBindings (void);
+extern void AddDefaultBindings(void);
 extern void GrabButtons(TwmWindow *tmp_win);
 extern void GrabKeys(TwmWindow *tmp_win);
 extern void GetWindowSizeHints(TwmWindow *tmp_win);
-extern void AnimateButton (TBWindow *tbw);
-extern void AnimateHighlight (TwmWindow *t);
-extern void CreateWindowRegions (void);
-extern Bool PlaceWindowInRegion (TwmWindow *tmp_win,
-				 int *final_x, int *final_y);
-extern void RemoveWindowFromRegion (TwmWindow	*tmp_win);
-extern name_list **AddWindowRegion (char *geom, int  grav1, int grav2);
-extern int AddingX;	
+extern void AnimateButton(TBWindow *tbw);
+extern void AnimateHighlight(TwmWindow *t);
+extern void CreateWindowRegions(void);
+extern Bool PlaceWindowInRegion(TwmWindow *tmp_win,
+                                int *final_x, int *final_y);
+extern void RemoveWindowFromRegion(TwmWindow   *tmp_win);
+extern name_list **AddWindowRegion(char *geom, int  grav1, int grav2);
+extern int AddingX;
 extern int AddingY;
 extern unsigned int AddingW;
 extern unsigned int AddingH;
 
-extern void SetHighlightPixmap (char *filename);
-extern void FetchWmColormapWindows (TwmWindow *tmp);
-extern void FetchWmProtocols (TwmWindow *tmp);
+extern void SetHighlightPixmap(char *filename);
+extern void FetchWmColormapWindows(TwmWindow *tmp);
+extern void FetchWmProtocols(TwmWindow *tmp);
 
 extern TwmColormap *CreateTwmColormap(Colormap c);
 extern ColormapWindow *CreateColormapWindow(Window w,
-					    Bool creating_parent,
-					    Bool property_window);
+                Bool creating_parent,
+                Bool property_window);
 #endif /* _ADD_WINDOW_ */
 

@@ -1,8 +1,8 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 1992 Claude Lecommandeur.
- *            
+ *
  * Permission to use, copy, modify  and distribute this software  [ctwm] and
  * its documentation for any purpose is hereby granted without fee, provided
  * that the above  copyright notice appear  in all copies and that both that
@@ -24,17 +24,17 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 /*
- *	LNM.H
+ *      LNM.H
  *
- *	Provides for the mode to define VMS logicals in
+ *      Provides for the mode to define VMS logicals in
  */
 #ifndef __LNM__
 #define __LNM__
 
-#define	LNM_KERNEL	0
-#define LNM_EXEC	1
-#define LNM_SUPER	2
-#define LNM_USER	3
+#define LNM_KERNEL      0
+#define LNM_EXEC        1
+#define LNM_SUPER       2
+#define LNM_USER        3
 
 extern int GetLogical();
 #endif

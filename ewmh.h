@@ -1,4 +1,4 @@
-/* 
+/*
  *  [ ctwm ]
  *
  *  Copyright 2014 Olaf Seibert
