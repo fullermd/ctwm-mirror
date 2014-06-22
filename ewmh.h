@@ -45,6 +45,8 @@ extern Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win);
 extern int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win);
 extern void EwmhSet_NET_WM_DESKTOP(TwmWindow *twm_win);
 extern void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws);
+extern void EwmhAddClientWindow(TwmWindow *new_win);
+extern void EwmhDeleteClientWindow(TwmWindow *old_win);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */

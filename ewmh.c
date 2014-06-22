@@ -66,6 +66,8 @@
 
 static Atom MANAGER;
 Atom NET_CURRENT_DESKTOP;
+static Atom NET_CLIENT_LIST;
+static Atom NET_CLIENT_LIST_STACKING;
 static Atom NET_DESKTOP_GEOMETRY;
 static Atom NET_DESKTOP_VIEWPORT;
 static Atom NET_NUMBER_OF_DESKTOPS;
@@ -104,6 +106,8 @@ static void SendPropertyMessage(Window to, Window about,
 static void EwmhInitAtoms(void)
 {
 	MANAGER             = XInternAtom(dpy, "MANAGER", False);
+	NET_CLIENT_LIST     = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
+	NET_CLIENT_LIST_STACKING = XInternAtom(dpy, "_NET_CLIENT_LIST_STACKING", False);
 	NET_CURRENT_DESKTOP = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
 	NET_DESKTOP_GEOMETRY    = XInternAtom(dpy, "_NET_DESKTOP_GEOMETRY", False);
 	NET_DESKTOP_VIEWPORT    = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
@@ -281,6 +285,11 @@ int EwmhInitScreenEarly(ScreenInfo *scr)
 {
 	XSetWindowAttributes attrib;
 
+	scr->ewmh_CLIENT_LIST_used = 0;
+	scr->ewmh_CLIENT_LIST_size = 16;
+	scr->ewmh_CLIENT_LIST = malloc(scr->ewmh_CLIENT_LIST_size * sizeof(
+	                                       scr->ewmh_CLIENT_LIST[0]));
+
 #ifdef DEBUG_EWMH
 	fprintf(stderr, "EwmhInitScreenEarly: XCreateWindow\n");
 #endif
@@ -397,6 +406,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_DESKTOP_GEOMETRY;
 	supported[i++] = NET_WM_ICON;
 	supported[i++] = NET_WM_DESKTOP;
+	supported[i++] = NET_CLIENT_LIST;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -927,6 +937,9 @@ void EwmhSet_NET_WM_DESKTOP(TwmWindow *twm_win)
 	if(vs != NULL) {
 		ws = vs->wsw->currentwspc;
 	}
+	else {
+		ws = NULL;
+	}
 
 	EwmhSet_NET_WM_DESKTOP_ws(twm_win, ws);
 }
@@ -981,4 +994,70 @@ void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws)
 	                NET_WM_DESKTOP, XA_CARDINAL,
 	                32, PropModeReplace,
 	                (unsigned char *)workspaces, n);
+}
+
+/*
+ * Add a new window to _NET_CLIENT_LIST.
+ * Newer windows are always added at the end.
+ *
+ * Look at new_win->iconmanagerlist as an optimization for
+ * !LookInList(Scr->IconMgrNoShow, new_win->full_name, &new_win->class)).
+ */
+void EwmhAddClientWindow(TwmWindow *new_win)
+{
+	if(Scr->ewmh_CLIENT_LIST_size == 0) {
+		return;
+	}
+	if(new_win->iconmanagerlist != NULL &&
+	                !new_win->wspmgr &&
+	                !new_win->iconmgr) {
+		Scr->ewmh_CLIENT_LIST_used++;
+		if(Scr->ewmh_CLIENT_LIST_used > Scr->ewmh_CLIENT_LIST_size) {
+			Scr->ewmh_CLIENT_LIST_size *= 2;
+			Scr->ewmh_CLIENT_LIST = realloc(Scr->ewmh_CLIENT_LIST,
+			                                sizeof(long) * Scr->ewmh_CLIENT_LIST_size);
+		}
+		if(Scr->ewmh_CLIENT_LIST) {
+			Scr->ewmh_CLIENT_LIST[Scr->ewmh_CLIENT_LIST_used - 1] = new_win->w;
+		}
+		else {
+			Scr->ewmh_CLIENT_LIST_size = 0;
+			fprintf(stderr, "Unable to allocate memory for GNOME client list.\n");
+			return;
+		}
+		XChangeProperty(dpy, Scr->Root, NET_CLIENT_LIST, XA_WINDOW, 32,
+		                PropModeReplace, (unsigned char *)Scr->ewmh_CLIENT_LIST,
+		                Scr->ewmh_CLIENT_LIST_used);
+	}
+}
+
+void EwmhDeleteClientWindow(TwmWindow *old_win)
+{
+	int i;
+
+	if(Scr->ewmh_CLIENT_LIST_size == 0) {
+		return;
+	}
+	for(i = Scr->ewmh_CLIENT_LIST_used - 1; i >= 0; i--) {
+		if(Scr->ewmh_CLIENT_LIST[i] == old_win->w) {
+			Scr->ewmh_CLIENT_LIST_used--;
+			memmove(&Scr->ewmh_CLIENT_LIST[i],
+			        &Scr->ewmh_CLIENT_LIST[i + 1],
+			        (Scr->ewmh_CLIENT_LIST_used - 1 - i) * sizeof(Scr->ewmh_CLIENT_LIST[0]));
+			if(Scr->ewmh_CLIENT_LIST_used &&
+			                (Scr->ewmh_CLIENT_LIST_used * 3) < Scr->ewmh_CLIENT_LIST_size) {
+				Scr->ewmh_CLIENT_LIST_size /= 2;
+				Scr->ewmh_CLIENT_LIST = realloc(Scr->ewmh_CLIENT_LIST,
+				                                sizeof((Scr->ewmh_CLIENT_LIST[0])) * Scr->ewmh_CLIENT_LIST_size);
+				/* memory shrinking, shouldn't have problems */
+			}
+			break;
+		}
+	}
+	/* If window was not found, there is no need to update the property. */
+	if(i >= 0) {
+		XChangeProperty(dpy, Scr->Root, NET_CLIENT_LIST, XA_WINDOW, 32,
+		                PropModeReplace, (unsigned char *)Scr->ewmh_CLIENT_LIST,
+		                Scr->ewmh_CLIENT_LIST_used);
+	}
 }

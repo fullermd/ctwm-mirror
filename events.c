@@ -2477,6 +2477,10 @@ void HandleDestroyNotify(void)
 	}
 	OtpRemove(Tmp_win, WinWin);
 
+#ifdef EWMH
+	/* Remove the old window from the EWMH client list */
+	EwmhDeleteClientWindow(Tmp_win);
+#endif /* GNOME */
 #ifdef GNOME
 	GnomeDeleteClientWindow(Tmp_win);  /* Fix the gnome client list */
 #endif /* GNOME */
@@ -2671,6 +2675,10 @@ void HandleMapRequest(void)
 		if(Tmp_win == NULL) {
 			return;
 		}
+#ifdef EWMH
+		/* add the new window to the EWMH client list */
+		EwmhAddClientWindow(Tmp_win);
+#endif /* GNOME */
 #ifdef GNOME
 		GnomeAddClientWindow(
 		        Tmp_win);  /* add the new window to the gnome client list */

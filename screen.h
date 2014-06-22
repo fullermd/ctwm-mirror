@@ -476,6 +476,9 @@ struct ScreenInfo {
 #endif /* GNOME */
 #ifdef EWMH
 	Window icccm_Window;        /* ICCCM sections 4.3, 2.8 */
+	long *ewmh_CLIENT_LIST;
+	int ewmh_CLIENT_LIST_size;
+	int ewmh_CLIENT_LIST_used;
 #endif /* EWMH */
 };
 
