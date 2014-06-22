@@ -4364,7 +4364,7 @@ static void Execute(char *s)
 	if(replace) {
 		free(s);
 	}
-#endif
+#endif /* VMS */
 }
 
 
