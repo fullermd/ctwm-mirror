@@ -809,6 +809,9 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 		if(visible(tmp_win)) {
 			PlaceIcon(tmp_win, def_x, def_y, &final_x, &final_y);
 		}
+		else {
+			final_x = 0;
+		}
 	}
 
 	if(visible(tmp_win) ||
