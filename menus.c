@@ -812,7 +812,7 @@ void UpdateMenu(void)
 		XQueryPointer(dpy, ActiveMenu->w, &JunkRoot, &JunkChild,
 		              &x_root, &y_root, &x, &y, &JunkMask);
 
-		/* if we haven't recieved the enter notify yet, wait */
+		/* if we haven't received the enter notify yet, wait */
 		if(ActiveMenu && !ActiveMenu->entered) {
 			continue;
 		}
