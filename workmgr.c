@@ -1878,6 +1878,9 @@ static void CreateWorkSpaceManagerWindow(VirtualScreen *vs)
 		count++;
 	}
 	Scr->workSpaceMgr.count = count;
+	if(count == 0) {
+		return;
+	}
 
 	if(columns == 0) {
 		lines   = 2;
