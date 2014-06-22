@@ -1672,6 +1672,7 @@ Bool PopUpMenu(MenuRoot *menu, int x, int y, Bool center)
 			sprintf(tmpStr, "[%s + %s]", tmpKey->name, modStr);
 			tmpStr2 = malloc(sizeof(char) * (strlen(tmpKey->action) + tmpLen + 2));
 			sprintf(tmpStr2, "%s %s", tmpStr, tmpKey->action);
+			free(tmpStr);
 
 			AddToMenu(menu, tmpStr2, tmpKey->action, NULL, tmpKey->func, NULLSTR, NULLSTR);
 			oldact = tmpKey->action;
