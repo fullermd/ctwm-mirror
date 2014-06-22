@@ -1359,7 +1359,7 @@ VMS specific:
 **************
   
              N.B This is only valid if your version of  ctwm  has
-             been compiled with the XPM and IMCONV options.
+             been compiled with the XPM options.
 
 
      RaiseDelay milliseconds
@@ -1800,7 +1800,7 @@ VMS specific:
              pixmap-root:
                      pixmap to display on the corresponding  root
                      screen,   either   the  name  of  a  bitmap,
-                     xpm:xpmfile,   xwd:xwdfile,   im:imfile   or
+                     xpm:xpmfile,   xwd:xwdfile,   or
                      |command_that generate_xwd.
 
              Example :
