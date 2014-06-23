@@ -559,6 +559,7 @@ char *ExpandPixmapPath(char *name)
 			if(!access(ret, R_OK)) {
 				return (ret);
 			}
+			free(ret);
 			p = colon + 1;
 		}
 		ret = (char *) malloc(strlen(p) + strlen(name) + 2);
