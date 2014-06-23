@@ -4713,6 +4713,8 @@ static Image *LoadJpegImage(char *name)
 		}
 		else {
 			fprintf(stderr, "Image %s unsupported depth : %d\n", name, Scr->d_depth);
+			free(image);
+			fclose(infile);
 			return None;
 		}
 	}
