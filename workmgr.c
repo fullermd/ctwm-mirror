@@ -3924,7 +3924,7 @@ void AddToCaptiveList(void)
 	char        *atomname;
 	int         scrnum = Scr->screen;
 	Window      croot  = Scr->Root;
-	Window      root   = RootWindow(dpy, scrnum);
+	Window      root;
 
 	for(i = 0; i < 32; i++) {
 		busy [i] = 0;
