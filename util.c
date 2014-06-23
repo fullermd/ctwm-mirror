@@ -559,6 +559,7 @@ char *ExpandPixmapPath(char *name)
 			if(!access(ret, R_OK)) {
 				return (ret);
 			}
+			free(ret);
 			p = colon + 1;
 		}
 		ret = (char *) malloc(strlen(p) + strlen(name) + 2);
@@ -1422,6 +1423,11 @@ void Animate(void)
 	AnimationPending = False;
 #endif
 
+	/* Impossible? */
+	if(NumScreens < 1) {
+		return;
+	}
+
 	MaybeAnimate = False;
 	scr = NULL;
 	for(scrnum = 0; scrnum < NumScreens; scrnum++) {
@@ -2162,6 +2168,7 @@ static Image *Create3DCrossImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2258,6 +2265,7 @@ static Image *Create3DIconifyImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2297,6 +2305,7 @@ static Image *Create3DSunkenResizeImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2332,6 +2341,7 @@ static Image *Create3DBoxImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2365,6 +2375,7 @@ static Image *Create3DDotImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2399,6 +2410,7 @@ static Image *Create3DBarImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2434,6 +2446,7 @@ static Image *Create3DVertBarImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2468,6 +2481,7 @@ static Image *Create3DMenuImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2499,6 +2513,7 @@ static Image *Create3DResizeImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2532,6 +2547,7 @@ static Image *Create3DZoomImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -4644,6 +4660,7 @@ static Image *LoadJpegImage(char *name)
 
 	image = (Image *) malloc(sizeof(Image));
 	if(image == None) {
+		free(fullname);
 		return (None);
 	}
 
@@ -4652,13 +4669,17 @@ static Image *LoadJpegImage(char *name)
 			fprintf(stderr, "unable to locate %s\n", fullname);
 		}
 		fflush(stdout);
+		free(image);
+		free(fullname);
 		return None;
 	}
+	free(fullname);
 	cinfo.err = jpeg_std_error(&jerr.pub);
 	jerr.pub.error_exit = jpeg_error_exit;
 
 	if(sigsetjmp(jerr.setjmp_buffer, 1)) {
 		jpeg_destroy_decompress(&cinfo);
+		free(image);
 		fclose(infile);
 		return None;
 	}
@@ -4692,6 +4713,8 @@ static Image *LoadJpegImage(char *name)
 		}
 		else {
 			fprintf(stderr, "Image %s unsupported depth : %d\n", name, Scr->d_depth);
+			free(image);
+			fclose(infile);
 			return None;
 		}
 	}
@@ -4735,7 +4758,9 @@ static Image *LoadJpegImage(char *name)
 		image->width  = width;
 		image->height = height;
 	}
-	XDestroyImage(ximage);
+	if(ximage) {
+		XDestroyImage(ximage);
+	}
 	image->pixmap = pixret;
 	image->mask   = None;
 	image->next   = None;

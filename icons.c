@@ -438,7 +438,6 @@ name_list **AddIconRegion(char *geom,
 	}
 	ir->TitleJustification = tmp;
 
-	tmp = ParseJustification(just);
 	if((tmp = ParseJustification(just)) < 0) {
 		twmrc_error_prefix();
 		fprintf(stderr, "ignoring invalid IconRegion argument \"%s\"\n", just);
@@ -800,6 +799,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	/* I need to figure out where to put the icon window now, because
 	 * getting here means that I am going to make the icon visible
 	 */
+	final_x = final_y = 0;
 	if(tmp_win->wmhints &&
 	                tmp_win->wmhints->flags & IconPositionHint) {
 		final_x = tmp_win->wmhints->icon_x;
