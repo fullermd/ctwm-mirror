@@ -2481,6 +2481,7 @@ static Image *Create3DMenuImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2546,6 +2547,7 @@ static Image *Create3DZoomImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -4658,6 +4660,7 @@ static Image *LoadJpegImage(char *name)
 
 	image = (Image *) malloc(sizeof(Image));
 	if(image == None) {
+		free(fullname);
 		return (None);
 	}
 
@@ -4676,6 +4679,7 @@ static Image *LoadJpegImage(char *name)
 
 	if(sigsetjmp(jerr.setjmp_buffer, 1)) {
 		jpeg_destroy_decompress(&cinfo);
+		free(image);
 		fclose(infile);
 		return None;
 	}
