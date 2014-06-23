@@ -2220,7 +2220,6 @@ static void CreateOccupyWindow(void)
 		if(width < min_width) {
 			width = min_width;
 		}
-		bwidth = (width - columns * hspace) / columns;
 	}
 	else {
 		owidth = min_bwidth + 2 * Scr->WMgrButtonShadowDepth + 2;
