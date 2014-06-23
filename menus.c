@@ -5647,7 +5647,7 @@ void FadeWindow(TwmWindow *tmp_win, Window blanket)
 	XFlush(dpy);
 }
 
-static void SweepWindow(TwmWindow *tmp_win, Window     blanket)
+static void SweepWindow(TwmWindow *tmp_win, Window blanket)
 {
 	float step = 0.0;
 	int i, nsteps = 20;
