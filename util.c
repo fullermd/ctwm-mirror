@@ -2167,6 +2167,7 @@ static Image *Create3DCrossImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2263,6 +2264,7 @@ static Image *Create3DIconifyImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2302,6 +2304,7 @@ static Image *Create3DSunkenResizeImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2337,6 +2340,7 @@ static Image *Create3DBoxImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2370,6 +2374,7 @@ static Image *Create3DDotImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2404,6 +2409,7 @@ static Image *Create3DBarImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2439,6 +2445,7 @@ static Image *Create3DVertBarImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -2504,6 +2511,7 @@ static Image *Create3DResizeImage(ColorPair cp)
 	}
 	image->pixmap = XCreatePixmap(dpy, Scr->Root, h, h, Scr->d_depth);
 	if(image->pixmap == None) {
+		free(image);
 		return (None);
 	}
 
@@ -4657,8 +4665,11 @@ static Image *LoadJpegImage(char *name)
 			fprintf(stderr, "unable to locate %s\n", fullname);
 		}
 		fflush(stdout);
+		free(image);
+		free(fullname);
 		return None;
 	}
+	free(fullname);
 	cinfo.err = jpeg_std_error(&jerr.pub);
 	jerr.pub.error_exit = jpeg_error_exit;
 
