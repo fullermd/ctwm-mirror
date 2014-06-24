@@ -89,6 +89,12 @@ set(LIBSEARCH
 )
 
 
+# Now we know where to stash this (may change this to be a little less
+# coupled to X11 later).
+set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
+set(CONFDIR ${TWMDIR})
+
+
 # Hard to imagine xpm not being around or somebody not wanting it, but...
 if(USE_XPM)
 	if(NOT X11_Xpm_FOUND)
@@ -97,16 +103,12 @@ if(USE_XPM)
 
 	list(APPEND CTWMLIBS ${X11_Xpm_LIB})
 	add_definitions(-DXPM)
+	set(PIXMAPDIR ${TWMDIR}/images)
 	set_property(SOURCE parse.c ctwm.c APPEND
 		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
 	)
 	message(STATUS "Enabling XPM support: ${X11_Xpm_LIB}.")
 endif(USE_XPM)
-
-set(TWMDIR ${X11_LIBRARY_DIR}/X11/twm)
-set(CONFDIR ${TWMDIR})
-# This actually only has meaning if we're building with XPM
-set(PIXMAPDIR ${TWMDIR}/images)
 
 
 # libjpeg is pretty common

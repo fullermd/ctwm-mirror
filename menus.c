@@ -490,9 +490,16 @@ void InitTitlebarButtons(void)
 		tb->image = GetImage(tb->name, Scr->TitleC);
 		if(!tb->image) {
 			tb->image = GetImage(TBPM_QUESTION, Scr->TitleC);
-			if(!tb->image) {            /* cannot happen (see util.c) */
+			if(!tb->image) {
+				/*
+				 * (sorta) Can't Happen.  Calls a static function that
+				 * builds from static data, so could only possibly fail
+				 * if XCreateBitmapFromData() failed (which should be
+				 * vanishingly rare; memory allocation failures etc).
+				 */
 				fprintf(stderr, "%s:  unable to add titlebar button \"%s\"\n",
 				        ProgramName, tb->name);
+				continue;
 			}
 		}
 		tb->width  = tb->image->width;
@@ -805,7 +812,7 @@ void UpdateMenu(void)
 		XQueryPointer(dpy, ActiveMenu->w, &JunkRoot, &JunkChild,
 		              &x_root, &y_root, &x, &y, &JunkMask);
 
-		/* if we haven't recieved the enter notify yet, wait */
+		/* if we haven't received the enter notify yet, wait */
 		if(ActiveMenu && !ActiveMenu->entered) {
 			continue;
 		}
@@ -1665,6 +1672,7 @@ Bool PopUpMenu(MenuRoot *menu, int x, int y, Bool center)
 			sprintf(tmpStr, "[%s + %s]", tmpKey->name, modStr);
 			tmpStr2 = malloc(sizeof(char) * (strlen(tmpKey->action) + tmpLen + 2));
 			sprintf(tmpStr2, "%s %s", tmpStr, tmpKey->action);
+			free(tmpStr);
 
 			AddToMenu(menu, tmpStr2, tmpKey->action, NULL, tmpKey->func, NULLSTR, NULLSTR);
 			oldact = tmpKey->action;
@@ -4357,7 +4365,7 @@ static void Execute(char *s)
 	if(replace) {
 		free(s);
 	}
-#endif
+#endif /* VMS */
 }
 
 
@@ -5646,7 +5654,7 @@ void FadeWindow(TwmWindow *tmp_win, Window blanket)
 	XFlush(dpy);
 }
 
-static void SweepWindow(TwmWindow *tmp_win, Window     blanket)
+static void SweepWindow(TwmWindow *tmp_win, Window blanket)
 {
 	float step = 0.0;
 	int i, nsteps = 20;

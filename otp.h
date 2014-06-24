@@ -43,8 +43,9 @@ typedef enum WinType { WinWin, IconWin } WinType;
 /* Wrapper functions to maintain the internal list uptodate.  */
 extern int ReparentWindow(Display *display, TwmWindow *twm_win,
                           WinType wintype, Window parent, int x, int y);
-extern int ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
-                                 Window parent, int win_x, int win_y, int icon_x, int icon_y);
+extern void ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
+                                  Window parent, int win_x, int win_y,
+                                  int icon_x, int icon_y);
 
 /* misc functions that are not specific to OTP */
 extern Bool isTransientOf(TwmWindow *, TwmWindow *);

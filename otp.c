@@ -1172,10 +1172,11 @@ int ReparentWindow(Display *display, TwmWindow *twm_win, WinType wintype,
 	return result;
 }
 
-int ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
-                          Window parent, int win_x, int win_y, int icon_x, int icon_y)
+void
+ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
+                      Window parent, int win_x, int win_y,
+                      int icon_x, int icon_y)
 {
-	int result;
 	OtpWinList *win_owl = twm_win->otp;
 	assert(twm_win->icon != NULL);
 	OtpWinList *icon_owl = twm_win->icon->otp;
@@ -1185,8 +1186,8 @@ int ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
 	OtpWinList *below_icon = icon_owl->below;
 
 	DPRINTF((stderr, "ReparentWindowAndIcon %x\n", (unsigned int)twm_win->frame));
-	result = XReparentWindow(display, twm_win->frame, parent, win_x, win_y);
-	result = XReparentWindow(display, twm_win->icon->w, parent, icon_x, icon_y);
+	XReparentWindow(display, twm_win->frame, parent, win_x, win_y);
+	XReparentWindow(display, twm_win->icon->w, parent, icon_x, icon_y);
 	/* The raise was already done by XReparentWindow, so this call
 	   just re-places the window at the right spot in the list
 	   and enforces priority settings. */
@@ -1206,7 +1207,7 @@ int ReparentWindowAndIcon(Display *display, TwmWindow *twm_win,
 		InsertOwlAbove(win_owl, below_win);
 	}
 	OtpCheckConsistency();
-	return result;
+	return;
 }
 
 /* Iterators.  */

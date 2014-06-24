@@ -1076,6 +1076,7 @@ Bool RedirectToCaptive(Window window)
 		atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(cctwm) + 1);
 		sprintf(atomname, "WM_CTWM_ROOT_%s", cctwm);
 		_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, False);
+		free(atomname);
 
 		if(XGetWindowProperty(dpy, Scr->Root, _XA_WM_CTWM_ROOT,
 		                      0L, 1L, False, AnyPropertyType, &actual_type, &actual_format,
@@ -1825,6 +1826,10 @@ void WMgrRemoveFromCurrentWorkSpace(VirtualScreen *vs, TwmWindow *win)
 	int       newoccupation;
 
 	ws = vs->wsw->currentwspc;
+	if(!ws) {
+		/* Impossible? */
+		return;
+	}
 	if(! OCCUPY(win, ws)) {
 		return;
 	}
@@ -1917,6 +1922,9 @@ static void CreateWorkSpaceManagerWindow(VirtualScreen *vs)
 		count++;
 	}
 	Scr->workSpaceMgr.count = count;
+	if(count == 0) {
+		return;
+	}
 
 	if(columns == 0) {
 		lines   = 2;
@@ -1981,10 +1989,8 @@ static void CreateWorkSpaceManagerWindow(VirtualScreen *vs)
 
 	vs->wsw->width   = Dummy;
 	vs->wsw->height  = Dummy;
-	vs->wsw->bswl    = (ButtonSubwindow **)
-	                   malloc(Scr->workSpaceMgr.count * sizeof(ButtonSubwindow *));
-	vs->wsw->mswl    = (MapSubwindow **)
-	                   malloc(Scr->workSpaceMgr.count * sizeof(MapSubwindow *));
+	vs->wsw->bswl = calloc(Scr->workSpaceMgr.count, sizeof(ButtonSubwindow *));
+	vs->wsw->mswl = calloc(Scr->workSpaceMgr.count, sizeof(MapSubwindow *));
 
 	vs->wsw->w = XCreateSimpleWindow(dpy, Scr->Root, x, y, width, height, 0,
 	                                 Scr->Black, cp.back);
@@ -2257,7 +2263,6 @@ static void CreateOccupyWindow(void)
 		if(width < min_width) {
 			width = min_width;
 		}
-		bwidth = (width - columns * hspace) / columns;
 	}
 	else {
 		owidth = min_bwidth + 2 * Scr->WMgrButtonShadowDepth + 2;
@@ -3931,7 +3936,7 @@ static void SetCaptivesList(int scrnum, char **clist)
 		XDeleteProperty(dpy, root, _XA_WM_CTWMSLIST);
 		return;
 	}
-	slist = (char *) malloc(len * sizeof(char));
+	slist = calloc(len, sizeof(char));
 	cl = clist;
 	s  = slist;
 	while(*cl) {
@@ -3942,6 +3947,7 @@ static void SetCaptivesList(int scrnum, char **clist)
 	}
 	XChangeProperty(dpy, root, _XA_WM_CTWMSLIST, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) slist, len);
+	free(slist);
 }
 
 static void freeCaptiveList(char **clist)
@@ -3960,7 +3966,7 @@ void AddToCaptiveList(void)
 	char        *atomname;
 	int         scrnum = Scr->screen;
 	Window      croot  = Scr->Root;
-	Window      root   = RootWindow(dpy, scrnum);
+	Window      root;
 
 	for(i = 0; i < 32; i++) {
 		busy [i] = 0;
@@ -4041,32 +4047,37 @@ void RemoveFromCaptiveList(void)
 		return;
 	}
 	clist = GetCaptivesList(scrnum);
-	cl = clist;
-	count = 0;
-	while(*cl) {
-		count++;
-		cl++;
-	}
-	newclist = (char **) malloc(count * sizeof(char *));
-	cl = clist;
-	count = 0;
-	while(*cl) {
-		if(!strcmp(*cl, captivename)) {
+
+	/* Make sure there's something to do before trying to do it */
+	if(clist && *clist) {
+		cl = clist;
+		count = 0;
+		while(*cl) {
+			count++;
 			cl++;
-			continue;
 		}
-		newclist [count++] = *cl;
-		cl++;
+		newclist = (char **) malloc(count * sizeof(char *));
+		cl = clist;
+		count = 0;
+		while(*cl) {
+			if(!strcmp(*cl, captivename)) {
+				cl++;
+				continue;
+			}
+			newclist [count++] = *cl;
+			cl++;
+		}
+		newclist [count] = (char *) 0;
+		SetCaptivesList(scrnum, newclist);
+		free(newclist);
 	}
-	newclist [count] = (char *) 0;
-	SetCaptivesList(scrnum, newclist);
 	freeCaptiveList(clist);
 	free(clist);
-	free(newclist);
 
 	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
 	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
 	_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, True);
+	free(atomname);
 	if(_XA_WM_CTWM_ROOT == None) {
 		return;
 	}

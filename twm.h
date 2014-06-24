@@ -89,6 +89,14 @@
 #define WithdrawnState 0
 #endif
 
+/*
+ * This appears to be the standard way of testing this for portability,
+ * though calling it GNUC is sorta non-portable portability   :)
+ */
+#ifndef __GNUC__
+#define  __attribute__(x)  /*NOTHING*/
+#endif
+
 #define MAXVIRTUALSCREENS (sizeof (int))
 
 #define PIXEL_ALREADY_TYPEDEFED         /* for Xmu/Drawing.h */
@@ -391,13 +399,13 @@ struct TwmWindow {
 	short StartSqueezed;
 	short AlwaysSqueezeToGravity;
 	short DontSetInactive;
-	Bool hasfocusvisible;       /* The window has visible focus*/
+	short hasfocusvisible;      /* The window has visible focus*/
 	int  occupation;
 	Image *HiliteImage;         /* focus highlight window background */
 	Image *LoliteImage;         /* focus lowlight window background */
 	WindowRegion *wr;
 	WindowBox *winbox;
-	Bool iswinbox;
+	short iswinbox;
 	struct {
 		int x, y;
 		unsigned int width, height;
@@ -407,10 +415,10 @@ struct TwmWindow {
 			*parent_vs;    /* where it is parented (deparenting is impossible) */
 	struct VirtualScreen *savevs;       /* for ShowBackground only */
 
-	Bool nameChanged;   /* did WM_NAME ever change? */
+	short nameChanged;  /* did WM_NAME ever change? */
 	/* did the user ever change the width/height? {yes, no, or unknown} */
-	Bool widthEverChangedByUser;
-	Bool heightEverChangedByUser;
+	short widthEverChangedByUser;
+	short heightEverChangedByUser;
 
 };
 
@@ -479,7 +487,7 @@ extern void free();
 #endif
 #endif
 extern void Reborder(Time tim);
-extern SIGNAL_T Done(int signum);
+extern SIGNAL_T Done(int signum) __attribute__((noreturn));
 void ComputeCommonTitleOffsets(void);
 void ComputeWindowTitleOffsets(TwmWindow *tmp_win, unsigned int width,
                                Bool squeeze);
