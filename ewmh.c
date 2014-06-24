@@ -79,11 +79,16 @@ static Atom NET_VIRTUAL_ROOTS;
 static Atom NET_WM_DESKTOP;
 static Atom NET_WM_ICON;
 static Atom NET_WM_NAME;
+static Atom NET_WM_WINDOW_TYPE;
+static Atom NET_WM_WINDOW_TYPE_DESKTOP;
+static Atom NET_WM_WINDOW_TYPE_DOCK;
+static Atom NET_WM_WINDOW_TYPE_NORMAL;
 static Atom UTF8_STRING;
 
 static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width,
                           int height);
 static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg);
+static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type);
 
 #define ALL_WORKSPACES  0xFFFFFFFFU
 
@@ -117,12 +122,18 @@ static void EwmhInitAtoms(void)
 	NET_DESKTOP_GEOMETRY    = XInternAtom(dpy, "_NET_DESKTOP_GEOMETRY", False);
 	NET_DESKTOP_VIEWPORT    = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
 	NET_NUMBER_OF_DESKTOPS  = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
-	NET_SUPPORTED       = XInternAtom(dpy, "_NET_SUPPORTED", False);
+	NET_SUPPORTED           = XInternAtom(dpy, "_NET_SUPPORTED", False);
 	NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
 	NET_VIRTUAL_ROOTS   = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
 	NET_WM_DESKTOP      = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	NET_WM_ICON         = XInternAtom(dpy, "_NET_WM_ICON", False);
 	NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
+	NET_WM_WINDOW_TYPE  = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
+	NET_WM_WINDOW_TYPE_DESKTOP = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP",
+	                             False);
+	NET_WM_WINDOW_TYPE_DOCK = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
+	NET_WM_WINDOW_TYPE_NORMAL = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_NORMAL",
+	                                        False);
 	UTF8_STRING         = XInternAtom(dpy, "UTF8_STRING", False);
 }
 
@@ -266,14 +277,18 @@ static int EwmhReplaceWM(ScreenInfo *scr)
 
 	/*
 	 * Send a message to confirm we're now managing the screen.
-	 * (Seen in OpenBox but not in docs)
+	 * ICCCM, end of chapter 2, section "Manager Selections".
+	 * http://tronche.com/gui/x/icccm/sec-2.html#s-2.8
+	 *
+	 * ICCCM says StructureNotifyMask,
+	 * OpenBox says SubstructureNotifyMask.
 	 */
 
 	GenerateTimestamp(scr);
 
 	SendPropertyMessage(scr->XineramaRoot, scr->XineramaRoot,
 	                    MANAGER, lastTimestamp, wmAtom, scr->icccm_Window, 0, 0,
-	                    SubstructureNotifyMask);
+	                    StructureNotifyMask);
 
 	return True;
 }
@@ -401,7 +416,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	                32, PropModeReplace,
 	                (unsigned char *)data, 1);
 
-	long supported[10];
+	long supported[20];
 	int i = 0;
 
 	supported[i++] = NET_SUPPORTING_WM_CHECK;
@@ -413,6 +428,10 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_DESKTOP;
 	supported[i++] = NET_CLIENT_LIST;
 	supported[i++] = NET_CLIENT_LIST_STACKING;
+	supported[i++] = NET_WM_WINDOW_TYPE;
+	supported[i++] = NET_WM_WINDOW_TYPE_NORMAL;
+	supported[i++] = NET_WM_WINDOW_TYPE_DESKTOP;
+	supported[i++] = NET_WM_WINDOW_TYPE_DOCK;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -1024,6 +1043,32 @@ void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws)
 	                (unsigned char *)workspaces, n);
 }
 
+
+static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type)
+{
+	Atom actual_type;
+	int actual_format;
+	unsigned long nitems, bytes_after;
+	unsigned long *prop;
+	unsigned long value;
+
+	if(XGetWindowProperty(dpy, w, name,
+	                      0, 1, False, type,
+	                      &actual_type, &actual_format, &nitems,
+	                      &bytes_after, (unsigned char **)&prop) != Success) {
+		return 0;
+	}
+
+	if(nitems >= 1) {
+		value = prop[0];
+	}
+	else {
+		value = 0;
+	}
+	XFree(prop);
+	return value;
+}
+
 int EwmhGetOccupation(TwmWindow *twm_win)
 {
 	Atom actual_type;
@@ -1231,4 +1276,69 @@ void EwmhSet_NET_CLIENT_LIST_STACKING(void)
 	                PropModeReplace, (unsigned char *)prop, i);
 
 	free(prop);
+}
+
+/*
+ * Get window properties as relevant when the window is initially mapped.
+ *
+ * So far, only NET_WM_WINDOW_TYPE.
+ */
+void EwmhGetProperties(TwmWindow *twm_win)
+{
+	Atom type = EwmhGetWindowProperty(twm_win->w, NET_WM_WINDOW_TYPE, XA_ATOM);
+
+	if(type == NET_WM_WINDOW_TYPE_DESKTOP) {
+		twm_win->ewmhWindowType = wt_Desktop;
+	}
+	else if(type == NET_WM_WINDOW_TYPE_DOCK) {
+		twm_win->ewmhWindowType = wt_Dock;
+	}
+	else {
+		twm_win->ewmhWindowType = wt_Normal;
+	}
+}
+
+int EwmhGetPriority(TwmWindow *twm_win)
+{
+	switch(twm_win->ewmhWindowType) {
+		case wt_Desktop:
+			return -8;
+		case wt_Dock:
+			return 4;
+		default:
+			return 0;
+	}
+}
+
+Bool EwmhHasBorder(TwmWindow *twm_win)
+{
+	switch(twm_win->ewmhWindowType) {
+		case wt_Desktop:
+		case wt_Dock:
+			return False;
+		default:
+			return True;
+	}
+}
+
+Bool EwmhHasTitle(TwmWindow *twm_win)
+{
+	switch(twm_win->ewmhWindowType) {
+		case wt_Desktop:
+		case wt_Dock:
+			return False;
+		default:
+			return True;
+	}
+}
+
+Bool EwmhOnWindowRing(TwmWindow *twm_win)
+{
+	switch(twm_win->ewmhWindowType) {
+		case wt_Desktop:
+		case wt_Dock:
+			return False;
+		default:
+			return True;
+	}
 }

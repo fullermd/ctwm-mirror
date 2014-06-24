@@ -84,6 +84,7 @@
 #include <X11/Xfuncs.h>
 #endif  /* VMS */
 #include "types.h"
+#include "ewmh.h"
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
@@ -419,7 +420,9 @@ struct TwmWindow {
 	/* did the user ever change the width/height? {yes, no, or unknown} */
 	short widthEverChangedByUser;
 	short heightEverChangedByUser;
-
+#ifdef EWMH
+	EwmhWindowType ewmhWindowType;
+#endif /* EWMH */
 };
 
 struct TWMWinConfigEntry {

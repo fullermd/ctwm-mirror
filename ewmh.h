@@ -32,6 +32,20 @@
 
 #include "types.h"
 
+/*
+ * Switch for experimental code to treat a Desktop window as a Root
+ * window for the purposes of key and button bindings.
+ * It doesn't work as nicely as I hoped though; maybe I'll get some
+ * better idea.
+ */
+/* #define EWMH_DESKTOP_ROOT */
+
+typedef enum EwmhWindowType {
+	wt_Normal,
+	wt_Desktop,
+	wt_Dock,
+} EwmhWindowType;
+
 extern Atom NET_CURRENT_DESKTOP;
 
 extern void EwmhInit(void);
@@ -50,6 +64,11 @@ extern void EwmhUnmapNotify(TwmWindow *twm_win);
 extern void EwmhAddClientWindow(TwmWindow *new_win);
 extern void EwmhDeleteClientWindow(TwmWindow *old_win);
 extern void EwmhSet_NET_CLIENT_LIST_STACKING(void);
+extern void EwmhGetProperties(TwmWindow *twm_win);
+extern int EwmhGetPriority(TwmWindow *twm_win);
+extern Bool EwmhHasBorder(TwmWindow *twm_win);
+extern Bool EwmhHasTitle(TwmWindow *twm_win);
+extern Bool EwmhOnWindowRing(TwmWindow *twm_win);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */

@@ -1362,19 +1362,27 @@ void HandleKeyPress(void)
 		}
 	}
 	if(Tmp_win) {
-		if(Event.xany.window == Tmp_win->title_w) {
+		if(0) {
+		}
+#ifdef EWMH_DESKTOP_ROOT
+		else if(Tmp_win->ewmhWindowType == wt_Desktop) {
+			fprintf(stderr, "HandleKeyPress: wt_Desktop -> C_ROOT\n");
+			Context = C_ROOT;
+		}
+#endif
+		else if(Event.xany.window == Tmp_win->title_w) {
 			Context = C_TITLE;
 		}
-		if(Event.xany.window == Tmp_win->w) {
+		else if(Event.xany.window == Tmp_win->w) {
 			Context = C_WINDOW;
 		}
-		if(Tmp_win->icon && (Event.xany.window == Tmp_win->icon->w)) {
+		else if(Tmp_win->icon && (Event.xany.window == Tmp_win->icon->w)) {
 			Context = C_ICON;
 		}
-		if(Event.xany.window == Tmp_win->frame) {
+		else if(Event.xany.window == Tmp_win->frame) {
 			Context = C_FRAME;
 		}
-		if(Tmp_win->iconmanagerlist) {
+		else if(Tmp_win->iconmanagerlist) {
 			if(Event.xany.window == Tmp_win->iconmanagerlist->w ||
 			                Event.xany.window == Tmp_win->iconmanagerlist->icon) {
 				Context = C_ICONMGR;
@@ -1411,6 +1419,12 @@ void HandleKeyPress(void)
 					do_key_menu(key->menu, (Window) None);
 				}
 				else {
+#ifdef EWMH_DESKTOP_ROOT
+					if(Context == C_ROOT && Tmp_win != NULL) {
+						Context = C_WINDOW;
+						fprintf(stderr, "HandleKeyPress: wt_Desktop -> C_WINDOW\n");
+					}
+#endif /* EWMH */
 					ExecuteFunction(key->func, key->action, Event.xany.window,
 					                Tmp_win, &Event, Context, FALSE);
 					if(!AlternateKeymap && !AlternateContext) {
@@ -2680,6 +2694,7 @@ void HandleMapRequest(void)
 		/* add the new window to the EWMH client list */
 		EwmhAddClientWindow(Tmp_win);
 		EwmhSet_NET_CLIENT_LIST_STACKING();
+		OtpSetPriority(Tmp_win, WinWin, EwmhGetPriority(Tmp_win));
 #endif /* EWMH */
 #ifdef GNOME
 		GnomeAddClientWindow(
@@ -3497,6 +3512,12 @@ void HandleButtonPress(void)
 			Event.xany.window = Tmp_win->w;
 			Context = C_WINDOW;
 		}
+#ifdef EWMH_DESKTOP_ROOT
+		else if(Tmp_win->ewmhWindowType == wt_Desktop) {
+			fprintf(stderr, "HandleButtonPress: wt_Desktop -> C_ROOT\n");
+			Context = C_ROOT;
+		}
+#endif
 		else if(Event.xany.window == Tmp_win->title_w) {
 			if(Scr->ClickToFocus &&
 			                Tmp_win->wmhints &&
@@ -3571,7 +3592,8 @@ void HandleButtonPress(void)
 		}
 		else if(Tmp_win->wspmgr ||
 		                (Tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
-			Context = C_WINDOW;
+			/*Context = C_WINDOW; probably a typo */
+			Context = C_WORKSPACE;
 		}
 		else if(Tmp_win->iconmanagerlist) {
 			if((Event.xany.window == Tmp_win->iconmanagerlist->icon) ||
@@ -3679,6 +3701,12 @@ void HandleButtonPress(void)
 			default :
 				if(func != 0) {
 					Action = tmp->item ? tmp->item->action : NULL;
+#ifdef EWMH_DESKTOP_ROOT
+					if(Context == C_ROOT && Tmp_win != NULL) {
+						Context = C_WINDOW;
+						fprintf(stderr, "HandleButtonPress: wt_Desktop -> C_WINDOW\n");
+					}
+#endif /* EWMH */
 					ExecuteFunction(func,
 					                Action, Event.xany.window, Tmp_win, &Event, Context, FALSE);
 				}
