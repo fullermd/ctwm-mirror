@@ -2480,6 +2480,7 @@ void HandleDestroyNotify(void)
 #ifdef EWMH
 	/* Remove the old window from the EWMH client list */
 	EwmhDeleteClientWindow(Tmp_win);
+	EwmhSet_NET_CLIENT_LIST_STACKING();
 #endif /* GNOME */
 #ifdef GNOME
 	GnomeDeleteClientWindow(Tmp_win);  /* Fix the gnome client list */
@@ -2678,7 +2679,8 @@ void HandleMapRequest(void)
 #ifdef EWMH
 		/* add the new window to the EWMH client list */
 		EwmhAddClientWindow(Tmp_win);
-#endif /* GNOME */
+		EwmhSet_NET_CLIENT_LIST_STACKING();
+#endif /* EWMH */
 #ifdef GNOME
 		GnomeAddClientWindow(
 		        Tmp_win);  /* add the new window to the gnome client list */
@@ -2905,6 +2907,9 @@ void HandleUnmapNotify(void)
 	/* Is it the correct behaviour ???
 	    XDeleteProperty (dpy, Tmp_win->w, _XA_WM_OCCUPATION);
 	*/
+#ifdef EWMH
+	EwmhUnmapNotify(Tmp_win);
+#endif /* EWMH */
 	XGrabServer(dpy);
 	if(XTranslateCoordinates(dpy, Event.xunmap.window, Tmp_win->attr.root,
 	                         0, 0, &dstx, &dsty, &dumwin)) {

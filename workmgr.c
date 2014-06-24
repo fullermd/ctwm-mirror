@@ -908,6 +908,12 @@ void SetupOccupation(TwmWindow *twm_win,
 		}
 	}
 
+#ifdef EWMH
+	if(twm_win->occupation == 0) {
+		twm_win->occupation = EwmhGetOccupation(twm_win);
+	}
+#endif /* EWMH */
+
 	if(twm_win->iconmgr) {
 		return;        /* someone tried to modify occupation of icon managers */
 	}

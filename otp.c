@@ -40,6 +40,7 @@
 #include "icons.h"
 #include "list.h"
 #include "events.h"
+#include "ewmh.h"
 
 #define DEBUG_OTP       0
 #if DEBUG_OTP
@@ -684,6 +685,9 @@ void OtpRaise(TwmWindow *twm_win, WinType wintype)
 	RaiseOwl(owl);
 
 	OtpCheckConsistency();
+#ifdef EWMH
+	EwmhSet_NET_CLIENT_LIST_STACKING();
+#endif /* EWMH */
 }
 
 
@@ -695,6 +699,9 @@ void OtpLower(TwmWindow *twm_win, WinType wintype)
 	LowerOwl(owl);
 
 	OtpCheckConsistency();
+#ifdef EWMH
+	EwmhSet_NET_CLIENT_LIST_STACKING();
+#endif /* EWMH */
 }
 
 
@@ -706,6 +713,9 @@ void OtpRaiseLower(TwmWindow *twm_win, WinType wintype)
 	RaiseLowerOwl(owl);
 
 	OtpCheckConsistency();
+#ifdef EWMH
+	EwmhSet_NET_CLIENT_LIST_STACKING();
+#endif /* EWMH */
 }
 
 
@@ -717,6 +727,9 @@ void OtpTinyRaise(TwmWindow *twm_win, WinType wintype)
 	TinyRaiseOwl(owl);
 
 	OtpCheckConsistency();
+#ifdef EWMH
+	EwmhSet_NET_CLIENT_LIST_STACKING();
+#endif /* EWMH */
 }
 
 
@@ -728,6 +741,9 @@ void OtpTinyLower(TwmWindow *twm_win, WinType wintype)
 	TinyLowerOwl(owl);
 
 	OtpCheckConsistency();
+#ifdef EWMH
+	EwmhSet_NET_CLIENT_LIST_STACKING();
+#endif /* EWMH */
 }
 
 

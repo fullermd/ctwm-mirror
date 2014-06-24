@@ -60,6 +60,8 @@
 #include "screen.h"
 #include "events.h"
 #include "icons.h"
+#include "add_window.h"
+#include "otp.h"
 #include "util.h"
 
 #define DEBUG_EWMH      1
@@ -81,6 +83,9 @@ static Atom UTF8_STRING;
 
 static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width,
                           int height);
+static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg);
+
+#define ALL_WORKSPACES  0xFFFFFFFFU
 
 static void SendPropertyMessage(Window to, Window about,
                                 Atom messagetype,
@@ -407,6 +412,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_ICON;
 	supported[i++] = NET_WM_DESKTOP;
 	supported[i++] = NET_CLIENT_LIST;
+	supported[i++] = NET_CLIENT_LIST_STACKING;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -515,14 +521,35 @@ void EwhmSelectionClear(XSelectionClearEvent *sev)
  */
 int EwmhClientMessage(XClientMessageEvent *msg)
 {
+	if(msg->format != 32) {
+		return False;
+	}
+
+	/* Messages regarding any window */
+	if(msg->message_type == NET_WM_DESKTOP) {
+		EwmhClientMessage_NET_WM_DESKTOP(msg);
+		return True;
+	}
+
+	/* Messages regarding the root window */
 	if(msg->window != Scr->XineramaRoot &&
 	                msg->window != Scr->Root) {
+#ifdef DEBUG_EWMH
+		fprintf(stderr, "Received unrecognized client message: %s\n",
+		        XGetAtomName(dpy, msg->message_type));
+#endif
 		return False;
 	}
 
 	if(msg->message_type == NET_CURRENT_DESKTOP) {
 		GotoWorkSpaceByNumber(Scr->currentvs, msg->data.l[0]);
 		return True;
+	}
+	else {
+#ifdef DEBUG_EWMH
+		fprintf(stderr, "Received unrecognized client message about root window: %s\n",
+		        XGetAtomName(dpy, msg->message_type));
+#endif
 	}
 
 	return False;
@@ -946,21 +973,22 @@ void EwmhSet_NET_WM_DESKTOP(TwmWindow *twm_win)
 
 void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws)
 {
-	long workspaces[MAXWORKSPACE];
+	unsigned long workspaces[MAXWORKSPACE];
 	int n = 0;
 
 	if(!Scr->workSpaceManagerActive) {
 		workspaces[n++] = 0;
 	}
 	else if(twm_win->occupation == fullOccupation) {
-		workspaces[n++] = 0xFFFFFFFF;
+		workspaces[n++] = ALL_WORKSPACES;
 	}
 	else {
 		/*
 		 * Our windows can occupy multiple workspaces ("virtual desktops" in
 		 * EWMH terminology) at once. Extend the _NET_WM_DESKTOP property
 		 * by setting it to multiple CARDINALs if this occurs.
-		 * Put the currently visible workspace (if any) first.
+		 * Put the currently visible workspace (if any) first, since typical
+		 * pager apps don't know about this.
 		 */
 		int occupation = twm_win->occupation;
 
@@ -996,6 +1024,102 @@ void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws)
 	                (unsigned char *)workspaces, n);
 }
 
+int EwmhGetOccupation(TwmWindow *twm_win)
+{
+	Atom actual_type;
+	int actual_format;
+	unsigned long nitems, bytes_after;
+	unsigned long *prop;
+	int occupation;
+
+	if(XGetWindowProperty(dpy, twm_win->w, NET_WM_DESKTOP,
+	                      0, MAXWORKSPACE, False, XA_CARDINAL,
+	                      &actual_type, &actual_format, &nitems,
+	                      &bytes_after, (unsigned char **)&prop) != Success) {
+		return 0;
+	}
+
+	occupation = 0;
+
+	if(nitems >= 1) {
+		int i;
+		for(i = 0; i < nitems; i++) {
+			unsigned int val = prop[i];
+			if(val == ALL_WORKSPACES) {
+				occupation = fullOccupation;
+			}
+			else if(val < Scr->workSpaceMgr.count) {
+				occupation |= 1 << val;
+			}
+			else {
+				occupation |= 1 << (Scr->workSpaceMgr.count - 1);
+			}
+		}
+	}
+
+	XFree(prop);
+
+	return occupation;
+}
+
+/*
+ * The message to change the desktop of a window doesn't recognize
+ * that it may be in more than one.
+ *
+ * Therefore the following heuristic is applied:
+ * - the window is removed from the workspace where it is visible (if any);
+ * - it is added to the given workspace;
+ * - other occupation bits are left unchanged.
+ *
+ * If asked to put it on a too high numbered workspace, put it on
+ * the highest possible.
+ */
+static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg)
+{
+	Window w = msg->window;
+	TwmWindow *twm_win;
+	int occupation;
+	VirtualScreen *vs;
+	unsigned int val;
+
+	twm_win = GetTwmWindow(w);
+
+	if(twm_win == NULL) {
+		return;
+	}
+
+	occupation = twm_win->occupation;
+
+	/* Remove from visible workspace */
+	if((vs = twm_win->vs) != NULL) {
+		occupation &= ~(1 << vs->wsw->currentwspc->number);
+	}
+
+	val = (unsigned int)msg->data.l[0];
+
+	/* Add to requested workspace (or to all) */
+	if(val == ALL_WORKSPACES) {
+		occupation = fullOccupation;
+	}
+	else if(val < Scr->workSpaceMgr.count) {
+		occupation |= 1 << val;
+	}
+	else {
+		occupation |= 1 << (Scr->workSpaceMgr.count - 1);
+	}
+
+	ChangeOccupation(twm_win, occupation);
+}
+
+/*
+ * Delete all properties that should be removed from a withdrawn
+ * window.
+ */
+void EwmhUnmapNotify(TwmWindow *twm_win)
+{
+	XDeleteProperty(dpy, twm_win->w, NET_WM_DESKTOP);
+}
+
 /*
  * Add a new window to _NET_CLIENT_LIST.
  * Newer windows are always added at the end.
@@ -1022,7 +1146,7 @@ void EwmhAddClientWindow(TwmWindow *new_win)
 		}
 		else {
 			Scr->ewmh_CLIENT_LIST_size = 0;
-			fprintf(stderr, "Unable to allocate memory for GNOME client list.\n");
+			fprintf(stderr, "Unable to allocate memory for EWMH client list.\n");
 			return;
 		}
 		XChangeProperty(dpy, Scr->Root, NET_CLIENT_LIST, XA_WINDOW, 32,
@@ -1040,10 +1164,10 @@ void EwmhDeleteClientWindow(TwmWindow *old_win)
 	}
 	for(i = Scr->ewmh_CLIENT_LIST_used - 1; i >= 0; i--) {
 		if(Scr->ewmh_CLIENT_LIST[i] == old_win->w) {
-			Scr->ewmh_CLIENT_LIST_used--;
 			memmove(&Scr->ewmh_CLIENT_LIST[i],
 			        &Scr->ewmh_CLIENT_LIST[i + 1],
 			        (Scr->ewmh_CLIENT_LIST_used - 1 - i) * sizeof(Scr->ewmh_CLIENT_LIST[0]));
+			Scr->ewmh_CLIENT_LIST_used--;
 			if(Scr->ewmh_CLIENT_LIST_used &&
 			                (Scr->ewmh_CLIENT_LIST_used * 3) < Scr->ewmh_CLIENT_LIST_size) {
 				Scr->ewmh_CLIENT_LIST_size /= 2;
@@ -1060,4 +1184,51 @@ void EwmhDeleteClientWindow(TwmWindow *old_win)
 		                PropModeReplace, (unsigned char *)Scr->ewmh_CLIENT_LIST,
 		                Scr->ewmh_CLIENT_LIST_used);
 	}
+}
+
+/*
+ * Similar to EwmhAddClientWindow() and EwmhDeleteClientWindow(),
+ * but the windows are in stacking order.
+ * Therefore we look at the OTPs, which are by definition in the correct order.
+ */
+
+void EwmhSet_NET_CLIENT_LIST_STACKING(void)
+{
+	int size;
+	unsigned long *prop;
+	TwmWindow *twm_win;
+	int i;
+
+	/* Expect the same number of windows as in the _NET_CLIENT_LIST */
+	size = Scr->ewmh_CLIENT_LIST_used + 10;
+	prop = malloc(size * sizeof(unsigned long));
+	if(prop == NULL) {
+		return;
+	}
+
+	i = 0;
+	for(twm_win = OtpBottomWin();
+	                twm_win != NULL;
+	                twm_win = OtpNextWinUp(twm_win)) {
+		if(twm_win->iconmanagerlist != NULL &&
+		                !twm_win->wspmgr &&
+		                !twm_win->iconmgr) {
+			prop[i] = twm_win->w;
+			i++;
+			if(i > size) {
+				fprintf(stderr, "Too many stacked windows\n");
+				break;
+			}
+		}
+	}
+
+	if(i != Scr->ewmh_CLIENT_LIST_used) {
+		fprintf(stderr, "Incorrect number of stacked windows: %d (expected %d)\n",
+		        i, Scr->ewmh_CLIENT_LIST_used);
+	}
+
+	XChangeProperty(dpy, Scr->Root, NET_CLIENT_LIST_STACKING, XA_WINDOW, 32,
+	                PropModeReplace, (unsigned char *)prop, i);
+
+	free(prop);
 }
