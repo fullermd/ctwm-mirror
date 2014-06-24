@@ -824,6 +824,7 @@ static Image *LoadXpmImage(char *name, ColorPair cp)
 	if(status != XpmSuccess) {
 		xpmErrorMessage(status, name, fullname);
 		free(image);
+		free(fullname);
 		return (None);
 	}
 	free(fullname);
@@ -4265,6 +4266,8 @@ static Image *GetImconvImage(char *filename,
 	dataEntry = TagTableQDirect(toolInTable, "image vfb", 0);
 	TagEntryQValue(dataEntry, &sourceVfb);
 	fclose(fp);
+	free(fullname);
+	fullname = NULL;
 
 	w = ImVfbQWidth(sourceVfb);
 	h = ImVfbQHeight(sourceVfb);
