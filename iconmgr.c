@@ -137,8 +137,8 @@ void CreateIconManagers(void)
 	ws = Scr->workSpaceMgr.workSpaceList;
 	for(q = Scr->iconmgr; q != NULL; q = q->nextv) {
 		for(p = q; p != NULL; p = p->next) {
-			sprintf(str, "%s Icon Manager", p->name);
-			sprintf(str1, "%s Icons", p->name);
+			snprintf(str, sizeof(str), "%s Icon Manager", p->name);
+			snprintf(str1, sizeof(str1), "%s Icons", p->name);
 			if(p->icon_name) {
 				icon_name = p->icon_name;
 			}
