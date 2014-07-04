@@ -2608,9 +2608,6 @@ static char *m4_defs(Display *display, char *host)
 #ifdef JPEG
 	fputs(MkDef("JPEG", "Yes"), tmpf);
 #endif
-#ifdef IMCONV
-	fputs(MkDef("IMCONV", "Yes"), tmpf);
-#endif
 #ifdef GNOME
 	fputs(MkDef("GNOME", "Yes"), tmpf);
 #endif
