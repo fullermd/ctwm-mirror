@@ -3626,8 +3626,10 @@ Image *GetImage(char *name, ColorPair cp)
 	image = None;
 
 	list = &Scr->ImageCache;
+	if(0)
+		/* dummy */ ;
 #ifdef XPM
-	if((name [0] == '@') || (strncmp(name, "xpm:", 4) == 0)) {
+	else if((name [0] == '@') || (strncmp(name, "xpm:", 4) == 0)) {
 		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
 
 		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
@@ -3637,20 +3639,18 @@ Image *GetImage(char *name, ColorPair cp)
 			}
 		}
 	}
-	else
 #endif
 #ifdef JPEG
-		if(strncmp(name, "jpeg:", 5) == 0) {
+	else if(strncmp(name, "jpeg:", 5) == 0) {
 			if((image = (Image *) LookInNameList(*list, name)) == None) {
 				if((image = GetJpegImage(&name [5])) != None) {
 					AddToList(list, name, (char *) image);
 				}
 			}
 		}
-		else
 #endif
 #if !defined(VMS) || defined(HAVE_XWDFILE_H)
-				if((strncmp(name, "xwd:", 4) == 0) || (name [0] == '|')) {
+	else if((strncmp(name, "xwd:", 4) == 0) || (name [0] == '|')) {
 					int startn = (name [0] == '|') ? 0 : 4;
 					if((image = (Image *) LookInNameList(*list, name)) == None) {
 						if((image = GetXwdImage(&name [startn], cp)) != None) {
@@ -3658,9 +3658,8 @@ Image *GetImage(char *name, ColorPair cp)
 						}
 					}
 				}
-				else
 #endif
-					if(strncmp(name, ":xpm:", 5) == 0) {
+	else if(strncmp(name, ":xpm:", 5) == 0) {
 						int    i;
 						static struct {
 							char *name;
