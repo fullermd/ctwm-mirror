@@ -3642,161 +3642,161 @@ Image *GetImage(char *name, ColorPair cp)
 #endif
 #ifdef JPEG
 	else if(strncmp(name, "jpeg:", 5) == 0) {
-			if((image = (Image *) LookInNameList(*list, name)) == None) {
-				if((image = GetJpegImage(&name [5])) != None) {
-					AddToList(list, name, (char *) image);
-				}
+		if((image = (Image *) LookInNameList(*list, name)) == None) {
+			if((image = GetJpegImage(&name [5])) != None) {
+				AddToList(list, name, (char *) image);
 			}
 		}
+	}
 #endif
 #if !defined(VMS) || defined(HAVE_XWDFILE_H)
 	else if((strncmp(name, "xwd:", 4) == 0) || (name [0] == '|')) {
-					int startn = (name [0] == '|') ? 0 : 4;
-					if((image = (Image *) LookInNameList(*list, name)) == None) {
-						if((image = GetXwdImage(&name [startn], cp)) != None) {
-							AddToList(list, name, (char *) image);
-						}
-					}
-				}
+		int startn = (name [0] == '|') ? 0 : 4;
+		if((image = (Image *) LookInNameList(*list, name)) == None) {
+			if((image = GetXwdImage(&name [startn], cp)) != None) {
+				AddToList(list, name, (char *) image);
+			}
+		}
+	}
 #endif
 	else if(strncmp(name, ":xpm:", 5) == 0) {
-						int    i;
-						static struct {
-							char *name;
-							Image *(*proc)(ColorPair colorpair);
-						} pmtab[] = {
-							{ TBPM_3DDOT,       Create3DDotImage },
-							{ TBPM_3DRESIZE,    Create3DResizeImage },
-							{ TBPM_3DMENU,      Create3DMenuImage },
-							{ TBPM_3DZOOM,      Create3DZoomImage },
-							{ TBPM_3DBAR,       Create3DBarImage },
-							{ TBPM_3DVBAR,      Create3DVertBarImage },
-							{ TBPM_3DCROSS,     Create3DCrossImage },
-							{ TBPM_3DICONIFY,   Create3DIconifyImage },
-							{ TBPM_3DSUNKEN_RESIZE,     Create3DSunkenResizeImage },
-							{ TBPM_3DBOX,       Create3DBoxImage }
-						};
+		int    i;
+		static struct {
+			char *name;
+			Image *(*proc)(ColorPair colorpair);
+		} pmtab[] = {
+			{ TBPM_3DDOT,       Create3DDotImage },
+			{ TBPM_3DRESIZE,    Create3DResizeImage },
+			{ TBPM_3DMENU,      Create3DMenuImage },
+			{ TBPM_3DZOOM,      Create3DZoomImage },
+			{ TBPM_3DBAR,       Create3DBarImage },
+			{ TBPM_3DVBAR,      Create3DVertBarImage },
+			{ TBPM_3DCROSS,     Create3DCrossImage },
+			{ TBPM_3DICONIFY,   Create3DIconifyImage },
+			{ TBPM_3DSUNKEN_RESIZE,     Create3DSunkenResizeImage },
+			{ TBPM_3DBOX,       Create3DBoxImage }
+		};
 
-						sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
-						if((image = (Image *) LookInNameList(*list, fullname)) == None) {
-							for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
-								if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
-									image = (*pmtab[i].proc)(cp);
-									if(image == None) {
-										fprintf(stderr,
-										        "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
-										return (None);
-									}
-									break;
-								}
-							}
-							if(image == None) {
-								fprintf(stderr, "%s:  no such built-in pixmap \"%s\"\n", ProgramName, name);
-								return (None);
-							}
-							AddToList(list, fullname, (char *) image);
-						}
+		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
+			for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
+				if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
+					image = (*pmtab[i].proc)(cp);
+					if(image == None) {
+						fprintf(stderr,
+						        "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
+						return (None);
 					}
-					else if(strncmp(name, "%xpm:", 5) == 0) {
-						int    i;
-						static struct {
-							char *name;
-							Image *(*proc)(ColorPair colorpair);
-						} pmtab[] = {
-							{ "%xpm:menu-up", Create3DMenuUpAnimation },
-							{ "%xpm:menu-down", Create3DMenuDownAnimation },
-							{ "%xpm:resize", Create3DZoomOutAnimation }, /* compatibility */
-							{ "%xpm:resize-out-top", Create3DResizeInTopAnimation },
-							{ "%xpm:resize-in-top", Create3DResizeOutTopAnimation },
-							{ "%xpm:resize-out-bot", Create3DResizeInBotAnimation },
-							{ "%xpm:resize-in-bot", Create3DResizeOutBotAnimation },
-							{ "%xpm:maze-out", Create3DMazeOutAnimation },
-							{ "%xpm:maze-in", Create3DMazeInAnimation },
-							{ "%xpm:zoom-out", Create3DZoomOutAnimation },
-							{ "%xpm:zoom-in", Create3DZoomInAnimation },
-							{ "%xpm:zoom-inout", Create3DZoomInOutAnimation }
-						};
+					break;
+				}
+			}
+			if(image == None) {
+				fprintf(stderr, "%s:  no such built-in pixmap \"%s\"\n", ProgramName, name);
+				return (None);
+			}
+			AddToList(list, fullname, (char *) image);
+		}
+	}
+	else if(strncmp(name, "%xpm:", 5) == 0) {
+		int    i;
+		static struct {
+			char *name;
+			Image *(*proc)(ColorPair colorpair);
+		} pmtab[] = {
+			{ "%xpm:menu-up", Create3DMenuUpAnimation },
+			{ "%xpm:menu-down", Create3DMenuDownAnimation },
+			{ "%xpm:resize", Create3DZoomOutAnimation }, /* compatibility */
+			{ "%xpm:resize-out-top", Create3DResizeInTopAnimation },
+			{ "%xpm:resize-in-top", Create3DResizeOutTopAnimation },
+			{ "%xpm:resize-out-bot", Create3DResizeInBotAnimation },
+			{ "%xpm:resize-in-bot", Create3DResizeOutBotAnimation },
+			{ "%xpm:maze-out", Create3DMazeOutAnimation },
+			{ "%xpm:maze-in", Create3DMazeInAnimation },
+			{ "%xpm:zoom-out", Create3DZoomOutAnimation },
+			{ "%xpm:zoom-in", Create3DZoomInAnimation },
+			{ "%xpm:zoom-inout", Create3DZoomInOutAnimation }
+		};
 
-						sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
-						if((image = (Image *) LookInNameList(*list, fullname)) == None) {
-							for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
-								if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
-									image = (*pmtab[i].proc)(cp);
-									if(image == None) {
-										fprintf(stderr,
-										        "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
-										return (None);
-									}
-									break;
-								}
-							}
-							if(image == None) {
-								fprintf(stderr, "%s:  no such built-in pixmap \"%s\"\n", ProgramName, name);
-								return (None);
-							}
-							AddToList(list, fullname, (char *) image);
-						}
+		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
+			for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
+				if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
+					image = (*pmtab[i].proc)(cp);
+					if(image == None) {
+						fprintf(stderr,
+						        "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
+						return (None);
 					}
-					else if(name [0] == ':') {
-						int             i;
-						unsigned int    width, height;
-						Pixmap          pm = 0;
-						XGCValues       gcvalues;
-						static struct {
-							char *name;
-							Pixmap(*proc)(unsigned int *widthp, unsigned int *heightp);
-						} pmtab[] = {
-							{ TBPM_DOT,         CreateDotPixmap },
-							{ TBPM_ICONIFY,     CreateDotPixmap },
-							{ TBPM_RESIZE,      CreateResizePixmap },
-							{ TBPM_XLOGO,       CreateXLogoPixmap },
-							{ TBPM_DELETE,      CreateXLogoPixmap },
-							{ TBPM_MENU,        CreateMenuPixmap },
-							{ TBPM_QUESTION,    CreateQuestionPixmap },
-						};
+					break;
+				}
+			}
+			if(image == None) {
+				fprintf(stderr, "%s:  no such built-in pixmap \"%s\"\n", ProgramName, name);
+				return (None);
+			}
+			AddToList(list, fullname, (char *) image);
+		}
+	}
+	else if(name [0] == ':') {
+		int             i;
+		unsigned int    width, height;
+		Pixmap          pm = 0;
+		XGCValues       gcvalues;
+		static struct {
+			char *name;
+			Pixmap(*proc)(unsigned int *widthp, unsigned int *heightp);
+		} pmtab[] = {
+			{ TBPM_DOT,         CreateDotPixmap },
+			{ TBPM_ICONIFY,     CreateDotPixmap },
+			{ TBPM_RESIZE,      CreateResizePixmap },
+			{ TBPM_XLOGO,       CreateXLogoPixmap },
+			{ TBPM_DELETE,      CreateXLogoPixmap },
+			{ TBPM_MENU,        CreateMenuPixmap },
+			{ TBPM_QUESTION,    CreateQuestionPixmap },
+		};
 
-						sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
-						if((image = (Image *) LookInNameList(*list, fullname)) == None) {
-							for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
-								if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
-									pm = (*pmtab[i].proc)(&width, &height);
-									if(pm == None) {
-										fprintf(stderr,
-										        "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
-										return (None);
-									}
-									break;
-								}
-							}
-							if(pm == None) {
-								fprintf(stderr, "%s:  no such built-in bitmap \"%s\"\n", ProgramName, name);
-								return (None);
-							}
-							image = (Image *) malloc(sizeof(Image));
-							image->pixmap = XCreatePixmap(dpy, Scr->Root, width, height, Scr->d_depth);
-							if(Scr->rootGC == (GC) 0) {
-								Scr->rootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
-							}
-							gcvalues.background = cp.back;
-							gcvalues.foreground = cp.fore;
-							XChangeGC(dpy, Scr->rootGC, GCForeground | GCBackground, &gcvalues);
-							XCopyPlane(dpy, pm, image->pixmap, Scr->rootGC, 0, 0, width, height, 0, 0,
-							           (unsigned long) 1);
-							image->mask   = None;
-							image->width  = width;
-							image->height = height;
-							image->next   = None;
-							AddToList(list, fullname, (char *) image);
-						}
+		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
+			for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
+				if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
+					pm = (*pmtab[i].proc)(&width, &height);
+					if(pm == None) {
+						fprintf(stderr,
+						        "%s:  unable to build pixmap \"%s\"\n", ProgramName, name);
+						return (None);
 					}
-					else {
-						sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
-						if((image = (Image *) LookInNameList(*list, fullname)) == None) {
-							if((image = GetBitmapImage(name, cp)) != None) {
-								AddToList(list, fullname, (char *) image);
-							}
-						}
-					}
+					break;
+				}
+			}
+			if(pm == None) {
+				fprintf(stderr, "%s:  no such built-in bitmap \"%s\"\n", ProgramName, name);
+				return (None);
+			}
+			image = (Image *) malloc(sizeof(Image));
+			image->pixmap = XCreatePixmap(dpy, Scr->Root, width, height, Scr->d_depth);
+			if(Scr->rootGC == (GC) 0) {
+				Scr->rootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
+			}
+			gcvalues.background = cp.back;
+			gcvalues.foreground = cp.fore;
+			XChangeGC(dpy, Scr->rootGC, GCForeground | GCBackground, &gcvalues);
+			XCopyPlane(dpy, pm, image->pixmap, Scr->rootGC, 0, 0, width, height, 0, 0,
+			           (unsigned long) 1);
+			image->mask   = None;
+			image->width  = width;
+			image->height = height;
+			image->next   = None;
+			AddToList(list, fullname, (char *) image);
+		}
+	}
+	else {
+		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
+			if((image = GetBitmapImage(name, cp)) != None) {
+				AddToList(list, fullname, (char *) image);
+			}
+		}
+	}
 	return (image);
 }
 
