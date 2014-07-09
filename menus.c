@@ -4803,13 +4803,6 @@ static void Identify(TwmWindow *t)
 	(void) strcat(Info[n], " XPM");
 	first = False;
 #endif
-#ifdef IMCONV
-	if(!first) {
-		(void) strcat(Info[n], ", ");
-	}
-	(void) strcat(Info[n], "IMCONV");
-	first = False;
-#endif
 #ifdef USEM4
 	if(!first) {
 		(void) strcat(Info[n], ", ");

@@ -89,12 +89,6 @@ USE_SOUND
 :       Build with sound support via librplay.
         (**OFF** by default)
 
-USE_IMCONV
-:       Enable support for imconv library from SDSC.  This is almost
-        certainly of historical interest only; if you don't already know
-        exactly what it is and why you want it, you don't.
-        (**OFF** by default)
-
 
 Additional vars you might need to set:
 
