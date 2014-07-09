@@ -1623,9 +1623,6 @@ static void DisplayInfo(void)
 #ifdef XPM
 	(void) printf(" XPM");
 #endif
-#ifdef IMCONV
-	(void) printf(" IMCONV");
-#endif
 #ifdef USEM4
 	(void) printf(" USEM4");
 #endif

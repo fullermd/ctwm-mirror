@@ -49,7 +49,6 @@ option(USE_JPEG   "Enable libjpeg support"             ON )
 option(USE_M4     "Enable m4 support"                  ON )
 option(USE_SOUND  "Enable librplay sound support"      OFF)
 option(USE_GNOME  "Enable GNOME1 support"              ON )
-option(USE_IMCONV "Enable imconv support"              OFF)
 option(USE_SREGEX "Use regex from libc"                ON )
 option(USE_EWMH   "Support some Extended Window Manager Hints"  ON )
 
@@ -176,33 +175,6 @@ if(USE_GNOME)
 	add_definitions(-DGNOME)
 	message(STATUS "Enabling GNOME1 support.")
 endif(USE_GNOME)
-
-
-# imconv is pretty historical, but until we dike it out...
-if(USE_IMCONV)
-	find_library(LIBIMCONV NAMES im PATHS ${LIBSEARCH})
-	if(NOT LIBIMCONV)
-		message(FATAL_ERROR "Can't find libim for imconv")
-	endif(NOT LIBIMCONV)
-	find_path(LIBIMCONV_INCLUDE_DIR NAME im.h PATHS ${INCSEARCH})
-	if(NOT LIBIMCONV_INCLUDE_DIR)
-		message(FATAL_ERROR "Can't find im.h for imconv")
-	endif(NOT LIBIMCONV_INCLUDE_DIR)
-
-	find_library(LIBSDSC NAMES sdsc PATHS ${LIBSEARCH})
-	if(NOT LIBSDSC)
-		message(FATAL_ERROR "Can't find libsdsc for imconv")
-	endif(NOT LIBSDSC)
-	find_path(LIBSDSC_INCLUDE_DIR NAME sdsc.h PATHS ${INCSEARCH})
-	if(NOT LIBSDSC_INCLUDE_DIR)
-		message(FATAL_ERROR "Can't find sdsc.h for imconv")
-	endif(NOT LIBSDSC_INCLUDE_DIR)
-
-	add_definitions(-DIMCONV)
-	list(APPEND CTWMLIBS ${LIBIMCONV} ${LIBSDSC})
-	include_directories(${LIBIMCONV_INCLUDE_DIR}  ${LIBSDSC_INCLUDE_DIR})
-	message(STATUS "Enabling imconv support.")
-endif(USE_IMCONV)
 
 
 # This calls itself GNU but doesn't really have anything to do with GNU.

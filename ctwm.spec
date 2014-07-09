@@ -21,9 +21,8 @@ X11 distribution slightly modified to accommodate the use of several
 virtual screens (workspaces). It is heavily inspired from the
 Hewlett-Packard vuewm window manager.  In addition, ctwm can use
 coloured, shaped icons and background root pixmaps in XPM and JPG format,
-as well as any format understood by the imconv package [from the
-San Diego Supercomputer Center] and xwd files.  Ctwm can be compiled
-to use both, either or none of the above icon/pixmap formats.
+as well as xwd files.  Ctwm can be compiled
+to use any combination of the above icon/pixmap formats.
 
 %prep
 
