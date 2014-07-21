@@ -615,7 +615,6 @@ void JumpIconManager(register int dir)
 WList *AddIconManager(TwmWindow *tmp_win)
 {
 	WList *tmp, *old;
-	unsigned long valuemask;            /* mask for create windows */
 	IconMgr *ip;
 
 	/* Some window types don't wind up in icon managers ever */
@@ -653,6 +652,7 @@ WList *AddIconManager(TwmWindow *tmp_win)
 	old = tmp_win->iconmanagerlist;
 	while(ip != NULL) {
 		int h;
+		unsigned long valuemask;         /* mask for create windows */
 		XSetWindowAttributes attributes; /* attributes for create windows */
 
 		if((tmp_win->occupation & ip->twm_win->occupation) == 0) {
