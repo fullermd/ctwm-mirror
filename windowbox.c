@@ -81,8 +81,10 @@ void createWindowBoxes(void)
 
 		win = XCreateSimpleWindow(dpy, Scr->Root, x, y, w, h, 0, Scr->Black,
 		                          Scr->White);
-		/*printf ("createWindowBoxes : name = %s, win = 0x%x, x = %d, y = %d, w = %d, h = %d\n",
-		        winbox->name, win, x, y, w, h); */
+#if 0
+		printf("createWindowBoxes : name = %s, win = 0x%x, x = %d, y = %d, w = %d, h = %d\n",
+		       winbox->name, win, x, y, w, h);
+#endif
 		sprintf(title, "%s", winbox->name);
 		XSetStandardProperties(dpy, win, title, title, None, NULL, 0, NULL);
 		sizehints.flags  = USPosition | USSize | PWinGravity;
