@@ -279,24 +279,14 @@ IconMgr *AllocateIconManager(char *name, char *icon_name, char *geom,
 	if(columns < 1) {
 		columns = 1;
 	}
-	p = (IconMgr *)malloc(sizeof(IconMgr));
-	p->name = name;
+	p = calloc(1, sizeof(IconMgr));
+	p->name      = name;
 	p->icon_name = icon_name;
-	p->geometry = geom;
-	p->columns = columns;
-	p->first = NULL;
-	p->last = NULL;
-	p->active = NULL;
-	p->twm_win = NULL;
-	p->scr = Scr;
-	p->count = 0;
-	p->x = 0;
-	p->y = 0;
-	p->width = 150;
-	p->height = 10;
-	p->next = NULL;
-	p->prev = NULL;
-	p->nextv = NULL;
+	p->geometry  = geom;
+	p->columns   = columns;
+	p->scr       = Scr;
+	p->width     = 150;
+	p->height    = 10;
 
 	if(Scr->iconmgr == NULL) {
 		Scr->iconmgr = p;
