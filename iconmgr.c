@@ -620,17 +620,16 @@ WList *AddIconManager(TwmWindow *tmp_win)
 	XSetWindowAttributes attributes;    /* attributes for create windows */
 	IconMgr *ip;
 
-	if(tmp_win->iconmgr || tmp_win->transient || Scr->NoIconManagers ||
-	                tmp_win->wspmgr ||
-	                tmp_win->w == Scr->workSpaceMgr.occupyWindow->w) {
+	if(tmp_win->iconmgr || tmp_win->transient || Scr->NoIconManagers
+	                || tmp_win->wspmgr || tmp_win->w == Scr->workSpaceMgr.occupyWindow->w) {
 		return NULL;
 	}
 
 	if(LookInList(Scr->IconMgrNoShow, tmp_win->full_name, &tmp_win->class)) {
 		return NULL;
 	}
-	if(Scr->IconManagerDontShow &&
-	                !LookInList(Scr->IconMgrShow, tmp_win->full_name, &tmp_win->class)) {
+	if(Scr->IconManagerDontShow
+	                && !LookInList(Scr->IconMgrShow, tmp_win->full_name, &tmp_win->class)) {
 		return NULL;
 	}
 	if((ip = (IconMgr *)LookInList(Scr->IconMgrs, tmp_win->full_name,
@@ -664,10 +663,10 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		tmp->cp.back = Scr->IconManagerC.back;
 		tmp->highlight = Scr->IconManagerHighlight;
 
-		GetColorFromList(Scr->IconManagerFL, tmp_win->full_name, &tmp_win->class,
-		                 &tmp->cp.fore);
-		GetColorFromList(Scr->IconManagerBL, tmp_win->full_name, &tmp_win->class,
-		                 &tmp->cp.back);
+		GetColorFromList(Scr->IconManagerFL, tmp_win->full_name,
+		                 &tmp_win->class, &tmp->cp.fore);
+		GetColorFromList(Scr->IconManagerBL, tmp_win->full_name,
+		                 &tmp_win->class, &tmp->cp.back);
 		GetColorFromList(Scr->IconManagerHighlightL, tmp_win->full_name,
 		                 &tmp_win->class, &tmp->highlight);
 
@@ -702,12 +701,14 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		tmp->w = XCreateWindow(dpy, ip->w, 0, 0, (unsigned int) 1,
 		                       (unsigned int) h, (unsigned int) 0,
 		                       CopyFromParent, (unsigned int) CopyFromParent,
-		                       (Visual *) CopyFromParent, valuemask, &attributes);
+		                       (Visual *) CopyFromParent,
+		                       valuemask, &attributes);
 
 		valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
 		attributes.background_pixel = tmp->cp.back;
 		attributes.border_pixel = Scr->Black;
-		attributes.event_mask = (ButtonReleaseMask | ButtonPressMask | ExposureMask);
+		attributes.event_mask = (ButtonReleaseMask | ButtonPressMask
+		                         | ExposureMask);
 		attributes.cursor = Scr->ButtonCursor;
 		/* The precise location will be set it in PackIconManager.  */
 		tmp->icon = XCreateWindow(dpy, tmp->w, 0, 0,
