@@ -648,6 +648,7 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		}
 	}
 
+	/* IM's exist in all workspaces, so loop through WSen */
 	tmp = NULL;
 	old = tmp_win->iconmanagerlist;
 	while(ip != NULL) {
@@ -655,22 +656,23 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		unsigned long valuemask;         /* mask for create windows */
 		XSetWindowAttributes attributes; /* attributes for create windows */
 
+		/* Is the window in this workspace? */
 		if((tmp_win->occupation & ip->twm_win->occupation) == 0) {
+			/* Nope, skip onward */
 			ip = ip->nextv;
 			continue;
 		}
-		tmp = (WList *) malloc(sizeof(WList));
+
+		/* Yep, create entry and stick it in */
+		tmp = calloc(1, sizeof(WList));
 		tmp->iconmgr = ip;
-		tmp->next = NULL;
-		tmp->active = FALSE;
-		tmp->down = FALSE;
+		tmp->twm = tmp_win;
 
 		InsertInIconManager(ip, tmp, tmp_win);
 
-		tmp->twm = tmp_win;
-
-		tmp->cp.fore = Scr->IconManagerC.fore;
-		tmp->cp.back = Scr->IconManagerC.back;
+		/* IM color settings, shared worldwide */
+		tmp->cp.fore   = Scr->IconManagerC.fore;
+		tmp->cp.back   = Scr->IconManagerC.back;
 		tmp->highlight = Scr->IconManagerHighlight;
 
 		GetColorFromList(Scr->IconManagerFL, tmp_win->full_name,
@@ -680,12 +682,15 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		GetColorFromList(Scr->IconManagerHighlightL, tmp_win->full_name,
 		                 &tmp_win->class, &tmp->highlight);
 
+		/* Pop! */
 		if(Scr->use3Diconmanagers) {
 			if(!Scr->BeNiceToColormap) {
 				GetShadeColors(&tmp->cp);
 			}
 			tmp->iconifypm = Create3DIconManagerIcon(tmp->cp);
 		}
+
+		/* Refigure the height of the whole IM */
 		h = Scr->IconManagerFont.avg_height
 		    + 2 * (ICON_MGR_OBORDER + ICON_MGR_OBORDER);
 		if(h < (siconify_height + 4)) {
@@ -699,6 +704,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		tmp->height = -1;
 		tmp->width = -1;
 
+
+		/* Make a window for this row in the IM */
 		valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
 		attributes.background_pixel = tmp->cp.back;
 		attributes.border_pixel = tmp->cp.back;
@@ -714,6 +721,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		                       (Visual *) CopyFromParent,
 		                       valuemask, &attributes);
 
+
+		/* Setup the icon for it too */
 		valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
 		attributes.background_pixel = tmp->cp.back;
 		attributes.border_pixel = Scr->Black;
@@ -729,6 +738,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		                          (Visual *) CopyFromParent,
 		                          valuemask, &attributes);
 
+
+		/* Bump housekeeping for the IM */
 		ip->count += 1;
 		PackIconManager(ip);
 		if(Scr->WindowMask) {
@@ -749,14 +760,26 @@ WList *AddIconManager(TwmWindow *tmp_win)
 			}
 			ip->twm_win->mapped = TRUE;
 		}
+
+
+		/*
+		 * Stick this entry on the head of our list of "IM entries we
+		 * created", and loop around to the next WS for this IM.
+		 */
 		tmp->nextv = old;
 		old = tmp;
 		ip = ip->nextv;
 	}
+
+	/* If we didn't create at least one thing, we're done here */
 	if(tmp == NULL) {
 		return NULL;
 	}
+
+	/* Stash where the window is IM-listed */
 	tmp_win->iconmanagerlist = tmp;
+
+	/* ??? */
 	if(! visible(tmp->iconmgr->twm_win)) {
 		old = tmp;
 		tmp = tmp->nextv;
@@ -773,6 +796,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 			tmp_win->iconmanagerlist = tmp;
 		}
 	}
+
+	/* Hand back to the list places we added */
 	return tmp_win->iconmanagerlist;
 }
 
