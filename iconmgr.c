@@ -620,11 +620,18 @@ WList *AddIconManager(TwmWindow *tmp_win)
 	XSetWindowAttributes attributes;    /* attributes for create windows */
 	IconMgr *ip;
 
-	if(tmp_win->iconmgr || tmp_win->transient || Scr->NoIconManagers
-	                || tmp_win->wspmgr || tmp_win->w == Scr->workSpaceMgr.occupyWindow->w) {
+	/* Some window types don't wind up in icon managers ever */
+	if(tmp_win->iconmgr || tmp_win->transient || tmp_win->wspmgr
+	   || tmp_win->w == Scr->workSpaceMgr.occupyWindow->w) {
 		return NULL;
 	}
 
+	/* Icon managers can be shut off wholesale in the config */
+	if(Scr->NoIconManagers) {
+		return NULL;
+	}
+
+	/* Config could declare not to IMify this type of window in two ways */
 	if(LookInList(Scr->IconMgrNoShow, tmp_win->full_name, &tmp_win->class)) {
 		return NULL;
 	}
@@ -632,6 +639,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 	                && !LookInList(Scr->IconMgrShow, tmp_win->full_name, &tmp_win->class)) {
 		return NULL;
 	}
+
+	/* Dredge up the appropriate IM */
 	if((ip = (IconMgr *)LookInList(Scr->IconMgrs, tmp_win->full_name,
 	                               &tmp_win->class)) == NULL) {
 		if(Scr->workSpaceManagerActive) {
