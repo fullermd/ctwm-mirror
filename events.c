@@ -77,7 +77,7 @@
 #endif
 #include <ctype.h>
 
-#include "twm.h"
+#include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else

@@ -26,7 +26,7 @@
 
 #include <X11/Xatom.h>
 #include <stdio.h>
-#include "twm.h"
+#include "ctwm.h"
 #include "cursor.h"
 #include "screen.h"
 

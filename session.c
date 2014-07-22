@@ -125,7 +125,7 @@
 #include <X11/Xatom.h>
 #include <stdio.h>
 #include <sys/stat.h>           /* For umask */
-#include "twm.h"
+#include "ctwm.h"
 #include "icons.h"
 #include "screen.h"
 #include "session.h"

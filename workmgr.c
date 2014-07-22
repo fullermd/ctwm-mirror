@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
-#include "twm.h"
+#include "ctwm.h"
 #include "util.h"
 #include "parse.h"
 #include "screen.h"

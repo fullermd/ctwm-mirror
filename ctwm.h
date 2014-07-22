@@ -61,8 +61,8 @@
  * 10-Oct-90 David M. Sternlicht        Storeing saved colors on root
  ***********************************************************************/
 
-#ifndef _TWM_
-#define _TWM_
+#ifndef _CTWM_H
+#define _CTWM_H
 
 #ifdef DMALLOC
 #include <dmalloc.h>
@@ -582,4 +582,4 @@ extern int GoThroughM4;
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
 #define VISIBLE(w) OCCUPY(w, Scr->workSpaceMgr.activeWSPC)
 
-#endif /* _TWM_ */
+#endif /* _CTWM_H */

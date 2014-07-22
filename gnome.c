@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "twm.h"
+#include "ctwm.h"
 #include "screen.h"
 #ifdef VMS
 #include <ctype.h>

@@ -51,7 +51,7 @@ typedef struct StdCmap StdCmap;
 typedef struct TitlebarPixmaps TitlebarPixmaps;
 typedef struct ScreenInfo ScreenInfo;
 
-/* from twm.h */
+/* from ctwm.h */
 typedef struct MyFont MyFont;
 typedef struct ColorPair ColorPair;
 typedef struct TitleButtonFunc TitleButtonFunc;

@@ -1,6 +1,6 @@
 #include "clicktofocus.h"
 
-#include "twm.h"
+#include "ctwm.h"
 #include "util.h"
 #include "screen.h"
 

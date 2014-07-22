@@ -37,7 +37,7 @@
 
 #include <stdio.h>
 
-#include "twm.h"
+#include "ctwm.h"
 #include "mwmhints.h"
 
 static Atom MOTIF_WM_HINTS = None;
