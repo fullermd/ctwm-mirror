@@ -24,6 +24,9 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
+#ifndef _CTWM_CLIENT_H
+#define _CTWM_CLIENT_H
+
 Bool    CtwmIsRunning(Display *display, int scrnum);
 char    **CtwmListWorkspaces(Display *display, int scrnum);
 char    *CtwmCurrentWorkspace(Display *display, int scrnum);
@@ -34,3 +37,4 @@ int     CtwmSetOccupation(Display *display, Window window,
                           char **occupation);
 int     CtwmAddToCurrentWorkspace(Display *display, Window window);
 
+#endif /* _CTWM_CLIENT_H */
