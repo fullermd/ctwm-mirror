@@ -1,4 +1,4 @@
-#include "twm.h"
+#include "ctwm.h"
 
 #ifndef _GNOME_
 #define _GNOME_

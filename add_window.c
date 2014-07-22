@@ -77,7 +77,7 @@
 #if defined(AIXV3) || defined(_SYSTYPE_SVR4) || defined(ibm) || defined __QNX__
 #include <sys/select.h>
 #endif
-#include "twm.h"
+#include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else

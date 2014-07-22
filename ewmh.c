@@ -56,7 +56,7 @@
 #include <X11/Xatom.h>
 
 #include "ewmh.h"
-#include "twm.h"
+#include "ctwm.h"
 #include "screen.h"
 #include "events.h"
 #include "icons.h"

@@ -84,7 +84,6 @@
 #else
 #include <fcntl.h>
 #endif
-#include "twm.h"
 #include "ctwm.h"
 #include "add_window.h"
 #include "gc.h"

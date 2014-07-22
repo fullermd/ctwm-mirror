@@ -61,7 +61,7 @@
  *
  **********************************************************************/
 
-#include "twm.h"
+#include "ctwm.h"
 #include "iconmgr.h"
 
 #ifndef _ADD_WINDOW_

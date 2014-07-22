@@ -77,7 +77,7 @@
 #endif
 #include <ctype.h>
 
-#include "twm.h"
+#include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
@@ -3857,8 +3857,10 @@ void HandleEnterNotify(void)
 				Scr->rootw = vs->w;
 				Scr->rooth = vs->h;
 				Scr->currentvs = vs;
-				/*fprintf (stderr, "entering new vs : 0x%x, 0x%x, %d, %d, %d, %d\n",
-				  vs, Scr->Root, vs->x, vs->y, vs->w, vs->h);*/
+#if 0
+				fprintf(stderr, "entering new vs : 0x%x, 0x%x, %d, %d, %d, %d\n",
+				        vs, Scr->Root, vs->x, vs->y, vs->w, vs->h);
+#endif
 				return;
 			}
 		}
