@@ -32,7 +32,7 @@
 #include <X11/Xatom.h>
 #endif
 
-#include "ctwm.h"
+#include "ctwm_client.h"
 
 Window awindow = 0x5c0000d;
 char *awspc1 = "lecom", *awspc2 = "root";
