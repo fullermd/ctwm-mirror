@@ -164,7 +164,6 @@ if(USE_EWMH)
 	list(APPEND CTWMSRC ewmh.c)
 	add_definitions(-DEWMH)
 	message(STATUS "Enabling Extended Window Manager Hints support.")
-	# set(USE_GNOME OFF)
 else()
 	message(STATUS "Disabling Extended Window Manager Hints support.")
 endif(USE_EWMH)
@@ -362,6 +361,10 @@ if(DO_LIBCTWM)
 	message(STATUS "Building libctwmc and demolib.")
 endif(DO_LIBCTWM)
 
+# Build the event-forwarding program.
+
+add_executable(forward forward.c)
+target_link_libraries(forward ${X11_LIBRARIES})
 
 # Rewrite man page
 set(MANPAGE ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1)
