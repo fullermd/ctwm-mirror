@@ -572,6 +572,12 @@ extern Atom _XA_WM_CTWM_VSCREENMAP;
 extern Atom _OL_WIN_ATTR;
 extern Atom _XA_WM_NOREDIRECT;
 
+#ifdef USEM4
+extern int KeepTmpFile;                 /* JMO 3/28/90 for m4 */
+extern char *keepM4_filename;           /* Keep M4 output here */
+extern int GoThroughM4;
+#endif
+
 #define OCCUPY(w, b) ((b == NULL) ? 1 : (w->occupation & (1 << b->number)))
 #define VISIBLE(w) OCCUPY(w, Scr->workSpaceMgr.activeWSPC)
 

@@ -34,9 +34,4 @@ int     CtwmSetOccupation(Display *display, Window window,
                           char **occupation);
 int     CtwmAddToCurrentWorkspace(Display *display, Window window);
 
-#ifdef USEM4
-extern int KeepTmpFile;                 /* JMO 3/28/90 for m4 */
-extern char *keepM4_filename;           /* Keep M4 output here */
-extern int GoThroughM4;
-#endif
 char *captivename;
