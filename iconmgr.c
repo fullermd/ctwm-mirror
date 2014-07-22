@@ -619,7 +619,7 @@ WList *AddIconManager(TwmWindow *tmp_win)
 
 	/* Some window types don't wind up in icon managers ever */
 	if(tmp_win->iconmgr || tmp_win->transient || tmp_win->wspmgr
-	   || tmp_win->w == Scr->workSpaceMgr.occupyWindow->w) {
+	                || tmp_win->w == Scr->workSpaceMgr.occupyWindow->w) {
 		return NULL;
 	}
 
