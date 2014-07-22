@@ -540,6 +540,7 @@ extern Bool ShowWelcomeWindow;
 #ifndef VMS
 extern char **Environ;
 #endif
+char *captivename;
 
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;

@@ -34,4 +34,3 @@ int     CtwmSetOccupation(Display *display, Window window,
                           char **occupation);
 int     CtwmAddToCurrentWorkspace(Display *display, Window window);
 
-char *captivename;

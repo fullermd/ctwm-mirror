@@ -62,8 +62,6 @@ static void fakeRaiseLower();
 #  include "gnomewindefs.h" /* include GNOME hints definitions */
 #endif /* GNOME */
 
-extern char *captivename;
-
 /***********************************************************************
  *
  *  Procedure:
