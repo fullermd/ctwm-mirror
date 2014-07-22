@@ -83,7 +83,6 @@
 #include <X11/Xmu/CharSet.h>
 #include <X11/Xmu/SysUtil.h>
 #endif
-#include "twm.h"
 #include "ctwm.h"
 #include "screen.h"
 #include "menus.h"

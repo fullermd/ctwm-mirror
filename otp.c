@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "otp.h"
-#include "twm.h"
+#include "ctwm.h"
 #include "screen.h"
 #include "util.h"
 #include "icons.h"

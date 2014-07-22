@@ -28,8 +28,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "twm.h"
 #include "ctwm.h"
+#include "ctwm_client.h"
 
 Atom _XA_WM_OCCUPATION;
 Atom _XA_WM_CURRENTWORKSPACE;
