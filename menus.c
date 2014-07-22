@@ -86,7 +86,6 @@
 #include <X11/Xatom.h>
 #endif
 #include "twm.h"
-#include "ctwm.h"
 #include "gc.h"
 #include "menus.h"
 #include "resize.h"
