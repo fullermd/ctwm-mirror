@@ -797,7 +797,7 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		}
 	}
 
-	/* Hand back to the list places we added */
+	/* Hand back the list places we added */
 	return tmp_win->iconmanagerlist;
 }
 
