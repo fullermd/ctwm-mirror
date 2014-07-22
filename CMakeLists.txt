@@ -166,8 +166,7 @@ if(USE_GNOME)
 endif(USE_GNOME)
 
 
-# This calls itself GNU but doesn't really have anything to do with GNU.
-# All sorts of non-GNU systems include it.  Most/all nowadays, probably.
+# System provides regex stuff in libc?
 if(USE_SREGEX)
 	include(CheckIncludeFiles)
 	include(CheckFunctionExists)
@@ -181,7 +180,7 @@ if(USE_SREGEX)
 		message(FATAL_ERROR "Can't find regexec()")
 	endif(NOT HAS_REGEXEC)
 
-	add_definitions(-DUSE_GNU_REGEX)
+	add_definitions(-DUSE_SYS_REGEX)
 	message(STATUS "Enabling libc regex usage.")
 endif(USE_SREGEX)
 

@@ -78,9 +78,9 @@
 #include "util.h"
 #include "parse.h"
 
-#ifdef USE_GNU_REGEX
+#ifdef USE_SYS_REGEX
 # include <regex.h>
-#endif /* USE_GNU_REGEX */
+#endif /* USE_SYS_REGEX */
 
 
 
@@ -282,7 +282,7 @@ void FreeList(name_list **list)
 	*list = NULL;
 }
 
-#ifdef USE_GNU_REGEX
+#ifdef USE_SYS_REGEX
 
 #define MAXPATLEN 256
 
