@@ -147,23 +147,26 @@ void *LookInList(name_list *list_head, char *name, XClassHint *class)
 	name_list *nptr;
 
 	/* look for the name first */
-	for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+	for(nptr = list_head; nptr != NULL; nptr = nptr->next) {
 		if(match(nptr->name, name)) {
 			return (nptr->ptr);
 		}
+	}
 
 	if(class) {
 		/* look for the res_name next */
-		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next) {
 			if(match(nptr->name, class->res_name)) {
 				return (nptr->ptr);
 			}
+		}
 
 		/* finally look for the res_class */
-		for(nptr = list_head; nptr != NULL; nptr = nptr->next)
+		for(nptr = list_head; nptr != NULL; nptr = nptr->next) {
 			if(match(nptr->name, class->res_class)) {
 				return (nptr->ptr);
 			}
+		}
 	}
 	return (NULL);
 }
