@@ -68,7 +68,7 @@
  **********************************************************************/
 
 #include <stdio.h>
-#include "twm.h"
+#include "ctwm.h"
 #include "util.h"
 #include "gram.tab.h"
 #include "screen.h"

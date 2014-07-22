@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
-#include "twm.h"
+#include "ctwm.h"
 #include "util.h"
 #include "parse.h"
 #include "screen.h"
@@ -61,8 +61,6 @@ static void fakeRaiseLower();
 #ifdef GNOME
 #  include "gnomewindefs.h" /* include GNOME hints definitions */
 #endif /* GNOME */
-
-extern char *captivename;
 
 /***********************************************************************
  *

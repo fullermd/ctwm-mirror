@@ -76,7 +76,7 @@
 
 #define LEVITTE_TEST
 
-#include "twm.h"
+#include "ctwm.h"
 #include "util.h"
 #include "events.h"
 #include "add_window.h"

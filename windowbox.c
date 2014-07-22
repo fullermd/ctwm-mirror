@@ -26,7 +26,7 @@
 
 
 #include <stdio.h>
-#include "twm.h"
+#include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
