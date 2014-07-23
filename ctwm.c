@@ -209,11 +209,6 @@ char **Environ;
 #endif
 
 Bool RestartPreviousState = False;      /* try to restart in previous state */
-#ifdef NOTRAP
-Bool TrapExceptions = False;
-#else
-Bool TrapExceptions = True;
-#endif
 
 unsigned long black, white;
 
@@ -418,10 +413,10 @@ usage:
 	newhandler(SIGCHLD, ChildExit);
 #endif
 	signal(SIGALRM, SIG_IGN);
-	if(TrapExceptions) {
-		signal(SIGSEGV, Crash);
-		signal(SIGBUS,  Crash);
-	}
+#ifdef NOTRAP
+	signal(SIGSEGV, Crash);
+	signal(SIGBUS,  Crash);
+#endif
 
 #undef newhandler
 
