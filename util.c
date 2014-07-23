@@ -4463,6 +4463,9 @@ static Image *LoadJpegImage(char *name)
 	}
 	if(ximage == None) {
 		fprintf(stderr, "cannot create image for %s\n", name);
+		free(image);
+		fclose(infile);
+		return None;
 	}
 	g = 0;
 	row_stride = cinfo.output_width * cinfo.output_components;
