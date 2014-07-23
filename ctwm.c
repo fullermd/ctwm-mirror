@@ -674,10 +674,8 @@ usage:
 
 		/* setup default colors */
 		Scr->FirstTime = TRUE;
-		GetColor(Scr->Monochrome, &black, "black");
-		Scr->Black = black;
-		GetColor(Scr->Monochrome, &white, "white");
-		Scr->White = white;
+		GetColor(Scr->Monochrome, &(Scr->Black), "black");
+		GetColor(Scr->Monochrome, &(Scr->White), "white");
 
 		if(FirstScreen) {
 			SetFocus((TwmWindow *)NULL, CurrentTime);
