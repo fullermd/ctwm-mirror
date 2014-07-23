@@ -136,7 +136,6 @@ int GoThroughM4 = True;
 #endif
 Window ResizeWindow;            /* the window we are resizing */
 
-int  cfgchk       = 0;
 int  captive      = FALSE;
 char *captivename = NULL;
 
@@ -256,6 +255,7 @@ int main(int argc, char **argv, char **environ)
 	static int crooty = 100;
 	static unsigned int crootw = 1280;
 	static unsigned int crooth =  768;
+	int cfgchk = 0;
 	/*    static unsigned int crootw = 2880; */
 	/*    static unsigned int crooth = 1200; */
 	Window capwin = (Window) 0;
