@@ -164,7 +164,8 @@ int (*twmInputFunc)(void);
 int yydebug = 1;
 #endif
 
-static int doparse(int (*ifunc)(void), char *srctypename, char *srcname)
+static int doparse(int (*ifunc)(void), const char *srctypename,
+                   const char *srcname)
 {
 	ptr = 0;
 	len = 0;
