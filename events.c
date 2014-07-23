@@ -1629,7 +1629,6 @@ void HandlePropertyNotify(void)
 	}
 
 #define MAX_NAME_LEN 200L               /* truncate to this many */
-#define MAX_ICON_NAME_LEN 200L          /* ditto */
 
 	switch(Event.xproperty.atom) {
 		case XA_WM_NAME:
