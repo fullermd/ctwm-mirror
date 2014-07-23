@@ -77,11 +77,6 @@
 #include "add_window.h"
 #define __WANT_SICONIFY_BITS
 #include "siconify.bm"
-#ifdef VMS
-#include <decw$include/Xos.h>
-#else
-#include <X11/Xos.h>
-#endif
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
