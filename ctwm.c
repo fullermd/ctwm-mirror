@@ -1057,25 +1057,20 @@ static void InitVariables(void)
 	Scr->Ring = NULL;
 	Scr->RingLeader = NULL;
 
-	Scr->DefaultC.fore = black;
-	Scr->DefaultC.back = white;
-	Scr->BorderColorC.fore = white;
-	Scr->BorderColorC.back = black;
-	Scr->BorderTileC.fore = black;
-	Scr->BorderTileC.back = white;
-	Scr->TitleC.fore = black;
-	Scr->TitleC.back = white;
-	Scr->MenuC.fore = black;
-	Scr->MenuC.back = white;
-	Scr->MenuTitleC.fore = black;
-	Scr->MenuTitleC.back = white;
-	Scr->MenuShadowColor = black;
-	Scr->IconC.fore = black;
-	Scr->IconC.back = white;
-	Scr->IconBorderColor = black;
-	Scr->IconManagerC.fore = black;
-	Scr->IconManagerC.back = white;
-	Scr->IconManagerHighlight = black;
+#define SETFB(fld) Scr->fld.fore = Scr->Black; Scr->fld.back = Scr->White;
+	SETFB(DefaultC)
+	SETFB(BorderColorC)
+	SETFB(BorderTileC)
+	SETFB(TitleC)
+	SETFB(MenuC)
+	SETFB(MenuTitleC)
+	SETFB(IconC)
+	SETFB(IconManagerC)
+#undef SETFB
+
+	Scr->MenuShadowColor = Scr->Black;
+	Scr->IconBorderColor = Scr->Black;
+	Scr->IconManagerHighlight = Scr->Black;
 
 	Scr->FramePadding =
 	        -100;   /* trick to have different default value if ThreeDTitles
