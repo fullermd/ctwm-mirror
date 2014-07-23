@@ -176,7 +176,8 @@ void *LookInNameList(name_list *list_head, const char *name)
 	return (LookInList(list_head, name, NULL));
 }
 
-void *LookPatternInList(name_list *list_head, const char *name, XClassHint *class)
+void *LookPatternInList(name_list *list_head, const char *name,
+                        XClassHint *class)
 {
 	name_list *nptr;
 

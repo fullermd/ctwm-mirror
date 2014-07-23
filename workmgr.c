@@ -2138,8 +2138,8 @@ static void PaintWorkSpaceManagerBorder(VirtualScreen *vs)
 static ColorPair occupyButtoncp;
 
 static char *ok_string         = "OK",
-            *cancel_string     = "Cancel",
-            *everywhere_string = "All";
+             *cancel_string     = "Cancel",
+              *everywhere_string = "All";
 
 /*
  * Create the Occupy window. Do not do the layout of the parts, only
