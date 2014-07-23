@@ -2127,7 +2127,7 @@ typedef struct _cnode {
 	int i;
 	struct _cnode *next;
 } Cnode, *Cptr;
-Cptr chead = NULL;
+static Cptr chead = NULL;
 
 int do_var_savecolor(int key)
 {
