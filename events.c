@@ -152,9 +152,8 @@ void HandleFocusChange(void);
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
-#endif /* GNOME */
-
 static int GnomeProxyButtonPress = -1;
+#endif /* GNOME */
 
 /*#define TRACE_FOCUS*/
 /*#define TRACE*/
