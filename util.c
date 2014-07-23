@@ -4449,25 +4449,17 @@ static Image *LoadJpegImage(char *name)
 		ximage = XCreateImage(dpy, CopyFromParent, Scr->d_depth, ZPixmap, 0,
 		                      (char *) buffer_16bpp, width, height, 16, width * 2);
 	}
+	else if(Scr->d_depth == 24 || Scr->d_depth == 32) {
+		store_data = &convert_for_32;
+		buffer_32bpp = malloc(width * height * 4);
+		ximage = XCreateImage(dpy, CopyFromParent, Scr->d_depth, ZPixmap, 0,
+		                      (char *) buffer_32bpp, width, height, 32, width * 4);
+	}
 	else {
-		if(Scr->d_depth == 24) {
-			store_data = &convert_for_32;
-			buffer_32bpp = malloc(width * height * 4);
-			ximage = XCreateImage(dpy, CopyFromParent, Scr->d_depth, ZPixmap, 0,
-			                      (char *) buffer_32bpp, width, height, 32, width * 4);
-		}
-		else if(Scr->d_depth == 32) {
-			store_data = &convert_for_32;
-			buffer_32bpp = malloc(width * height * 4);
-			ximage = XCreateImage(dpy, CopyFromParent, Scr->d_depth, ZPixmap, 0,
-			                      (char *) buffer_32bpp, width, height, 32, width * 4);
-		}
-		else {
-			fprintf(stderr, "Image %s unsupported depth : %d\n", name, Scr->d_depth);
-			free(image);
-			fclose(infile);
-			return None;
-		}
+		fprintf(stderr, "Image %s unsupported depth : %d\n", name, Scr->d_depth);
+		free(image);
+		fclose(infile);
+		return None;
 	}
 	if(ximage == None) {
 		fprintf(stderr, "cannot create image for %s\n", name);
