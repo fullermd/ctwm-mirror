@@ -147,7 +147,7 @@ ScreenInfo **ScreenList;        /* structures for each screen */
 ScreenInfo *Scr = NULL;         /* the cur and prev screens */
 int PreviousScreen;             /* last screen that we were on */
 int FirstScreen;                /* TRUE ==> first screen of display */
-Bool PrintErrorMessages = False;        /* controls error messages */
+static Bool PrintErrorMessages = False;        /* controls error messages */
 #ifdef DEBUG
 Bool ShowWelcomeWindow = False;
 #else
@@ -161,7 +161,6 @@ static int TwmErrorHandler(Display *display, XErrorEvent *event);
 char Info[INFO_LINES][INFO_SIZE];               /* info strings to print */
 int InfoLines;
 unsigned int InfoWidth, InfoHeight;
-char *InitFile = NULL;
 static Window CreateRootWindow(int x, int y,
                                unsigned int width, unsigned int height);
 static void DisplayInfo(void);
@@ -256,6 +255,7 @@ int main(int argc, char **argv, char **environ)
 	static unsigned int crooth =  768;
 	int cfgchk = 0;
 	int Monochrome  = FALSE; /* Force monochrome, for testing purpose */
+	char *InitFile = NULL;
 	/*    static unsigned int crootw = 2880; */
 	/*    static unsigned int crooth = 1200; */
 	Window capwin = (Window) 0;
