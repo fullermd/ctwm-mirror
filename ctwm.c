@@ -979,7 +979,8 @@ usage:
 	InitEvents();
 	StartAnimation();
 	HandleEvents();
-	return (0);
+	fprintf(stderr, "Shouldn't return from HandleEvents()!\n");
+	exit(1);
 }
 
 /***********************************************************************
