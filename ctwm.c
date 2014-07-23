@@ -210,8 +210,6 @@ char **Environ;
 
 Bool RestartPreviousState = False;      /* try to restart in previous state */
 
-unsigned long black, white;
-
 Bool RestartFlag = 0;
 SIGNAL_T Restart(int signum);
 SIGNAL_T Crash(int signum);
