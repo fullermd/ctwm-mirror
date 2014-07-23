@@ -1463,8 +1463,8 @@ ChildExit(int signum)
  * manipulating the client's window.
  */
 
-Bool ErrorOccurred = False;
-XErrorEvent LastErrorEvent;
+static Bool ErrorOccurred = False;
+static XErrorEvent LastErrorEvent;
 
 static int TwmErrorHandler(Display *display, XErrorEvent *event)
 {

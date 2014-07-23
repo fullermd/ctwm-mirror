@@ -542,9 +542,6 @@ extern char **Environ;
 #endif
 extern char *captivename;
 
-extern Bool ErrorOccurred;
-extern XErrorEvent LastErrorEvent;
-
 extern Bool RestartPreviousState;
 extern Bool GetWMState(Window w, int *statep, Window *iwp);
 
