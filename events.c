@@ -4785,7 +4785,7 @@ void ConfigureRootWindow(XEvent *ev)
 
 static void dumpevent(XEvent *e)
 {
-	char *name = "Unknown event";
+	const char *name = "Unknown event";
 
 	if(! tracefile) {
 		return;
