@@ -284,8 +284,7 @@ void FreeList(name_list **list)
 
 #ifdef USE_SYS_REGEX
 
-int match(pattern, string)
-char *pattern, *string;
+int match(const char *pattern, const char *string)
 {
 	regex_t preg;
 	int error;

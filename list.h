@@ -81,7 +81,7 @@ extern int      GetColorFromList(name_list *list_head, char *name,
                                  XClassHint *class, Pixel *ptr);
 extern void     FreeList(name_list **list);
 
-extern int      match(char *pattern, char *string);
+extern int      match(const char *pattern, const char *string);
 
 #endif /* _LIST_ */
 
