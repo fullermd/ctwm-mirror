@@ -140,7 +140,6 @@ int  captive      = FALSE;
 char *captivename = NULL;
 
 int MultiScreen = TRUE;         /* try for more than one screen? */
-int Monochrome  = FALSE;        /* Force monochrome, for testing purpose */
 int NumScreens;                 /* number of screens in ScreenList */
 int HasShape;                   /* server supports shape extension? */
 int ShapeEventBase, ShapeErrorBase;
@@ -256,6 +255,7 @@ int main(int argc, char **argv, char **environ)
 	static unsigned int crootw = 1280;
 	static unsigned int crooth =  768;
 	int cfgchk = 0;
+	int Monochrome  = FALSE; /* Force monochrome, for testing purpose */
 	/*    static unsigned int crootw = 2880; */
 	/*    static unsigned int crooth = 1200; */
 	Window capwin = (Window) 0;
