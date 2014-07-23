@@ -2454,7 +2454,7 @@ static FILE *start_m4(FILE *fraw)
 #define Resolution(pixels, mm)  ((((pixels) * 100000 / (mm)) + 50) / 100)
 #define EXTRA   16 /* Egad */
 
-static char *MkDef(char *name, char *def)
+static const char *MkDef(const char *name, const char *def)
 {
 	static char *cp = NULL;
 	static int maxsize = 0;
@@ -2485,7 +2485,7 @@ static char *MkDef(char *name, char *def)
 	return(cp);
 }
 
-static char *MkNum(char *name, int def)
+static const char *MkNum(const char *name, int def)
 {
 	char num[20];
 
