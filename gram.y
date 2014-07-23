@@ -79,13 +79,6 @@
 #include "screen.h"
 #include "parse.h"
 #include "cursor.h"
-#ifdef VMS
-#  include <decw$include/Xos.h>
-#  include <X11Xmu/CharSet.h>
-#else
-#  include <X11/Xos.h>
-#  include <X11/Xmu/CharSet.h>
-#endif
 
 static char *Action = "";
 static char *Name = "";
