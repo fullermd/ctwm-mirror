@@ -70,13 +70,13 @@ struct name_list {
 	char *ptr;                  /* list dependent data */
 };
 
-extern void     AddToList(name_list **list_head, char *name, char *ptr);
-extern void    *LookInList(name_list *list_head, char *name,
+extern void     AddToList(name_list **list_head, const char *name, char *ptr);
+extern void    *LookInList(name_list *list_head, const char *name,
                            XClassHint *class);
-extern void    *LookInNameList(name_list *list_head, char *name);
-extern void    *LookPatternInList(name_list *list_head, char *name,
+extern void    *LookInNameList(name_list *list_head, const char *name);
+extern void    *LookPatternInList(name_list *list_head, const char *name,
                                   XClassHint *class);
-extern void    *LookPatternInNameList(name_list *list_head, char *name);
+extern void    *LookPatternInNameList(name_list *list_head, const char *name);
 extern int      GetColorFromList(name_list *list_head, char *name,
                                  XClassHint *class, Pixel *ptr);
 extern void     FreeList(name_list **list);

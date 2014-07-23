@@ -103,7 +103,7 @@
  ***********************************************************************
  */
 
-void AddToList(name_list **list_head, char *name, char *ptr)
+void AddToList(name_list **list_head, const char *name, char *ptr)
 {
 	name_list *nptr;
 
@@ -142,7 +142,7 @@ void AddToList(name_list **list_head, char *name, char *ptr)
  ***********************************************************************
  */
 
-void *LookInList(name_list *list_head, char *name, XClassHint *class)
+void *LookInList(name_list *list_head, const char *name, XClassHint *class)
 {
 	name_list *nptr;
 
@@ -171,12 +171,12 @@ void *LookInList(name_list *list_head, char *name, XClassHint *class)
 	return (NULL);
 }
 
-void *LookInNameList(name_list *list_head, char *name)
+void *LookInNameList(name_list *list_head, const char *name)
 {
 	return (LookInList(list_head, name, NULL));
 }
 
-void *LookPatternInList(name_list *list_head, char *name, XClassHint *class)
+void *LookPatternInList(name_list *list_head, const char *name, XClassHint *class)
 {
 	name_list *nptr;
 
@@ -199,7 +199,7 @@ void *LookPatternInList(name_list *list_head, char *name, XClassHint *class)
 	return (NULL);
 }
 
-void *LookPatternInNameList(name_list *list_head, char *name)
+void *LookPatternInNameList(name_list *list_head, const char *name)
 {
 	return (LookPatternInList(list_head, name, NULL));
 }
