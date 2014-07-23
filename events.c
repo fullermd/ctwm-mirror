@@ -119,7 +119,6 @@ event_proc EventHandler[MAX_X_EVENT]; /* event handler jump table */
 static char *Action;            /* XXX This may be narrowable */
 int Context = C_NO_CONTEXT;     /* current button press context */
 static TwmWindow *ButtonWindow; /* button press window structure */
-XEvent ButtonEvent;             /* button press event */
 XEvent Event;                   /* the current event */
 static TwmWindow *Tmp_win;      /* the current twm window */
 
@@ -1401,7 +1400,6 @@ void HandleKeyPress(void)
 
 			if(key->cont != C_NAME) {
 				if(key->func == F_MENU) {
-					ButtonEvent = Event;
 					ButtonWindow = Tmp_win;
 					do_key_menu(key->menu, (Window) None);
 				}
@@ -3127,7 +3125,7 @@ void HandleButtonRelease(void)
 			}
 			ExecuteFunction(func, Action,
 			                ButtonWindow ? ButtonWindow->frame : None,
-			                ButtonWindow, &Event/*&ButtonEvent*/, Context, TRUE);
+			                ButtonWindow, &Event, Context, TRUE);
 			Context = C_NO_CONTEXT;
 			ButtonWindow = NULL;
 
@@ -3377,7 +3375,6 @@ void HandleButtonPress(void)
 						switch(tbf->func) {
 							case F_MENU :
 								Context = C_TITLE;
-								ButtonEvent = Event;
 								ButtonWindow = Tmp_win;
 								do_menu(tbf->menuroot, tbw->window);
 								break;
@@ -3586,7 +3583,6 @@ void HandleButtonPress(void)
 		return;
 	}
 
-	ButtonEvent = Event;
 	ButtonWindow = Tmp_win;
 
 	/* if we get to here, we have to execute a function or pop up a
