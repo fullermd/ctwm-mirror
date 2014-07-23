@@ -133,10 +133,6 @@ unsigned int DragBW;
 int CurrentDragX;
 int CurrentDragY;
 
-/* Vars to tell if the resize has moved. */
-extern int ResizeOrigX;
-extern int ResizeOrigY;
-
 static int enter_flag;
 static int leave_flag;
 static int ColortableThrashing;
