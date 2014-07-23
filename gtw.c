@@ -26,10 +26,6 @@
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-/*
-#include <X11/Xmu/CharSet.h>
-#include <X11/Xresource.h>
-*/
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
