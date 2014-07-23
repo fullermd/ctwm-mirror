@@ -545,8 +545,6 @@ extern char *captivename;
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;
 
-#define ResetError() (ErrorOccurred = False)
-
 extern Bool RestartPreviousState;
 extern Bool GetWMState(Window w, int *statep, Window *iwp);
 
