@@ -3278,7 +3278,7 @@ void HandleButtonPress(void)
 	int func = 0;
 	Window w;
 
-#ifdef GNOME1
+#ifdef GNOME
 	GnomeProxyButtonPress = -1;
 #endif
 
@@ -3647,7 +3647,7 @@ void HandleButtonPress(void)
 			                Event.xany.window, Tmp_win, &Event, Context, FALSE);
 		}
 	}
-#ifdef GNOME1 /* Makes DeferExecution (in menus.c) fail. TODO. */
+#ifdef GNOME /* Makes DeferExecution (in menus.c) fail. TODO. */
 	else {
 		/* GNOME: Pass on the event to any applications listening for root window clicks */
 		GnomeProxyButtonPress = Event.xbutton.button;
@@ -3656,7 +3656,7 @@ void HandleButtonPress(void)
 		XSendEvent(dpy, Scr->currentvs->wsw->twm_win->w, False,
 		           SubstructureNotifyMask, &Event);
 	}
-#endif /* GNOME1 */
+#endif /* GNOME */
 }
 
 
