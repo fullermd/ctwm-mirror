@@ -2452,7 +2452,7 @@ static FILE *start_m4(FILE *fraw)
 /* Code taken and munged from xrdb.c */
 #define MAXHOSTNAME 255
 #define Resolution(pixels, mm)  ((((pixels) * 100000 / (mm)) + 50) / 100)
-#define EXTRA   16
+#define EXTRA   16 /* Egad */
 
 static char *MkDef(char *name, char *def)
 {
@@ -2465,24 +2465,23 @@ static char *MkDef(char *name, char *def)
 	}
 	/* The char * storage only lasts for 1 call... */
 	if((n = EXTRA + ((nl = strlen(name)) +  strlen(def))) > maxsize) {
-		maxsize = n;
-		if(cp) {
-			free(cp);
+		maxsize = MAX(n, 4096);
+		/* Safety net: this is wildly overspec */
+		if(maxsize > 1024 * 1024 * 1024) {
+			fprintf(stderr, "Cowardly refusing to malloc() a gig.\n");
+			exit(1);
 		}
 
-		cp = malloc(n);
+		free(cp);
+		cp = malloc(maxsize);
 	}
 	/* Otherwise cp is aready big 'nuf */
 	if(cp == NULL) {
-		fprintf(stderr, "Can't get %d bytes for arg parm\n", n);
+		fprintf(stderr, "Can't get %d bytes for arg parm\n", maxsize);
 		exit(468);
 	}
-	strcpy(cp, "define(`");
-	strcat(cp, name);
-	strcat(cp, "', `");
-	strcat(cp, def);
-	strcat(cp, "')\n");
 
+	snprintf(cp, maxsize, "define(`%s', `%s')\n", name, def);
 	return(cp);
 }
 
