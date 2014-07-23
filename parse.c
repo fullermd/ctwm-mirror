@@ -160,7 +160,7 @@ int (*twmInputFunc)(void);
  ***********************************************************************
  */
 
-#ifdef YYDEBUG
+#if YYDEBUG
 int yydebug = 1;
 #endif
 
