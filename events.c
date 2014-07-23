@@ -116,12 +116,12 @@ FILE *tracefile = NULL;
 
 #define MAX_X_EVENT 256
 event_proc EventHandler[MAX_X_EVENT]; /* event handler jump table */
-char *Action;
+static char *Action;            /* XXX This may be narrowable */
 int Context = C_NO_CONTEXT;     /* current button press context */
-TwmWindow *ButtonWindow;        /* button press window structure */
+static TwmWindow *ButtonWindow; /* button press window structure */
 XEvent ButtonEvent;             /* button press event */
 XEvent Event;                   /* the current event */
-TwmWindow *Tmp_win;             /* the current twm window */
+static TwmWindow *Tmp_win;      /* the current twm window */
 
 Window DragWindow;              /* variables used in moving windows */
 int origDragX;
@@ -154,7 +154,7 @@ void HandleFocusChange(void);
 #  include "gnomewindefs.h"
 #endif /* GNOME */
 
-int GnomeProxyButtonPress = -1;
+static int GnomeProxyButtonPress = -1;
 
 /*#define TRACE_FOCUS*/
 /*#define TRACE*/
@@ -3279,7 +3279,9 @@ void HandleButtonPress(void)
 	int func = 0;
 	Window w;
 
+#ifdef GNOME1
 	GnomeProxyButtonPress = -1;
+#endif
 
 	/* pop down the menu, if any */
 
