@@ -325,7 +325,7 @@ add_custom_command(OUTPUT ${defc}
 	COMMAND echo ' * twm bindings file system.ctwmrc by the twm Imakefile.' >> ${defc}
 	COMMAND echo '  */' >> ${defc}
 	COMMAND echo '' >> ${defc}
-	COMMAND echo 'char *defTwmrc[] = {' >> ${defc}
+	COMMAND echo 'const char *defTwmrc[] = {' >> ${defc}
 	COMMAND sed -e "/^#/d" -e 's/\"/\\\\\"/g' -e 's/^/    \"/' -e 's/$$/\",/' ${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc >> ${defc}
 	COMMAND echo '    (char *) 0 }\;' >> ${defc}
 )
