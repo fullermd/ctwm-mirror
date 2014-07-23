@@ -4326,8 +4326,8 @@ void ConstrainByBorders(TwmWindow *twmwin,
 
 #ifdef JPEG
 
-uint16_t *buffer_16bpp;
-uint32_t *buffer_32bpp;
+static uint16_t *buffer_16bpp;
+static uint32_t *buffer_32bpp;
 
 static void convert_for_16(int w, int x, int y, int r, int g, int b)
 {
