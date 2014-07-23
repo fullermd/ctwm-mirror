@@ -95,6 +95,7 @@
  */
 #include <inttypes.h>
 
+#define PIXEL_ALREADY_TYPEDEFED         /* for Xmu/Drawing.h */
 #ifdef VMS
 #include <decw$include/Xos.h>
 #include <decw$include/Xatom.h>
