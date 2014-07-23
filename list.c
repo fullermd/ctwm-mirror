@@ -284,8 +284,6 @@ void FreeList(name_list **list)
 
 #ifdef USE_SYS_REGEX
 
-#define MAXPATLEN 256
-
 int match(pattern, string)
 char *pattern, *string;
 {
