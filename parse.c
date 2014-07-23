@@ -587,7 +587,7 @@ void TwmOutput(int c)
  ***********************************************************************/
 
 typedef struct _TwmKeyword {
-	char *name;
+	const char *name;
 	int value;
 	int subnum;
 } TwmKeyword;
