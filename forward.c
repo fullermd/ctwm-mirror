@@ -85,7 +85,7 @@ main(int argc, char **argv)
 					if(++i >= argc || wi > 1) {
 						usage();
 					}
-					name = argv[i];
+					name = argv[i];	/* not implemented yet */
 					continue;
 				case 'r':
 					switch(arg[2]) {
@@ -139,7 +139,7 @@ main(int argc, char **argv)
 			fprintf(stderr, "warning: can't forward button presses.\n");
 		}
 		event_mask &= ~SubstructureRedirectMask;
-		printf("XSelectInput 0x%x %lx\n",  ws[0], event_mask);
+		printf("XSelectInput 0x%x %lx\n",  (unsigned int)ws[0], event_mask);
 		XSelectInput(dpy, ws[0], event_mask);
 	}
 
