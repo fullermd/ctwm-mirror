@@ -171,6 +171,8 @@ extern int ConstMoveXL;
 extern int ConstMoveXR;
 extern int ConstMoveYT;
 extern int ConstMoveYB;
+extern int ResizeOrigX;
+extern int ResizeOrigY;
 
 extern int menuFromFrameOrWindowOrTitlebar;
 extern char *CurrentSelectedWorkspace;

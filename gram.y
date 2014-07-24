@@ -89,7 +89,7 @@
 static char *Action = "";
 static char *Name = "";
 static char *defstring = "default";
-static MenuRoot	*root, *pull = NULL;
+static MenuRoot *root, *pull = NULL;
 static char *curWorkSpc;
 static char *client, *workspace;
 static MenuItem *lastmenuitem = (MenuItem*) 0;

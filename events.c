@@ -116,12 +116,11 @@ FILE *tracefile = NULL;
 
 #define MAX_X_EVENT 256
 event_proc EventHandler[MAX_X_EVENT]; /* event handler jump table */
-char *Action;
+static char *Action;            /* XXX This may be narrowable */
 int Context = C_NO_CONTEXT;     /* current button press context */
-TwmWindow *ButtonWindow;        /* button press window structure */
-XEvent ButtonEvent;             /* button press event */
+static TwmWindow *ButtonWindow; /* button press window structure */
 XEvent Event;                   /* the current event */
-TwmWindow *Tmp_win;             /* the current twm window */
+static TwmWindow *Tmp_win;      /* the current twm window */
 
 Window DragWindow;              /* variables used in moving windows */
 int origDragX;
@@ -133,10 +132,6 @@ unsigned int DragHeight;
 unsigned int DragBW;
 int CurrentDragX;
 int CurrentDragY;
-
-/* Vars to tell if the resize has moved. */
-extern int ResizeOrigX;
-extern int ResizeOrigY;
 
 static int enter_flag;
 static int leave_flag;
@@ -153,9 +148,8 @@ void HandleSelectionClear(void);
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
+static int GnomeProxyButtonPress = -1;
 #endif /* GNOME */
-
-int GnomeProxyButtonPress = -1;
 
 /*#define TRACE_FOCUS*/
 /*#define TRACE*/
@@ -1414,7 +1408,6 @@ void HandleKeyPress(void)
 
 			if(key->cont != C_NAME) {
 				if(key->func == F_MENU) {
-					ButtonEvent = Event;
 					ButtonWindow = Tmp_win;
 					do_key_menu(key->menu, (Window) None);
 				}
@@ -1654,7 +1647,6 @@ void HandlePropertyNotify(void)
 	}
 
 #define MAX_NAME_LEN 200L               /* truncate to this many */
-#define MAX_ICON_NAME_LEN 200L          /* ditto */
 
 	switch(Event.xproperty.atom) {
 		case XA_WM_NAME:
@@ -3201,7 +3193,7 @@ void HandleButtonRelease(void)
 			}
 			ExecuteFunction(func, Action,
 			                ButtonWindow ? ButtonWindow->frame : None,
-			                ButtonWindow, &Event/*&ButtonEvent*/, Context, TRUE);
+			                ButtonWindow, &Event, Context, TRUE);
 			Context = C_NO_CONTEXT;
 			ButtonWindow = NULL;
 
@@ -3352,7 +3344,9 @@ void HandleButtonPress(void)
 	int func = 0;
 	Window w;
 
+#ifdef GNOME
 	GnomeProxyButtonPress = -1;
+#endif
 
 	/* pop down the menu, if any */
 
@@ -3449,7 +3443,6 @@ void HandleButtonPress(void)
 						switch(tbf->func) {
 							case F_MENU :
 								Context = C_TITLE;
-								ButtonEvent = Event;
 								ButtonWindow = Tmp_win;
 								do_menu(tbf->menuroot, tbw->window);
 								break;
@@ -3665,7 +3658,6 @@ void HandleButtonPress(void)
 		return;
 	}
 
-	ButtonEvent = Event;
 	ButtonWindow = Tmp_win;
 
 	/* if we get to here, we have to execute a function or pop up a
@@ -3732,7 +3724,7 @@ void HandleButtonPress(void)
 			                Event.xany.window, Tmp_win, &Event, Context, FALSE);
 		}
 	}
-#ifdef GNOME1 /* Makes DeferExecution (in menus.c) fail. TODO. */
+#ifdef GNOME /* Makes DeferExecution (in menus.c) fail. TODO. */
 	else {
 		/* GNOME: Pass on the event to any applications listening for root window clicks */
 		GnomeProxyButtonPress = Event.xbutton.button;
@@ -3741,7 +3733,7 @@ void HandleButtonPress(void)
 		XSendEvent(dpy, Scr->currentvs->wsw->twm_win->w, False,
 		           SubstructureNotifyMask, &Event);
 	}
-#endif /* GNOME1 */
+#endif /* GNOME */
 }
 
 
@@ -4898,7 +4890,7 @@ void ConfigureRootWindow(XEvent *ev)
 
 static void dumpevent(XEvent *e)
 {
-	char *name = "Unknown event";
+	const char *name = "Unknown event";
 
 	if(! tracefile) {
 		return;

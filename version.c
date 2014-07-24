@@ -50,8 +50,9 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ April 1992 ]
  */
 
+#include "version.h"
 #define VERSION_ID "3.8.2-post"
 
-char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID;
-char *VersionNumber = VERSION_ID;
-char *VCSRevision = "%%REVISION%%";
+const char *Version = "MIT X Consortium, R6, ctwm " VERSION_ID;
+const char *VersionNumber = VERSION_ID;
+const char *VCSRevision = "%%REVISION%%";

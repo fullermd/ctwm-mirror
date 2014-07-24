@@ -63,8 +63,8 @@
 #ifndef _VERSION_
 #define _VERSION_
 
-extern char *Version;
-extern char *VersionNumber;
-extern char *VCSRevision;
+extern const char *Version;
+extern const char *VersionNumber;
+extern const char *VCSRevision;
 
 #endif /* _VERSION_ */

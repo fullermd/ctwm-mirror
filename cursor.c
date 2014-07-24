@@ -72,7 +72,7 @@
 #include "cursor.h"
 
 static struct _CursorName {
-	char                *name;
+	const char          *name;
 	unsigned int        shape;
 	Cursor              cursor;
 } cursor_names[] = {
@@ -156,7 +156,7 @@ static struct _CursorName {
 	{"xterm",               XC_xterm,               None},
 };
 
-void NewFontCursor(Cursor *cp, char *str)
+void NewFontCursor(Cursor *cp, const char *str)
 {
 	int i;
 

@@ -111,9 +111,9 @@ void safecopy(char *dest, char *src, int size);
 
 static Atom _XA_WM_CTWMSLIST;
 
-int       fullOccupation    = 0;
-int       useBackgroundInfo = False;
-XContext  MapWListContext = (XContext) 0;
+int fullOccupation = 0;
+static int useBackgroundInfo = False;
+static XContext MapWListContext = (XContext) 0;
 static Cursor handCursor  = (Cursor) 0;
 static Bool DontRedirect(Window window);
 
@@ -2178,11 +2178,11 @@ static void PaintWorkSpaceManagerBorder(VirtualScreen *vs)
 	             True, False);
 }
 
-ColorPair occupyButtoncp;
+static ColorPair occupyButtoncp;
 
-char *ok_string         = "OK",
-      *cancel_string     = "Cancel",
-       *everywhere_string = "All";
+static char *ok_string         = "OK",
+             *cancel_string     = "Cancel",
+              *everywhere_string = "All";
 
 /*
  * Create the Occupy window. Do not do the layout of the parts, only

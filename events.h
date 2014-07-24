@@ -83,7 +83,7 @@ extern Window WindowOfEvent(XEvent *e);
 extern void FixRootEvent(XEvent *e);
 extern Bool DispatchEvent(void);
 extern Bool DispatchEvent2(void);
-extern void HandleEvents(void);
+extern void HandleEvents(void) __attribute__((noreturn));
 extern void HandleExpose(void);
 extern void HandleDestroyNotify(void);
 extern void HandleMapRequest(void);

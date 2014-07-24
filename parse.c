@@ -160,11 +160,12 @@ int (*twmInputFunc)(void);
  ***********************************************************************
  */
 
-#ifdef YYDEBUG
+#if YYDEBUG
 int yydebug = 1;
 #endif
 
-static int doparse(int (*ifunc)(void), char *srctypename, char *srcname)
+static int doparse(int (*ifunc)(void), const char *srctypename,
+                   const char *srcname)
 {
 	ptr = 0;
 	len = 0;
@@ -586,7 +587,7 @@ void TwmOutput(int c)
  ***********************************************************************/
 
 typedef struct _TwmKeyword {
-	char *name;
+	const char *name;
 	int value;
 	int subnum;
 } TwmKeyword;
@@ -2144,7 +2145,7 @@ typedef struct _cnode {
 	int i;
 	struct _cnode *next;
 } Cnode, *Cptr;
-Cptr chead = NULL;
+static Cptr chead = NULL;
 
 int do_var_savecolor(int key)
 {
@@ -2468,9 +2469,9 @@ static FILE *start_m4(FILE *fraw)
 /* Code taken and munged from xrdb.c */
 #define MAXHOSTNAME 255
 #define Resolution(pixels, mm)  ((((pixels) * 100000 / (mm)) + 50) / 100)
-#define EXTRA   16
+#define EXTRA   16 /* Egad */
 
-static char *MkDef(char *name, char *def)
+static const char *MkDef(const char *name, const char *def)
 {
 	static char *cp = NULL;
 	static int maxsize = 0;
@@ -2481,28 +2482,27 @@ static char *MkDef(char *name, char *def)
 	}
 	/* The char * storage only lasts for 1 call... */
 	if((n = EXTRA + ((nl = strlen(name)) +  strlen(def))) > maxsize) {
-		maxsize = n;
-		if(cp) {
-			free(cp);
+		maxsize = MAX(n, 4096);
+		/* Safety net: this is wildly overspec */
+		if(maxsize > 1024 * 1024 * 1024) {
+			fprintf(stderr, "Cowardly refusing to malloc() a gig.\n");
+			exit(1);
 		}
 
-		cp = malloc(n);
+		free(cp);
+		cp = malloc(maxsize);
 	}
 	/* Otherwise cp is aready big 'nuf */
 	if(cp == NULL) {
-		fprintf(stderr, "Can't get %d bytes for arg parm\n", n);
+		fprintf(stderr, "Can't get %d bytes for arg parm\n", maxsize);
 		exit(468);
 	}
-	strcpy(cp, "define(`");
-	strcat(cp, name);
-	strcat(cp, "', `");
-	strcat(cp, def);
-	strcat(cp, "')\n");
 
+	snprintf(cp, maxsize, "define(`%s', `%s')\n", name, def);
 	return(cp);
 }
 
-static char *MkNum(char *name, int def)
+static const char *MkNum(const char *name, int def)
 {
 	char num[20];
 
