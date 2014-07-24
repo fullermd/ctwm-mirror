@@ -3531,7 +3531,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 			break;
 
 		case F_SHOWBGRD:
-			ShowBackground(Scr->currentvs);
+			ShowBackground(Scr->currentvs, -1);
 			break;
 
 		case F_RAISELOWER:

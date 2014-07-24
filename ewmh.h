@@ -84,6 +84,7 @@ extern int EwmhGetPriority(TwmWindow *twm_win);
 extern Bool EwmhHasBorder(TwmWindow *twm_win);
 extern Bool EwmhHasTitle(TwmWindow *twm_win);
 extern Bool EwmhOnWindowRing(TwmWindow *twm_win);
+extern void EwmhSet_NET_SHOWING_DESKTOP(int state);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */

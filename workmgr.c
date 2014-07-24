@@ -443,10 +443,20 @@ void GotoDownWorkSpace(VirtualScreen *vs)
 	GotoWorkSpaceByNumber(vs, number);
 }
 
-void ShowBackground(VirtualScreen *vs)
+/*
+ * Show the background (by hiding all windows) or undo it.
+ * newstate is the desired showing state.
+ * Pass -1 to toggle, 1 to show the background,
+ * or 0 to re-show the windows.
+ */
+void ShowBackground(VirtualScreen *vs, int newstate)
 {
 	static int state = 0;
 	TwmWindow *twmWin;
+
+	if(newstate == state) {
+		return;
+	}
 
 	if(state) {
 		for(twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
@@ -459,13 +469,21 @@ void ShowBackground(VirtualScreen *vs)
 	}
 	else {
 		for(twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
-			if(twmWin->vs == vs) {
+			if(twmWin->vs == vs
+#ifdef EWMH
+			                /* leave wt_Desktop and wt_Dock visible */
+			                && twmWin->ewmhWindowType == wt_Normal
+#endif /* EWMH */
+			  ) {
 				twmWin->savevs = twmWin->vs;
 				Vanish(vs, twmWin);
 			}
 		}
 		state = 1;
 	}
+#ifdef EWMH
+	EwmhSet_NET_SHOWING_DESKTOP(state);
+#endif /* EWMH */
 }
 
 void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)

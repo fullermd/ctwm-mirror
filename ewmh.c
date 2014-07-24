@@ -73,6 +73,7 @@ static Atom NET_CLIENT_LIST_STACKING;
 static Atom NET_DESKTOP_GEOMETRY;
 static Atom NET_DESKTOP_VIEWPORT;
 static Atom NET_NUMBER_OF_DESKTOPS;
+static Atom NET_SHOWING_DESKTOP;
 static Atom NET_SUPPORTED;
 static Atom NET_SUPPORTING_WM_CHECK;
 static Atom NET_VIRTUAL_ROOTS;
@@ -126,6 +127,7 @@ static void EwmhInitAtoms(void)
 	NET_DESKTOP_GEOMETRY    = XInternAtom(dpy, "_NET_DESKTOP_GEOMETRY", False);
 	NET_DESKTOP_VIEWPORT    = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
 	NET_NUMBER_OF_DESKTOPS  = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
+	NET_SHOWING_DESKTOP     = XInternAtom(dpy, "_NET_SHOWING_DESKTOP", False);
 	NET_SUPPORTED           = XInternAtom(dpy, "_NET_SUPPORTED", False);
 	NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
 	NET_VIRTUAL_ROOTS   = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
@@ -424,6 +426,8 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	                32, PropModeReplace,
 	                (unsigned char *)data, 1);
 
+	EwmhSet_NET_SHOWING_DESKTOP(0);
+
 	long supported[20];
 	int i = 0;
 
@@ -442,6 +446,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_WINDOW_TYPE_DOCK;
 	supported[i++] = NET_WM_STRUT;
 	supported[i++] = NET_WM_STRUT_PARTIAL;
+	supported[i++] = NET_SHOWING_DESKTOP;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -573,6 +578,9 @@ int EwmhClientMessage(XClientMessageEvent *msg)
 	if(msg->message_type == NET_CURRENT_DESKTOP) {
 		GotoWorkSpaceByNumber(Scr->currentvs, msg->data.l[0]);
 		return True;
+	}
+	else if(msg->message_type == NET_SHOWING_DESKTOP) {
+		ShowBackground(Scr->currentvs, msg->data.l[0] ? 1 : 0);
 	}
 	else {
 #ifdef DEBUG_EWMH
@@ -1576,5 +1584,15 @@ static void EwmhRemoveStrut(TwmWindow *twm_win)
 		prev = &strut->next;
 		strut = strut->next;
 	}
+}
+
+void EwmhSet_NET_SHOWING_DESKTOP(int state)
+{
+	unsigned long prop[1];
+
+	prop[0] = state;
+
+	XChangeProperty(dpy, Scr->XineramaRoot, NET_SHOWING_DESKTOP, XA_CARDINAL, 32,
+	                PropModeReplace, (unsigned char *)prop, 1);
 }
 

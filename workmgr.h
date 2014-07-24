@@ -222,7 +222,7 @@ void MoveToPrevWorkSpaceAndFollow(VirtualScreen *vs, TwmWindow *twm_win);
 CaptiveCTWM GetCaptiveCTWMUnderPointer(void);
 void SetNoRedirect(Window window);
 
-extern void ShowBackground(VirtualScreen *vs);
+extern void ShowBackground(VirtualScreen *vs, int state);
 
 Bool visible(TwmWindow *tmp_win);
 
