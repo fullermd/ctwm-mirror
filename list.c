@@ -313,8 +313,8 @@ int match(const char *pattern, const char *string)
 
 
 
-int regex_match(char *p, char *t);
-int regex_match_after_star(char *p, char *t);
+int regex_match(const char *p, const char *t);
+int regex_match_after_star(const char *p, const char *t);
 
 #if 0                           /* appears not to be used anywhere */
 static int is_pattern(char *p)
@@ -337,7 +337,7 @@ static int is_pattern(char *p)
 
 #define ABORT 2
 
-int regex_match(char *p, char *t)
+int regex_match(const char *p, const char *t)
 {
 	register char range_start, range_end;
 	int invert;
@@ -430,7 +430,7 @@ int regex_match(char *p, char *t)
 	return (!*t);
 }
 
-int regex_match_after_star(char *p, char *t)
+int regex_match_after_star(const char *p, const char *t)
 {
 	register int mat;
 	register int nextp;
