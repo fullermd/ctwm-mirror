@@ -46,6 +46,21 @@ typedef enum EwmhWindowType {
 	wt_Dock,
 } EwmhWindowType;
 
+/*
+ * The window is to reserve space at the edge of the screen.
+ */
+typedef struct EwmhStrut {
+	struct EwmhStrut *next;
+	struct TwmWindow *win;
+
+	int left;
+	int right;
+	int top;
+	int bottom;
+} EwmhStrut;
+
+#define EWMH_HAS_STRUT  0x0001
+
 extern Atom NET_CURRENT_DESKTOP;
 
 extern void EwmhInit(void);

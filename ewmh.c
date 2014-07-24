@@ -79,6 +79,8 @@ static Atom NET_VIRTUAL_ROOTS;
 static Atom NET_WM_DESKTOP;
 static Atom NET_WM_ICON;
 static Atom NET_WM_NAME;
+static Atom NET_WM_STRUT;
+static Atom NET_WM_STRUT_PARTIAL;
 static Atom NET_WM_WINDOW_TYPE;
 static Atom NET_WM_WINDOW_TYPE_DESKTOP;
 static Atom NET_WM_WINDOW_TYPE_DOCK;
@@ -89,6 +91,8 @@ static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width,
                           int height);
 static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg);
 static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type);
+static void EwmhGetStrut(TwmWindow *twm_win, int update);
+static void EwmhRemoveStrut(TwmWindow *twm_win);
 
 #define ALL_WORKSPACES  0xFFFFFFFFU
 
@@ -128,6 +132,8 @@ static void EwmhInitAtoms(void)
 	NET_WM_DESKTOP      = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	NET_WM_ICON         = XInternAtom(dpy, "_NET_WM_ICON", False);
 	NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
+	NET_WM_STRUT        = XInternAtom(dpy, "_NET_WM_STRUT", False);
+	NET_WM_STRUT_PARTIAL = XInternAtom(dpy, "_NET_WM_STRUT_PARTIAL", False);
 	NET_WM_WINDOW_TYPE  = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	NET_WM_WINDOW_TYPE_DESKTOP = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP",
 	                             False);
@@ -338,6 +344,8 @@ int EwmhInitScreenEarly(ScreenInfo *scr)
 		return False;
 	}
 
+	scr->ewmhStruts = NULL;
+
 #ifdef DEBUG_EWMH
 	fprintf(stderr, "EwmhInitScreenEarly: return True\n");
 #endif
@@ -432,6 +440,8 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_WINDOW_TYPE_NORMAL;
 	supported[i++] = NET_WM_WINDOW_TYPE_DESKTOP;
 	supported[i++] = NET_WM_WINDOW_TYPE_DOCK;
+	supported[i++] = NET_WM_STRUT;
+	supported[i++] = NET_WM_STRUT_PARTIAL;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -903,78 +913,107 @@ static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width,
 	return image;
 }
 
+/*
+ * Handle a PropertyNotify on _NET_WM_ICON.
+ */
+static void EwmhHandle_NET_WM_ICONNotify(XPropertyEvent *event,
+                TwmWindow *twm_win)
+{
+	unsigned long valuemask;                /* mask for create windows */
+	XSetWindowAttributes attributes;        /* attributes for create windows */
+	Icon *icon = twm_win->icon;
+	int x;
+
+#ifdef DEBUG_EWMH
+	fprintf(stderr, "EwmhHandlePropertyNotify: NET_WM_ICON\n");
+#endif /* DEBUG_EWMH */
+	/*
+	 * If there is no icon yet, we'll look at this property
+	 * later, if and when we do create an icon.
+	 */
+	if(!icon || icon->match != match_net_wm_icon) {
+#ifdef DEBUG_EWMH
+		fprintf(stderr, "no icon, or not match_net_wm_icon\n");
+#endif /* DEBUG_EWMH */
+		return;
+	}
+
+	Image *image = EwhmGetIcon(Scr, twm_win);
+
+	/* TODO: de-duplicate with handling of XA_WM_HINTS */
+	{
+		Image *old_image = icon->image;
+		icon->image = image;
+		FreeImage(old_image);
+	}
+
+
+	if(twm_win->icon->bm_w) {
+		XDestroyWindow(dpy, twm_win->icon->bm_w);
+	}
+
+	valuemask = CWBackPixmap;
+	attributes.background_pixmap = image->pixmap;
+
+	x = GetIconOffset(twm_win->icon);
+	twm_win->icon->bm_w =
+	        XCreateWindow(dpy, twm_win->icon->w, x, 0,
+	                      (unsigned int) twm_win->icon->width,
+	                      (unsigned int) twm_win->icon->height,
+	                      (unsigned int) 0, Scr->d_depth,
+	                      (unsigned int) CopyFromParent, Scr->d_visual,
+	                      valuemask, &attributes);
+
+	if(image->mask) {
+		XShapeCombineMask(dpy, twm_win->icon->bm_w, ShapeBounding, 0, 0, image->mask,
+		                  ShapeSet);
+		XShapeCombineMask(dpy, twm_win->icon->w,    ShapeBounding, x, 0, image->mask,
+		                  ShapeSet);
+	}
+	else {
+		XRectangle rect;
+
+		rect.x      = x;
+		rect.y      = 0;
+		rect.width  = twm_win->icon->width;
+		rect.height = twm_win->icon->height;
+		XShapeCombineRectangles(dpy, twm_win->icon->w, ShapeBounding, 0,
+		                        0, &rect, 1, ShapeUnion, 0);
+	}
+	XMapSubwindows(dpy, twm_win->icon->w);
+	RedoIconName();
+}
+
+/*
+ * Handle a PropertyNotify on _NET_WM_STRUT(PARTIAL).
+ */
+static void EwmhHandle_NET_WM_STRUTNotify(XPropertyEvent *event,
+                TwmWindow *twm_win)
+{
+	EwmhGetStrut(twm_win, 1);
+}
+
+/*
+ * Handle any PropertyNotify.
+ */
 int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 {
 	if(event->atom == NET_WM_ICON) {
-		unsigned long valuemask;                /* mask for create windows */
-		XSetWindowAttributes attributes;        /* attributes for create windows */
-		Icon *icon = twm_win->icon;
-		int x;
-
-#ifdef DEBUG_EWMH
-		fprintf(stderr, "EwmhHandlePropertyNotify: NET_WM_ICON\n");
-#endif /* DEBUG_EWMH */
-		/*
-		 * If there is no icon yet, we'll look at this property
-		 * later, if and when we do create an icon.
-		 */
-		if(!icon || icon->match != match_net_wm_icon) {
-#ifdef DEBUG_EWMH
-			fprintf(stderr, "no icon, or not match_net_wm_icon\n");
-#endif /* DEBUG_EWMH */
-			return 1;
-		}
-
-		Image *image = EwhmGetIcon(Scr, twm_win);
-
-		/* TODO: de-duplicate with handling of XA_WM_HINTS */
-		{
-			Image *old_image = icon->image;
-			icon->image = image;
-			FreeImage(old_image);
-		}
-
-
-		if(twm_win->icon->bm_w) {
-			XDestroyWindow(dpy, twm_win->icon->bm_w);
-		}
-
-		valuemask = CWBackPixmap;
-		attributes.background_pixmap = image->pixmap;
-
-		x = GetIconOffset(twm_win->icon);
-		twm_win->icon->bm_w =
-		        XCreateWindow(dpy, twm_win->icon->w, x, 0,
-		                      (unsigned int) twm_win->icon->width,
-		                      (unsigned int) twm_win->icon->height,
-		                      (unsigned int) 0, Scr->d_depth,
-		                      (unsigned int) CopyFromParent, Scr->d_visual,
-		                      valuemask, &attributes);
-
-		if(image->mask) {
-			XShapeCombineMask(dpy, twm_win->icon->bm_w, ShapeBounding, 0, 0, image->mask,
-			                  ShapeSet);
-			XShapeCombineMask(dpy, twm_win->icon->w,    ShapeBounding, x, 0, image->mask,
-			                  ShapeSet);
-		}
-		else {
-			XRectangle rect;
-
-			rect.x      = x;
-			rect.y      = 0;
-			rect.width  = twm_win->icon->width;
-			rect.height = twm_win->icon->height;
-			XShapeCombineRectangles(dpy, twm_win->icon->w, ShapeBounding, 0,
-			                        0, &rect, 1, ShapeUnion, 0);
-		}
-		XMapSubwindows(dpy, twm_win->icon->w);
-		RedoIconName();
-
+		EwmhHandle_NET_WM_ICONNotify(event, twm_win);
 		return 1;
 	}
+	else if(event->atom == NET_WM_STRUT_PARTIAL ||
+	                event->atom == NET_WM_STRUT) {
+		EwmhHandle_NET_WM_STRUTNotify(event, twm_win);
+		return 1;
+	}
+
 	return 0;
 }
 
+/*
+ * Set the _NET_WM_DESKTOP property for the current workspace.
+ */
 void EwmhSet_NET_WM_DESKTOP(TwmWindow *twm_win)
 {
 	WorkSpace *ws;
@@ -990,6 +1029,9 @@ void EwmhSet_NET_WM_DESKTOP(TwmWindow *twm_win)
 	EwmhSet_NET_WM_DESKTOP_ws(twm_win, ws);
 }
 
+/*
+ * Set the _NET_WM_DESKTOP property for the given workspace.
+ */
 void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws)
 {
 	unsigned long workspaces[MAXWORKSPACE];
@@ -1204,6 +1246,13 @@ void EwmhDeleteClientWindow(TwmWindow *old_win)
 {
 	int i;
 
+	if(old_win->ewmhFlags & EWMH_HAS_STRUT) {
+		EwmhRemoveStrut(old_win);
+	}
+
+	/*
+	 * Remove the window from _NET_CLIENT_LIST.
+	 */
 	if(Scr->ewmh_CLIENT_LIST_size == 0) {
 		return;
 	}
@@ -1281,10 +1330,15 @@ void EwmhSet_NET_CLIENT_LIST_STACKING(void)
 /*
  * Get window properties as relevant when the window is initially mapped.
  *
- * So far, only NET_WM_WINDOW_TYPE.
+ * So far, only NET_WM_WINDOW_TYPE and _NET_WM_STRUT_PARTIAL.
+ *
+ * Also do any generic initialisation needed to EWMH-specific fields
+ * in a TwmWindow.
  */
 void EwmhGetProperties(TwmWindow *twm_win)
 {
+	twm_win->ewmhFlags = 0;
+
 	Atom type = EwmhGetWindowProperty(twm_win->w, NET_WM_WINDOW_TYPE, XA_ATOM);
 
 	if(type == NET_WM_WINDOW_TYPE_DESKTOP) {
@@ -1296,6 +1350,7 @@ void EwmhGetProperties(TwmWindow *twm_win)
 	else {
 		twm_win->ewmhWindowType = wt_Normal;
 	}
+	EwmhGetStrut(twm_win, 0);
 }
 
 int EwmhGetPriority(TwmWindow *twm_win)
@@ -1342,3 +1397,184 @@ Bool EwmhOnWindowRing(TwmWindow *twm_win)
 			return True;
 	}
 }
+
+static inline int max(int a, int b)
+{
+	return a > b ? a : b;
+}
+
+/*
+ * Recalculate the effective border values from the remembered struts.
+ * Interestingly it is not documented how to do that.
+ * Usually only one dock is present on each side, so it shouldn't matter
+ * too much, but I presume that maximizing the values is the thing to do.
+ */
+static void EwmhRecalculateStrut(void)
+{
+	int left   = 0;
+	int right  = 0;
+	int top    = 0;
+	int bottom = 0;
+	EwmhStrut *strut = Scr->ewmhStruts;
+
+	while(strut != NULL) {
+		left   = max(left,   strut->left);
+		right  = max(right,  strut->right);
+		top    = max(top,    strut->top);
+		bottom = max(bottom, strut->bottom);
+
+		strut  = strut->next;
+	}
+
+	Scr->BorderLeft   = left;
+	Scr->BorderRight  = right;
+	Scr->BorderTop    = top;
+	Scr->BorderBottom = bottom;
+}
+/*
+ * Check _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT.
+ * These are basically automatic settings for Border{Left,Right,Top,Bottom}.
+ *
+ * If any values are found, collect them in a list of strut values
+ * belonging to Scr.  When a window is added or removed that has struts,
+ * the new effective value must be calculated.  The expectation is that
+ * at most a handful of windows will have struts.
+ *
+ * If update is true, this is called as an update for an existing window.
+ */
+static void EwmhGetStrut(TwmWindow *twm_win, int update)
+{
+	Atom actual_type;
+	int actual_format;
+	unsigned long nitems, bytes_after;
+	unsigned long *prop;
+	EwmhStrut *strut;
+
+	if(XGetWindowProperty(dpy, twm_win->w, NET_WM_STRUT_PARTIAL,
+	                      0, 4, False, XA_CARDINAL,
+	                      &actual_type, &actual_format, &nitems,
+	                      &bytes_after, (unsigned char **)&prop) != Success) {
+		if(XGetWindowProperty(dpy, twm_win->w, NET_WM_STRUT,
+		                      0, 4, False, XA_CARDINAL,
+		                      &actual_type, &actual_format, &nitems,
+		                      &bytes_after, (unsigned char **)&prop) != Success) {
+			return;
+		}
+	}
+	if(prop == NULL || nitems < 4) {
+#ifdef DEBUG_EWMH
+		/* This happens a lot, despite returning Success ??? */
+		printf("struts: prop = %p, nitems = %ld\n", prop, nitems);
+#endif
+		if(prop) {
+			XFree(prop);
+		}
+		return;
+	}
+#ifdef DEBUG_EWMH
+	printf("struts: left %ld, right %ld, top %ld, bottom %ld\n",
+	       prop[0], prop[1], prop[2], prop[3]);
+#endif
+
+	/*
+	 * If there were no struts before, the user configured margins are set
+	 * in Border{Left,Right,Top,Bottom}. In order not to lose those values
+	 * when recalculating them, convert them to struts for a dummy window.
+	 */
+
+	if(Scr->ewmhStruts == NULL &&
+	                (Scr->BorderLeft |
+	                 Scr->BorderRight |
+	                 Scr->BorderTop |
+	                 Scr->BorderBottom) != 0) {
+		strut = calloc(1, sizeof(EwmhStrut));
+		if(strut == NULL) {
+			XFree(prop);
+			return;
+		}
+
+		strut->next   = NULL;
+		strut->win    = NULL;
+		strut->left   = Scr->BorderLeft;
+		strut->right  = Scr->BorderRight;
+		strut->top    = Scr->BorderTop;
+		strut->bottom = Scr->BorderBottom;
+
+		Scr->ewmhStruts = strut;
+	}
+
+	strut = NULL;
+
+	/*
+	 * Find the struts of the window that we're supposed to be updating.
+	 * If not found, there is no problem: we'll just allocate a new
+	 * record.
+	 */
+
+	if(update) {
+		strut = Scr->ewmhStruts;
+
+		while(strut != NULL) {
+			if(strut->win == twm_win) {
+				break;
+			}
+			strut = strut->next;
+		}
+	}
+
+	/*
+	 * If needed, allocate a new struts record and link it in.
+	 */
+	if(strut == NULL) {
+		strut = calloc(1, sizeof(EwmhStrut));
+		if(strut == NULL) {
+			XFree(prop);
+			return;
+		}
+
+		strut->next = Scr->ewmhStruts;
+		Scr->ewmhStruts = strut;
+	}
+
+	strut->win    = twm_win;
+	strut->left   = prop[0];
+	strut->right  = prop[1];
+	strut->top    = prop[2];
+	strut->bottom = prop[3];
+
+	XFree(prop);
+
+	/*
+	 * Mark this window as having contributed some struts.
+	 * This can be checked and undone when the window is deleted.
+	 */
+	twm_win->ewmhFlags |= EWMH_HAS_STRUT;
+
+	EwmhRecalculateStrut();
+}
+
+/*
+ * Remove the struts associated with the given window from the
+ * remembered list. If found, recalculate the effective borders.
+ */
+static void EwmhRemoveStrut(TwmWindow *twm_win)
+{
+	EwmhStrut **prev = &Scr->ewmhStruts;
+	EwmhStrut *strut = Scr->ewmhStruts;
+
+	while(strut != NULL) {
+		if(strut->win == twm_win) {
+			twm_win->ewmhFlags &= ~EWMH_HAS_STRUT;
+
+			*prev = strut->next;
+			free(strut);
+
+			EwmhRecalculateStrut();
+
+			break;
+		}
+		prev = &strut->next;
+		strut = strut->next;
+	}
+}
+

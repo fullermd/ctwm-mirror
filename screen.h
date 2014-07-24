@@ -479,6 +479,7 @@ struct ScreenInfo {
 	long *ewmh_CLIENT_LIST;
 	int ewmh_CLIENT_LIST_size;
 	int ewmh_CLIENT_LIST_used;
+	EwmhStrut *ewmhStruts;          /* remember values of _NET_WM_STRUT */
 #endif /* EWMH */
 };
 

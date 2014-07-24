@@ -422,6 +422,7 @@ struct TwmWindow {
 	short heightEverChangedByUser;
 #ifdef EWMH
 	EwmhWindowType ewmhWindowType;
+	int ewmhFlags;
 #endif /* EWMH */
 };
 
