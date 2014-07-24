@@ -490,6 +490,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 			tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
 		}
 	}
+#ifdef EWMH
+	EwmhGetProperties(tmp_win);
+#endif /* EWMH */
 	if((Scr->WindowRingAll && !iswman && !iconm &&
 #ifdef EWMH
 	                EwmhOnWindowRing(tmp_win) &&
@@ -536,9 +539,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 
 	tmp_win->old_bw = tmp_win->attr.border_width;
 
-#ifdef EWMH
-	EwmhGetProperties(tmp_win);
-#endif /* EWMH */
 	{
 		MotifWmHints mwmHints;
 		Boolean have_title;
