@@ -2607,7 +2607,7 @@ Pixmap Create3DMenuIcon(unsigned int height,
 	return (colori->pix);
 }
 
-#include "siconify.bm"
+#include "siconify.h"
 
 Pixmap Create3DIconManagerIcon(ColorPair cp)
 {
