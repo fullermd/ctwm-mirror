@@ -37,9 +37,8 @@
 Window awindow = 0x5c0000d;
 char *awspc1 = "lecom", *awspc2 = "root";
 
-main(argc, argv)
-int argc;
-char **argv;
+int
+main(int argc, char *argv[])
 {
 	Display *dpy;
 	Window w;
