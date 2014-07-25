@@ -317,17 +317,11 @@ endif(MANBASE)
 #
 
 # Hand-build deftwmrc.c
-set(defc deftwmrc.c)
+set(defc ${CMAKE_CURRENT_SOURCE_DIR}/deftwmrc.c)
 add_custom_command(OUTPUT ${defc}
 	DEPENDS system.ctwmrc
-	COMMAND echo '/*' > ${defc}
-	COMMAND echo ' * This file is generated automatically from the default' >> ${defc}
-	COMMAND echo ' * twm bindings file system.ctwmrc by the twm Imakefile.' >> ${defc}
-	COMMAND echo '  */' >> ${defc}
-	COMMAND echo '' >> ${defc}
-	COMMAND echo 'const char *defTwmrc[] = {' >> ${defc}
-	COMMAND sed -e "/^#/d" -e 's/\"/\\\\\"/g' -e 's/^/    \"/' -e 's/$$/\",/' ${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc >> ${defc}
-	COMMAND echo '    (char *) 0 }\;' >> ${defc}
+	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_deftwmrc.sh
+		${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc > ${defc}
 )
 
 
