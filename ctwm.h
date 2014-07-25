@@ -99,8 +99,6 @@
 
 #define MAXVIRTUALSCREENS (sizeof (int))
 
-#define PIXEL_ALREADY_TYPEDEFED         /* for Xmu/Drawing.h */
-
 #ifdef SIGNALRETURNSINT
 #define SIGNAL_T int
 #define SIGNAL_RETURN return 0
