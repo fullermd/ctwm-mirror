@@ -84,8 +84,6 @@ int iconmgr_textx = siconify_width + 11;
 static WList *Active = NULL;
 static WList *Current = NULL;
 WList *DownIconManager = NULL;
-int iconifybox_width = siconify_width;
-int iconifybox_height = siconify_height;
 
 /***********************************************************************
  *
