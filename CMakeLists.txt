@@ -317,7 +317,7 @@ endif(MANBASE)
 #
 
 # Hand-build deftwmrc.c
-set(defc ${CMAKE_CURRENT_SOURCE_DIR}/deftwmrc.c)
+set(defc deftwmrc.c)
 add_custom_command(OUTPUT ${defc}
 	DEPENDS system.ctwmrc
 	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_deftwmrc.sh
