@@ -75,12 +75,18 @@
 #include "resize.h"
 #include "otp.h"
 #include "add_window.h"
-#include "siconify.h"
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
 
-int iconmgr_textx = SICONIFY_WIDTH + 11;
+const int siconify_width = 11;
+const int siconify_height = 11;
+int iconmgr_textx = /*siconify_width*/11 + 11;
+static char siconify_bits[] = {
+	0xff, 0x07, 0x01, 0x04, 0x0d, 0x05, 0x9d, 0x05, 0xb9, 0x04, 0x51, 0x04,
+	0xe9, 0x04, 0xcd, 0x05, 0x85, 0x05, 0x01, 0x04, 0xff, 0x07
+};
+
 static WList *Active = NULL;
 static WList *Current = NULL;
 WList *DownIconManager = NULL;
@@ -123,7 +129,7 @@ void CreateIconManagers(void)
 	}
 	if(Scr->siconifyPm == None) {
 		Scr->siconifyPm = XCreatePixmapFromBitmapData(dpy, Scr->Root,
-		                  siconify_bits, SICONIFY_WIDTH, SICONIFY_HEIGHT, 1, 0, 1);
+		                  siconify_bits, siconify_width, siconify_height, 1, 0, 1);
 	}
 
 	ws = Scr->workSpaceMgr.workSpaceList;
@@ -685,8 +691,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		/* Refigure the height of the whole IM */
 		h = Scr->IconManagerFont.avg_height
 		    + 2 * (ICON_MGR_OBORDER + ICON_MGR_OBORDER);
-		if(h < (SICONIFY_HEIGHT + 4)) {
-			h = SICONIFY_HEIGHT + 4;
+		if(h < (siconify_height + 4)) {
+			h = siconify_height + 4;
 		}
 
 		ip->height = h * ip->count;
@@ -723,8 +729,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		attributes.cursor = Scr->ButtonCursor;
 		/* The precise location will be set it in PackIconManager.  */
 		tmp->icon = XCreateWindow(dpy, tmp->w, 0, 0,
-		                          (unsigned int) SICONIFY_WIDTH,
-		                          (unsigned int) SICONIFY_HEIGHT,
+		                          (unsigned int) siconify_width,
+		                          (unsigned int) siconify_height,
 		                          (unsigned int) 0, CopyFromParent,
 		                          (unsigned int) CopyFromParent,
 		                          (Visual *) CopyFromParent,
@@ -1056,8 +1062,8 @@ void PackIconManager(IconMgr *ip)
 
 	wheight = Scr->IconManagerFont.avg_height
 	          + 2 * (ICON_MGR_OBORDER + ICON_MGR_IBORDER);
-	if(wheight < (SICONIFY_HEIGHT + 4)) {
-		wheight = SICONIFY_HEIGHT + 4;
+	if(wheight < (siconify_height + 4)) {
+		wheight = siconify_height + 4;
 	}
 
 	wwidth = ip->width / ip->columns;
@@ -1087,7 +1093,7 @@ void PackIconManager(IconMgr *ip)
 			XMoveResizeWindow(dpy, tmp->w, new_x, new_y, wwidth, wheight);
 			if(tmp->height != wheight)
 				XMoveWindow(dpy, tmp->icon, ICON_MGR_OBORDER + ICON_MGR_IBORDER,
-				            (wheight - SICONIFY_HEIGHT) / 2);
+				            (wheight - siconify_height) / 2);
 
 			tmp->row = row - 1;
 			tmp->col = col;
