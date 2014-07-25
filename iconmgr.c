@@ -61,6 +61,8 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
@@ -75,13 +77,6 @@
 #include "add_window.h"
 #define __WANT_SICONIFY_BITS
 #include "siconify.bm"
-#ifdef VMS
-#include <decw$include/Xos.h>
-#include <X11Xmu/CharSet.h>
-#else
-#include <X11/Xos.h>
-#include <X11/Xmu/CharSet.h>
-#endif
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
@@ -833,7 +828,7 @@ void InsertInIconManager(IconMgr *ip, WList *tmp, TwmWindow *tmp_win)
 				compresult = strcmp(tmp_win->icon_name, tmp1->twm->icon_name);
 			}
 			else {
-				compresult = XmuCompareISOLatin1(tmp_win->icon_name, tmp1->twm->icon_name);
+				compresult = strcasecmp(tmp_win->icon_name, tmp1->twm->icon_name);
 			}
 			if(compresult < 0) {
 				tmp->next = tmp1;
@@ -1016,7 +1011,7 @@ void SortIconManager(IconMgr *ip)
 				compresult = strcmp(tmp1->twm->icon_name, tmp2->twm->icon_name);
 			}
 			else {
-				compresult = XmuCompareISOLatin1(tmp1->twm->icon_name, tmp2->twm->icon_name);
+				compresult = strcasecmp(tmp1->twm->icon_name, tmp2->twm->icon_name);
 			}
 			if(compresult > 0) {
 				/* take it out and put it back in */

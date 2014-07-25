@@ -86,6 +86,8 @@
 #include "cursor.h"
 #include "resize.h"
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 
 /*
  * Need this for the fixed-size uint_*'s used below.  stdint.h would be
@@ -95,12 +97,12 @@
  */
 #include <inttypes.h>
 
+#define PIXEL_ALREADY_TYPEDEFED         /* for Xmu/Drawing.h */
 #ifdef VMS
 #include <decw$include/Xos.h>
 #include <decw$include/Xatom.h>
 #include <decw$include/Xutil.h>
 #include <X11Xmu/Drawing.h>
-#include <X11Xmu/CharSet.h>
 #include <X11Xmu/WinUtil.h>
 #ifdef HAVE_XWDFILE_H
 #include "XWDFile.h"            /* We do some tricks, since the original
@@ -131,7 +133,6 @@
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/Drawing.h>
-#include <X11/Xmu/CharSet.h>
 #include <X11/Xmu/WinUtil.h>
 #include <X11/XWDFile.h>
 #endif /* VMS */
@@ -623,7 +624,7 @@ Pixmap FindBitmap(char *name, unsigned int *widthp, unsigned int *heightp)
 		};
 
 		for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
-			if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
+			if(strcasecmp(pmtab[i].name, name) == 0) {
 				return (*pmtab[i].proc)(widthp, heightp);
 			}
 		}
@@ -3680,7 +3681,7 @@ Image *GetImage(char *name, ColorPair cp)
 		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
 		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
 			for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
-				if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
+				if(strcasecmp(pmtab[i].name, name) == 0) {
 					image = (*pmtab[i].proc)(cp);
 					if(image == None) {
 						fprintf(stderr,
@@ -3720,7 +3721,7 @@ Image *GetImage(char *name, ColorPair cp)
 		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
 		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
 			for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
-				if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
+				if(strcasecmp(pmtab[i].name, name) == 0) {
 					image = (*pmtab[i].proc)(cp);
 					if(image == None) {
 						fprintf(stderr,
@@ -3758,7 +3759,7 @@ Image *GetImage(char *name, ColorPair cp)
 		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
 		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
 			for(i = 0; i < (sizeof pmtab) / (sizeof pmtab[0]); i++) {
-				if(XmuCompareISOLatin1(pmtab[i].name, name) == 0) {
+				if(strcasecmp(pmtab[i].name, name) == 0) {
 					pm = (*pmtab[i].proc)(&width, &height);
 					if(pm == None) {
 						fprintf(stderr,
