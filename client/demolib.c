@@ -24,6 +24,7 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ July 1993 ]
  */
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef VMS
 #include <decw$include/Xlib.h>
 #include <decw$include/Xatom.h>
@@ -37,12 +38,10 @@
 Window awindow = 0x5c0000d;
 char *awspc1 = "lecom", *awspc2 = "root";
 
-main(argc, argv)
-int argc;
-char **argv;
+int
+main(int argc, char *argv[])
 {
 	Display *dpy;
-	Window w;
 	char   **wlist, **wl, **occupation;
 	char   *cur;
 	int    status;
@@ -95,10 +94,10 @@ char **argv;
 
 	wlist = CtwmCurrentOccupation(dpy, awindow);
 	if(wlist == (char **) 0) {
-		fprintf(stderr, "cannot obtain occupation of window  %x\n", awindow);
+		fprintf(stderr, "cannot obtain occupation of window %lu\n", awindow);
 		exit(1);
 	}
-	printf("Occupation of window %d : ", awindow);
+	printf("Occupation of window %lu: ", awindow);
 	wl = wlist;
 	while(*wl) {
 		printf("\"%s\" ", *wl++);
@@ -107,21 +106,21 @@ char **argv;
 
 	/****************************************************************/
 
-	occupation = (char **) malloc(3 * sizeof(char *));
+	occupation = calloc(3, sizeof(char *));
 	occupation [0] = awspc1;
 	occupation [1] = awspc2;
 	occupation [2] = NULL;
 	status = CtwmSetOccupation(dpy, awindow, occupation);
 	if(! status) {
-		fprintf(stderr, "cannot change the occupation of window %x\n", awindow);
+		fprintf(stderr, "cannot change the occupation of window %lu\n", awindow);
 	}
-	printf("occupation of window %x changed to \"lecom\", \"root\"\n", awindow);
+	printf("occupation of window %lu changed to 'lecom', 'root'\n", awindow);
 
 	/****************************************************************/
 	status = CtwmAddToCurrentWorkspace(dpy, awindow);
 	if(! status) {
-		fprintf(stderr, "cannot change the occupation of window %x\n", awindow);
+		fprintf(stderr, "cannot change the occupation of window %lu\n", awindow);
 	}
-	printf("window %x now occupy the current workspace\n", awindow);
+	printf("window %lu now occupy the current workspace\n", awindow);
 }
 
