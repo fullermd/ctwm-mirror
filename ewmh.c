@@ -63,6 +63,8 @@
 #include "add_window.h"
 #include "otp.h"
 #include "util.h"
+#include "parse.h"
+#include "resize.h"
 
 #define DEBUG_EWMH      1
 
@@ -80,6 +82,10 @@ static Atom NET_VIRTUAL_ROOTS;
 static Atom NET_WM_DESKTOP;
 static Atom NET_WM_ICON;
 static Atom NET_WM_NAME;
+static Atom NET_WM_STATE;
+static Atom NET_WM_STATE_MAXIMIZED_VERT;
+static Atom NET_WM_STATE_MAXIMIZED_HORZ;
+static Atom NET_WM_STATE_FULLSCREEN;
 static Atom NET_WM_STRUT;
 static Atom NET_WM_STRUT_PARTIAL;
 static Atom NET_WM_WINDOW_TYPE;
@@ -88,9 +94,14 @@ static Atom NET_WM_WINDOW_TYPE_DOCK;
 static Atom NET_WM_WINDOW_TYPE_NORMAL;
 static Atom UTF8_STRING;
 
+#define NET_WM_STATE_REMOVE        0    /* remove/unset property */
+#define NET_WM_STATE_ADD           1    /* add/set property */
+#define NET_WM_STATE_TOGGLE        2    /* toggle property  */
+
 static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width,
                           int height);
 static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg);
+static void EwmhClientMessage_NET_WM_STATE(XClientMessageEvent *msg);
 static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type);
 static void EwmhGetStrut(TwmWindow *twm_win, int update);
 static void EwmhRemoveStrut(TwmWindow *twm_win);
@@ -134,6 +145,13 @@ static void EwmhInitAtoms(void)
 	NET_WM_DESKTOP      = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	NET_WM_ICON         = XInternAtom(dpy, "_NET_WM_ICON", False);
 	NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
+	NET_WM_STATE        = XInternAtom(dpy, "_NET_WM_STATE", False);
+	NET_WM_STATE_MAXIMIZED_VERT = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT",
+	                              False);
+	NET_WM_STATE_MAXIMIZED_HORZ = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ",
+	                              False);
+	NET_WM_STATE_FULLSCREEN     = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN",
+	                              False);
 	NET_WM_STRUT        = XInternAtom(dpy, "_NET_WM_STRUT", False);
 	NET_WM_STRUT_PARTIAL = XInternAtom(dpy, "_NET_WM_STRUT_PARTIAL", False);
 	NET_WM_WINDOW_TYPE  = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
@@ -447,6 +465,10 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_STRUT;
 	supported[i++] = NET_WM_STRUT_PARTIAL;
 	supported[i++] = NET_SHOWING_DESKTOP;
+	supported[i++] = NET_WM_STATE;
+	supported[i++] = NET_WM_STATE_MAXIMIZED_VERT;
+	supported[i++] = NET_WM_STATE_MAXIMIZED_HORZ;
+	supported[i++] = NET_WM_STATE_FULLSCREEN;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -563,6 +585,10 @@ int EwmhClientMessage(XClientMessageEvent *msg)
 	if(msg->message_type == NET_WM_DESKTOP) {
 		EwmhClientMessage_NET_WM_DESKTOP(msg);
 		return True;
+	}
+	else if(msg->message_type == NET_WM_STATE) {
+		EwmhClientMessage_NET_WM_STATE(msg);
+		return 1;
 	}
 
 	/* Messages regarding the root window */
@@ -999,6 +1025,124 @@ static void EwmhHandle_NET_WM_STRUTNotify(XPropertyEvent *event,
                 TwmWindow *twm_win)
 {
 	EwmhGetStrut(twm_win, 1);
+}
+
+/*
+ * Handle a _NET_WM_STATE ClientMessage.
+ */
+static int atomToFlag(Atom a)
+{
+	if(a == NET_WM_STATE_MAXIMIZED_VERT) {
+		return EWMH_STATE_MAXIMIZED_VERT;
+	}
+	if(a == NET_WM_STATE_MAXIMIZED_HORZ) {
+		return EWMH_STATE_MAXIMIZED_HORZ;
+	}
+	if(a == NET_WM_STATE_FULLSCREEN) {
+		return EWMH_STATE_FULLSCREEN;
+	}
+	return 0;
+}
+
+static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change, int newVal);
+
+/*
+ * Handle the NET_WM_STATE client message.
+ * It can change 1 or 2 values represented in NET_WM_STATE.
+ * The second change is allowed
+ * specifically for (re)setting horizontal and vertical maximalisation in
+ * one go. Treat that as a special case.
+ */
+static void EwmhClientMessage_NET_WM_STATE(XClientMessageEvent *msg)
+{
+	Window w = msg->window;
+	TwmWindow *twm_win;
+	int change, change1, change2, newValue;
+
+	twm_win = GetTwmWindow(w);
+
+	if(twm_win == NULL) {
+		return;
+	}
+
+	change1 = atomToFlag(msg->data.l[1]);
+	change2 = atomToFlag(msg->data.l[2]);
+	change = change1 | change2;
+
+	switch(msg->data.l[0]) {
+		case NET_WM_STATE_REMOVE:
+#ifdef DEBUG_EWMH
+			printf("NET_WM_STATE_REMOVE: ");
+#endif
+			newValue = 0;
+			break;
+		case NET_WM_STATE_ADD:
+#ifdef DEBUG_EWMH
+			printf("NET_WM_STATE_ADD: ");
+#endif
+			newValue = change;
+			break;
+		case NET_WM_STATE_TOGGLE:
+#ifdef DEBUG_EWMH
+			printf("NET_WM_STATE_TOGGLE: ");
+#endif
+			newValue = ~twm_win->ewmhFlags & change;
+			break;
+		default:
+#ifdef DEBUG_EWMH
+			printf("invalid operation in NET_WM_STATE: %ld\n", msg->data.l[0]);
+#endif
+			return;
+	}
+#ifdef DEBUG_EWMH
+	printf("%s and %s\n", XGetAtomName(dpy, msg->data.l[1]),
+	       XGetAtomName(dpy, msg->data.l[2]));
+#endif
+
+	/*
+	 * Special-case the horizontal and vertical zoom.
+	 * You can turn them both on or both off, but no other combinations
+	 * are done as a unit.
+	 */
+	if (change == (EWMH_STATE_MAXIMIZED_VERT | EWMH_STATE_MAXIMIZED_HORZ) &&
+			(newValue == 0 || newValue == change)) {
+		EwmhClientMessage_NET_WM_STATEchange(twm_win, change, newValue);
+	} else {
+		EwmhClientMessage_NET_WM_STATEchange(twm_win, change1, newValue & change1);
+		if (change2 != 0) {
+			EwmhClientMessage_NET_WM_STATEchange(twm_win, change2, newValue & change2);
+		}
+	}
+}
+
+static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change, int newValue)
+{
+	/* Now check what we need to change */
+
+	if(change & (EWMH_STATE_MAXIMIZED_VERT | EWMH_STATE_MAXIMIZED_HORZ |
+	                EWMH_STATE_FULLSCREEN)) {
+		int newZoom = ZOOM_NONE;
+
+		switch(newValue) {
+			case 0:
+				newZoom = twm_win->zoomed;      /* turn off whatever zoom */
+				break;
+			case EWMH_STATE_MAXIMIZED_VERT:
+				newZoom = F_VERTZOOM;
+				break;
+			case EWMH_STATE_MAXIMIZED_HORZ:
+				newZoom = F_HORIZOOM;
+				break;
+			case EWMH_STATE_MAXIMIZED_HORZ | EWMH_STATE_MAXIMIZED_VERT:
+				newZoom = F_FULLZOOM;
+				break;
+			case EWMH_STATE_FULLSCREEN:
+				newZoom = F_FULLSCREENZOOM;
+				break;
+		}
+		fullzoom(twm_win, newZoom);
+	}
+
 }
 
 /*
@@ -1594,5 +1738,63 @@ void EwmhSet_NET_SHOWING_DESKTOP(int state)
 
 	XChangeProperty(dpy, Scr->XineramaRoot, NET_SHOWING_DESKTOP, XA_CARDINAL, 32,
 	                PropModeReplace, (unsigned char *)prop, 1);
+}
+
+/*
+ * Set the _NET_WM_STATE.
+ *
+ * TwmWindow.ewmhFlags keeps track of the atoms that should be in
+ * the list, so that we don't have to fetch or recalculate them all.
+ */
+void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
+{
+	unsigned long prop[10];
+	int flags;
+	int i;
+
+	if(changes & EWMH_STATE_MAXIMIZED_VERT) {
+		int newFlags = 0;
+
+		switch(twm_win->zoomed) {
+			case F_FULLZOOM:
+				newFlags = EWMH_STATE_MAXIMIZED_VERT |
+				           EWMH_STATE_MAXIMIZED_HORZ;
+				break;
+			case F_VERTZOOM:
+			case F_LEFTZOOM:
+			case F_RIGHTZOOM:
+				newFlags = EWMH_STATE_MAXIMIZED_VERT;
+				break;
+			case F_HORIZOOM:
+			case F_TOPZOOM:
+			case F_BOTTOMZOOM:
+				newFlags = EWMH_STATE_MAXIMIZED_HORZ;
+				break;
+			case F_FULLSCREENZOOM:
+				newFlags = EWMH_STATE_FULLSCREEN;
+				break;
+		}
+
+		twm_win->ewmhFlags &= ~(EWMH_STATE_MAXIMIZED_VERT |
+		                        EWMH_STATE_MAXIMIZED_HORZ |
+		                        EWMH_STATE_FULLSCREEN);
+		twm_win->ewmhFlags |= newFlags;
+	}
+
+	flags = twm_win->ewmhFlags;
+	i = 0;
+
+	if(flags & EWMH_STATE_MAXIMIZED_VERT) {
+		prop[i++] = NET_WM_STATE_MAXIMIZED_VERT;
+	}
+	if(flags & EWMH_STATE_MAXIMIZED_HORZ) {
+		prop[i++] = NET_WM_STATE_MAXIMIZED_HORZ;
+	}
+	if(flags & EWMH_STATE_FULLSCREEN) {
+		prop[i++] = NET_WM_STATE_FULLSCREEN;
+	}
+
+	XChangeProperty(dpy, Scr->XineramaRoot, NET_WM_STATE, XA_CARDINAL, 32,
+	                PropModeReplace, (unsigned char *)prop, i);
 }
 

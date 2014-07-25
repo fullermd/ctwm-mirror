@@ -1279,15 +1279,19 @@ void fullzoom(TwmWindow *tmp_win, int func)
 				dragHeight = zheight + tmp_win->title_height + bw3D_times_2;
 				dragWidth = zwidth + bw3D_times_2;
 #ifdef EWMH
-				/* Raise the window to/above the dock */
-				OtpSetPriority(tmp_win, WinWin, EWMH_PRI_DOCK);
+				/*
+				 * Raise the window above the dock.
+				 * TODO: It should have the extra priority only while it
+				 * has focus.
+				 */
+				OtpSetPriority(tmp_win, WinWin, EWMH_PRI_FULLSCREEN);
 				/* the OtpRaise below is effectively already done here... */
 #endif /* EWMH */
 			}
 		}
 	}
 
-	if(!Scr->NoRaiseResize || func == F_FULLSCREENZOOM) {
+	if(!Scr->NoRaiseResize) {
 		OtpRaise(tmp_win, WinWin);
 	}
 
@@ -1315,6 +1319,9 @@ void fullzoom(TwmWindow *tmp_win, int func)
 	                tmp_win->frame_y + tmp_win->frame_height < tmpY) {
 		XWarpPointer(dpy, Scr->Root, tmp_win->w, 0, 0, 0, 0, 0, 0);
 	}
+#ifdef EWMH
+	EwmhSet_NET_WM_STATE(tmp_win, EWMH_STATE_MAXIMIZED_VERT);
+#endif
 }
 
 void savegeometry(TwmWindow *tmp_win)

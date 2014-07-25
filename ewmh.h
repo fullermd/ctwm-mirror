@@ -59,7 +59,11 @@ typedef struct EwmhStrut {
 	int bottom;
 } EwmhStrut;
 
-#define EWMH_HAS_STRUT  0x0001
+#define EWMH_HAS_STRUT                  0x0001
+
+#define EWMH_STATE_MAXIMIZED_VERT       0x0010  /* for _NET_WM_STATE */
+#define EWMH_STATE_MAXIMIZED_HORZ       0x0020  /* for _NET_WM_STATE */
+#define EWMH_STATE_FULLSCREEN           0x0040  /* for _NET_WM_STATE */
 
 /*
  * Priorities of the window types we recognize
@@ -67,6 +71,7 @@ typedef struct EwmhStrut {
 
 #define EWMH_PRI_DESKTOP                -8
 #define EWMH_PRI_DOCK                    4
+#define EWMH_PRI_FULLSCREEN              6
 #define EWMH_PRI_NORMAL                  0
 
 extern Atom NET_CURRENT_DESKTOP;
@@ -93,6 +98,7 @@ extern Bool EwmhHasBorder(TwmWindow *twm_win);
 extern Bool EwmhHasTitle(TwmWindow *twm_win);
 extern Bool EwmhOnWindowRing(TwmWindow *twm_win);
 extern void EwmhSet_NET_SHOWING_DESKTOP(int state);
+extern void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes);
 
 #endif /* EWMH */
 #endif /* _EWMH_ */
