@@ -1409,28 +1409,21 @@ void SetFrameShape(TwmWindow *tmp)
 
 void ChangeSize(char *in_string, TwmWindow *tmp_win)
 {
-	int i = 0, j = 0, change = 0, size = 0;
-	char tmp_string[10], tmp_string2[10];
-	char operator ='\0';
-	char size_string[10];
+	int change = 0, size = 0;
+	char *endptr;
 	int rx, ry, wx, wy, mr;
 	Window  rr, cr;
 
 	if(Isdigit(in_string[0])) {
-		while(in_string[i] != 'x') {
-			tmp_string[i] = in_string[i];
-			i++;
+		/* Handle the case f.changesize "640x480" */
+		wx = strtol(in_string, &endptr, 10);
+		if(*endptr++ != 'x') {
+			fprintf(stderr,
+			        "%s: Bad argument to f.changesize: \"%s\" (pattern \"640x480\")\n",
+			        ProgramName, in_string);
+			return;
 		}
-		tmp_string[i] = '\0';
-		i++;
-		while(in_string[i] != '\0') {
-			tmp_string2[j] = in_string[i];
-			i++;
-			j++;
-		}
-
-		wx = atoi(tmp_string);
-		wy = atoi(tmp_string2);
+		wy = strtol(endptr, &endptr, 10);
 
 		if(wy < tmp_win->title_height + 1) {
 			wy = tmp_win->title_height + 1;
@@ -1440,35 +1433,29 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 		            wx, wy + tmp_win->title_height, -1);
 	}
 	else {
-		while(in_string[i] != ' ') {
-			tmp_string[i] = in_string[i];
-			i++;
+		/* Handle the cases like f.changesize "right +10" */
+		int cmdlen = 0;
+
+		while(in_string[cmdlen] != ' ' && in_string[cmdlen] != '\0') {
+			cmdlen++;
 		}
-		tmp_string[i] = '\0';
 
-		i++;
-		operator = in_string[i];
-		i++;
-
-		while(in_string[i] != '\0') {
-			size_string[j] = in_string[i];
-			i++;
-			j++;
-		}
-		size_string[j] = '\0';
-
-		change = atoi(size_string);
-
-		if(operator == '-') {
-			change = 0 - change;
-		}
-		else if(operator != '+') {
-			/* error */
-			fprintf(stderr, "%s: Bad argument to f.changesize\n", ProgramName);
+		if(in_string[cmdlen] != ' ') {
+			fprintf(stderr,
+			        "%s: Bad argument to f.changesize: \"%s\" (sizechange missing)\n",
+			        ProgramName, in_string);
 			return;
 		}
 
-		if(strcmp("bottom", tmp_string) == 0) {
+		change = strtol(in_string + cmdlen + 1, &endptr, 10);
+		if(*endptr != 0) {
+			fprintf(stderr,
+			        "%s: Bad argument to f.changesize: \"%s\" (sizechange not a number)\n",
+			        ProgramName, in_string);
+			return;
+		}
+
+		if(strncmp("bottom", in_string, cmdlen) == 0) {
 			size = tmp_win->frame_height + change;
 
 			if(size < (tmp_win->title_height + 1)) {
@@ -1486,7 +1473,7 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 				XWarpPointer(dpy, None, tmp_win->w, 0, 0, 0, 0, 0, 0);
 			}
 		}
-		else if(strcmp("top", tmp_string) == 0) {
+		else if(strncmp("top", in_string, cmdlen) == 0) {
 			size = tmp_win->frame_height + change;
 
 			if(size < (tmp_win->title_height + 1)) {
@@ -1506,7 +1493,7 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 
 
 		}
-		else if(strcmp("left", tmp_string) == 0) {
+		else if(strncmp("left", in_string, cmdlen) == 0) {
 			size = tmp_win->frame_width + change;
 
 			if(size < 1) {
@@ -1526,7 +1513,7 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 
 
 		}
-		else if(strcmp("right", tmp_string) == 0) {
+		else if(strncmp("right", in_string, cmdlen) == 0) {
 			size = tmp_win->frame_width + change;
 
 			if(size < 1) {
@@ -1547,7 +1534,8 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 		}
 		else {
 			/* error */
-			fprintf(stderr, "%s: Bad argument to f.changesize\n", ProgramName);
+			fprintf(stderr, "%s: Bad argument to f.changesize: \"%s\"\n (unknown border)",
+			        ProgramName, in_string);
 			return;
 		}
 	}

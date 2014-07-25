@@ -282,8 +282,6 @@ static Bool OtpCheckConsistencyVS(VirtualScreen *currentvs, Window vroot)
 			/*
 			 * We can't check windows in a WindowBox, since they are
 			 * not direct children of the Root window.
-			 * (How they otherwise work with priorities is also an
-			 * interesting question.)
 			 */
 			DPRINTF((stderr, "Can't check this window, it is in a WinBox\n"));
 			continue;
@@ -359,7 +357,6 @@ static void RemoveOwl(OtpWinList *owl)
  * For the purpose of putting a window above another,
  * they need to have the same parent, i.e. be in the same
  * VirtualScreen.
- * This is likely to break if we find windows in boxes.
  */
 static OtpWinList *GetOwlAtOrBelowInVS(OtpWinList *owl, VirtualScreen *vs)
 {
@@ -367,6 +364,31 @@ static OtpWinList *GetOwlAtOrBelowInVS(OtpWinList *owl, VirtualScreen *vs)
 		owl = owl->below;
 	}
 
+	return owl;
+}
+
+/*
+ * Windows in a box don't really occur in the stacking order of the
+ * root window.
+ * In the OWL list, keep them just on top of their box, in their
+ * respective order of course.
+ * Therefore we may need to update the owl we're going to be above.
+ */
+static OtpWinList *GetOwlAtOrBelowInWinbox(OtpWinList **owlp, WindowBox *wb)
+{
+	OtpWinList *owl = *owlp;
+
+	while(owl != NULL && owl->twm_win->winbox != wb) {
+		owl = owl->below;
+	}
+
+	if(owl == NULL) {
+		/* we have gone below the box: put it just on top of it */
+		*owlp = wb->twmwin->otp;
+	}
+	else {
+		*owlp = owl;
+	}
 	return owl;
 }
 
@@ -407,7 +429,16 @@ static void InsertOwlAbove(OtpWinList *owl, OtpWinList *other_owl)
 		bottomOwl = owl;
 	}
 	else {
-		OtpWinList *vs_owl = GetOwlAtOrBelowInVS(other_owl, owl->twm_win->parent_vs);
+		WindowBox *winbox = owl->twm_win->winbox;
+		OtpWinList *vs_owl;
+
+		if(winbox != NULL) {
+			vs_owl = GetOwlAtOrBelowInWinbox(&other_owl, winbox);
+		}
+		else {
+
+			vs_owl = GetOwlAtOrBelowInVS(other_owl, owl->twm_win->parent_vs);
+		}
 
 		assert(owl->priority >= other_owl->priority);
 		if(other_owl->above != NULL) {
@@ -415,8 +446,8 @@ static void InsertOwlAbove(OtpWinList *owl, OtpWinList *other_owl)
 		}
 
 		if(vs_owl == NULL) {
-			DPRINTF((stderr, "Bottom-most window in VirtualScreen\n"));
-			/* special case for the lowest window in this virtual screen */
+			DPRINTF((stderr, "Bottom-most window in VirtualScreen or window box\n"));
+			/* special case for the lowest window in this virtual screen or window box */
 
 			/* pass the action to the Xserver */
 			XLowerWindow(dpy, WindowOfOwl(owl));
@@ -800,6 +831,10 @@ void OtpSetPriority(TwmWindow *twm_win, WinType wintype, int new_pri)
 	DPRINTF((stderr, "OtpSetPriority: new_pri=%d\n", new_pri));
 	assert(owl != NULL);
 
+	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+		return;
+	}
+
 	if(ABS(new_pri) > OTP_ZERO) {
 		DPRINTF((stderr, "invalid OnTopPriority value: %d\n", new_pri));
 	}
@@ -817,6 +852,10 @@ void OtpChangePriority(TwmWindow *twm_win, WinType wintype, int relpriority)
 	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
 	int priority = owl->priority + relpriority;
 
+	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+		return;
+	}
+
 	TryToMoveTransientsOfTo(owl, priority);
 	SetOwlPriority(owl, priority);
 
@@ -831,6 +870,10 @@ void OtpSwitchPriority(TwmWindow *twm_win, WinType wintype)
 
 	assert(owl != NULL);
 
+	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+		return;
+	}
+
 	TryToMoveTransientsOfTo(owl, priority);
 	SetOwlPriority(owl, priority);
 
@@ -842,6 +885,10 @@ void OtpToggleSwitching(TwmWindow *twm_win, WinType wintype)
 {
 	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
 	assert(owl != NULL);
+
+	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+		return;
+	}
 
 	owl->switching = !owl->switching;
 
@@ -1000,8 +1047,13 @@ void OtpAdd(TwmWindow *twm_win, WinType wintype)
 
 	assert(*owlp == NULL);
 
+	/* windows in boxes *must* inherit priority from the box */
+	if(twm_win->winbox) {
+		parent = twm_win->winbox->twmwin->otp;
+		parent->switching = False;
+	}
 	/* in case it's a transient, find the parent */
-	if(wintype == WinWin && (twm_win->transient || !isGroupLeader(twm_win))) {
+	else if(wintype == WinWin && (twm_win->transient || !isGroupLeader(twm_win))) {
 		other_win = Scr->FirstWindow;
 		while(other_win != NULL
 		                && !isTransientOf(twm_win, other_win)
