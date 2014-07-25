@@ -73,10 +73,11 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
+#include <strings.h>
 
 #ifdef VMS
 #include <stdlib.h>
-#include <string.h>
 #include <unixio.h>
 #include <file.h>
 #include <decw$include/Xos.h>
@@ -105,13 +106,11 @@
 #  include "sound.h"
 #endif
 #ifdef VMS
-#  include <X11Xmu/CharSet.h>
 #  include <decw$bitmaps/menu12.xbm>
 #  include <X11SM/SMlib.h>
 #  include "vms_cmd_services.h"
 #  include <lib$routines.h>
 #else
-#  include <X11/Xmu/CharSet.h>
 #  include <X11/SM/SMlib.h>
 #endif
 #include "version.h"
@@ -1574,7 +1573,7 @@ Bool PopUpMenu(MenuRoot *menu, int x, int y, Bool center)
 					compresult = strcmp(tmpname1, tmpname2);
 				}
 				else {
-					compresult = XmuCompareISOLatin1(tmpname1, tmpname2);
+					compresult = strcasecmp(tmpname1, tmpname2);
 				}
 				if(compresult < 0) {
 					tmp_win3 = tmp_win2;

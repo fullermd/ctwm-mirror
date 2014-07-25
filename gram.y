@@ -67,6 +67,8 @@
 %{
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
+#include <strings.h>
 #include "ctwm.h"
 #include "otp.h"
 #include "menus.h"
@@ -78,13 +80,6 @@
 #include "screen.h"
 #include "parse.h"
 #include "cursor.h"
-#ifdef VMS
-#  include <decw$include/Xos.h>
-#  include <X11Xmu/CharSet.h>
-#else
-#  include <X11/Xos.h>
-#  include <X11/Xmu/CharSet.h>
-#endif
 
 static char *Action = "";
 static char *Name = "";
@@ -100,9 +95,9 @@ static void RemoveDQuote(char *str);
 
 static MenuRoot *GetRoot(char *name, char *fore, char *back);
 
-static Bool CheckWarpScreenArg(register char *s);
-static Bool CheckWarpRingArg(register char *s);
-static Bool CheckColormapArg(register char *s);
+static Bool CheckWarpScreenArg(char *s);
+static Bool CheckWarpRingArg(char *s);
+static Bool CheckColormapArg(char *s);
 static void GotButton(int butt, int func);
 static void GotKey(char *key, int func);
 static void GotTitleButton(char *bitmapname, int func, Bool rightside);
@@ -1241,13 +1236,11 @@ static void GotTitleButton (char *bitmapname, int func, Bool rightside)
     pull = NULL;
 }
 
-static Bool CheckWarpScreenArg (register char *s)
+static Bool CheckWarpScreenArg (char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
-
-    if (strcmp (s,  WARPSCREEN_NEXT) == 0 ||
-	strcmp (s,  WARPSCREEN_PREV) == 0 ||
-	strcmp (s,  WARPSCREEN_BACK) == 0)
+    if (strcasecmp (s,  WARPSCREEN_NEXT) == 0 ||
+	strcasecmp (s,  WARPSCREEN_PREV) == 0 ||
+	strcasecmp (s,  WARPSCREEN_BACK) == 0)
       return True;
 
     for (; *s && Isascii(*s) && Isdigit(*s); s++) ; /* SUPPRESS 530 */
@@ -1255,25 +1248,21 @@ static Bool CheckWarpScreenArg (register char *s)
 }
 
 
-static Bool CheckWarpRingArg (register char *s)
+static Bool CheckWarpRingArg (char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
-
-    if (strcmp (s,  WARPSCREEN_NEXT) == 0 ||
-	strcmp (s,  WARPSCREEN_PREV) == 0)
+    if (strcasecmp (s,  WARPSCREEN_NEXT) == 0 ||
+	strcasecmp (s,  WARPSCREEN_PREV) == 0)
       return True;
 
     return False;
 }
 
 
-static Bool CheckColormapArg (register char *s)
+static Bool CheckColormapArg (char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
-
-    if (strcmp (s, COLORMAP_NEXT) == 0 ||
-	strcmp (s, COLORMAP_PREV) == 0 ||
-	strcmp (s, COLORMAP_DEFAULT) == 0)
+    if (strcasecmp (s, COLORMAP_NEXT) == 0 ||
+	strcasecmp (s, COLORMAP_PREV) == 0 ||
+	strcasecmp (s, COLORMAP_DEFAULT) == 0)
       return True;
 
     return False;

@@ -68,6 +68,8 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #if defined(sony_news) || defined __QNX__
@@ -76,11 +78,9 @@
 #ifdef VMS
 #include <ctype.h>
 #include <decw$include/Xos.h>
-#include <X11Xmu/CharSet.h>
 #include <X11Xmu/SysUtil.h>
 #else
 #include <X11/Xos.h>
-#include <X11/Xmu/CharSet.h>
 #include <X11/Xmu/SysUtil.h>
 #endif
 #include "ctwm.h"
@@ -1146,11 +1146,10 @@ int parse_keyword(char *s, int *nump)
 {
 	register int lower = 0, upper = numkeywords - 1;
 
-	XmuCopyISOLatin1Lowered(s, s);
 	while(lower <= upper) {
 		int middle = (lower + upper) / 2;
 		TwmKeyword *p = &keytable[middle];
-		int res = strcmp(p->name, s);
+		int res = strcasecmp(p->name, s);
 
 		if(res < 0) {
 			lower = middle + 1;
@@ -1669,26 +1668,25 @@ int do_string_keyword(int keyword, char *s)
 				twmrc_error_prefix();
 				fprintf(stderr, "ignoring invalid IconifyStyle argument \"%s\"\n", s);
 			}
-			if(strcmp(s,  "default") == 0) {
+			if(strcasecmp(s, "default") == 0) {
 				Scr->IconifyStyle = ICONIFY_NORMAL;
 			}
-			XmuCopyISOLatin1Lowered(s, s);
-			if(strcmp(s,  "normal") == 0) {
+			if(strcasecmp(s, "normal") == 0) {
 				Scr->IconifyStyle = ICONIFY_NORMAL;
 			}
-			if(strcmp(s,  "mosaic") == 0) {
+			if(strcasecmp(s, "mosaic") == 0) {
 				Scr->IconifyStyle = ICONIFY_MOSAIC;
 			}
-			if(strcmp(s,  "zoomin") == 0) {
+			if(strcasecmp(s, "zoomin") == 0) {
 				Scr->IconifyStyle = ICONIFY_ZOOMIN;
 			}
-			if(strcmp(s, "zoomout") == 0) {
+			if(strcasecmp(s, "zoomout") == 0) {
 				Scr->IconifyStyle = ICONIFY_ZOOMOUT;
 			}
-			if(strcmp(s,    "fade") == 0) {
+			if(strcasecmp(s, "fade") == 0) {
 				Scr->IconifyStyle = ICONIFY_FADE;
 			}
-			if(strcmp(s,   "sweep") == 0) {
+			if(strcasecmp(s, "sweep") == 0) {
 				Scr->IconifyStyle = ICONIFY_SWEEP;
 			}
 			return 1;
@@ -2231,21 +2229,19 @@ static int ParseRandomPlacement(register char *s)
 	if(strlen(s) == 0) {
 		return RP_ALL;
 	}
-	if(strcmp(s, "default") == 0) {
+	if(strcasecmp(s, "default") == 0) {
 		return RP_ALL;
 	}
-	XmuCopyISOLatin1Lowered(s, s);
-
-	if(strcmp(s,      "off") == 0) {
+	if(strcasecmp(s, "off") == 0) {
 		return RP_OFF;
 	}
-	if(strcmp(s,       "on") == 0) {
+	if(strcasecmp(s, "on") == 0) {
 		return RP_ALL;
 	}
-	if(strcmp(s,      "all") == 0) {
+	if(strcasecmp(s, "all") == 0) {
 		return RP_ALL;
 	}
-	if(strcmp(s, "unmapped") == 0) {
+	if(strcasecmp(s, "unmapped") == 0) {
 		return RP_UNMAPPED;
 	}
 	return (-1);
@@ -2256,30 +2252,22 @@ int ParseJustification(register char *s)
 	if(strlen(s) == 0) {
 		return (-1);
 	}
-	if(strcmp(s, "default") == 0) {
+	if(strcasecmp(s, "default") == 0) {
 		return J_CENTER;
 	}
-	if(strcmp(s,   "undef") == 0) {
+	if(strcasecmp(s, "undef") == 0) {
 		return J_UNDEF;
 	}
-	XmuCopyISOLatin1Lowered(s, s);
-
-	if(strcmp(s,   "undef") == 0) {
-		return J_UNDEF;
-	}
-	if(strcmp(s, "default") == 0) {
-		return J_CENTER;
-	}
-	if(strcmp(s,    "left") == 0) {
+	if(strcasecmp(s, "left") == 0) {
 		return J_LEFT;
 	}
-	if(strcmp(s,  "center") == 0) {
+	if(strcasecmp(s, "center") == 0) {
 		return J_CENTER;
 	}
-	if(strcmp(s,   "right") == 0) {
+	if(strcasecmp(s, "right") == 0) {
 		return J_RIGHT;
 	}
-	if(strcmp(s,  "border") == 0) {
+	if(strcasecmp(s, "border") == 0) {
 		return J_BORDER;
 	}
 	return (-1);
@@ -2290,30 +2278,22 @@ int ParseAlignement(register char *s)
 	if(strlen(s) == 0) {
 		return (-1);
 	}
-	if(strcmp(s, "default") == 0) {
+	if(strcasecmp(s, "default") == 0) {
 		return J_CENTER;
 	}
-	if(strcmp(s,   "undef") == 0) {
+	if(strcasecmp(s, "undef") == 0) {
 		return J_UNDEF;
 	}
-	XmuCopyISOLatin1Lowered(s, s);
-
-	if(strcmp(s,   "undef") == 0) {
-		return J_UNDEF;
-	}
-	if(strcmp(s, "default") == 0) {
-		return J_CENTER;
-	}
-	if(strcmp(s,     "top") == 0) {
+	if(strcasecmp(s, "top") == 0) {
 		return J_TOP;
 	}
-	if(strcmp(s,  "center") == 0) {
+	if(strcasecmp(s, "center") == 0) {
 		return J_CENTER;
 	}
-	if(strcmp(s,  "bottom") == 0) {
+	if(strcasecmp(s, "bottom") == 0) {
 		return J_BOTTOM;
 	}
-	if(strcmp(s,  "border") == 0) {
+	if(strcasecmp(s, "border") == 0) {
 		return J_BORDER;
 	}
 	return (-1);
@@ -2324,24 +2304,19 @@ static int ParseUsePPosition(register char *s)
 	if(strlen(s) == 0) {
 		return (-1);
 	}
-	if(strcmp(s,  "default") == 0) {
+	if(strcasecmp(s, "default") == 0) {
 		return PPOS_OFF;
 	}
-	XmuCopyISOLatin1Lowered(s, s);
-
-	if(strcmp(s,  "default") == 0) {
+	if(strcasecmp(s, "off") == 0) {
 		return PPOS_OFF;
 	}
-	if(strcmp(s,      "off") == 0) {
-		return PPOS_OFF;
-	}
-	if(strcmp(s,       "on") == 0) {
+	if(strcasecmp(s, "on") == 0) {
 		return PPOS_ON;
 	}
-	if(strcmp(s, "non-zero") == 0) {
+	if(strcasecmp(s, "non-zero") == 0) {
 		return PPOS_NON_ZERO;
 	}
-	if(strcmp(s,  "nonzero") == 0) {
+	if(strcasecmp(s, "nonzero") == 0) {
 		return PPOS_NON_ZERO;
 	}
 	return (-1);
@@ -2352,21 +2327,19 @@ static int ParseButtonStyle(register char *s)
 	if(strlen(s) == 0) {
 		return (-1);
 	}
-	if(strcmp(s,  "default") == 0) {
+	if(strcasecmp(s, "default") == 0) {
 		return STYLE_NORMAL;
 	}
-	XmuCopyISOLatin1Lowered(s, s);
-
-	if(strcmp(s, "normal") == 0) {
+	if(strcasecmp(s, "normal") == 0) {
 		return STYLE_NORMAL;
 	}
-	if(strcmp(s, "style1") == 0) {
+	if(strcasecmp(s, "style1") == 0) {
 		return STYLE_STYLE1;
 	}
-	if(strcmp(s, "style2") == 0) {
+	if(strcasecmp(s, "style2") == 0) {
 		return STYLE_STYLE2;
 	}
-	if(strcmp(s, "style3") == 0) {
+	if(strcasecmp(s, "style3") == 0) {
 		return STYLE_STYLE3;
 	}
 	return (-1);
