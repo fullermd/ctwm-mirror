@@ -12,7 +12,7 @@ allclean distclean:
 
 # Reindent files
 indent:
-	astyle -n --options=ctwm.astyle *.h *.c
+	astyle -n --options=tools/ctwm.astyle *.h *.c
 
 
 # Build documentation files
@@ -30,7 +30,7 @@ CHANGES.html: CHANGES
 # Prebuild these files for releases
 YACC?=/usr/bin/yacc
 YFLAGS=-d -b gram
-RELEASE_FILES=gram.tab.c gram.tab.h lex.c
+RELEASE_FILES=gram.tab.c gram.tab.h lex.c deftwmrc.c
 
 release_files: ${RELEASE_FILES} ${DOC_FILES}
 release_clean: doc_clean
@@ -41,3 +41,6 @@ gram.tab.h: gram.y
 	${YACC} ${YFLAGS} gram.y
 
 # Standard make transformations give us lex.c
+
+deftwmrc.c: system.ctwmrc
+	tools/mk_deftwmrc.sh system.ctwmrc > deftwmrc.c
