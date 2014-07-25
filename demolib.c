@@ -24,6 +24,7 @@
  * Author:  Claude Lecommandeur [ lecom@sic.epfl.ch ][ July 1993 ]
  */
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef VMS
 #include <decw$include/Xlib.h>
 #include <decw$include/Xatom.h>
