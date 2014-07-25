@@ -136,12 +136,10 @@ int GoThroughM4 = True;
 #endif
 Window ResizeWindow;            /* the window we are resizing */
 
-int  cfgchk       = 0;
 int  captive      = FALSE;
 char *captivename = NULL;
 
 int MultiScreen = TRUE;         /* try for more than one screen? */
-int Monochrome  = FALSE;        /* Force monochrome, for testing purpose */
 int NumScreens;                 /* number of screens in ScreenList */
 int HasShape;                   /* server supports shape extension? */
 int ShapeEventBase, ShapeErrorBase;
@@ -149,7 +147,7 @@ ScreenInfo **ScreenList;        /* structures for each screen */
 ScreenInfo *Scr = NULL;         /* the cur and prev screens */
 int PreviousScreen;             /* last screen that we were on */
 int FirstScreen;                /* TRUE ==> first screen of display */
-Bool PrintErrorMessages = False;        /* controls error messages */
+static Bool PrintErrorMessages = False;        /* controls error messages */
 #ifdef DEBUG
 Bool ShowWelcomeWindow = False;
 #else
@@ -163,7 +161,6 @@ static int TwmErrorHandler(Display *display, XErrorEvent *event);
 char Info[INFO_LINES][INFO_SIZE];               /* info strings to print */
 int InfoLines;
 unsigned int InfoWidth, InfoHeight;
-char *InitFile = NULL;
 static Window CreateRootWindow(int x, int y,
                                unsigned int width, unsigned int height);
 static void DisplayInfo(void);
@@ -212,13 +209,6 @@ char **Environ;
 #endif
 
 Bool RestartPreviousState = False;      /* try to restart in previous state */
-#ifdef NOTRAP
-Bool TrapExceptions = False;
-#else
-Bool TrapExceptions = True;
-#endif
-
-unsigned long black, white;
 
 Bool RestartFlag = 0;
 SIGNAL_T Restart(int signum);
@@ -256,6 +246,9 @@ int main(int argc, char **argv, char **environ)
 	static int crooty = 100;
 	static unsigned int crootw = 1280;
 	static unsigned int crooth =  768;
+	int cfgchk = 0;
+	int Monochrome  = FALSE; /* Force monochrome, for testing purpose */
+	char *InitFile = NULL;
 	/*    static unsigned int crootw = 2880; */
 	/*    static unsigned int crooth = 1200; */
 	Window capwin = (Window) 0;
@@ -418,10 +411,10 @@ usage:
 	newhandler(SIGCHLD, ChildExit);
 #endif
 	signal(SIGALRM, SIG_IGN);
-	if(TrapExceptions) {
-		signal(SIGSEGV, Crash);
-		signal(SIGBUS,  Crash);
-	}
+#ifdef NOTRAP
+	signal(SIGSEGV, Crash);
+	signal(SIGBUS,  Crash);
+#endif
 
 #undef newhandler
 
@@ -679,10 +672,8 @@ usage:
 
 		/* setup default colors */
 		Scr->FirstTime = TRUE;
-		GetColor(Scr->Monochrome, &black, "black");
-		Scr->Black = black;
-		GetColor(Scr->Monochrome, &white, "white");
-		Scr->White = white;
+		GetColor(Scr->Monochrome, &(Scr->Black), "black");
+		GetColor(Scr->Monochrome, &(Scr->White), "white");
 
 		if(FirstScreen) {
 			SetFocus((TwmWindow *)NULL, CurrentTime);
@@ -988,7 +979,8 @@ usage:
 	InitEvents();
 	StartAnimation();
 	HandleEvents();
-	return (0);
+	fprintf(stderr, "Shouldn't return from HandleEvents()!\n");
+	exit(1);
 }
 
 /***********************************************************************
@@ -1064,25 +1056,20 @@ static void InitVariables(void)
 	Scr->Ring = NULL;
 	Scr->RingLeader = NULL;
 
-	Scr->DefaultC.fore = black;
-	Scr->DefaultC.back = white;
-	Scr->BorderColorC.fore = white;
-	Scr->BorderColorC.back = black;
-	Scr->BorderTileC.fore = black;
-	Scr->BorderTileC.back = white;
-	Scr->TitleC.fore = black;
-	Scr->TitleC.back = white;
-	Scr->MenuC.fore = black;
-	Scr->MenuC.back = white;
-	Scr->MenuTitleC.fore = black;
-	Scr->MenuTitleC.back = white;
-	Scr->MenuShadowColor = black;
-	Scr->IconC.fore = black;
-	Scr->IconC.back = white;
-	Scr->IconBorderColor = black;
-	Scr->IconManagerC.fore = black;
-	Scr->IconManagerC.back = white;
-	Scr->IconManagerHighlight = black;
+#define SETFB(fld) Scr->fld.fore = Scr->Black; Scr->fld.back = Scr->White;
+	SETFB(DefaultC)
+	SETFB(BorderColorC)
+	SETFB(BorderTileC)
+	SETFB(TitleC)
+	SETFB(MenuC)
+	SETFB(MenuTitleC)
+	SETFB(IconC)
+	SETFB(IconManagerC)
+#undef SETFB
+
+	Scr->MenuShadowColor = Scr->Black;
+	Scr->IconBorderColor = Scr->Black;
+	Scr->IconManagerHighlight = Scr->Black;
 
 	Scr->FramePadding =
 	        -100;   /* trick to have different default value if ThreeDTitles
@@ -1463,8 +1450,8 @@ ChildExit(int signum)
  * manipulating the client's window.
  */
 
-Bool ErrorOccurred = False;
-XErrorEvent LastErrorEvent;
+static Bool ErrorOccurred = False;
+static XErrorEvent LastErrorEvent;
 
 static int TwmErrorHandler(Display *display, XErrorEvent *event)
 {
@@ -1507,7 +1494,6 @@ Atom _XA_WM_WORKSPACESLIST;
 Atom _XA_WM_CURRENTWORKSPACE;
 Atom _XA_WM_NOREDIRECT;
 Atom _XA_WM_OCCUPATION;
-Atom _XA_WM_CTWMSLIST;
 Atom _XA_WM_CTWM_VSCREENMAP;
 Atom _OL_WIN_ATTR;
 

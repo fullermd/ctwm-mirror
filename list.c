@@ -103,7 +103,7 @@
  ***********************************************************************
  */
 
-void AddToList(name_list **list_head, char *name, char *ptr)
+void AddToList(name_list **list_head, const char *name, char *ptr)
 {
 	name_list *nptr;
 
@@ -142,7 +142,7 @@ void AddToList(name_list **list_head, char *name, char *ptr)
  ***********************************************************************
  */
 
-void *LookInList(name_list *list_head, char *name, XClassHint *class)
+void *LookInList(name_list *list_head, const char *name, XClassHint *class)
 {
 	name_list *nptr;
 
@@ -171,12 +171,13 @@ void *LookInList(name_list *list_head, char *name, XClassHint *class)
 	return (NULL);
 }
 
-void *LookInNameList(name_list *list_head, char *name)
+void *LookInNameList(name_list *list_head, const char *name)
 {
 	return (LookInList(list_head, name, NULL));
 }
 
-void *LookPatternInList(name_list *list_head, char *name, XClassHint *class)
+void *LookPatternInList(name_list *list_head, const char *name,
+                        XClassHint *class)
 {
 	name_list *nptr;
 
@@ -199,7 +200,7 @@ void *LookPatternInList(name_list *list_head, char *name, XClassHint *class)
 	return (NULL);
 }
 
-void *LookPatternInNameList(name_list *list_head, char *name)
+void *LookPatternInNameList(name_list *list_head, const char *name)
 {
 	return (LookPatternInList(list_head, name, NULL));
 }
@@ -284,10 +285,7 @@ void FreeList(name_list **list)
 
 #ifdef USE_SYS_REGEX
 
-#define MAXPATLEN 256
-
-int match(pattern, string)
-char *pattern, *string;
+int match(const char *pattern, const char *string)
 {
 	regex_t preg;
 	int error;
@@ -314,8 +312,8 @@ char *pattern, *string;
 
 
 
-int regex_match(char *p, char *t);
-int regex_match_after_star(char *p, char *t);
+int regex_match(const char *p, const char *t);
+int regex_match_after_star(const char *p, const char *t);
 
 #if 0                           /* appears not to be used anywhere */
 static int is_pattern(char *p)
@@ -338,7 +336,7 @@ static int is_pattern(char *p)
 
 #define ABORT 2
 
-int regex_match(char *p, char *t)
+int regex_match(const char *p, const char *t)
 {
 	register char range_start, range_end;
 	int invert;
@@ -431,7 +429,7 @@ int regex_match(char *p, char *t)
 	return (!*t);
 }
 
-int regex_match_after_star(char *p, char *t)
+int regex_match_after_star(const char *p, const char *t)
 {
 	register int mat;
 	register int nextp;
@@ -465,7 +463,7 @@ int regex_match_after_star(char *p, char *t)
 	return (mat);
 }
 
-int match(char *p, char *t)
+int match(const char *p, const char *t)
 {
 	if((p == NULL) || (t == NULL)) {
 		return (FALSE);

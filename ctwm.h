@@ -540,12 +540,7 @@ extern Bool ShowWelcomeWindow;
 #ifndef VMS
 extern char **Environ;
 #endif
-char *captivename;
-
-extern Bool ErrorOccurred;
-extern XErrorEvent LastErrorEvent;
-
-#define ResetError() (ErrorOccurred = False)
+extern char *captivename;
 
 extern Bool RestartPreviousState;
 extern Bool GetWMState(Window w, int *statep, Window *iwp);

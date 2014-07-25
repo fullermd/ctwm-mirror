@@ -1669,7 +1669,6 @@ void GrabButtons(TwmWindow *tmp_win)
  ***********************************************************************
  */
 
-#define MAX_KEYCODE 256
 #define grabkey(funckey, modifier, window) \
         XGrabKey(dpy, funckey->keycode, funckey->mods | modifier, window, True, \
                 GrabModeAsync, GrabModeAsync);
