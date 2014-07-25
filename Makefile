@@ -12,7 +12,7 @@ allclean distclean:
 
 # Reindent files
 indent:
-	astyle -n --options=ctwm.astyle *.h *.c
+	astyle -n --options=tools/ctwm.astyle *.h *.c
 
 
 # Build documentation files
