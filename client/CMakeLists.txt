@@ -5,5 +5,9 @@ add_library(ctwmc SHARED libctwm.c)
 add_executable(demolib demolib.c)
 target_link_libraries(demolib ctwmc ${CTWMLIBS})
 
+# There's also a 'gtw' that doesn't, but is sorta client-like...
+add_executable(gtw gtw.c)
+target_link_libraries(gtw ${CTWMLIBS})
+
 # Mention it
 message(STATUS "Building libctwmc and demolib.")
