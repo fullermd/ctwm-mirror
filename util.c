@@ -2615,8 +2615,8 @@ Pixmap Create3DIconManagerIcon(ColorPair cp)
 	struct Colori *col;
 	static struct Colori *colori = NULL;
 
-	w = (unsigned int) siconify_width;
-	h = (unsigned int) siconify_height;
+	w = (unsigned int) SICONIFY_WIDTH;
+	h = (unsigned int) SICONIFY_HEIGHT;
 
 	for(col = colori; col; col = col->next) {
 		if(col->color == cp.back) {

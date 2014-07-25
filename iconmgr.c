@@ -80,7 +80,7 @@
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
 
-int iconmgr_textx = siconify_width + 11;
+int iconmgr_textx = SICONIFY_WIDTH + 11;
 static WList *Active = NULL;
 static WList *Current = NULL;
 WList *DownIconManager = NULL;
@@ -123,7 +123,7 @@ void CreateIconManagers(void)
 	}
 	if(Scr->siconifyPm == None) {
 		Scr->siconifyPm = XCreatePixmapFromBitmapData(dpy, Scr->Root,
-		                  (char *)siconify_bits, siconify_width, siconify_height, 1, 0, 1);
+		                  (char *)siconify_bits, SICONIFY_WIDTH, SICONIFY_HEIGHT, 1, 0, 1);
 	}
 
 	ws = Scr->workSpaceMgr.workSpaceList;
@@ -685,8 +685,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		/* Refigure the height of the whole IM */
 		h = Scr->IconManagerFont.avg_height
 		    + 2 * (ICON_MGR_OBORDER + ICON_MGR_OBORDER);
-		if(h < (siconify_height + 4)) {
-			h = siconify_height + 4;
+		if(h < (SICONIFY_HEIGHT + 4)) {
+			h = SICONIFY_HEIGHT + 4;
 		}
 
 		ip->height = h * ip->count;
@@ -723,8 +723,8 @@ WList *AddIconManager(TwmWindow *tmp_win)
 		attributes.cursor = Scr->ButtonCursor;
 		/* The precise location will be set it in PackIconManager.  */
 		tmp->icon = XCreateWindow(dpy, tmp->w, 0, 0,
-		                          (unsigned int) siconify_width,
-		                          (unsigned int) siconify_height,
+		                          (unsigned int) SICONIFY_WIDTH,
+		                          (unsigned int) SICONIFY_HEIGHT,
 		                          (unsigned int) 0, CopyFromParent,
 		                          (unsigned int) CopyFromParent,
 		                          (Visual *) CopyFromParent,
@@ -1056,8 +1056,8 @@ void PackIconManager(IconMgr *ip)
 
 	wheight = Scr->IconManagerFont.avg_height
 	          + 2 * (ICON_MGR_OBORDER + ICON_MGR_IBORDER);
-	if(wheight < (siconify_height + 4)) {
-		wheight = siconify_height + 4;
+	if(wheight < (SICONIFY_HEIGHT + 4)) {
+		wheight = SICONIFY_HEIGHT + 4;
 	}
 
 	wwidth = ip->width / ip->columns;
@@ -1087,7 +1087,7 @@ void PackIconManager(IconMgr *ip)
 			XMoveResizeWindow(dpy, tmp->w, new_x, new_y, wwidth, wheight);
 			if(tmp->height != wheight)
 				XMoveWindow(dpy, tmp->icon, ICON_MGR_OBORDER + ICON_MGR_IBORDER,
-				            (wheight - siconify_height) / 2);
+				            (wheight - SICONIFY_HEIGHT) / 2);
 
 			tmp->row = row - 1;
 			tmp->col = col;

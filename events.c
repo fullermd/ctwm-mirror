@@ -2340,13 +2340,13 @@ void HandleExpose(void)
 					XCopyArea(dpy, iconmanagerlist->iconifypm,
 					          iconmanagerlist->icon,
 					          Scr->NormalGC, 0, 0,
-					          siconify_width, siconify_height, 0, 0);
+					          SICONIFY_WIDTH, SICONIFY_HEIGHT, 0, 0);
 				}
 				else {
 					FB(iconmanagerlist->cp.fore, iconmanagerlist->cp.back);
 					XCopyPlane(dpy, Scr->siconifyPm, iconmanagerlist->icon,
 					           Scr->NormalGC, 0, 0,
-					           siconify_width, siconify_height, 0, 0, 1);
+					           SICONIFY_WIDTH, SICONIFY_HEIGHT, 0, 0, 1);
 				}
 				flush_expose(Event.xany.window);
 				return;
