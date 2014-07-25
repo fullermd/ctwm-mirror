@@ -75,7 +75,6 @@
 #include "resize.h"
 #include "otp.h"
 #include "add_window.h"
-#define __WANT_SICONIFY_BITS
 #include "siconify.h"
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
