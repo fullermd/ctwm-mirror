@@ -95,10 +95,10 @@ main(int argc, char *argv[])
 
 	wlist = CtwmCurrentOccupation(dpy, awindow);
 	if(wlist == (char **) 0) {
-		fprintf(stderr, "cannot obtain occupation of window  %x\n", awindow);
+		fprintf(stderr, "cannot obtain occupation of window %lu\n", awindow);
 		exit(1);
 	}
-	printf("Occupation of window %d : ", awindow);
+	printf("Occupation of window %lu: ", awindow);
 	wl = wlist;
 	while(*wl) {
 		printf("\"%s\" ", *wl++);
@@ -113,15 +113,15 @@ main(int argc, char *argv[])
 	occupation [2] = NULL;
 	status = CtwmSetOccupation(dpy, awindow, occupation);
 	if(! status) {
-		fprintf(stderr, "cannot change the occupation of window %x\n", awindow);
+		fprintf(stderr, "cannot change the occupation of window %lu\n", awindow);
 	}
-	printf("occupation of window %x changed to \"lecom\", \"root\"\n", awindow);
+	printf("occupation of window %lu changed to 'lecom', 'root'\n", awindow);
 
 	/****************************************************************/
 	status = CtwmAddToCurrentWorkspace(dpy, awindow);
 	if(! status) {
-		fprintf(stderr, "cannot change the occupation of window %x\n", awindow);
+		fprintf(stderr, "cannot change the occupation of window %lu\n", awindow);
 	}
-	printf("window %x now occupy the current workspace\n", awindow);
+	printf("window %lu now occupy the current workspace\n", awindow);
 }
 
