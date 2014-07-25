@@ -944,7 +944,7 @@ static TwmKeyword keytable[] = {
 	{ "f.warptoiconmgr",        FSKEYWORD, F_WARPTOICONMGR },
 	{ "f.warptoscreen",         FSKEYWORD, F_WARPTOSCREEN },
 	{ "f.winrefresh",           FKEYWORD, F_WINREFRESH },
-	{ "f.zoom",                 FKEYWORD, F_ZOOM },
+	{ "f.zoom",                 FKEYWORD, F_VERTZOOM },
 	{ "forceicons",             KEYWORD, kw0_ForceIcons },
 	{ "frame",                  FRAME, 0 },
 	{ "framepadding",           NKEYWORD, kwn_FramePadding },

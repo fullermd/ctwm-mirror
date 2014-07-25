@@ -1231,7 +1231,7 @@ void fullzoom(TwmWindow *tmp_win, int func)
 		switch(func) {
 			case ZOOM_NONE:
 				break;
-			case F_ZOOM:    /* should be called F_VERTZOOM */
+			case F_VERTZOOM:
 				dragHeight = zheight - border_y - frame_bw_times_2;
 				dragy = basey;
 				break;
