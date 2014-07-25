@@ -42,7 +42,6 @@ int
 main(int argc, char *argv[])
 {
 	Display *dpy;
-	Window w;
 	char   **wlist, **wl, **occupation;
 	char   *cur;
 	int    status;
