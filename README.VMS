@@ -130,3 +130,36 @@ A thank you goes to the following people:
   Michael Lemke <ai26@a400.sternwarte.uni-erlangen.de>
 
 /Richard Levitte, <richard@levitte.org>
+
+
+
+Add'l Notes:
+------------
+
+These entries have been moved from the old ctwm.txt, which was a
+pre-formatted very old version of the manpage.
+
+- This window manager has been compiled to run on VMS.  Hence file and
+  directory specifications should be in that format.
+
+- VMS looks for rc files named ".ctwmrc_SCRNUM" instead of
+  ".ctwmrc.SCRNUM".  Alternately:
+
+- Instead of $HOME/.[c]twmrc[.#] use DECW$USER_DEFAULTS:[C]TWM.RC[_#]
+  where the logical DECW$USER_DEFAULTS usually points to
+  SYS$LOGINROOT:[DECW$DEFAULTS], eg mphv2$user2:[bloggs.decw$defaults].
+  and /usr/lib/X11/twm/system.ctwmrc =>
+  DECW$SYSTEM_DEFAULTS:SYSTEM.CTWMRC
+
+- M4 processing is not supported on VMS.
+
+- The tilde (~) is taken as indicating that the file "~foo.bar" is looked
+  for in HOME or SYS$LOGIN, e.g. SYS$LOGIN = DISK$USERS:[BLOGGS] implies
+  "~foo.bar" will be DISK$USERS:[BLOGGS]FOO.BAR.  Also a leading slash
+  (/) implies an absolute filename, e.g. "/disk$users:[joe]foo.bar" means
+  DISK$USERS:[JOE]FOO.BAR.
+
+- OpenWindowTimeout is currently not implemented on VMS.
+
+- Example PixmapDirectory line:
+  PixmapDirectory	"mphv2$user2:[bloggs.xpm]"
