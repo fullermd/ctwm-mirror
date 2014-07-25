@@ -4129,6 +4129,10 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 			break;
 
 		case F_CHANGESIZE:
+			if(DeferExecution(context, func, Scr->SelectCursor)) {
+				return TRUE;
+			}
+
 			ChangeSize(action, tmp_win);
 			break;
 
@@ -4245,6 +4249,7 @@ static int NeedToDefer(MenuRoot *root)
 			case F_SQUEEZE:
 			case F_AUTORAISE:
 			case F_AUTOLOWER:
+			case F_CHANGESIZE:
 				return TRUE;
 		}
 	}
