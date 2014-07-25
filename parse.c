@@ -1665,25 +1665,25 @@ int do_string_keyword(int keyword, char *s)
 				twmrc_error_prefix();
 				fprintf(stderr, "ignoring invalid IconifyStyle argument \"%s\"\n", s);
 			}
-			if(strcasecmp(s,  "default") == 0) {
+			if(strcasecmp(s, "default") == 0) {
 				Scr->IconifyStyle = ICONIFY_NORMAL;
 			}
-			if(strcasecmp(s,  "normal") == 0) {
+			if(strcasecmp(s, "normal") == 0) {
 				Scr->IconifyStyle = ICONIFY_NORMAL;
 			}
-			if(strcasecmp(s,  "mosaic") == 0) {
+			if(strcasecmp(s, "mosaic") == 0) {
 				Scr->IconifyStyle = ICONIFY_MOSAIC;
 			}
-			if(strcasecmp(s,  "zoomin") == 0) {
+			if(strcasecmp(s, "zoomin") == 0) {
 				Scr->IconifyStyle = ICONIFY_ZOOMIN;
 			}
 			if(strcasecmp(s, "zoomout") == 0) {
 				Scr->IconifyStyle = ICONIFY_ZOOMOUT;
 			}
-			if(strcasecmp(s,    "fade") == 0) {
+			if(strcasecmp(s, "fade") == 0) {
 				Scr->IconifyStyle = ICONIFY_FADE;
 			}
-			if(strcasecmp(s,   "sweep") == 0) {
+			if(strcasecmp(s, "sweep") == 0) {
 				Scr->IconifyStyle = ICONIFY_SWEEP;
 			}
 			return 1;
