@@ -1,5 +1,5 @@
-#define siconify_width 11
-#define siconify_height 11
+static const int siconify_width=11;
+static const int siconify_height=11;
 
 static unsigned char siconify_bits[] = {
    0xff, 0x07, 0x01, 0x04, 0x0d, 0x05, 0x9d, 0x05, 0xb9, 0x04, 0x51, 0x04,
