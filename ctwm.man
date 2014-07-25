@@ -2070,6 +2070,14 @@ manager, wrapping to the beginning of the next row if necessary.
 This function warps the  pointer in the same manner as \fBf.forwiconmgr\fP
 but only stops at windows that are mapped.
 
+.IP "\fBf.fullscreenzoom\fP" 8
+This function resizes the client part (the inside the frame) of the selected
+window to the full size of the display or else restores the original size if
+the window was already zoomed. The frame is moved just outside the screen.
+This gives the appearance that window is shown without the frame:
+since ctwm can't dynamically make a window borderless, this is the next best
+thing.
+
 .IP "\fBf.fullzoom\fP" 8
 This function resizes the selected window to the full size of the display or
 else restores the original size if the window was already zoomed.

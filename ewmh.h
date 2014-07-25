@@ -61,6 +61,14 @@ typedef struct EwmhStrut {
 
 #define EWMH_HAS_STRUT  0x0001
 
+/*
+ * Priorities of the window types we recognize
+ */
+
+#define EWMH_PRI_DESKTOP                -8
+#define EWMH_PRI_DOCK                    4
+#define EWMH_PRI_NORMAL                  0
+
 extern Atom NET_CURRENT_DESKTOP;
 
 extern void EwmhInit(void);

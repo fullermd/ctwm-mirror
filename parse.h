@@ -172,6 +172,7 @@ extern void TwmOutput(int c);
 #define F_AUTOLOWER             86
 #define F_FITTOCONTENT          87
 #define F_SHOWBGRD              88
+#define F_FULLSCREENZOOM        89
 
 
 #define F_MENU                  101     /* string */

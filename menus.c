@@ -2607,6 +2607,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 		case F_ZOOM:
 		case F_HORIZOOM:
 		case F_FULLZOOM:
+		case F_FULLSCREENZOOM:
 		case F_LEFTZOOM:
 		case F_RIGHTZOOM:
 		case F_TOPZOOM:
@@ -4237,6 +4238,7 @@ static int NeedToDefer(MenuRoot *root)
 			case F_WINREFRESH:
 			case F_ZOOM:
 			case F_FULLZOOM:
+			case F_FULLSCREENZOOM:
 			case F_HORIZOOM:
 			case F_RIGHTZOOM:
 			case F_LEFTZOOM:
@@ -5861,6 +5863,9 @@ static void fillwindow(TwmWindow *tmp_win, char *direction)
 			tmp_win->save_frame_width = tmp_win->frame_width;
 			tmp_win->save_frame_y = tmp_win->frame_y;
 			tmp_win->save_frame_x = tmp_win->frame_x;
+#ifdef EWMH
+			tmp_win->save_otpri = OtpGetPriority(tmp_win);
+#endif
 
 			tmp_win->frame_y++;
 			newy = FindConstraint(tmp_win, J_TOP);

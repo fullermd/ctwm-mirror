@@ -1168,7 +1168,7 @@ void SetupFrame(TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
  **********************************************************************
  */
 
-void fullzoom(TwmWindow *tmp_win, int flag)
+void fullzoom(TwmWindow *tmp_win, int func)
 {
 	Window      junkRoot;
 	unsigned int junkbw, junkDepth;
@@ -1202,12 +1202,17 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 		border_x = 0;
 		border_y = 0;
 	}
-	if(tmp_win->zoomed == flag) {
+	if(tmp_win->zoomed == func) {
 		dragHeight = tmp_win->save_frame_height;
 		dragWidth = tmp_win->save_frame_width;
 		dragx = tmp_win->save_frame_x;
 		dragy = tmp_win->save_frame_y;
 		tmp_win->zoomed = ZOOM_NONE;
+#ifdef EWMH
+		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
+			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri);
+		}
+#endif
 	}
 	else {
 		if(tmp_win->zoomed == ZOOM_NONE) {
@@ -1215,18 +1220,18 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 			tmp_win->save_frame_y = dragy;
 			tmp_win->save_frame_width = dragWidth;
 			tmp_win->save_frame_height = dragHeight;
-			tmp_win->zoomed = flag;
+#ifdef EWMH
+			tmp_win->save_otpri = OtpGetPriority(tmp_win);
+#endif
 		}
-		else {
-			tmp_win->zoomed = flag;
-		}
+		tmp_win->zoomed = func;
 
 		frame_bw_times_2 = 2 * tmp_win->frame_bw;
 
-		switch(flag) {
+		switch(func) {
 			case ZOOM_NONE:
 				break;
-			case F_ZOOM:
+			case F_ZOOM:    /* should be called F_VERTZOOM */
 				dragHeight = zheight - border_y - frame_bw_times_2;
 				dragy = basey;
 				break;
@@ -1264,16 +1269,31 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 				dragHeight = (zheight - border_y) / 2 - frame_bw_times_2;
 				dragWidth = zwidth - border_x - frame_bw_times_2;
 				break;
+			case F_FULLSCREENZOOM: {
+				int bw3D = tmp_win->frame_bw3D;
+				int bw3D_times_2 = 2 * bw3D;
+				int bw = tmp_win->frame_bw + bw3D;
+
+				dragx = -bw;
+				dragy = -tmp_win->title_height - bw;
+				dragHeight = zheight + tmp_win->title_height + bw3D_times_2;
+				dragWidth = zwidth + bw3D_times_2;
+#ifdef EWMH
+				/* Raise the window to/above the dock */
+				OtpSetPriority(tmp_win, WinWin, EWMH_PRI_DOCK);
+				/* the OtpRaise below is effectively already done here... */
+#endif /* EWMH */
+			}
 		}
 	}
 
-	if(!Scr->NoRaiseResize) {
+	if(!Scr->NoRaiseResize || func == F_FULLSCREENZOOM) {
 		OtpRaise(tmp_win, WinWin);
 	}
 
 	ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 #ifdef BETTERZOOM
-	if(flag == F_ZOOM) {
+	if(func == F_ZOOM) {
 		if(dragy + dragHeight < tmp_win->save_frame_y + tmp_win->save_frame_height) {
 			dragy = tmp_win->save_frame_y + tmp_win->save_frame_height - dragHeight;
 		}

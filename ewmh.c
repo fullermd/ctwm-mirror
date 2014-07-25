@@ -1365,11 +1365,11 @@ int EwmhGetPriority(TwmWindow *twm_win)
 {
 	switch(twm_win->ewmhWindowType) {
 		case wt_Desktop:
-			return -8;
+			return EWMH_PRI_DESKTOP;
 		case wt_Dock:
-			return 4;
+			return EWMH_PRI_DOCK;
 		default:
-			return 0;
+			return EWMH_PRI_NORMAL;
 	}
 }
 

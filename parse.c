@@ -840,6 +840,7 @@ static TwmKeyword keytable[] = {
 	{ "f.forcemove",            FKEYWORD, F_FORCEMOVE },
 	{ "f.forwiconmgr",          FKEYWORD, F_FORWICONMGR },
 	{ "f.forwmapiconmgr",       FKEYWORD, F_FORWMAPICONMGR },
+	{ "f.fullscreenzoom",       FKEYWORD, F_FULLSCREENZOOM },
 	{ "f.fullzoom",             FKEYWORD, F_FULLZOOM },
 	{ "f.function",             FSKEYWORD, F_FUNCTION },
 	{ "f.gotoworkspace",        FSKEYWORD, F_GOTOWORKSPACE },

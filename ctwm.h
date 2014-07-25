@@ -376,10 +376,13 @@ struct TwmWindow {
 	Window transientfor;        /* window contained in XA_XM_TRANSIENT_FOR */
 	short titlehighlight;       /* should I highlight the title bar */
 	struct IconMgr *iconmgrp;   /* pointer to it if this is an icon manager */
-	int save_frame_x;           /* x position of frame */
-	int save_frame_y;           /* y position of frame */
-	unsigned int save_frame_width;  /* width of frame */
-	unsigned int save_frame_height; /* height of frame */
+	int save_frame_x;           /* x position of frame  (saved from zoom) */
+	int save_frame_y;           /* y position of frame  (saved from zoom)*/
+	unsigned int save_frame_width;  /* width of frame   (saved from zoom)*/
+	unsigned int save_frame_height; /* height of frame  (saved from zoom)*/
+#ifdef EWMH
+	int save_otpri;             /* on top priority      (saved from zoom)*/
+#endif
 	short zoomed;               /* is the window zoomed? */
 	short wShaped;              /* this window has a bounding shape */
 	unsigned long protocols;    /* which protocols this window handles */
