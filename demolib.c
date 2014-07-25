@@ -106,7 +106,7 @@ main(int argc, char *argv[])
 
 	/****************************************************************/
 
-	occupation = (char **) malloc(3 * sizeof(char *));
+	occupation = calloc(3, sizeof(char *));
 	occupation [0] = awspc1;
 	occupation [1] = awspc2;
 	occupation [2] = NULL;
