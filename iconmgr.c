@@ -123,7 +123,7 @@ void CreateIconManagers(void)
 	}
 	if(Scr->siconifyPm == None) {
 		Scr->siconifyPm = XCreatePixmapFromBitmapData(dpy, Scr->Root,
-		                  (char *)siconify_bits, SICONIFY_WIDTH, SICONIFY_HEIGHT, 1, 0, 1);
+		                  siconify_bits, SICONIFY_WIDTH, SICONIFY_HEIGHT, 1, 0, 1);
 	}
 
 	ws = Scr->workSpaceMgr.workSpaceList;
