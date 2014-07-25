@@ -9,5 +9,11 @@ target_link_libraries(demolib ctwmc ${CTWMLIBS})
 add_executable(gtw gtw.c)
 target_link_libraries(gtw ${CTWMLIBS})
 
+
+# Meta-target
+add_custom_target(client
+	DEPENDS demolib gtw
+)
+
 # Mention it
 message(STATUS "Building libctwmc and demolib.")
