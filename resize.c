@@ -1440,7 +1440,7 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 			cmdlen++;
 		}
 
-		if(in_string[cmdlen] -= '\0') {
+		if(in_string[cmdlen] != ' ') {
 			fprintf(stderr,
 			        "%s: Bad argument to f.changesize: \"%s\" (sizechange missing)\n",
 			        ProgramName, in_string);
@@ -1450,7 +1450,7 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 		change = strtol(in_string + cmdlen + 1, &endptr, 10);
 		if(*endptr != 0) {
 			fprintf(stderr,
-			        "%s: Bad argument to f.changesize: \"%s\" (pattern \"left +20\")\n",
+			        "%s: Bad argument to f.changesize: \"%s\" (sizechange not a number)\n",
 			        ProgramName, in_string);
 			return;
 		}
@@ -1534,7 +1534,7 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 		}
 		else {
 			/* error */
-			fprintf(stderr, "%s: Bad argument to f.changesize: \"%s\"\n (unknown side)",
+			fprintf(stderr, "%s: Bad argument to f.changesize: \"%s\"\n (unknown border)",
 			        ProgramName, in_string);
 			return;
 		}
