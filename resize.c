@@ -1436,8 +1436,15 @@ void ChangeSize(char *in_string, TwmWindow *tmp_win)
 		/* Handle the cases like f.changesize "right +10" */
 		int cmdlen = 0;
 
-		while(in_string[cmdlen] != ' ') {
+		while(in_string[cmdlen] != ' ' && in_string[cmdlen] != '\0') {
 			cmdlen++;
+		}
+
+		if(in_string[cmdlen] -= '\0') {
+			fprintf(stderr,
+			        "%s: Bad argument to f.changesize: \"%s\" (sizechange missing)\n",
+			        ProgramName, in_string);
+			return;
 		}
 
 		change = strtol(in_string + cmdlen + 1, &endptr, 10);
