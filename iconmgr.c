@@ -75,8 +75,7 @@
 #include "resize.h"
 #include "otp.h"
 #include "add_window.h"
-#define __WANT_SICONIFY_BITS
-#include "siconify.bm"
+#include "siconify.h"
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
@@ -85,8 +84,6 @@ int iconmgr_textx = siconify_width + 11;
 static WList *Active = NULL;
 static WList *Current = NULL;
 WList *DownIconManager = NULL;
-int iconifybox_width = siconify_width;
-int iconifybox_height = siconify_height;
 
 /***********************************************************************
  *
