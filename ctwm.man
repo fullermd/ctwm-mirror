@@ -1952,8 +1952,8 @@ f.changepriority "-1".
 .IP "\fBf.changesize\fP \fIstring\fP" 8
 This function allows you to change the size of the focused window. The
 format of the string must be either \fB"<border> <+|\-><sizechange>"\fP
-(where \fBborder\fP must be one of \fBTop\fP, \fBBottom\fP, \fBLeft\fP or
-\fBRight\fP) or \fB"<x size>x<y size>"\fP (where the size is the requested
+(where \fB<border>\fP must be one of \fBtop\fP, \fBbottom\fP, \fBleft\fP or
+\fBright\fP) or \fB"<x size>x<y size>"\fP (where the size is the requested
 new window size). The height of the window can never be set/changed to less
 than the title height + 1 (or 1 if the window has no title) and the width
 can never be set/changed to less than 1.
