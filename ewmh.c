@@ -1811,7 +1811,7 @@ void EwmhSet_NET_SHOWING_DESKTOP(int state)
 }
 
 /*
- * Set the _NET_WM_STATE.
+ * Set _NET_WM_STATE.
  *
  * TwmWindow.ewmhFlags keeps track of the atoms that should be in
  * the list, so that we don't have to fetch or recalculate them all.
@@ -1869,7 +1869,7 @@ void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
 }
 
 /*
- * Set the _NET_WORKAREA
+ * Set _NET_WORKAREA.
  */
 static void EwmhSet_NET_WORKAREA(ScreenInfo *scr)
 {
