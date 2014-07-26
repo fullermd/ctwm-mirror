@@ -2607,16 +2607,14 @@ Pixmap Create3DMenuIcon(unsigned int height,
 	return (colori->pix);
 }
 
-#include "siconify.bm"
-
 Pixmap Create3DIconManagerIcon(ColorPair cp)
 {
 	unsigned int w, h;
 	struct Colori *col;
 	static struct Colori *colori = NULL;
 
-	w = (unsigned int) siconify_width;
-	h = (unsigned int) siconify_height;
+	w = siconify_width;
+	h = siconify_height;
 
 	for(col = colori; col; col = col->next) {
 		if(col->color == cp.back) {

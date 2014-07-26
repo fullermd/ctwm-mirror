@@ -97,10 +97,10 @@ struct IconMgr {
 	int count;
 };
 
+extern const int siconify_width;
+extern const int siconify_height;
 extern int iconmgr_textx;
 extern WList *DownIconManager;
-extern int iconifybox_width;
-extern int iconifybox_height;
 
 extern void CreateIconManagers(void);
 extern IconMgr *AllocateIconManager(char *name, char *geom, char *icon_name,

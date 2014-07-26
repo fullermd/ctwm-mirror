@@ -320,14 +320,8 @@ endif(MANBASE)
 set(defc deftwmrc.c)
 add_custom_command(OUTPUT ${defc}
 	DEPENDS system.ctwmrc
-	COMMAND echo '/*' > ${defc}
-	COMMAND echo ' * This file is generated automatically from the default' >> ${defc}
-	COMMAND echo ' * twm bindings file system.ctwmrc by the twm Imakefile.' >> ${defc}
-	COMMAND echo '  */' >> ${defc}
-	COMMAND echo '' >> ${defc}
-	COMMAND echo 'const char *defTwmrc[] = {' >> ${defc}
-	COMMAND sed -e "/^#/d" -e 's/\"/\\\\\"/g' -e 's/^/    \"/' -e 's/$$/\",/' ${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc >> ${defc}
-	COMMAND echo '    (char *) 0 }\;' >> ${defc}
+	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_deftwmrc.sh
+		${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc > ${defc}
 )
 
 
@@ -336,16 +330,12 @@ add_executable(ctwm ${CTWMSRC})
 target_link_libraries(ctwm ${CTWMLIBS})
 
 
-# Allow building the libctwm stuff too.  Don't do it by default though.
-# The old imake setup built libctwm, but not demolib, and it doesn't
-# serve any purpose at the moment.  Maybe we can do something with it in
-# the future.
-if(DO_LIBCTWM)
-	add_library(ctwmc SHARED libctwm.c)
-	add_executable(demolib demolib.c)
-	target_link_libraries(demolib ctwmc ${CTWMLIBS})
-	message(STATUS "Building libctwmc and demolib.")
-endif(DO_LIBCTWM)
+# This doesn't really serve much purpose at the moment, so it's not even
+# documented, but the code exists.  So make it buildable.
+if(DO_CLIENT)
+	include_directories(client)
+	add_subdirectory(client)
+endif(DO_CLIENT)
 
 
 # Rewrite man page

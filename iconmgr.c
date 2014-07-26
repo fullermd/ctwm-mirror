@@ -75,18 +75,21 @@
 #include "resize.h"
 #include "otp.h"
 #include "add_window.h"
-#define __WANT_SICONIFY_BITS
-#include "siconify.bm"
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
 
-int iconmgr_textx = siconify_width + 11;
+const int siconify_width = 11;
+const int siconify_height = 11;
+int iconmgr_textx = /*siconify_width*/11 + 11;
+static char siconify_bits[] = {
+	0xff, 0x07, 0x01, 0x04, 0x0d, 0x05, 0x9d, 0x05, 0xb9, 0x04, 0x51, 0x04,
+	0xe9, 0x04, 0xcd, 0x05, 0x85, 0x05, 0x01, 0x04, 0xff, 0x07
+};
+
 static WList *Active = NULL;
 static WList *Current = NULL;
 WList *DownIconManager = NULL;
-int iconifybox_width = siconify_width;
-int iconifybox_height = siconify_height;
 
 /***********************************************************************
  *
@@ -126,7 +129,7 @@ void CreateIconManagers(void)
 	}
 	if(Scr->siconifyPm == None) {
 		Scr->siconifyPm = XCreatePixmapFromBitmapData(dpy, Scr->Root,
-		                  (char *)siconify_bits, siconify_width, siconify_height, 1, 0, 1);
+		                  siconify_bits, siconify_width, siconify_height, 1, 0, 1);
 	}
 
 	ws = Scr->workSpaceMgr.workSpaceList;
