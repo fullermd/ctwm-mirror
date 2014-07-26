@@ -92,6 +92,7 @@ extern void EwmhUnmapNotify(TwmWindow *twm_win);
 extern void EwmhAddClientWindow(TwmWindow *new_win);
 extern void EwmhDeleteClientWindow(TwmWindow *old_win);
 extern void EwmhSet_NET_CLIENT_LIST_STACKING(void);
+extern void EwmhSet_NET_ACTIVE_WINDOW(Window w);
 extern void EwmhGetProperties(TwmWindow *twm_win);
 extern int EwmhGetPriority(TwmWindow *twm_win);
 extern Bool EwmhHasBorder(TwmWindow *twm_win);

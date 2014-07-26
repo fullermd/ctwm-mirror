@@ -1919,6 +1919,9 @@ void SetFocus(TwmWindow *tmp_win, Time tim)
 	}
 
 	XSetInputFocus(dpy, w, RevertToPointerRoot, tim);
+#if EWMH
+	EwmhSet_NET_ACTIVE_WINDOW(w);
+#endif
 	if(Scr->Focus == tmp_win) {
 		return;
 	}
@@ -1936,13 +1939,6 @@ void SetFocus(TwmWindow *tmp_win, Time tim)
 		SetFocusVisualAttributes(tmp_win, True);
 	}
 	Scr->Focus = tmp_win;
-#if 0
-	/*
-	 * Not wanted if we sort-of want to keep the window list in
-	 * stacking order.
-	 */
-	move_to_head(tmp_win);
-#endif
 }
 
 

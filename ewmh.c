@@ -70,6 +70,7 @@
 
 static Atom MANAGER;
 Atom NET_CURRENT_DESKTOP;
+static Atom NET_ACTIVE_WINDOW;
 static Atom NET_CLIENT_LIST;
 static Atom NET_CLIENT_LIST_STACKING;
 static Atom NET_DESKTOP_GEOMETRY;
@@ -102,6 +103,7 @@ static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width,
                           int height);
 static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg);
 static void EwmhClientMessage_NET_WM_STATE(XClientMessageEvent *msg);
+static void EwmhClientMessage_NET_ACTIVE_WINDOW(XClientMessageEvent *msg);
 static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type);
 static void EwmhGetStrut(TwmWindow *twm_win, int update);
 static void EwmhRemoveStrut(TwmWindow *twm_win);
@@ -132,6 +134,7 @@ static void SendPropertyMessage(Window to, Window about,
 static void EwmhInitAtoms(void)
 {
 	MANAGER             = XInternAtom(dpy, "MANAGER", False);
+	NET_ACTIVE_WINDOW   = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
 	NET_CLIENT_LIST     = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	NET_CLIENT_LIST_STACKING = XInternAtom(dpy, "_NET_CLIENT_LIST_STACKING", False);
 	NET_CURRENT_DESKTOP = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
@@ -446,7 +449,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 
 	EwmhSet_NET_SHOWING_DESKTOP(0);
 
-	long supported[20];
+	long supported[30];
 	int i = 0;
 
 	supported[i++] = NET_SUPPORTING_WM_CHECK;
@@ -469,6 +472,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_STATE_MAXIMIZED_VERT;
 	supported[i++] = NET_WM_STATE_MAXIMIZED_HORZ;
 	supported[i++] = NET_WM_STATE_FULLSCREEN;
+	supported[i++] = NET_ACTIVE_WINDOW;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -588,6 +592,10 @@ int EwmhClientMessage(XClientMessageEvent *msg)
 	}
 	else if(msg->message_type == NET_WM_STATE) {
 		EwmhClientMessage_NET_WM_STATE(msg);
+		return 1;
+	}
+	else if(msg->message_type == NET_ACTIVE_WINDOW) {
+		EwmhClientMessage_NET_ACTIVE_WINDOW(msg);
 		return 1;
 	}
 
@@ -1024,7 +1032,7 @@ static void EwmhHandle_NET_WM_ICONNotify(XPropertyEvent *event,
 static void EwmhHandle_NET_WM_STRUTNotify(XPropertyEvent *event,
                 TwmWindow *twm_win)
 {
-	EwmhGetStrut(twm_win, 1);
+	EwmhGetStrut(twm_win, True);
 }
 
 /*
@@ -1044,7 +1052,8 @@ static int atomToFlag(Atom a)
 	return 0;
 }
 
-static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change, int newVal);
+static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
+                int newVal);
 
 /*
  * Handle the NET_WM_STATE client message.
@@ -1104,18 +1113,20 @@ static void EwmhClientMessage_NET_WM_STATE(XClientMessageEvent *msg)
 	 * You can turn them both on or both off, but no other combinations
 	 * are done as a unit.
 	 */
-	if (change == (EWMH_STATE_MAXIMIZED_VERT | EWMH_STATE_MAXIMIZED_HORZ) &&
-			(newValue == 0 || newValue == change)) {
+	if(change == (EWMH_STATE_MAXIMIZED_VERT | EWMH_STATE_MAXIMIZED_HORZ) &&
+	                (newValue == 0 || newValue == change)) {
 		EwmhClientMessage_NET_WM_STATEchange(twm_win, change, newValue);
-	} else {
+	}
+	else {
 		EwmhClientMessage_NET_WM_STATEchange(twm_win, change1, newValue & change1);
-		if (change2 != 0) {
+		if(change2 != 0) {
 			EwmhClientMessage_NET_WM_STATEchange(twm_win, change2, newValue & change2);
 		}
 	}
 }
 
-static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change, int newValue)
+static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
+                int newValue)
 {
 	/* Now check what we need to change */
 
@@ -1143,6 +1154,42 @@ static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
 		fullzoom(twm_win, newZoom);
 	}
 
+}
+
+/*
+ * Handle the _NET_ACTIVE_WINDOW client message.
+ * Pagers would send such a message to de-iconify a window.
+ * The mouse is moved to it. But is it always raised or should that
+ * depend on the RaiseOnWarp option?
+ */
+static void EwmhClientMessage_NET_ACTIVE_WINDOW(XClientMessageEvent *msg)
+{
+	Window w = msg->window;
+	TwmWindow *twm_win;
+
+	twm_win = GetTwmWindow(w);
+
+	if(twm_win == NULL) {
+		return;
+	}
+
+	if(!twm_win->mapped) {
+		DeIconify(twm_win);
+	}
+#if 0
+	WarpToWindow(twm_win, Scr->RaiseOnWarp /* True ? */);
+#else
+	/*
+	 * Keep the mouse pointer where it is (typically the dock).
+	 * WarpToWindow() would change the current workspace if needed to go
+	 * to the window. But pagers would only send this message for
+	 * windows in the current workspace, I expect.
+	 */
+	if (Scr->RaiseOnWarp) {
+		AutoRaiseWindow(twm_win);
+	}
+	SetFocus(twm_win, msg->data.l[1]);
+#endif
 }
 
 /*
@@ -1479,6 +1526,16 @@ void EwmhSet_NET_CLIENT_LIST_STACKING(void)
 	free(prop);
 }
 
+void EwmhSet_NET_ACTIVE_WINDOW(Window w)
+{
+	unsigned long prop[1];
+
+	prop[0] = w;
+
+	XChangeProperty(dpy, Scr->Root, NET_ACTIVE_WINDOW, XA_WINDOW, 32,
+	                PropModeReplace, (unsigned char *)prop, 1);
+}
+
 /*
  * Get window properties as relevant when the window is initially mapped.
  *
@@ -1502,7 +1559,7 @@ void EwmhGetProperties(TwmWindow *twm_win)
 	else {
 		twm_win->ewmhWindowType = wt_Normal;
 	}
-	EwmhGetStrut(twm_win, 0);
+	EwmhGetStrut(twm_win, False);
 }
 
 int EwmhGetPriority(TwmWindow *twm_win)
