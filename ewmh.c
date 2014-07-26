@@ -1158,9 +1158,14 @@ static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
 
 /*
  * Handle the _NET_ACTIVE_WINDOW client message.
- * Pagers would send such a message to de-iconify a window.
- * The mouse is moved to it. But is it always raised or should that
- * depend on the RaiseOnWarp option?
+ * Pagers would send such a message to "activate" a window.
+ *
+ * What does "activate" really mean? It isn't properly described.
+ *
+ * Let's presume that it means that the window is de-iconified and gets
+ * focus.  The mouse may be moved to it (but not all window button apps
+ * do that).  But is it always raised or should that depend on the
+ * RaiseOnWarp option?
  */
 static void EwmhClientMessage_NET_ACTIVE_WINDOW(XClientMessageEvent *msg)
 {
