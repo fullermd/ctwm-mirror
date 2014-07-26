@@ -2551,7 +2551,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 			if(!tmp_win->icon || (w != tmp_win->icon->w)) {         /* can't resize icons */
 
 				/*        fromMenu = False;  ????? */
-				if((Context == C_FRAME || Context == C_WINDOW || Context == C_TITLE)
+				if((Context == C_FRAME || Context == C_WINDOW || Context == C_TITLE || Context == C_ROOT)
 				                && fromMenu) {
 					resizeFromCenter(w, tmp_win);
 				}
