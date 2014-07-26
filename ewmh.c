@@ -93,6 +93,7 @@ static Atom NET_WM_WINDOW_TYPE;
 static Atom NET_WM_WINDOW_TYPE_DESKTOP;
 static Atom NET_WM_WINDOW_TYPE_DOCK;
 static Atom NET_WM_WINDOW_TYPE_NORMAL;
+static Atom NET_WORKAREA;
 static Atom UTF8_STRING;
 
 #define NET_WM_STATE_REMOVE        0    /* remove/unset property */
@@ -107,6 +108,7 @@ static void EwmhClientMessage_NET_ACTIVE_WINDOW(XClientMessageEvent *msg);
 static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type);
 static void EwmhGetStrut(TwmWindow *twm_win, int update);
 static void EwmhRemoveStrut(TwmWindow *twm_win);
+static void EwmhSet_NET_WORKAREA(ScreenInfo *scr);
 
 #define ALL_WORKSPACES  0xFFFFFFFFU
 
@@ -163,6 +165,7 @@ static void EwmhInitAtoms(void)
 	NET_WM_WINDOW_TYPE_DOCK = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
 	NET_WM_WINDOW_TYPE_NORMAL = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_NORMAL",
 	                                        False);
+	NET_WORKAREA        = XInternAtom(dpy, "_NET_WORKAREA", False);
 	UTF8_STRING         = XInternAtom(dpy, "UTF8_STRING", False);
 }
 
@@ -422,6 +425,8 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	                32, PropModeReplace,
 	                (unsigned char *)data, 2);
 
+	EwmhSet_NET_WORKAREA(scr);
+
 	if(scr->workSpaceManagerActive) {
 		data[0] = scr->workSpaceMgr.count;
 	}
@@ -473,6 +478,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_STATE_MAXIMIZED_HORZ;
 	supported[i++] = NET_WM_STATE_FULLSCREEN;
 	supported[i++] = NET_ACTIVE_WINDOW;
+	supported[i++] = NET_WORKAREA;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -1190,7 +1196,7 @@ static void EwmhClientMessage_NET_ACTIVE_WINDOW(XClientMessageEvent *msg)
 	 * to the window. But pagers would only send this message for
 	 * windows in the current workspace, I expect.
 	 */
-	if (Scr->RaiseOnWarp) {
+	if(Scr->RaiseOnWarp) {
 		AutoRaiseWindow(twm_win);
 	}
 	SetFocus(twm_win, msg->data.l[1]);
@@ -1644,6 +1650,8 @@ static void EwmhRecalculateStrut(void)
 	Scr->BorderRight  = right;
 	Scr->BorderTop    = top;
 	Scr->BorderBottom = bottom;
+
+	EwmhSet_NET_WORKAREA(Scr);
 }
 /*
  * Check _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT.
@@ -1860,3 +1868,18 @@ void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
 	                PropModeReplace, (unsigned char *)prop, i);
 }
 
+/*
+ * Set the _NET_WORKAREA
+ */
+static void EwmhSet_NET_WORKAREA(ScreenInfo *scr)
+{
+	unsigned long prop[4];
+
+	/* x */ prop[0] = scr->BorderLeft;
+	/* y */ prop[1] = scr->BorderTop;
+	/* w */ prop[2] = scr->rootw - scr->BorderLeft - scr->BorderRight;
+	/* h */ prop[3] = scr->rooth - scr->BorderTop - scr->BorderBottom;
+
+	XChangeProperty(dpy, Scr->XineramaRoot, NET_WORKAREA, XA_CARDINAL, 32,
+	                PropModeReplace, (unsigned char *)prop, 4);
+}
