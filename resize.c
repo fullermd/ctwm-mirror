@@ -1211,6 +1211,11 @@ void fullzoom(TwmWindow *tmp_win, int func)
 #ifdef EWMH
 		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
 			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri);
+			/*
+			 * TODO: because this reduces the priority, it puts the
+			 * window at the bottom... top would be nicer in this case,
+			 * if the original position isn't doable.
+			 */
 		}
 #endif
 	}
@@ -1278,6 +1283,8 @@ void fullzoom(TwmWindow *tmp_win, int func)
 				dragy = -tmp_win->title_height - bw;
 				dragHeight = zheight + tmp_win->title_height + bw3D_times_2;
 				dragWidth = zwidth + bw3D_times_2;
+
+				/* and should ignore aspect ratio and size increments... */
 #ifdef EWMH
 				/*
 				 * Raise the window above the dock.
@@ -1295,7 +1302,9 @@ void fullzoom(TwmWindow *tmp_win, int func)
 		OtpRaise(tmp_win, WinWin);
 	}
 
-	ConstrainSize(tmp_win, &dragWidth, &dragHeight);
+	if(func != F_FULLSCREENZOOM) {
+		ConstrainSize(tmp_win, &dragWidth, &dragHeight);
+	}
 #ifdef BETTERZOOM
 	if(func == F_ZOOM) {
 		if(dragy + dragHeight < tmp_win->save_frame_y + tmp_win->save_frame_height) {
