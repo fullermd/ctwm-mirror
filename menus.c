@@ -1898,17 +1898,12 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
 {
 	int lastx, lasty, bw2;
 	int namelen;
-	XRectangle inc_rect;
-	XRectangle logical_rect;
 
 	namelen = strlen(tmp_win->name);
 	bw2 = tmp_win->frame_bw * 2;
 	AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
 	AddingH = tmp_win->attr.height + tmp_win->title_height + bw2 + 2 *
 	          tmp_win->frame_bw3D;
-
-	XmbTextExtents(Scr->SizeFont.font_set, tmp_win->name, namelen,
-	               &inc_rect, &logical_rect);
 
 	XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
 	             &DragWidth, &DragHeight,
@@ -2551,7 +2546,8 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 			if(!tmp_win->icon || (w != tmp_win->icon->w)) {         /* can't resize icons */
 
 				/*        fromMenu = False;  ????? */
-				if((Context == C_FRAME || Context == C_WINDOW || Context == C_TITLE || Context == C_ROOT)
+				if((Context == C_FRAME || Context == C_WINDOW || Context == C_TITLE
+				                || Context == C_ROOT)
 				                && fromMenu) {
 					resizeFromCenter(w, tmp_win);
 				}
