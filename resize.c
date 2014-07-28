@@ -1306,7 +1306,7 @@ void fullzoom(TwmWindow *tmp_win, int func)
 		ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 	}
 #ifdef BETTERZOOM
-	if(func == F_ZOOM) {
+	if(func == F_VERTZOOM) {
 		if(dragy + dragHeight < tmp_win->save_frame_y + tmp_win->save_frame_height) {
 			dragy = tmp_win->save_frame_y + tmp_win->save_frame_height - dragHeight;
 		}
