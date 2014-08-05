@@ -1208,11 +1208,10 @@ void fullzoom(TwmWindow *tmp_win, int func)
 		dragx = tmp_win->save_frame_x;
 		dragy = tmp_win->save_frame_y;
 		tmp_win->zoomed = ZOOM_NONE;
-#ifdef EWMH
+
 		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
 			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri, Above);
 		}
-#endif
 	}
 	else {
 		if(tmp_win->zoomed == ZOOM_NONE) {
@@ -1220,9 +1219,7 @@ void fullzoom(TwmWindow *tmp_win, int func)
 			tmp_win->save_frame_y = dragy;
 			tmp_win->save_frame_width = dragWidth;
 			tmp_win->save_frame_height = dragHeight;
-#ifdef EWMH
 			tmp_win->save_otpri = OtpGetPriority(tmp_win);
-#endif
 		}
 		tmp_win->zoomed = func;
 
@@ -1280,7 +1277,6 @@ void fullzoom(TwmWindow *tmp_win, int func)
 				dragWidth = zwidth + bw3D_times_2;
 
 				/* and should ignore aspect ratio and size increments... */
-#ifdef EWMH
 				/*
 				 * Raise the window above the dock.
 				 * TODO: It should have the extra priority only while it
@@ -1288,12 +1284,11 @@ void fullzoom(TwmWindow *tmp_win, int func)
 				 */
 				OtpSetPriority(tmp_win, WinWin, EWMH_PRI_FULLSCREEN, Above);
 				/* the OtpRaise below is effectively already done here... */
-#endif /* EWMH */
 			}
 		}
 	}
 
-	if(!Scr->NoRaiseResize) {
+	if(!Scr->NoRaiseResize && func != F_FULLSCREENZOOM) {
 		OtpRaise(tmp_win, WinWin);
 	}
 
@@ -1335,11 +1330,9 @@ void fullzoom(TwmWindow *tmp_win, int func)
 void unzoom(TwmWindow *tmp_win)
 {
 	if(tmp_win->zoomed != ZOOM_NONE) {
-#ifdef EWMH
 		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
 			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri, Above);
 		}
-#endif
 		tmp_win->zoomed = ZOOM_NONE;
 	}
 }
