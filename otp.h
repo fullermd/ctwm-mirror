@@ -64,7 +64,7 @@ extern void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win,
                                      WinType wintype, int place);
 
 /* functions to change a window's OTP value */
-extern void OtpSetPriority(TwmWindow *, WinType, int);
+extern void OtpSetPriority(TwmWindow *, WinType, int, int);
 extern void OtpChangePriority(TwmWindow *, WinType, int);
 extern void OtpSwitchPriority(TwmWindow *, WinType);
 extern void OtpToggleSwitching(TwmWindow *, WinType);

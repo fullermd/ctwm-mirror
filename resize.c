@@ -651,7 +651,7 @@ void EndResize(void)
 
 	if(dragWidth != tmp_win->frame_width ||
 	                dragHeight != tmp_win->frame_height) {
-		tmp_win->zoomed = ZOOM_NONE;
+		unzoom(tmp_win);
 	}
 
 	SetupWindow(tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
@@ -1210,12 +1210,7 @@ void fullzoom(TwmWindow *tmp_win, int func)
 		tmp_win->zoomed = ZOOM_NONE;
 #ifdef EWMH
 		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
-			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri);
-			/*
-			 * TODO: because this reduces the priority, it puts the
-			 * window at the bottom... top would be nicer in this case,
-			 * if the original position isn't doable.
-			 */
+			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri, Above);
 		}
 #endif
 	}
@@ -1291,7 +1286,7 @@ void fullzoom(TwmWindow *tmp_win, int func)
 				 * TODO: It should have the extra priority only while it
 				 * has focus.
 				 */
-				OtpSetPriority(tmp_win, WinWin, EWMH_PRI_FULLSCREEN);
+				OtpSetPriority(tmp_win, WinWin, EWMH_PRI_FULLSCREEN, Above);
 				/* the OtpRaise below is effectively already done here... */
 #endif /* EWMH */
 			}
@@ -1331,6 +1326,22 @@ void fullzoom(TwmWindow *tmp_win, int func)
 #ifdef EWMH
 	EwmhSet_NET_WM_STATE(tmp_win, EWMH_STATE_MAXIMIZED_VERT);
 #endif
+}
+
+/*
+ * Forget about a window being zoomed.
+ * This also needs to undo the special effects of F_FULLSCREENZOOM.
+ */
+void unzoom(TwmWindow *tmp_win)
+{
+	if(tmp_win->zoomed != ZOOM_NONE) {
+#ifdef EWMH
+		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
+			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri, Above);
+		}
+#endif
+		tmp_win->zoomed = ZOOM_NONE;
+	}
 }
 
 void savegeometry(TwmWindow *tmp_win)

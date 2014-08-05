@@ -2686,7 +2686,7 @@ void HandleMapRequest(void)
 		/* add the new window to the EWMH client list */
 		EwmhAddClientWindow(Tmp_win);
 		EwmhSet_NET_CLIENT_LIST_STACKING();
-		OtpSetPriority(Tmp_win, WinWin, EwmhGetPriority(Tmp_win));
+		OtpSetPriority(Tmp_win, WinWin, EwmhGetPriority(Tmp_win), Above);
 #endif /* EWMH */
 #ifdef GNOME
 		GnomeAddClientWindow(
@@ -4497,7 +4497,7 @@ void HandleConfigureRequest(void)
 	}
 
 	if(width != Tmp_win->frame_width || height != Tmp_win->frame_height) {
-		Tmp_win->zoomed = ZOOM_NONE;
+		unzoom(Tmp_win);
 	}
 
 	/* Workaround for Java 1.4 bug that freezes the application whenever

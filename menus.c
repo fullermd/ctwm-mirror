@@ -3253,7 +3253,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 					OtpToggleSwitching(tmp_win, wintype);
 					break;
 				case F_SETPRIORITY:
-					OtpSetPriority(tmp_win, wintype, atoi(action));
+					OtpSetPriority(tmp_win, wintype, atoi(action), Above);
 					break;
 				case F_CHANGEPRIORITY:
 					OtpChangePriority(tmp_win, wintype, atoi(action));
@@ -3262,6 +3262,11 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 					OtpSwitchPriority(tmp_win, wintype);
 					break;
 			}
+#ifdef EWMH
+			if(wintype == WinWin && tmp_win->zoomed != ZOOM_NONE) {
+				tmp_win->save_otpri = OtpGetPriority(tmp_win);
+			}
+#endif
 		}
 		break;
 

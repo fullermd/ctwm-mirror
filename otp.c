@@ -569,9 +569,8 @@ static void InsertOwl(OtpWinList *owl, int where)
 }
 
 
-static void SetOwlPriority(OtpWinList *owl, int new_pri)
+static void SetOwlPriority(OtpWinList *owl, int new_pri, int where)
 {
-	int old_pri;
 	DPRINTF((stderr, "SetOwlPriority(%d)\n", new_pri));
 
 	/* make sure the values are within bounds */
@@ -582,17 +581,15 @@ static void SetOwlPriority(OtpWinList *owl, int new_pri)
 		new_pri = OTP_MAX;
 	}
 
-	old_pri = owl->priority;
-
 	RemoveOwl(owl);
 	owl->priority = new_pri;
-	InsertOwl(owl, (new_pri < old_pri) ? Below : Above);
+	InsertOwl(owl, where);
 
 	assert(owl->priority == new_pri);
 }
 
 
-static void TryToMoveTransientsOfTo(OtpWinList *owl, int priority)
+static void TryToMoveTransientsOfTo(OtpWinList *owl, int priority, int where)
 {
 	OtpWinList *other_owl, *tmp_owl;
 
@@ -610,7 +607,7 @@ static void TryToMoveTransientsOfTo(OtpWinList *owl, int priority)
 		tmp_owl = other_owl->above;
 		if((other_owl->type == WinWin)
 		                && isTransientOf(other_owl->twm_win, owl->twm_win)) {
-			SetOwlPriority(other_owl, priority);
+			SetOwlPriority(other_owl, priority, where);
 		}
 		other_owl = tmp_owl;
 	}
@@ -627,7 +624,7 @@ static void TryToSwitch(OtpWinList *owl, int where)
 	priority = OTP_MAX - owl->priority;
 	if(((where == Above) && (priority > owl->priority)) ||
 	                ((where == Below) && (priority < owl->priority))) {
-		TryToMoveTransientsOfTo(owl, priority);
+		TryToMoveTransientsOfTo(owl, priority, where);
 		owl->priority = priority;
 	}
 }
@@ -839,7 +836,7 @@ void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win,
 	}
 }
 
-void OtpSetPriority(TwmWindow *twm_win, WinType wintype, int new_pri)
+void OtpSetPriority(TwmWindow *twm_win, WinType wintype, int new_pri, int where)
 {
 	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
 	int priority = OTP_ZERO + new_pri;
@@ -855,8 +852,8 @@ void OtpSetPriority(TwmWindow *twm_win, WinType wintype, int new_pri)
 		DPRINTF((stderr, "invalid OnTopPriority value: %d\n", new_pri));
 	}
 	else {
-		TryToMoveTransientsOfTo(owl, priority);
-		SetOwlPriority(owl, priority);
+		TryToMoveTransientsOfTo(owl, priority, where);
+		SetOwlPriority(owl, priority, where);
 	}
 
 	OtpCheckConsistency();
@@ -867,13 +864,16 @@ void OtpChangePriority(TwmWindow *twm_win, WinType wintype, int relpriority)
 {
 	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
 	int priority = owl->priority + relpriority;
+	int where;
 
 	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
 		return;
 	}
 
-	TryToMoveTransientsOfTo(owl, priority);
-	SetOwlPriority(owl, priority);
+	where = relpriority < 0 ? Below : Above;
+
+	TryToMoveTransientsOfTo(owl, priority, where);
+	SetOwlPriority(owl, priority, where);
 
 	OtpCheckConsistency();
 }
@@ -883,6 +883,7 @@ void OtpSwitchPriority(TwmWindow *twm_win, WinType wintype)
 {
 	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
 	int priority = OTP_MAX - owl->priority;
+	int where;
 
 	assert(owl != NULL);
 
@@ -890,8 +891,9 @@ void OtpSwitchPriority(TwmWindow *twm_win, WinType wintype)
 		return;
 	}
 
-	TryToMoveTransientsOfTo(owl, priority);
-	SetOwlPriority(owl, priority);
+	where = priority < OTP_ZERO ? Below : Above;
+	TryToMoveTransientsOfTo(owl, priority, where);
+	SetOwlPriority(owl, priority, where);
 
 	OtpCheckConsistency();
 }
