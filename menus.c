@@ -3264,11 +3264,10 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 					OtpSwitchPriority(tmp_win, wintype);
 					break;
 			}
-#ifdef EWMH
+			/* Update saved priority, if any */
 			if(wintype == WinWin && tmp_win->zoomed != ZOOM_NONE) {
 				tmp_win->save_otpri = OtpGetPriority(tmp_win);
 			}
-#endif
 		}
 		break;
 
@@ -5870,9 +5869,7 @@ static void fillwindow(TwmWindow *tmp_win, char *direction)
 			tmp_win->save_frame_width = tmp_win->frame_width;
 			tmp_win->save_frame_y = tmp_win->frame_y;
 			tmp_win->save_frame_x = tmp_win->frame_x;
-#ifdef EWMH
 			tmp_win->save_otpri = OtpGetPriority(tmp_win);
-#endif
 
 			tmp_win->frame_y++;
 			newy = FindConstraint(tmp_win, J_TOP);
