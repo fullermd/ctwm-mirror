@@ -3237,6 +3237,8 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 		case F_SETPRIORITY:
 		case F_CHANGEPRIORITY: {
 			WinType wintype;
+			int pri;
+			char *endp;
 
 			if(DeferExecution(context, func, Scr->SelectCursor)) {
 				return TRUE;
@@ -3253,7 +3255,9 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 					OtpToggleSwitching(tmp_win, wintype);
 					break;
 				case F_SETPRIORITY:
-					OtpSetPriority(tmp_win, wintype, atoi(action), Above);
+					pri = (int)strtol(action, &endp, 10);
+					OtpSetPriority(tmp_win, wintype, pri,
+							(*endp == '<' || *endp == 'b') ? Below : Above);
 					break;
 				case F_CHANGEPRIORITY:
 					OtpChangePriority(tmp_win, wintype, atoi(action));

@@ -2358,8 +2358,13 @@ Set the WorkSpace manager in button state.
 .IP "\fBf.setmapstate\fP" 8
 Set the WorkSpace manager in map state.
 
-.IP "\fBf.setpriority \fIvalue\fP" 8
+\" define a quote, to be used as \*"
+.ds " ""
+.IP "\fBf.setpriority \*"\fIvalue\fP\*"" 8
 Set the window's priority to \fIvalue\fP (enclosed between double quotes).
+If \fIvalue\fP is directly followed by \fB<\fP or \fBb\fP, the window is
+placed below other windows of the given priority. Otherwise it is placed
+above.
 
 .IP "\fBf.showiconmgr\fP" 8
 This function maps the current icon manager.
