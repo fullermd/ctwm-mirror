@@ -844,7 +844,7 @@ void OtpSetPriority(TwmWindow *twm_win, WinType wintype, int new_pri, int where)
 	DPRINTF((stderr, "OtpSetPriority: new_pri=%d\n", new_pri));
 	assert(owl != NULL);
 
-	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+	if(twm_win->winbox != NULL || twm_win->iswinbox) {
 		return;
 	}
 
@@ -866,7 +866,7 @@ void OtpChangePriority(TwmWindow *twm_win, WinType wintype, int relpriority)
 	int priority = owl->priority + relpriority;
 	int where;
 
-	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+	if(twm_win->winbox != NULL || twm_win->iswinbox) {
 		return;
 	}
 
@@ -887,7 +887,7 @@ void OtpSwitchPriority(TwmWindow *twm_win, WinType wintype)
 
 	assert(owl != NULL);
 
-	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+	if(twm_win->winbox != NULL || twm_win->iswinbox) {
 		return;
 	}
 
@@ -904,7 +904,7 @@ void OtpToggleSwitching(TwmWindow *twm_win, WinType wintype)
 	OtpWinList *owl = (wintype == IconWin) ? twm_win->icon->otp : twm_win->otp;
 	assert(owl != NULL);
 
-	if(owl->twm_win->winbox != NULL || owl->twm_win->iswinbox) {
+	if(twm_win->winbox != NULL || twm_win->iswinbox) {
 		return;
 	}
 

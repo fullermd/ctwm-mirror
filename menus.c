@@ -1897,9 +1897,7 @@ static Bool belongs_to_twm_window(register TwmWindow *t, register Window w)
 void resizeFromCenter(Window w, TwmWindow *tmp_win)
 {
 	int lastx, lasty, bw2;
-	int namelen;
 
-	namelen = strlen(tmp_win->name);
 	bw2 = tmp_win->frame_bw * 2;
 	AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
 	AddingH = tmp_win->attr.height + tmp_win->title_height + bw2 + 2 *
