@@ -1932,12 +1932,18 @@ void resizeFromCenter(Window w, TwmWindow *tmp_win)
 
 		if(Event.type == ButtonPress) {
 			MenuEndResize(tmp_win);
+			// Next line should be unneeded, done by MenuEndResize() ?
 			XMoveResizeWindow(dpy, w, AddingX, AddingY, AddingW, AddingH);
 			break;
 		}
 
 		if(Event.type != MotionNotify) {
 			DispatchEvent2();
+			if(Cancel) {
+				// ...
+				MenuEndResize(tmp_win);
+				return;
+			}
 			continue;
 		}
 
@@ -2498,8 +2504,6 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 			break;
 
 		case F_RESIZE:
-			EventHandler[EnterNotify] = HandleUnknown;
-			EventHandler[LeaveNotify] = HandleUnknown;
 			if(DeferExecution(context, func, Scr->MoveCursor)) {
 				return TRUE;
 			}
@@ -2509,33 +2513,10 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 				XBell(dpy, 0);
 				break;
 			}
-			if(tmp_win->OpaqueResize) {
-				/*
-				 * OpaqueResize defaults to a thousand.  Assume that any number
-				 * >= 1000 is "infinity" and don't bother calculating.
-				 */
-				if(Scr->OpaqueResizeThreshold >= 1000) {
-					Scr->OpaqueResize = TRUE;
-				}
-				else {
-					/*
-					 * scrsz will hold the number of pixels in your resolution,
-					 * which can get big.  [signed] int may not cut it.
-					 */
-					unsigned long winsz, scrsz;
-					winsz = tmp_win->frame_width * tmp_win->frame_height;
-					scrsz = Scr->rootw  * Scr->rooth;
-					if(winsz > (scrsz * (Scr->OpaqueResizeThreshold / 100.0))) {
-						Scr->OpaqueResize = FALSE;
-					}
-					else {
-						Scr->OpaqueResize = TRUE;
-					}
-				}
-			}
-			else {
-				Scr->OpaqueResize = FALSE;
-			}
+			EventHandler[EnterNotify] = HandleUnknown;
+			EventHandler[LeaveNotify] = HandleUnknown;
+
+			OpaqueResizeSize(tmp_win);
 
 			if(pulldown)
 				XWarpPointer(dpy, None, Scr->Root,
@@ -2957,7 +2938,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 				}
 
 				/* test to see if we have a second button press to abort move */
-				if(!menuFromFrameOrWindowOrTitlebar)
+				if(!menuFromFrameOrWindowOrTitlebar) {
 					if(Event.type == ButtonPress && DragWindow != None) {
 						Cursor cur;
 						if(Scr->OpaqueMove) {
@@ -2987,6 +2968,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 						             Scr->Root, cur, CurrentTime);
 						return TRUE;
 					}
+				}
 
 				if(fromtitlebar && Event.type == ButtonPress) {
 					fromtitlebar = False;
@@ -3255,7 +3237,7 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 				case F_SETPRIORITY:
 					pri = (int)strtol(action, &endp, 10);
 					OtpSetPriority(tmp_win, wintype, pri,
-							(*endp == '<' || *endp == 'b') ? Below : Above);
+					               (*endp == '<' || *endp == 'b') ? Below : Above);
 					break;
 				case F_CHANGEPRIORITY:
 					OtpChangePriority(tmp_win, wintype, atoi(action));

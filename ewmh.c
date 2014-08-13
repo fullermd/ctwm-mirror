@@ -82,6 +82,7 @@ static Atom NET_SUPPORTING_WM_CHECK;
 static Atom NET_VIRTUAL_ROOTS;
 static Atom NET_WM_DESKTOP;
 static Atom NET_WM_ICON;
+static Atom NET_WM_MOVERESIZE;
 static Atom NET_WM_NAME;
 static Atom NET_WM_STATE;
 static Atom NET_WM_STATE_MAXIMIZED_VERT;
@@ -100,11 +101,25 @@ static Atom UTF8_STRING;
 #define NET_WM_STATE_ADD           1    /* add/set property */
 #define NET_WM_STATE_TOGGLE        2    /* toggle property  */
 
+#define _NET_WM_MOVERESIZE_SIZE_TOPLEFT      0
+#define _NET_WM_MOVERESIZE_SIZE_TOP          1
+#define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT     2
+#define _NET_WM_MOVERESIZE_SIZE_RIGHT        3
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT  4
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOM       5
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT   6
+#define _NET_WM_MOVERESIZE_SIZE_LEFT         7
+#define _NET_WM_MOVERESIZE_MOVE              8   /* movement only */
+#define _NET_WM_MOVERESIZE_SIZE_KEYBOARD     9   /* size via keyboard */
+#define _NET_WM_MOVERESIZE_MOVE_KEYBOARD    10   /* move via keyboard */
+#define _NET_WM_MOVERESIZE_CANCEL           11   /* cancel operation */
+
 static Image *ExtractIcon(ScreenInfo *scr, unsigned long *prop, int width,
                           int height);
 static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg);
 static void EwmhClientMessage_NET_WM_STATE(XClientMessageEvent *msg);
 static void EwmhClientMessage_NET_ACTIVE_WINDOW(XClientMessageEvent *msg);
+static void EwmhClientMessage_NET_WM_MOVERESIZE(XClientMessageEvent *msg);
 static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type);
 static void EwmhGetStrut(TwmWindow *twm_win, int update);
 static void EwmhRemoveStrut(TwmWindow *twm_win);
@@ -149,6 +164,7 @@ static void EwmhInitAtoms(void)
 	NET_VIRTUAL_ROOTS   = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
 	NET_WM_DESKTOP      = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	NET_WM_ICON         = XInternAtom(dpy, "_NET_WM_ICON", False);
+	NET_WM_MOVERESIZE   = XInternAtom(dpy, "_NET_WM_MOVERESIZE", False);
 	NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
 	NET_WM_STATE        = XInternAtom(dpy, "_NET_WM_STATE", False);
 	NET_WM_STATE_MAXIMIZED_VERT = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT",
@@ -479,6 +495,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = NET_WM_STATE_FULLSCREEN;
 	supported[i++] = NET_ACTIVE_WINDOW;
 	supported[i++] = NET_WORKAREA;
+	supported[i++] = NET_WM_MOVERESIZE;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                NET_SUPPORTED, XA_ATOM,
@@ -602,6 +619,10 @@ int EwmhClientMessage(XClientMessageEvent *msg)
 	}
 	else if(msg->message_type == NET_ACTIVE_WINDOW) {
 		EwmhClientMessage_NET_ACTIVE_WINDOW(msg);
+		return 1;
+	}
+	else if(msg->message_type == NET_WM_MOVERESIZE) {
+		EwmhClientMessage_NET_WM_MOVERESIZE(msg);
 		return 1;
 	}
 
@@ -1201,6 +1222,87 @@ static void EwmhClientMessage_NET_ACTIVE_WINDOW(XClientMessageEvent *msg)
 	}
 	SetFocus(twm_win, msg->data.l[1]);
 #endif
+}
+
+/*
+ * Ugly implementation of _NET_WM_MOVERESIZE.
+ *
+ * window = window to be moved or resized
+ * message_type = _NET_WM_MOVERESIZE
+ * format = 32
+ * data.l[0] = x_root
+ * data.l[1] = y_root
+ * data.l[2] = direction
+ * data.l[3] = button
+ * data.l[4] = source indication
+ */
+static void EwmhClientMessage_NET_WM_MOVERESIZE(XClientMessageEvent *msg)
+{
+	Window w = msg->window;
+	TwmWindow *twm_win;
+	XEvent xevent;
+
+	twm_win = GetTwmWindow(w);
+
+	if(twm_win == NULL) {
+		return;
+	}
+
+	if(!twm_win->mapped) {
+		DeIconify(twm_win);
+	}
+
+	switch(msg->data.l[2]) {
+		case _NET_WM_MOVERESIZE_SIZE_TOPLEFT:
+		case _NET_WM_MOVERESIZE_SIZE_TOP:
+		case _NET_WM_MOVERESIZE_SIZE_TOPRIGHT:
+		case _NET_WM_MOVERESIZE_SIZE_RIGHT:
+		case _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT:
+		case _NET_WM_MOVERESIZE_SIZE_BOTTOM:
+		case _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT:
+		case _NET_WM_MOVERESIZE_SIZE_LEFT:
+		case _NET_WM_MOVERESIZE_SIZE_KEYBOARD:
+			/* all implemented the same */
+			EventHandler[EnterNotify] = HandleUnknown;
+			EventHandler[LeaveNotify] = HandleUnknown;
+			OpaqueResizeSize(twm_win);
+			resizeFromCenter(twm_win->frame, twm_win);
+			/*
+			 * This should probably happen in HandleButtonRelease...
+			 * no idea why it doesn't.
+			 */
+			EventHandler[EnterNotify] = HandleEnterNotify;
+			EventHandler[LeaveNotify] = HandleLeaveNotify;
+			break;
+		case _NET_WM_MOVERESIZE_MOVE:
+		case _NET_WM_MOVERESIZE_MOVE_KEYBOARD:
+			/* synthesize a button event */
+			xevent.xbutton.root = twm_win->parent_vs->window;
+			xevent.xbutton.window = (Window) - 1; /* force fromtitlebar = False */
+			xevent.xbutton.x_root = twm_win->frame_x;
+			xevent.xbutton.y_root = twm_win->frame_y;
+			xevent.xbutton.x = 0;
+			xevent.xbutton.y = 0;
+			xevent.xbutton.time = lastTimestamp;
+			menuFromFrameOrWindowOrTitlebar = True;
+			ExecuteFunction(F_MOVE, "", twm_win->frame, twm_win,
+			                &xevent, C_TITLE, False);
+			menuFromFrameOrWindowOrTitlebar = False;
+			/*
+			 * This should probably happen in HandleButtonRelease...
+			 * no idea why it doesn't.
+			 */
+			EventHandler[EnterNotify] = HandleEnterNotify;
+			EventHandler[LeaveNotify] = HandleLeaveNotify;
+			break;
+		case _NET_WM_MOVERESIZE_CANCEL:
+			/*
+			 * TODO: check if the twm_win is the same.
+			 * TODO: check how to make this actually work.
+			 */
+			Cancel = True;
+			break;
+	}
 }
 
 /*

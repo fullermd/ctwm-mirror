@@ -64,6 +64,7 @@
 #ifndef _RESIZE_
 #define _RESIZE_
 
+extern void OpaqueResizeSize(TwmWindow *tmp_win);
 extern void MenuStartResize(TwmWindow *tmp_win, int x, int y, int w, int h);
 extern void StartResize(XEvent *evp, TwmWindow *tmp_win,
                         Bool fromtitlebar, Bool from3dborder);

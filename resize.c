@@ -156,6 +156,48 @@ static void do_auto_clamp(TwmWindow *tmp_win, XEvent *evp)
 	}
 }
 
+/***********************************************************************
+ *
+ *  Procedure:
+ *      OpaqueResizeSize - determine if window should be resized opaquely.
+ *
+ *  Inputs:
+ *      tmp_win - the TwmWindow pointer
+ *
+ ***********************************************************************
+ */
+
+void OpaqueResizeSize(TwmWindow *tmp_win)
+{
+	if(tmp_win->OpaqueResize) {
+		/*
+		 * OpaqueResize defaults to a thousand.  Assume that any number
+		 * >= 1000 is "infinity" and don't bother calculating.
+		 */
+		if(Scr->OpaqueResizeThreshold >= 1000) {
+			Scr->OpaqueResize = TRUE;
+		}
+		else {
+			/*
+			 * scrsz will hold the number of pixels in your resolution,
+			 * which can get big.  [signed] int may not cut it.
+			 */
+			unsigned long winsz, scrsz;
+			winsz = tmp_win->frame_width * tmp_win->frame_height;
+			scrsz = Scr->rootw  * Scr->rooth;
+			if(winsz > (scrsz * (Scr->OpaqueResizeThreshold / 100.0))) {
+				Scr->OpaqueResize = FALSE;
+			}
+			else {
+				Scr->OpaqueResize = TRUE;
+			}
+		}
+	}
+	else {
+		Scr->OpaqueResize = FALSE;
+	}
+}
+
 
 /***********************************************************************
  *
