@@ -56,6 +56,7 @@
 #include <X11/Xatom.h>
 
 #include "ewmh.h"
+#include "ewmh_atoms.h"
 #include "ctwm.h"
 #include "screen.h"
 #include "events.h"
@@ -68,34 +69,7 @@
 
 #define DEBUG_EWMH      1
 
-static Atom MANAGER;
-Atom NET_CURRENT_DESKTOP;
-static Atom NET_ACTIVE_WINDOW;
-static Atom NET_CLIENT_LIST;
-static Atom NET_CLIENT_LIST_STACKING;
-static Atom NET_DESKTOP_GEOMETRY;
-static Atom NET_DESKTOP_VIEWPORT;
-static Atom NET_NUMBER_OF_DESKTOPS;
-static Atom NET_SHOWING_DESKTOP;
-static Atom NET_SUPPORTED;
-static Atom NET_SUPPORTING_WM_CHECK;
-static Atom NET_VIRTUAL_ROOTS;
-static Atom NET_WM_DESKTOP;
-static Atom NET_WM_ICON;
-static Atom NET_WM_MOVERESIZE;
-static Atom NET_WM_NAME;
-static Atom NET_WM_STATE;
-static Atom NET_WM_STATE_MAXIMIZED_VERT;
-static Atom NET_WM_STATE_MAXIMIZED_HORZ;
-static Atom NET_WM_STATE_FULLSCREEN;
-static Atom NET_WM_STRUT;
-static Atom NET_WM_STRUT_PARTIAL;
-static Atom NET_WM_WINDOW_TYPE;
-static Atom NET_WM_WINDOW_TYPE_DESKTOP;
-static Atom NET_WM_WINDOW_TYPE_DOCK;
-static Atom NET_WM_WINDOW_TYPE_NORMAL;
-static Atom NET_WORKAREA;
-static Atom UTF8_STRING;
+Atom XEWMHAtom[NUM_EWMH_XATOMS];
 
 #define NET_WM_STATE_REMOVE        0    /* remove/unset property */
 #define NET_WM_STATE_ADD           1    /* add/set property */
@@ -150,39 +124,7 @@ static void SendPropertyMessage(Window to, Window about,
 
 static void EwmhInitAtoms(void)
 {
-	MANAGER             = XInternAtom(dpy, "MANAGER", False);
-	NET_ACTIVE_WINDOW   = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
-	NET_CLIENT_LIST     = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
-	NET_CLIENT_LIST_STACKING = XInternAtom(dpy, "_NET_CLIENT_LIST_STACKING", False);
-	NET_CURRENT_DESKTOP = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
-	NET_DESKTOP_GEOMETRY    = XInternAtom(dpy, "_NET_DESKTOP_GEOMETRY", False);
-	NET_DESKTOP_VIEWPORT    = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
-	NET_NUMBER_OF_DESKTOPS  = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
-	NET_SHOWING_DESKTOP     = XInternAtom(dpy, "_NET_SHOWING_DESKTOP", False);
-	NET_SUPPORTED           = XInternAtom(dpy, "_NET_SUPPORTED", False);
-	NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
-	NET_VIRTUAL_ROOTS   = XInternAtom(dpy, "_NET_VIRTUAL_ROOTS", False);
-	NET_WM_DESKTOP      = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
-	NET_WM_ICON         = XInternAtom(dpy, "_NET_WM_ICON", False);
-	NET_WM_MOVERESIZE   = XInternAtom(dpy, "_NET_WM_MOVERESIZE", False);
-	NET_WM_NAME         = XInternAtom(dpy, "_NET_WM_NAME", False);
-	NET_WM_STATE        = XInternAtom(dpy, "_NET_WM_STATE", False);
-	NET_WM_STATE_MAXIMIZED_VERT = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT",
-	                              False);
-	NET_WM_STATE_MAXIMIZED_HORZ = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ",
-	                              False);
-	NET_WM_STATE_FULLSCREEN     = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN",
-	                              False);
-	NET_WM_STRUT        = XInternAtom(dpy, "_NET_WM_STRUT", False);
-	NET_WM_STRUT_PARTIAL = XInternAtom(dpy, "_NET_WM_STRUT_PARTIAL", False);
-	NET_WM_WINDOW_TYPE  = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
-	NET_WM_WINDOW_TYPE_DESKTOP = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP",
-	                             False);
-	NET_WM_WINDOW_TYPE_DOCK = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
-	NET_WM_WINDOW_TYPE_NORMAL = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_NORMAL",
-	                                        False);
-	NET_WORKAREA        = XInternAtom(dpy, "_NET_WORKAREA", False);
-	UTF8_STRING         = XInternAtom(dpy, "UTF8_STRING", False);
+	XInternAtoms(dpy, XEWMHAtomNames, NUM_EWMH_XATOMS, False, XEWMHAtom);
 }
 
 static int caughtError;
@@ -335,7 +277,7 @@ static int EwmhReplaceWM(ScreenInfo *scr)
 	GenerateTimestamp(scr);
 
 	SendPropertyMessage(scr->XineramaRoot, scr->XineramaRoot,
-	                    MANAGER, lastTimestamp, wmAtom, scr->icccm_Window, 0, 0,
+	                    XA_MANAGER, lastTimestamp, wmAtom, scr->icccm_Window, 0, 0,
 	                    StructureNotifyMask);
 
 	return True;
@@ -405,7 +347,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	/* Set _NET_SUPPORTING_WM_CHECK on root window */
 	data[0] = scr->icccm_Window;
 	XChangeProperty(dpy, scr->XineramaRoot,
-	                NET_SUPPORTING_WM_CHECK, XA_WINDOW,
+	                XA__NET_SUPPORTING_WM_CHECK, XA_WINDOW,
 	                32, PropModeReplace,
 	                (unsigned char *)data, 1);
 
@@ -414,13 +356,13 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	 * this also belongs with _NET_SUPPORTING_WM_CHECK
 	 */
 	XChangeProperty(dpy, scr->icccm_Window,
-	                NET_WM_NAME, UTF8_STRING,
+	                XA__NET_WM_NAME, XA_UTF8_STRING,
 	                8, PropModeReplace,
 	                (unsigned char *)"ctwm", 4);
 
 	data[0] = scr->icccm_Window;
 	XChangeProperty(dpy, scr->icccm_Window,
-	                NET_SUPPORTING_WM_CHECK, XA_WINDOW,
+	                XA__NET_SUPPORTING_WM_CHECK, XA_WINDOW,
 	                32, PropModeReplace,
 	                (unsigned char *)data, 1);
 
@@ -430,14 +372,14 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	data[0] = 0;
 	data[1] = 0;
 	XChangeProperty(dpy, scr->XineramaRoot,
-	                NET_DESKTOP_VIEWPORT, XA_CARDINAL,
+	                XA__NET_DESKTOP_VIEWPORT, XA_CARDINAL,
 	                32, PropModeReplace,
 	                (unsigned char *)data, 2);
 
 	data[0] = scr->rootw;
 	data[1] = scr->rooth;
 	XChangeProperty(dpy, scr->XineramaRoot,
-	                NET_DESKTOP_GEOMETRY, XA_CARDINAL,
+	                XA__NET_DESKTOP_GEOMETRY, XA_CARDINAL,
 	                32, PropModeReplace,
 	                (unsigned char *)data, 2);
 
@@ -451,7 +393,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	}
 
 	XChangeProperty(dpy, scr->XineramaRoot,
-	                NET_NUMBER_OF_DESKTOPS, XA_CARDINAL,
+	                XA__NET_NUMBER_OF_DESKTOPS, XA_CARDINAL,
 	                32, PropModeReplace,
 	                (unsigned char *)data, 1);
 
@@ -464,7 +406,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 		data[0] = 0;
 	}
 	XChangeProperty(dpy, scr->XineramaRoot,
-	                NET_CURRENT_DESKTOP, XA_CARDINAL,
+	                XA__NET_CURRENT_DESKTOP, XA_CARDINAL,
 	                32, PropModeReplace,
 	                (unsigned char *)data, 1);
 
@@ -473,32 +415,32 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	long supported[30];
 	int i = 0;
 
-	supported[i++] = NET_SUPPORTING_WM_CHECK;
-	supported[i++] = NET_DESKTOP_VIEWPORT;
-	supported[i++] = NET_NUMBER_OF_DESKTOPS;
-	supported[i++] = NET_CURRENT_DESKTOP;
-	supported[i++] = NET_DESKTOP_GEOMETRY;
-	supported[i++] = NET_WM_ICON;
-	supported[i++] = NET_WM_DESKTOP;
-	supported[i++] = NET_CLIENT_LIST;
-	supported[i++] = NET_CLIENT_LIST_STACKING;
-	supported[i++] = NET_WM_WINDOW_TYPE;
-	supported[i++] = NET_WM_WINDOW_TYPE_NORMAL;
-	supported[i++] = NET_WM_WINDOW_TYPE_DESKTOP;
-	supported[i++] = NET_WM_WINDOW_TYPE_DOCK;
-	supported[i++] = NET_WM_STRUT;
-	supported[i++] = NET_WM_STRUT_PARTIAL;
-	supported[i++] = NET_SHOWING_DESKTOP;
-	supported[i++] = NET_WM_STATE;
-	supported[i++] = NET_WM_STATE_MAXIMIZED_VERT;
-	supported[i++] = NET_WM_STATE_MAXIMIZED_HORZ;
-	supported[i++] = NET_WM_STATE_FULLSCREEN;
-	supported[i++] = NET_ACTIVE_WINDOW;
-	supported[i++] = NET_WORKAREA;
-	supported[i++] = NET_WM_MOVERESIZE;
+	supported[i++] = XA__NET_SUPPORTING_WM_CHECK;
+	supported[i++] = XA__NET_DESKTOP_VIEWPORT;
+	supported[i++] = XA__NET_NUMBER_OF_DESKTOPS;
+	supported[i++] = XA__NET_CURRENT_DESKTOP;
+	supported[i++] = XA__NET_DESKTOP_GEOMETRY;
+	supported[i++] = XA__NET_WM_ICON;
+	supported[i++] = XA__NET_WM_DESKTOP;
+	supported[i++] = XA__NET_CLIENT_LIST;
+	supported[i++] = XA__NET_CLIENT_LIST_STACKING;
+	supported[i++] = XA__NET_WM_WINDOW_TYPE;
+	supported[i++] = XA__NET_WM_WINDOW_TYPE_NORMAL;
+	supported[i++] = XA__NET_WM_WINDOW_TYPE_DESKTOP;
+	supported[i++] = XA__NET_WM_WINDOW_TYPE_DOCK;
+	supported[i++] = XA__NET_WM_STRUT;
+	supported[i++] = XA__NET_WM_STRUT_PARTIAL;
+	supported[i++] = XA__NET_SHOWING_DESKTOP;
+	supported[i++] = XA__NET_WM_STATE;
+	supported[i++] = XA__NET_WM_STATE_MAXIMIZED_VERT;
+	supported[i++] = XA__NET_WM_STATE_MAXIMIZED_HORZ;
+	supported[i++] = XA__NET_WM_STATE_FULLSCREEN;
+	supported[i++] = XA__NET_ACTIVE_WINDOW;
+	supported[i++] = XA__NET_WORKAREA;
+	supported[i++] = XA__NET_WM_MOVERESIZE;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
-	                NET_SUPPORTED, XA_ATOM,
+	                XA__NET_SUPPORTED, XA_ATOM,
 	                32, PropModeReplace,
 	                (unsigned char *)supported, i);
 }
@@ -537,7 +479,7 @@ void EwmhInitVirtualRoots(ScreenInfo *scr)
 		}
 
 		XChangeProperty(dpy, scr->XineramaRoot,
-		                NET_VIRTUAL_ROOTS, XA_WINDOW,
+		                XA__NET_VIRTUAL_ROOTS, XA_WINDOW,
 		                32, PropModeReplace,
 		                (unsigned char *)data, numVscreens);
 
@@ -545,9 +487,9 @@ void EwmhInitVirtualRoots(ScreenInfo *scr)
 
 		free(data);
 
-		d0 = NET_VIRTUAL_ROOTS;
+		d0 = XA__NET_VIRTUAL_ROOTS;
 		XChangeProperty(dpy, scr->XineramaRoot,
-		                NET_SUPPORTED, XA_ATOM,
+		                XA__NET_SUPPORTED, XA_ATOM,
 		                32, PropModeAppend,
 		                (unsigned char *)&d0, 1);
 	}
@@ -555,7 +497,7 @@ void EwmhInitVirtualRoots(ScreenInfo *scr)
 
 static void EwmhTerminateScreen(ScreenInfo *scr)
 {
-	XDeleteProperty(dpy, scr->XineramaRoot, NET_SUPPORTED);
+	XDeleteProperty(dpy, scr->XineramaRoot, XA__NET_SUPPORTED);
 
 	/*
 	 * Don't delete scr->icccm_Window; let it be deleted automatically
@@ -609,19 +551,19 @@ int EwmhClientMessage(XClientMessageEvent *msg)
 	}
 
 	/* Messages regarding any window */
-	if(msg->message_type == NET_WM_DESKTOP) {
+	if(msg->message_type == XA__NET_WM_DESKTOP) {
 		EwmhClientMessage_NET_WM_DESKTOP(msg);
 		return True;
 	}
-	else if(msg->message_type == NET_WM_STATE) {
+	else if(msg->message_type == XA__NET_WM_STATE) {
 		EwmhClientMessage_NET_WM_STATE(msg);
 		return 1;
 	}
-	else if(msg->message_type == NET_ACTIVE_WINDOW) {
+	else if(msg->message_type == XA__NET_ACTIVE_WINDOW) {
 		EwmhClientMessage_NET_ACTIVE_WINDOW(msg);
 		return 1;
 	}
-	else if(msg->message_type == NET_WM_MOVERESIZE) {
+	else if(msg->message_type == XA__NET_WM_MOVERESIZE) {
 		EwmhClientMessage_NET_WM_MOVERESIZE(msg);
 		return 1;
 	}
@@ -636,11 +578,11 @@ int EwmhClientMessage(XClientMessageEvent *msg)
 		return False;
 	}
 
-	if(msg->message_type == NET_CURRENT_DESKTOP) {
+	if(msg->message_type == XA__NET_CURRENT_DESKTOP) {
 		GotoWorkSpaceByNumber(Scr->currentvs, msg->data.l[0]);
 		return True;
 	}
-	else if(msg->message_type == NET_SHOWING_DESKTOP) {
+	else if(msg->message_type == XA__NET_SHOWING_DESKTOP) {
 		ShowBackground(Scr->currentvs, msg->data.l[0] ? 1 : 0);
 	}
 	else {
@@ -690,7 +632,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 	int area, width, height;
 
 	fetch_offset = 0;
-	if(XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
+	if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_ICON,
 	                      fetch_offset, 8 * 1024, False, XA_CARDINAL,
 	                      &actual_type, &actual_format, &nitems,
 	                      &bytes_after, (unsigned char **)&prop) != Success || nitems == 0) {
@@ -772,7 +714,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 				/* we can fetch some more... */
 				XFree(prop);
 				fetch_offset += i + size;
-				if(XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
+				if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_ICON,
 				                      fetch_offset, 8 * 1024, False, XA_CARDINAL,
 				                      &actual_type, &actual_format, &nitems,
 				                      &bytes_after, (unsigned char **)&prop) != Success) {
@@ -848,7 +790,7 @@ Image *EwhmGetIcon(ScreenInfo *scr, TwmWindow *twm_win)
 #ifdef DEBUG_EWMH
 		fprintf(stderr, "refetching from %d\n", fetch_offset);
 #endif /* DEBUG_EWMH */
-		if(XGetWindowProperty(dpy, twm_win->w, NET_WM_ICON,
+		if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_ICON,
 		                      fetch_offset, 2 + area, False, XA_CARDINAL,
 		                      &actual_type, &actual_format, &nitems,
 		                      &bytes_after, (unsigned char **)&prop) != Success) {
@@ -1067,13 +1009,13 @@ static void EwmhHandle_NET_WM_STRUTNotify(XPropertyEvent *event,
  */
 static int atomToFlag(Atom a)
 {
-	if(a == NET_WM_STATE_MAXIMIZED_VERT) {
+	if(a == XA__NET_WM_STATE_MAXIMIZED_VERT) {
 		return EWMH_STATE_MAXIMIZED_VERT;
 	}
-	if(a == NET_WM_STATE_MAXIMIZED_HORZ) {
+	if(a == XA__NET_WM_STATE_MAXIMIZED_HORZ) {
 		return EWMH_STATE_MAXIMIZED_HORZ;
 	}
-	if(a == NET_WM_STATE_FULLSCREEN) {
+	if(a == XA__NET_WM_STATE_FULLSCREEN) {
 		return EWMH_STATE_FULLSCREEN;
 	}
 	return 0;
@@ -1310,12 +1252,12 @@ static void EwmhClientMessage_NET_WM_MOVERESIZE(XClientMessageEvent *msg)
  */
 int EwmhHandlePropertyNotify(XPropertyEvent *event, TwmWindow *twm_win)
 {
-	if(event->atom == NET_WM_ICON) {
+	if(event->atom == XA__NET_WM_ICON) {
 		EwmhHandle_NET_WM_ICONNotify(event, twm_win);
 		return 1;
 	}
-	else if(event->atom == NET_WM_STRUT_PARTIAL ||
-	                event->atom == NET_WM_STRUT) {
+	else if(event->atom == XA__NET_WM_STRUT_PARTIAL ||
+	                event->atom == XA__NET_WM_STRUT) {
 		EwmhHandle_NET_WM_STRUTNotify(event, twm_win);
 		return 1;
 	}
@@ -1392,7 +1334,7 @@ void EwmhSet_NET_WM_DESKTOP_ws(TwmWindow *twm_win, WorkSpace *ws)
 	}
 
 	XChangeProperty(dpy, twm_win->w,
-	                NET_WM_DESKTOP, XA_CARDINAL,
+	                XA__NET_WM_DESKTOP, XA_CARDINAL,
 	                32, PropModeReplace,
 	                (unsigned char *)workspaces, n);
 }
@@ -1431,7 +1373,7 @@ int EwmhGetOccupation(TwmWindow *twm_win)
 	unsigned long *prop;
 	int occupation;
 
-	if(XGetWindowProperty(dpy, twm_win->w, NET_WM_DESKTOP,
+	if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_DESKTOP,
 	                      0, MAXWORKSPACE, False, XA_CARDINAL,
 	                      &actual_type, &actual_format, &nitems,
 	                      &bytes_after, (unsigned char **)&prop) != Success) {
@@ -1516,7 +1458,7 @@ static void EwmhClientMessage_NET_WM_DESKTOP(XClientMessageEvent *msg)
  */
 void EwmhUnmapNotify(TwmWindow *twm_win)
 {
-	XDeleteProperty(dpy, twm_win->w, NET_WM_DESKTOP);
+	XDeleteProperty(dpy, twm_win->w, XA__NET_WM_DESKTOP);
 }
 
 /*
@@ -1548,7 +1490,7 @@ void EwmhAddClientWindow(TwmWindow *new_win)
 			fprintf(stderr, "Unable to allocate memory for EWMH client list.\n");
 			return;
 		}
-		XChangeProperty(dpy, Scr->Root, NET_CLIENT_LIST, XA_WINDOW, 32,
+		XChangeProperty(dpy, Scr->Root, XA__NET_CLIENT_LIST, XA_WINDOW, 32,
 		                PropModeReplace, (unsigned char *)Scr->ewmh_CLIENT_LIST,
 		                Scr->ewmh_CLIENT_LIST_used);
 	}
@@ -1586,7 +1528,7 @@ void EwmhDeleteClientWindow(TwmWindow *old_win)
 	}
 	/* If window was not found, there is no need to update the property. */
 	if(i >= 0) {
-		XChangeProperty(dpy, Scr->Root, NET_CLIENT_LIST, XA_WINDOW, 32,
+		XChangeProperty(dpy, Scr->Root, XA__NET_CLIENT_LIST, XA_WINDOW, 32,
 		                PropModeReplace, (unsigned char *)Scr->ewmh_CLIENT_LIST,
 		                Scr->ewmh_CLIENT_LIST_used);
 	}
@@ -1633,7 +1575,7 @@ void EwmhSet_NET_CLIENT_LIST_STACKING(void)
 		        i, Scr->ewmh_CLIENT_LIST_used);
 	}
 
-	XChangeProperty(dpy, Scr->Root, NET_CLIENT_LIST_STACKING, XA_WINDOW, 32,
+	XChangeProperty(dpy, Scr->Root, XA__NET_CLIENT_LIST_STACKING, XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *)prop, i);
 
 	free(prop);
@@ -1645,7 +1587,7 @@ void EwmhSet_NET_ACTIVE_WINDOW(Window w)
 
 	prop[0] = w;
 
-	XChangeProperty(dpy, Scr->Root, NET_ACTIVE_WINDOW, XA_WINDOW, 32,
+	XChangeProperty(dpy, Scr->Root, XA__NET_ACTIVE_WINDOW, XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *)prop, 1);
 }
 
@@ -1661,12 +1603,12 @@ void EwmhGetProperties(TwmWindow *twm_win)
 {
 	twm_win->ewmhFlags = 0;
 
-	Atom type = EwmhGetWindowProperty(twm_win->w, NET_WM_WINDOW_TYPE, XA_ATOM);
+	Atom type = EwmhGetWindowProperty(twm_win->w, XA__NET_WM_WINDOW_TYPE, XA_ATOM);
 
-	if(type == NET_WM_WINDOW_TYPE_DESKTOP) {
+	if(type == XA__NET_WM_WINDOW_TYPE_DESKTOP) {
 		twm_win->ewmhWindowType = wt_Desktop;
 	}
-	else if(type == NET_WM_WINDOW_TYPE_DOCK) {
+	else if(type == XA__NET_WM_WINDOW_TYPE_DOCK) {
 		twm_win->ewmhWindowType = wt_Dock;
 	}
 	else {
@@ -1774,11 +1716,11 @@ static void EwmhGetStrut(TwmWindow *twm_win, int update)
 	unsigned long *prop;
 	EwmhStrut *strut;
 
-	if(XGetWindowProperty(dpy, twm_win->w, NET_WM_STRUT_PARTIAL,
+	if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_STRUT_PARTIAL,
 	                      0, 4, False, XA_CARDINAL,
 	                      &actual_type, &actual_format, &nitems,
 	                      &bytes_after, (unsigned char **)&prop) != Success) {
-		if(XGetWindowProperty(dpy, twm_win->w, NET_WM_STRUT,
+		if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_STRUT,
 		                      0, 4, False, XA_CARDINAL,
 		                      &actual_type, &actual_format, &nitems,
 		                      &bytes_after, (unsigned char **)&prop) != Success) {
@@ -1908,7 +1850,8 @@ void EwmhSet_NET_SHOWING_DESKTOP(int state)
 
 	prop[0] = state;
 
-	XChangeProperty(dpy, Scr->XineramaRoot, NET_SHOWING_DESKTOP, XA_CARDINAL, 32,
+	XChangeProperty(dpy, Scr->XineramaRoot, XA__NET_SHOWING_DESKTOP, XA_CARDINAL,
+	                32,
 	                PropModeReplace, (unsigned char *)prop, 1);
 }
 
@@ -1957,16 +1900,16 @@ void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
 	i = 0;
 
 	if(flags & EWMH_STATE_MAXIMIZED_VERT) {
-		prop[i++] = NET_WM_STATE_MAXIMIZED_VERT;
+		prop[i++] = XA__NET_WM_STATE_MAXIMIZED_VERT;
 	}
 	if(flags & EWMH_STATE_MAXIMIZED_HORZ) {
-		prop[i++] = NET_WM_STATE_MAXIMIZED_HORZ;
+		prop[i++] = XA__NET_WM_STATE_MAXIMIZED_HORZ;
 	}
 	if(flags & EWMH_STATE_FULLSCREEN) {
-		prop[i++] = NET_WM_STATE_FULLSCREEN;
+		prop[i++] = XA__NET_WM_STATE_FULLSCREEN;
 	}
 
-	XChangeProperty(dpy, Scr->XineramaRoot, NET_WM_STATE, XA_CARDINAL, 32,
+	XChangeProperty(dpy, Scr->XineramaRoot, XA__NET_WM_STATE, XA_CARDINAL, 32,
 	                PropModeReplace, (unsigned char *)prop, i);
 }
 
@@ -1982,6 +1925,6 @@ static void EwmhSet_NET_WORKAREA(ScreenInfo *scr)
 	/* w */ prop[2] = scr->rootw - scr->BorderLeft - scr->BorderRight;
 	/* h */ prop[3] = scr->rooth - scr->BorderTop - scr->BorderBottom;
 
-	XChangeProperty(dpy, Scr->XineramaRoot, NET_WORKAREA, XA_CARDINAL, 32,
+	XChangeProperty(dpy, Scr->XineramaRoot, XA__NET_WORKAREA, XA_CARDINAL, 32,
 	                PropModeReplace, (unsigned char *)prop, 4);
 }

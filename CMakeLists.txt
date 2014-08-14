@@ -161,7 +161,14 @@ endif(USE_SOUND)
 
 # Check if the user wants EWMH support built in.
 if(USE_EWMH)
-	list(APPEND CTWMSRC ewmh.c)
+    # Hand-build ewmh_atoms.[ch]
+	set(ewmh_atoms ewmh_atoms.h ewmh_atoms.c)
+	add_custom_command(OUTPUT ${ewmh_atoms}
+		DEPENDS ewmh_atoms.in
+		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_atoms.sh ${CMAKE_CURRENT_SOURCE_DIR}/ewmh_atoms.in ewmh_atoms EWMH
+    )
+
+	list(APPEND CTWMSRC ewmh.c ewmh_atoms.c)
 	add_definitions(-DEWMH)
 	message(STATUS "Enabling Extended Window Manager Hints support.")
 else()

@@ -74,8 +74,6 @@ typedef struct EwmhStrut {
 #define EWMH_PRI_FULLSCREEN              6
 #define EWMH_PRI_NORMAL                  0
 
-extern Atom NET_CURRENT_DESKTOP;
-
 extern void EwmhInit(void);
 extern int EwmhInitScreenEarly(ScreenInfo *scr);
 extern void EwmhInitScreenLate(ScreenInfo *scr);

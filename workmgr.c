@@ -40,6 +40,7 @@
 #include "list.h"
 #include "workmgr.h"
 #include "ewmh.h"
+#include "ewmh_atoms.h"
 #ifdef VMS
 #include <string.h>
 #include <decw$include/Xos.h>
@@ -715,7 +716,7 @@ void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
 		 * Also, on the real root it would need values for each of the
 		 * virtual roots, but that doesn't fit in the EWMH ideas.
 		 */
-		XChangeProperty(dpy, Scr->Root, NET_CURRENT_DESKTOP,
+		XChangeProperty(dpy, Scr->Root, XA__NET_CURRENT_DESKTOP,
 		                XA_CARDINAL, 32,
 		                PropModeReplace, (unsigned char *) &number, 1);
 	}
