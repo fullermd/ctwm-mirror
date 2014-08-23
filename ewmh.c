@@ -1447,22 +1447,16 @@ static unsigned long *EwmhGetWindowProperties(Window w, Atom name, Atom type,
 
 int EwmhGetOccupation(TwmWindow *twm_win)
 {
-	Atom actual_type;
-	int actual_format;
-	unsigned long nitems, bytes_after;
+	unsigned long nitems;
 	unsigned long *prop;
 	int occupation;
 
-	if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_DESKTOP,
-	                      0, MAXWORKSPACE, False, XA_CARDINAL,
-	                      &actual_type, &actual_format, &nitems,
-	                      &bytes_after, (unsigned char **)&prop) != Success) {
-		return 0;
-	}
-
 	occupation = 0;
 
-	if(nitems >= 1) {
+	prop = EwmhGetWindowProperties(twm_win->w,
+	                               XA__NET_WM_DESKTOP, XA_CARDINAL, &nitems);
+
+	if(prop) {
 		int i;
 		for(i = 0; i < nitems; i++) {
 			unsigned int val = prop[i];
@@ -1476,9 +1470,11 @@ int EwmhGetOccupation(TwmWindow *twm_win)
 				occupation |= 1 << (Scr->workSpaceMgr.count - 1);
 			}
 		}
-	}
 
-	XFree(prop);
+		occupation &= fullOccupation;
+
+		XFree(prop);
+	}
 
 	return occupation;
 }
@@ -1800,31 +1796,28 @@ static void EwmhRecalculateStrut(void)
  */
 static void EwmhGetStrut(TwmWindow *twm_win, int update)
 {
-	Atom actual_type;
-	int actual_format;
-	unsigned long nitems, bytes_after;
+	unsigned long nitems;
 	unsigned long *prop;
 	EwmhStrut *strut;
 
-	if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_STRUT_PARTIAL,
-	                      0, 4, False, XA_CARDINAL,
-	                      &actual_type, &actual_format, &nitems,
-	                      &bytes_after, (unsigned char **)&prop) != Success) {
-		if(XGetWindowProperty(dpy, twm_win->w, XA__NET_WM_STRUT,
-		                      0, 4, False, XA_CARDINAL,
-		                      &actual_type, &actual_format, &nitems,
-		                      &bytes_after, (unsigned char **)&prop) != Success) {
+	prop = EwmhGetWindowProperties(twm_win->w,
+	                               XA__NET_WM_STRUT_PARTIAL, XA_CARDINAL,
+	                               &nitems);
+	if(prop == NULL) {
+		prop = EwmhGetWindowProperties(twm_win->w,
+		                               XA__NET_WM_STRUT, XA_CARDINAL,  &nitems);
+		if(prop == NULL) {
 			return;
 		}
 	}
-	if(prop == NULL || nitems < 4) {
+
+
+	if(nitems < 4) {
 #ifdef DEBUG_EWMH
 		/* This happens a lot, despite returning Success ??? */
 		printf("struts: prop = %p, nitems = %ld\n", prop, nitems);
 #endif
-		if(prop) {
-			XFree(prop);
-		}
+		XFree(prop);
 		return;
 	}
 #ifdef DEBUG_EWMH
