@@ -64,6 +64,7 @@ typedef struct EwmhStrut {
 #define EWMH_STATE_MAXIMIZED_VERT       0x0010  /* for _NET_WM_STATE */
 #define EWMH_STATE_MAXIMIZED_HORZ       0x0020  /* for _NET_WM_STATE */
 #define EWMH_STATE_FULLSCREEN           0x0040  /* for _NET_WM_STATE */
+#define EWMH_STATE_SHADED               0x0080  /* for _NET_WM_STATE */
 
 /*
  * Priorities of the window types we recognize

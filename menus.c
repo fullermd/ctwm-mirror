@@ -4690,6 +4690,9 @@ void Squeeze(TwmWindow *tmp_win)
 		                PropModeReplace, (unsigned char *)&gwkspc, 1);
 		XSelectInput(dpy, tmp_win->w, eventMask);
 #endif /* GNOME */
+#ifdef EWMH
+		EwmhSet_NET_WM_STATE(tmp_win, EWMH_STATE_SHADED);
+#endif /* EWMH */
 		if(!tmp_win->isicon) {
 			XMapWindow(dpy, tmp_win->w);
 		}
@@ -4752,6 +4755,9 @@ void Squeeze(TwmWindow *tmp_win)
 #else
 	XSelectInput(dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
 #endif /* GNOME */
+#ifdef EWMH
+	EwmhSet_NET_WM_STATE(tmp_win, EWMH_STATE_SHADED);
+#endif /* EWMH */
 	XUnmapWindow(dpy, tmp_win->w);
 	XSelectInput(dpy, tmp_win->w, eventMask);
 

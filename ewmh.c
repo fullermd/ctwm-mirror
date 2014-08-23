@@ -438,6 +438,7 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = XA__NET_ACTIVE_WINDOW;
 	supported[i++] = XA__NET_WORKAREA;
 	supported[i++] = XA__NET_WM_MOVERESIZE;
+	supported[i++] = XA__NET_WM_STATE_SHADED;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                XA__NET_SUPPORTED, XA_ATOM,
@@ -557,15 +558,15 @@ int EwmhClientMessage(XClientMessageEvent *msg)
 	}
 	else if(msg->message_type == XA__NET_WM_STATE) {
 		EwmhClientMessage_NET_WM_STATE(msg);
-		return 1;
+		return True;
 	}
 	else if(msg->message_type == XA__NET_ACTIVE_WINDOW) {
 		EwmhClientMessage_NET_ACTIVE_WINDOW(msg);
-		return 1;
+		return True;
 	}
 	else if(msg->message_type == XA__NET_WM_MOVERESIZE) {
 		EwmhClientMessage_NET_WM_MOVERESIZE(msg);
-		return 1;
+		return True;
 	}
 
 	/* Messages regarding the root window */
@@ -1018,6 +1019,9 @@ static int atomToFlag(Atom a)
 	if(a == XA__NET_WM_STATE_FULLSCREEN) {
 		return EWMH_STATE_FULLSCREEN;
 	}
+	if(a == XA__NET_WM_STATE_SHADED) {
+		return EWMH_STATE_SHADED;
+	}
 	return 0;
 }
 
@@ -1094,6 +1098,13 @@ static void EwmhClientMessage_NET_WM_STATE(XClientMessageEvent *msg)
 	}
 }
 
+/*
+ * change - bitmask of settings that possibly change. Only one bit is
+ *                      set in this, with the possible exception of
+ *                      *MAXIMIZED_{VERT,HORIZ} which can be set together.
+ * newValue - bits with the new values; only valid bits are the ones
+ *                      in change.
+ */
 static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
                 int newValue)
 {
@@ -1122,7 +1133,15 @@ static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
 		}
 		fullzoom(twm_win, newZoom);
 	}
-
+	else if(change & EWMH_STATE_SHADED) {
+		printf("EWMH_STATE_SHADED: newValue: %d old: %d\n", newValue,
+		       twm_win->ewmhFlags & EWMH_STATE_SHADED);
+		if((twm_win->ewmhFlags & EWMH_STATE_SHADED) ^ newValue) {
+			/* Toggle the shade/squeeze state */
+			printf("EWMH_STATE_SHADED: change it\n");
+			Squeeze(twm_win);
+		}
+	}
 }
 
 /*
@@ -1595,6 +1614,7 @@ void EwmhSet_NET_ACTIVE_WINDOW(Window w)
  * Get window properties as relevant when the window is initially mapped.
  *
  * So far, only NET_WM_WINDOW_TYPE and _NET_WM_STRUT_PARTIAL.
+ * In particular, the initial value of _NET_WM_STATE is ignored. TODO.
  *
  * Also do any generic initialisation needed to EWMH-specific fields
  * in a TwmWindow.
@@ -1895,6 +1915,12 @@ void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
 		                        EWMH_STATE_FULLSCREEN);
 		twm_win->ewmhFlags |= newFlags;
 	}
+	else if(changes & EWMH_STATE_SHADED) {
+		if(twm_win->squeezed) {
+			twm_win->ewmhFlags |= EWMH_STATE_SHADED;
+		}
+		twm_win->ewmhFlags &= ~EWMH_STATE_SHADED;
+	}
 
 	flags = twm_win->ewmhFlags;
 	i = 0;
@@ -1908,8 +1934,11 @@ void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
 	if(flags & EWMH_STATE_FULLSCREEN) {
 		prop[i++] = XA__NET_WM_STATE_FULLSCREEN;
 	}
+	if(flags & EWMH_STATE_SHADED) {
+		prop[i++] = XA__NET_WM_STATE_SHADED;
+	}
 
-	XChangeProperty(dpy, Scr->XineramaRoot, XA__NET_WM_STATE, XA_CARDINAL, 32,
+	XChangeProperty(dpy, twm_win->w, XA__NET_WM_STATE, XA_ATOM, 32,
 	                PropModeReplace, (unsigned char *)prop, i);
 }
 
