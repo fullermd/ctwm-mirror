@@ -65,6 +65,9 @@ typedef struct EwmhStrut {
 #define EWMH_STATE_MAXIMIZED_HORZ       0x0020  /* for _NET_WM_STATE */
 #define EWMH_STATE_FULLSCREEN           0x0040  /* for _NET_WM_STATE */
 #define EWMH_STATE_SHADED               0x0080  /* for _NET_WM_STATE */
+#define EWMH_STATE_ABOVE                0x0100  /* for _NET_WM_STATE */
+#define EWMH_STATE_BELOW                0x0200  /* for _NET_WM_STATE */
+#define EWMH_STATE_ALL                  0xFFF0
 
 /*
  * Priorities of the window types we recognize
@@ -74,6 +77,7 @@ typedef struct EwmhStrut {
 #define EWMH_PRI_DOCK                    4
 #define EWMH_PRI_FULLSCREEN              6
 #define EWMH_PRI_NORMAL                  0
+#define EWMH_PRI_ABOVE                   2
 
 extern void EwmhInit(void);
 extern int EwmhInitScreenEarly(ScreenInfo *scr);

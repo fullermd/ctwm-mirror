@@ -3246,6 +3246,9 @@ int ExecuteFunction(int func, void *action, Window w, TwmWindow *tmp_win,
 					OtpSwitchPriority(tmp_win, wintype);
 					break;
 			}
+#ifdef EWMH
+			EwmhSet_NET_WM_STATE(tmp_win, EWMH_STATE_ABOVE);
+#endif /* EWMH */
 			/* Update saved priority, if any */
 			if(wintype == WinWin && tmp_win->zoomed != ZOOM_NONE) {
 				tmp_win->save_otpri = OtpGetPriority(tmp_win);

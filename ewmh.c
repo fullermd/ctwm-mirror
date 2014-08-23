@@ -98,6 +98,7 @@ static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type);
 static void EwmhGetStrut(TwmWindow *twm_win, int update);
 static void EwmhRemoveStrut(TwmWindow *twm_win);
 static void EwmhSet_NET_WORKAREA(ScreenInfo *scr);
+static int EwmhGet_NET_WM_STATE(TwmWindow *twm_win);
 
 #define ALL_WORKSPACES  0xFFFFFFFFU
 
@@ -439,6 +440,8 @@ void EwmhInitScreenLate(ScreenInfo *scr)
 	supported[i++] = XA__NET_WORKAREA;
 	supported[i++] = XA__NET_WM_MOVERESIZE;
 	supported[i++] = XA__NET_WM_STATE_SHADED;
+	supported[i++] = XA__NET_WM_STATE_ABOVE;
+	supported[i++] = XA__NET_WM_STATE_BELOW;
 
 	XChangeProperty(dpy, scr->XineramaRoot,
 	                XA__NET_SUPPORTED, XA_ATOM,
@@ -1022,6 +1025,12 @@ static int atomToFlag(Atom a)
 	if(a == XA__NET_WM_STATE_SHADED) {
 		return EWMH_STATE_SHADED;
 	}
+	if(a == XA__NET_WM_STATE_ABOVE) {
+		return EWMH_STATE_ABOVE;
+	}
+	if(a == XA__NET_WM_STATE_BELOW) {
+		return EWMH_STATE_BELOW;
+	}
 	return 0;
 }
 
@@ -1141,6 +1150,22 @@ static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
 			printf("EWMH_STATE_SHADED: change it\n");
 			Squeeze(twm_win);
 		}
+	}
+	else if(change & (EWMH_STATE_ABOVE | EWMH_STATE_BELOW)) {
+		/*
+		 * Other changes call into ctwm code, which in turn calls back to
+		 * this module to update the ewmhFlags and the property.
+		 * This change shortcuts that, since EwmhGetPriority() looks at
+		 * ewmhFlags.
+		 */
+		int newpri;
+
+		twm_win->ewmhFlags &= ~(EWMH_STATE_ABOVE | EWMH_STATE_BELOW);
+		twm_win->ewmhFlags |= newValue;
+		newpri = EwmhGetPriority(twm_win);
+
+		OtpSetPriority(twm_win, WinWin, newpri, Above);
+		EwmhSet_NET_WM_STATE(twm_win, change);
 	}
 }
 
@@ -1374,14 +1399,50 @@ static unsigned long EwmhGetWindowProperty(Window w, Atom name, Atom type)
 		return 0;
 	}
 
-	if(nitems >= 1) {
-		value = prop[0];
+	if(actual_format == 32) {
+		if(nitems >= 1) {
+			value = prop[0];
+		}
+		else {
+			value = 0;
+		}
 	}
 	else {
 		value = 0;
 	}
+
 	XFree(prop);
 	return value;
+}
+
+/*
+ * Simple function to get multiple properties of format 32.
+ * If it fails, returns NULL, and *nitems_return == 0.
+ */
+
+static unsigned long *EwmhGetWindowProperties(Window w, Atom name, Atom type,
+                unsigned long *nitems_return)
+{
+	Atom actual_type;
+	int actual_format;
+	unsigned long bytes_after;
+	unsigned long *prop;
+
+	if(XGetWindowProperty(dpy, w, name,
+	                      0, 8192, False, type,
+	                      &actual_type, &actual_format, nitems_return,
+	                      &bytes_after, (unsigned char **)&prop) != Success) {
+		*nitems_return = 0;
+		return NULL;
+	}
+
+	if(actual_format != 32) {
+		XFree(prop);
+		prop = NULL;
+		*nitems_return = 0;
+	}
+
+	return prop;
 }
 
 int EwmhGetOccupation(TwmWindow *twm_win)
@@ -1614,7 +1675,7 @@ void EwmhSet_NET_ACTIVE_WINDOW(Window w)
  * Get window properties as relevant when the window is initially mapped.
  *
  * So far, only NET_WM_WINDOW_TYPE and _NET_WM_STRUT_PARTIAL.
- * In particular, the initial value of _NET_WM_STATE is ignored. TODO.
+ * In particular, most of the initial value of _NET_WM_STATE is ignored. TODO.
  *
  * Also do any generic initialisation needed to EWMH-specific fields
  * in a TwmWindow.
@@ -1635,6 +1696,9 @@ void EwmhGetProperties(TwmWindow *twm_win)
 		twm_win->ewmhWindowType = wt_Normal;
 	}
 	EwmhGetStrut(twm_win, False);
+	/* Only the 2 listed states are supported for now */
+	twm_win->ewmhFlags |= EwmhGet_NET_WM_STATE(twm_win) &
+	                      (EWMH_STATE_ABOVE | EWMH_STATE_BELOW);
 }
 
 int EwmhGetPriority(TwmWindow *twm_win)
@@ -1645,6 +1709,12 @@ int EwmhGetPriority(TwmWindow *twm_win)
 		case wt_Dock:
 			return EWMH_PRI_DOCK;
 		default:
+			if(twm_win->ewmhFlags & EWMH_STATE_ABOVE) {
+				return EWMH_PRI_NORMAL + EWMH_PRI_ABOVE;
+			}
+			else if(twm_win->ewmhFlags & EWMH_STATE_BELOW) {
+				return EWMH_PRI_NORMAL - EWMH_PRI_ABOVE;
+			}
 			return EWMH_PRI_NORMAL;
 	}
 }
@@ -1921,6 +1991,21 @@ void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
 		}
 		twm_win->ewmhFlags &= ~EWMH_STATE_SHADED;
 	}
+	else if(changes & (EWMH_STATE_ABOVE | EWMH_STATE_BELOW)) {
+		int pri;
+		/*
+		 * Check the window's current priority relative to what it
+		 * should be by default.
+		 */
+		twm_win->ewmhFlags &= ~(EWMH_STATE_ABOVE | EWMH_STATE_BELOW);
+		pri = OtpGetPriority(twm_win) - EwmhGetPriority(twm_win);
+		if(pri > 0) {
+			twm_win->ewmhFlags |= EWMH_STATE_ABOVE;
+		}
+		else if(pri < 0) {
+			twm_win->ewmhFlags |= EWMH_STATE_BELOW;
+		}
+	}
 
 	flags = twm_win->ewmhFlags;
 	i = 0;
@@ -1937,9 +2022,40 @@ void EwmhSet_NET_WM_STATE(TwmWindow *twm_win, int changes)
 	if(flags & EWMH_STATE_SHADED) {
 		prop[i++] = XA__NET_WM_STATE_SHADED;
 	}
+	if(flags & EWMH_STATE_ABOVE) {
+		prop[i++] = XA__NET_WM_STATE_ABOVE;
+	}
+	if(flags & EWMH_STATE_BELOW) {
+		prop[i++] = XA__NET_WM_STATE_BELOW;
+	}
 
 	XChangeProperty(dpy, twm_win->w, XA__NET_WM_STATE, XA_ATOM, 32,
 	                PropModeReplace, (unsigned char *)prop, i);
+}
+
+/*
+ * Get the initial state of _NET_WM_STATE.
+ *
+ * Only some of the flags are supported when initially creating a window.
+ */
+static int EwmhGet_NET_WM_STATE(TwmWindow *twm_win)
+{
+	int flags = 0;
+	unsigned long *prop;
+	unsigned long nitems;
+	int i;
+
+	prop = EwmhGetWindowProperties(twm_win->w, XA__NET_WM_STATE, XA_ATOM, &nitems);
+
+	if(prop) {
+		for(i = 0; i < nitems; i++) {
+			flags |= atomToFlag(prop[i]);
+		}
+
+		XFree(prop);
+	}
+
+	return flags;
 }
 
 /*
