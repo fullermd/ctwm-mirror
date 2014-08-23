@@ -1696,9 +1696,9 @@ void EwmhGetProperties(TwmWindow *twm_win)
 		twm_win->ewmhWindowType = wt_Normal;
 	}
 	EwmhGetStrut(twm_win, False);
-	/* Only the 2 listed states are supported for now */
+	/* Only the 3 listed states are supported for now */
 	twm_win->ewmhFlags |= EwmhGet_NET_WM_STATE(twm_win) &
-	                      (EWMH_STATE_ABOVE | EWMH_STATE_BELOW);
+	                      (EWMH_STATE_ABOVE | EWMH_STATE_BELOW | EWMH_STATE_SHADED);
 }
 
 int EwmhGetPriority(TwmWindow *twm_win)

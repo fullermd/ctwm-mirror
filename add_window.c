@@ -455,6 +455,10 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 		tmp_win->DontSetInactive = False;
 	}
 
+#ifdef EWMH
+	EwmhGetProperties(tmp_win);
+#endif /* EWMH */
+
 	if(LookInList(Scr->AutoSqueeze, tmp_win->full_name, &tmp_win->class)) {
 		tmp_win->AutoSqueeze = True;
 	}
@@ -462,7 +466,11 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 		tmp_win->AutoSqueeze = False;
 	}
 
-	if(LookInList(Scr->StartSqueezed, tmp_win->full_name, &tmp_win->class)) {
+	if(
+#ifdef EWMH
+	        (tmp_win->ewmhFlags & EWMH_STATE_SHADED) ||
+#endif /* EWMH */
+	        LookInList(Scr->StartSqueezed, tmp_win->full_name, &tmp_win->class)) {
 		tmp_win->StartSqueezed = True;
 	}
 	else {
@@ -490,9 +498,6 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 			tmp_win->UnmapByMovingFarAway = t->UnmapByMovingFarAway;
 		}
 	}
-#ifdef EWMH
-	EwmhGetProperties(tmp_win);
-#endif /* EWMH */
 	if((Scr->WindowRingAll && !iswman && !iconm &&
 #ifdef EWMH
 	                EwmhOnWindowRing(tmp_win) &&
