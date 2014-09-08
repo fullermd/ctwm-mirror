@@ -2038,14 +2038,14 @@ static void RedoIcon(void)
 		return;
 	}
 	if(icon != NULL) {
-		if(Tmp_win->icon == icon) {
+		if(old_icon == icon) {
 			RedoIconName();
 			return;
 		}
 		if(Tmp_win->icon_on && visible(Tmp_win)) {
 			IconDown(Tmp_win);
-			if(Tmp_win->icon && Tmp_win->icon->w) {
-				XUnmapWindow(dpy, Tmp_win->icon->w);
+			if(old_icon && old_icon->w) {
+				XUnmapWindow(dpy, old_icon->w);
 			}
 			Tmp_win->icon = icon;
 			OtpReassignIcon(Tmp_win, old_icon);
@@ -2062,8 +2062,8 @@ static void RedoIcon(void)
 	else {
 		if(Tmp_win->icon_on && visible(Tmp_win)) {
 			IconDown(Tmp_win);
-			if(Tmp_win->icon && Tmp_win->icon->w) {
-				XUnmapWindow(dpy, Tmp_win->icon->w);
+			if(old_icon && old_icon->w) {
+				XUnmapWindow(dpy, old_icon->w);
 			}
 			/*
 			 * If the icon name/class was found on one of the above lists,
