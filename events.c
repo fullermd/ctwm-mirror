@@ -1782,12 +1782,17 @@ void HandlePropertyNotify(void)
 
 			icon = Tmp_win->icon;
 
-			if(icon && icon->match == match_net_wm_icon) {
+			/*
+			 * If there already is an icon found in a way that has priority
+			 * over these hints, disable the flags and remove them from
+			 * consideration, now and in the future.
+			 */
+			if(Tmp_win->forced ||
+					(icon && icon->match == match_net_wm_icon)) {
 				Tmp_win->wmhints->flags &= ~(IconWindowHint | IconPixmapHint | IconMaskHint);
 			}
 
-			if(!Tmp_win->forced &&
-			                (Tmp_win->wmhints->flags & IconWindowHint)) {
+			if(Tmp_win->wmhints->flags & IconWindowHint) {
 				if(icon && icon->w) {
 					int icon_x, icon_y;
 
@@ -1846,7 +1851,7 @@ void HandlePropertyNotify(void)
 				}
 			}
 
-			if(icon && icon->w && !Tmp_win->forced &&
+			if(icon && icon->w &&
 			                (Tmp_win->wmhints->flags & IconPixmapHint)) {
 				int x;
 				unsigned int IconDepth;
@@ -1913,7 +1918,7 @@ void HandlePropertyNotify(void)
 				XMapSubwindows(dpy, icon->w);
 				RedoIconName();
 			}
-			if(icon && icon->w && !Tmp_win->forced &&
+			if(icon && icon->w &&
 			                (Tmp_win->wmhints->flags & IconMaskHint) &&
 			                icon->match == match_icon_pixmap_hint) {
 				/* Only set the mask if the pixmap came from a WM_HINTS too,
