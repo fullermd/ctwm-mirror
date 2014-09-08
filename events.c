@@ -1599,6 +1599,7 @@ void HandlePropertyNotify(void)
 	int name_change;
 	XRectangle inc_rect;
 	XRectangle logical_rect;
+	Icon *icon;
 
 #ifdef GNOME
 	unsigned char *gwkspc;
@@ -1779,13 +1780,15 @@ void HandlePropertyNotify(void)
 				}
 			}
 
-			if(Tmp_win->icon && Tmp_win->icon->match == match_net_wm_icon) {
+			icon = Tmp_win->icon;
+
+			if(icon && icon->match == match_net_wm_icon) {
 				Tmp_win->wmhints->flags &= ~(IconWindowHint | IconPixmapHint | IconMaskHint);
 			}
 
 			if(!Tmp_win->forced &&
 			                Tmp_win->wmhints->flags & IconWindowHint) {
-				if(Tmp_win->icon && Tmp_win->icon->w) {
+				if(icon && icon->w) {
 					int icon_x, icon_y;
 
 					/*
@@ -1793,7 +1796,7 @@ void HandlePropertyNotify(void)
 					 * Try to find out where it is; if we succeed, move the new
 					 * window to where the old one is.
 					 */
-					if(XGetGeometry(dpy, Tmp_win->icon->w, &JunkRoot, &icon_x,
+					if(XGetGeometry(dpy, icon->w, &JunkRoot, &icon_x,
 					                &icon_y, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth)) {
 						/*
 						 * Move the new icon window to where the old one was.
@@ -1813,20 +1816,20 @@ void HandlePropertyNotify(void)
 					 * Now, if the old window isn't ours, unmap it, otherwise
 					 * just get rid of it completely.
 					 */
-					if(Tmp_win->icon->w_not_ours) {
-						if(Tmp_win->icon->w != Tmp_win->wmhints->icon_window) {
-							XUnmapWindow(dpy, Tmp_win->icon->w);
+					if(icon->w_not_ours) {
+						if(icon->w != Tmp_win->wmhints->icon_window) {
+							XUnmapWindow(dpy, icon->w);
 						}
 					}
 					else {
-						XDestroyWindow(dpy, Tmp_win->icon->w);
+						XDestroyWindow(dpy, icon->w);
 					}
 
 					/*
 					 * The new icon window isn't our window, so note that fact
 					 * so that we don't treat it as ours.
 					 */
-					Tmp_win->icon->w_not_ours = TRUE;
+					icon->w_not_ours = TRUE;
 
 					/*
 					 * Now make the new window the icon window for this window,
@@ -1834,65 +1837,65 @@ void HandlePropertyNotify(void)
 					 * and button presses/releases, set up the contexts for it,
 					 * and define the cursor for it).
 					 */
-					Tmp_win->icon->w = Tmp_win->wmhints->icon_window;
-					XSelectInput(dpy, Tmp_win->icon->w,
+					icon->w = Tmp_win->wmhints->icon_window;
+					XSelectInput(dpy, icon->w,
 					             KeyPressMask | ButtonPressMask | ButtonReleaseMask);
-					XSaveContext(dpy, Tmp_win->icon->w, TwmContext, (XPointer)Tmp_win);
-					XSaveContext(dpy, Tmp_win->icon->w, ScreenContext, (XPointer)Scr);
-					XDefineCursor(dpy, Tmp_win->icon->w, Scr->IconCursor);
+					XSaveContext(dpy, icon->w, TwmContext, (XPointer)Tmp_win);
+					XSaveContext(dpy, icon->w, ScreenContext, (XPointer)Scr);
+					XDefineCursor(dpy, icon->w, Scr->IconCursor);
 				}
 			}
 
-			if(Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced &&
+			if(icon && icon->w && !Tmp_win->forced &&
 			                (Tmp_win->wmhints->flags & IconPixmapHint)) {
 				int x;
 				unsigned int IconDepth;
 
 				if(!XGetGeometry(dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
-				                 &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon->width,
-				                 (unsigned int *)&Tmp_win->icon->height, &JunkBW,
+				                 &JunkX, &JunkY, (unsigned int *)&icon->width,
+				                 (unsigned int *)&icon->height, &JunkBW,
 				                 &IconDepth)) {
 					return;
 				}
 
-				pm = XCreatePixmap(dpy, Scr->Root, Tmp_win->icon->width,
-				                   Tmp_win->icon->height, Scr->d_depth);
+				pm = XCreatePixmap(dpy, Scr->Root, icon->width,
+				                   icon->height, Scr->d_depth);
 
-				FB(Tmp_win->icon->iconc.fore, Tmp_win->icon->iconc.back);
+				FB(icon->iconc.fore, icon->iconc.back);
 
 				if(IconDepth == Scr->d_depth)
 					XCopyArea(dpy, Tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
-					          0, 0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0);
+					          0, 0, icon->width, icon->height, 0, 0);
 				else
 					XCopyPlane(dpy, Tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
-					           0, 0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0, 1);
+					           0, 0, icon->width, icon->height, 0, 0, 1);
 
-				if(Tmp_win->icon->image) {
+				if(icon->image) {
 					/* Release the existing Image: it may be a shared one (UnknownIcon) */
-					ReleaseImage(Tmp_win->icon);
+					ReleaseImage(icon);
 					/* conjure up a new Image */
 					Image *image = (Image *) calloc(1, sizeof(Image));
 					image->pixmap = pm;
-					image->width  = Tmp_win->icon->width;
-					image->height = Tmp_win->icon->height;
+					image->width  = icon->width;
+					image->height = icon->height;
 					image->mask   = None;
 					image->next   = None;
-					Tmp_win->icon->image = image;
-					Tmp_win->icon->match = match_icon_pixmap_hint;
+					icon->image = image;
+					icon->match = match_icon_pixmap_hint;
 				}
 
 				valuemask = CWBackPixmap;
 				attributes.background_pixmap = pm;
 
-				if(Tmp_win->icon->bm_w) {
-					XDestroyWindow(dpy, Tmp_win->icon->bm_w);
+				if(icon->bm_w) {
+					XDestroyWindow(dpy, icon->bm_w);
 				}
 
-				x = GetIconOffset(Tmp_win->icon);
-				Tmp_win->icon->bm_w =
-				        XCreateWindow(dpy, Tmp_win->icon->w, x, 0,
-				                      (unsigned int) Tmp_win->icon->width,
-				                      (unsigned int) Tmp_win->icon->height,
+				x = GetIconOffset(icon);
+				icon->bm_w =
+				        XCreateWindow(dpy, icon->w, x, 0,
+				                      (unsigned int) icon->width,
+				                      (unsigned int) icon->height,
 				                      (unsigned int) 0, Scr->d_depth,
 				                      (unsigned int) CopyFromParent, Scr->d_visual,
 				                      valuemask, &attributes);
@@ -1902,17 +1905,17 @@ void HandlePropertyNotify(void)
 
 					rect.x      = x;
 					rect.y      = 0;
-					rect.width  = Tmp_win->icon->width;
-					rect.height = Tmp_win->icon->height;
-					XShapeCombineRectangles(dpy, Tmp_win->icon->w, ShapeBounding, 0,
+					rect.width  = icon->width;
+					rect.height = icon->height;
+					XShapeCombineRectangles(dpy, icon->w, ShapeBounding, 0,
 					                        0, &rect, 1, ShapeUnion, 0);
 				}
-				XMapSubwindows(dpy, Tmp_win->icon->w);
+				XMapSubwindows(dpy, icon->w);
 				RedoIconName();
 			}
-			if(Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced &&
+			if(icon && icon->w && !Tmp_win->forced &&
 			                (Tmp_win->wmhints->flags & IconMaskHint) &&
-			                Tmp_win->icon->match == match_icon_pixmap_hint) {
+			                icon->match == match_icon_pixmap_hint) {
 				/* Only set the mask if the pixmap came from a WM_HINTS too,
 				 * for easier resource management.
 				 */
@@ -1941,16 +1944,16 @@ void HandlePropertyNotify(void)
 				XCopyArea(dpy, Tmp_win->wmhints->icon_mask, mask, gc,
 				          0, 0, IconWidth, IconHeight, 0, 0);
 				XFreeGC(dpy, gc);
-				x = GetIconOffset(Tmp_win->icon);
-				XShapeCombineMask(dpy, Tmp_win->icon->bm_w, ShapeBounding, 0, 0, mask,
+				x = GetIconOffset(icon);
+				XShapeCombineMask(dpy, icon->bm_w, ShapeBounding, 0, 0, mask,
 				                  ShapeSet);
-				XShapeCombineMask(dpy, Tmp_win->icon->w,    ShapeBounding, x, 0, mask,
+				XShapeCombineMask(dpy, icon->w,    ShapeBounding, x, 0, mask,
 				                  ShapeSet);
-				if(Tmp_win->icon->image) {
-					if(Tmp_win->icon->image->mask) {
-						XFreePixmap(dpy, Tmp_win->icon->image->mask);
+				if(icon->image) {
+					if(icon->image->mask) {
+						XFreePixmap(dpy, icon->image->mask);
 					}
-					Tmp_win->icon->image->mask = mask;
+					icon->image->mask = mask;
 					RedoIconName();
 				}
 			}
