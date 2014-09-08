@@ -1787,7 +1787,7 @@ void HandlePropertyNotify(void)
 			}
 
 			if(!Tmp_win->forced &&
-			                Tmp_win->wmhints->flags & IconWindowHint) {
+			                (Tmp_win->wmhints->flags & IconWindowHint)) {
 				if(icon && icon->w) {
 					int icon_x, icon_y;
 
