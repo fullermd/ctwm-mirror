@@ -1868,14 +1868,17 @@ void HandlePropertyNotify(void)
 					           0, 0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0, 1);
 
 				if(Tmp_win->icon->image) {
-					if(Tmp_win->icon->image->pixmap) {
-						XFreePixmap(dpy, Tmp_win->icon->image->pixmap);
-					}
-					Tmp_win->icon->image->pixmap = pm;
-					Tmp_win->icon->image->width  = Tmp_win->icon->width;
-					Tmp_win->icon->image->height = Tmp_win->icon->height;
-					Tmp_win->icon->image->mask   = None;
-					Tmp_win->icon->image->next   = None;
+					/* Release the existing Image: it may be a shared one (UnknownIcon) */
+					ReleaseImage(Tmp_win->icon);
+					/* conjure up a new Image */
+					Image *image = (Image *) calloc(1, sizeof(Image));
+					image->pixmap = pm;
+					image->width  = Tmp_win->icon->width;
+					image->height = Tmp_win->icon->height;
+					image->mask   = None;
+					image->next   = None;
+					Tmp_win->icon->image = image;
+					Tmp_win->icon->match = match_icon_pixmap_hint;
 				}
 
 				valuemask = CWBackPixmap;
@@ -1908,7 +1911,11 @@ void HandlePropertyNotify(void)
 				RedoIconName();
 			}
 			if(Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced &&
-			                (Tmp_win->wmhints->flags & IconMaskHint)) {
+			                (Tmp_win->wmhints->flags & IconMaskHint) &&
+			                Tmp_win->icon->match == match_icon_pixmap_hint) {
+				/* Only set the mask if the pixmap came from a WM_HINTS too,
+				 * for easier resource management.
+				 */
 				int x;
 				Pixmap mask;
 				GC gc;

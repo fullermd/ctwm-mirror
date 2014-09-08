@@ -117,6 +117,7 @@ extern name_list **AddIconRegion(char *geom, int grav1, int grav2,
                                  int stepx, int stepy,
                                  char *ijust, char *just, char *align);
 extern void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y);
+extern void ReleaseImage(Icon *icon);
 extern void DeleteIcon(Icon *icon);
 extern void DeleteIconsList(TwmWindow *tmp_win);
 extern void ShrinkIconTitle(TwmWindow *tmp_win);

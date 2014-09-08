@@ -864,12 +864,20 @@ void DeleteIcon(Icon *icon)
 	if(icon->w && !icon->w_not_ours) {
 		XDestroyWindow(dpy, icon->w);
 	}
+	ReleaseImage(icon);
+	free(icon);
+}
+
+/*
+ * Delete the Image from an icon, if it is not a shared one.
+ * match_list ands match_unknown_default need not be freed.
+ */
+void ReleaseImage(Icon *icon)
+{
 	if(icon->match == match_icon_pixmap_hint ||
 	                icon->match == match_net_wm_icon) {
 		FreeImage(icon->image);
 	}
-	/* match_list ands match_unknown_default need not be freed */
-	free(icon);
 }
 
 /*
