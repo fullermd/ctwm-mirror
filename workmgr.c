@@ -4103,7 +4103,7 @@ void SetPropsIfCaptiveCtwm(TwmWindow *win)
 	}
 
 	XChangeProperty(dpy, frame, XA_WM_CTWM_ROOT, XA_WINDOW, 32,
-	                PropModeReplace, (unsigned char *) &window, 4);
+	                PropModeReplace, (unsigned char *) &window, 1);
 }
 
 Window CaptiveCtwmRootWindow(Window window)
