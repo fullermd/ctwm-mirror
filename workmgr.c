@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "util.h"
 #include "parse.h"
 #include "screen.h"
@@ -260,7 +261,7 @@ void CreateWorkSpaceManager(void)
 		}
 	}
 	len = GetPropertyFromMask(0xFFFFFFFFu, wrkSpcList, &junk);
-	XChangeProperty(dpy, Scr->Root, _XA_WM_WORKSPACESLIST, XA_STRING, 8,
+	XChangeProperty(dpy, Scr->Root, XA_WM_WORKSPACESLIST, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) wrkSpcList, len);
 }
 
@@ -691,7 +692,7 @@ void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
 	eventMask = winattrs.your_event_mask;
 	XSelectInput(dpy, Scr->Root, eventMask & ~PropertyChangeMask);
 
-	XChangeProperty(dpy, Scr->Root, _XA_WM_CURRENTWORKSPACE, XA_STRING, 8,
+	XChangeProperty(dpy, Scr->Root, XA_WM_CURRENTWORKSPACE, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) newws->name, strlen(newws->name));
 #ifdef GNOME
 	/* nhd 6/19/1999 for GNOME compliance
@@ -913,7 +914,7 @@ void SetupOccupation(TwmWindow *twm_win,
 	}
 
 	if(RestartPreviousState) {
-		if(XGetWindowProperty(dpy, twm_win->w, _XA_WM_OCCUPATION, 0L, 2500, False,
+		if(XGetWindowProperty(dpy, twm_win->w, XA_WM_OCCUPATION, 0L, 2500, False,
 		                      XA_STRING, &actual_type, &actual_format, &nitems,
 		                      &bytesafter, &prop) == Success) {
 			if(nitems != 0) {
@@ -995,7 +996,7 @@ void SetupOccupation(TwmWindow *twm_win,
 	eventMask = winattrs.your_event_mask;
 	XSelectInput(dpy, twm_win->w, eventMask & ~PropertyChangeMask);
 
-	XChangeProperty(dpy, twm_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
+	XChangeProperty(dpy, twm_win->w, XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) wrkSpcList, len);
 #ifdef EWMH
 	EwmhSet_NET_WM_DESKTOP(twm_win);
@@ -1672,7 +1673,7 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 		eventMask = winattrs.your_event_mask;
 		XSelectInput(dpy, tmp_win->w, eventMask & ~PropertyChangeMask);
 
-		XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
+		XChangeProperty(dpy, tmp_win->w, XA_WM_OCCUPATION, XA_STRING, 8,
 		                PropModeReplace, (unsigned char *) namelist, len);
 #ifdef EWMH
 		EwmhSet_NET_WM_DESKTOP(tmp_win);
@@ -1743,7 +1744,7 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 	eventMask = winattrs.your_event_mask;
 	XSelectInput(dpy, tmp_win->w, eventMask & ~PropertyChangeMask);
 
-	XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
+	XChangeProperty(dpy, tmp_win->w, XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) namelist, len);
 
 #ifdef EWMH
@@ -4171,11 +4172,7 @@ CaptiveCTWM GetCaptiveCTWMUnderPointer(void)
 
 void SetNoRedirect(Window window)
 {
-	if(_XA_WM_NOREDIRECT == None) {
-		return;
-	}
-
-	XChangeProperty(dpy, window, _XA_WM_NOREDIRECT, XA_STRING, 8,
+	XChangeProperty(dpy, window, XA_WM_NOREDIRECT, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) "Yes", 4);
 }
 
@@ -4187,11 +4184,7 @@ static Bool DontRedirect(Window window)
 	Atom                actual_type;
 	int                 actual_format;
 
-	if(_XA_WM_NOREDIRECT == None) {
-		return (False);
-	}
-
-	if(XGetWindowProperty(dpy, window, _XA_WM_NOREDIRECT, 0L, 1L,
+	if(XGetWindowProperty(dpy, window, XA_WM_NOREDIRECT, 0L, 1L,
 	                      False, XA_STRING, &actual_type, &actual_format, &len,
 	                      &bytesafter, &prop) != Success) {
 		return (False);

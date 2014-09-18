@@ -78,6 +78,7 @@
 #include <sys/select.h>
 #endif
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
@@ -2243,13 +2244,13 @@ void FetchWmProtocols(TwmWindow *tmp)
 		register Atom *ap;
 
 		for(i = 0, ap = protocols; i < n; i++, ap++) {
-			if(*ap == _XA_WM_TAKE_FOCUS) {
+			if(*ap == XA_WM_TAKE_FOCUS) {
 				flags |= DoesWmTakeFocus;
 			}
-			if(*ap == _XA_WM_SAVE_YOURSELF) {
+			if(*ap == XA_WM_SAVE_YOURSELF) {
 				flags |= DoesWmSaveYourself;
 			}
-			if(*ap == _XA_WM_DELETE_WINDOW) {
+			if(*ap == XA_WM_DELETE_WINDOW) {
 				flags |= DoesWmDeleteWindow;
 			}
 		}

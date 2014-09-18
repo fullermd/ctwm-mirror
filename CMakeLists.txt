@@ -6,6 +6,7 @@ set(CTWMSRC
 	add_window.c
 	clicktofocus.c
 	ctwm.c
+	ctwm_atoms.c
 	cursor.c
 	deftwmrc.c
 	events.c
@@ -344,6 +345,12 @@ add_custom_command(OUTPUT ${defc}
 		${CMAKE_CURRENT_SOURCE_DIR}/system.ctwmrc > ${defc}
 )
 
+# Hand-build ctwm_atoms.[ch]
+set(ctwm_atoms ctwm_atoms.h ctwm_atoms.c)
+add_custom_command(OUTPUT ${ctwm_atoms}
+	DEPENDS ctwm_atoms.in
+	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_atoms.sh ${CMAKE_CURRENT_SOURCE_DIR}/ctwm_atoms.in ctwm_atoms CTWM
+)
 
 # We're building ctwm
 add_executable(ctwm ${CTWMSRC})

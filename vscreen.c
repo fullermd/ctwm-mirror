@@ -27,6 +27,7 @@
 #include <X11/Xatom.h>
 #include <stdio.h>
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "cursor.h"
 #include "screen.h"
 
@@ -180,10 +181,10 @@ Bool CtwmGetVScreenMap(Display *display, Window rootw,
 	Atom                actual_type;
 	int                 actual_format;
 
-	if(_XA_WM_CTWM_VSCREENMAP == None) {
+	if(XA_WM_CTWM_VSCREENMAP == None) {
 		return (False);
 	}
-	if(XGetWindowProperty(display, rootw, _XA_WM_CTWM_VSCREENMAP, 0L, 512,
+	if(XGetWindowProperty(display, rootw, XA_WM_CTWM_VSCREENMAP, 0L, 512,
 	                      False, XA_STRING, &actual_type, &actual_format, &len,
 	                      &bytesafter, &prop) != Success) {
 		return (False);
@@ -205,7 +206,7 @@ Bool CtwmSetVScreenMap(Display *display, Window rootw,
 	int                         tally = 0;
 	struct VirtualScreen        *vs;
 
-	if(_XA_WM_CTWM_VSCREENMAP == None) {
+	if(XA_WM_CTWM_VSCREENMAP == None) {
 		return(False);
 	}
 
@@ -224,7 +225,7 @@ Bool CtwmSetVScreenMap(Display *display, Window rootw,
 		return(False);
 	}
 
-	XChangeProperty(display, rootw, _XA_WM_CTWM_VSCREENMAP, XA_STRING, 8,
+	XChangeProperty(display, rootw, XA_WM_CTWM_VSCREENMAP, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *)buf, strlen(buf));
 	return(True);
 }

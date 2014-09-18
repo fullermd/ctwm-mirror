@@ -87,6 +87,7 @@
 #include <X11/Xatom.h>
 #endif
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "gc.h"
 #include "menus.h"
 #include "resize.h"
@@ -4678,7 +4679,7 @@ void Squeeze(TwmWindow *tmp_win)
 		XGetWindowAttributes(dpy, tmp_win->w, &winattrs);
 		eventMask = winattrs.your_event_mask;
 		XSelectInput(dpy, tmp_win->w, eventMask & ~PropertyChangeMask);
-		if(XGetWindowProperty(dpy, tmp_win->w, _XA_WIN_STATE, 0L, 32, False,
+		if(XGetWindowProperty(dpy, tmp_win->w, XA_WIN_STATE, 0L, 32, False,
 		                      XA_CARDINAL, &actual_type, &actual_format,
 		                      &nitems, &bytesafter, &prop)
 		                != Success || nitems == 0) {
@@ -4689,7 +4690,7 @@ void Squeeze(TwmWindow *tmp_win)
 			XFree((char *)prop);
 		}
 		gwkspc &= ~WIN_STATE_SHADED;
-		XChangeProperty(dpy, tmp_win->w, _XA_WIN_STATE, XA_CARDINAL, 32,
+		XChangeProperty(dpy, tmp_win->w, XA_WIN_STATE, XA_CARDINAL, 32,
 		                PropModeReplace, (unsigned char *)&gwkspc, 1);
 		XSelectInput(dpy, tmp_win->w, eventMask);
 #endif /* GNOME */
@@ -4742,7 +4743,7 @@ void Squeeze(TwmWindow *tmp_win)
 #ifdef GNOME
 	XSelectInput(dpy, tmp_win->w,
 	             eventMask & ~(StructureNotifyMask | PropertyChangeMask));
-	if(XGetWindowProperty(dpy, tmp_win->w, _XA_WIN_STATE, 0L, 32, False,
+	if(XGetWindowProperty(dpy, tmp_win->w, XA_WIN_STATE, 0L, 32, False,
 	                      XA_CARDINAL, &actual_type, &actual_format, &nitems,
 	                      &bytesafter, &prop)
 	                != Success || nitems == 0) {
@@ -4753,7 +4754,7 @@ void Squeeze(TwmWindow *tmp_win)
 		XFree((char *)prop);
 	}
 	gwkspc |= WIN_STATE_SHADED;
-	XChangeProperty(dpy, tmp_win->w, _XA_WIN_STATE, XA_CARDINAL, 32,
+	XChangeProperty(dpy, tmp_win->w, XA_WIN_STATE, XA_CARDINAL, 32,
 	                PropModeReplace, (unsigned char *)&gwkspc, 1);
 #else
 	XSelectInput(dpy, tmp_win->w, eventMask & ~StructureNotifyMask);
@@ -4892,7 +4893,7 @@ static void Identify(TwmWindow *t)
 			(void) sprintf(Info[n++], "IconDepth         = %d", depth);
 		}
 
-		if(XGetWindowProperty(dpy, t->w, _XA_WM_CLIENT_MACHINE, 0L, 64, False,
+		if(XGetWindowProperty(dpy, t->w, XA_WM_CLIENT_MACHINE, 0L, 64, False,
 		                      XA_STRING, &actual_type, &actual_format, &nitems,
 		                      &bytesafter, &prop) == Success) {
 			if(nitems && prop) {
@@ -4960,7 +4961,7 @@ void SetMapStateProp(TwmWindow *tmp_win, int state)
 	data[1] = (unsigned long)(tmp_win->iconify_by_unmapping ? None :
 	                          (tmp_win->icon ? tmp_win->icon->w : None));
 
-	XChangeProperty(dpy, tmp_win->w, _XA_WM_STATE, _XA_WM_STATE, 32,
+	XChangeProperty(dpy, tmp_win->w, XA_WM_STATE, XA_WM_STATE, 32,
 	                PropModeReplace, (unsigned char *) data, 2);
 }
 
@@ -4974,7 +4975,7 @@ Bool GetWMState(Window w, int *statep, Window *iwp)
 	unsigned long *datap = NULL;
 	Bool retval = False;
 
-	if(XGetWindowProperty(dpy, w, _XA_WM_STATE, 0L, 2L, False, _XA_WM_STATE,
+	if(XGetWindowProperty(dpy, w, XA_WM_STATE, 0L, 2L, False, XA_WM_STATE,
 	                      &actual_type, &actual_format, &nitems, &bytesafter,
 	                      (unsigned char **) &datap) != Success || !datap) {
 		return False;
@@ -5344,7 +5345,7 @@ void WarpToWindow(TwmWindow *t, int must_raise)
  * client messages will have the following form:
  *
  *     event type       ClientMessage
- *     message type     _XA_WM_PROTOCOLS
+ *     message type     XA_WM_PROTOCOLS
  *     window           tmp->w
  *     format           32
  *     data[0]          message atom
@@ -5356,7 +5357,7 @@ static void send_clientmessage(Window w, Atom a, Time timestamp)
 
 	ev.type = ClientMessage;
 	ev.window = w;
-	ev.message_type = _XA_WM_PROTOCOLS;
+	ev.message_type = XA_WM_PROTOCOLS;
 	ev.format = 32;
 	ev.data.l[0] = a;
 	ev.data.l[1] = timestamp;
@@ -5365,22 +5366,22 @@ static void send_clientmessage(Window w, Atom a, Time timestamp)
 
 static void SendDeleteWindowMessage(TwmWindow *tmp, Time timestamp)
 {
-	send_clientmessage(tmp->w, _XA_WM_DELETE_WINDOW, timestamp);
+	send_clientmessage(tmp->w, XA_WM_DELETE_WINDOW, timestamp);
 }
 
 void SendEndAnimationMessage(Window w, Time timestamp)
 {
-	send_clientmessage(w, _XA_WM_END_OF_ANIMATION, timestamp);
+	send_clientmessage(w, XA_WM_END_OF_ANIMATION, timestamp);
 }
 
 static void SendSaveYourselfMessage(TwmWindow *tmp, Time timestamp)
 {
-	send_clientmessage(tmp->w, _XA_WM_SAVE_YOURSELF, timestamp);
+	send_clientmessage(tmp->w, XA_WM_SAVE_YOURSELF, timestamp);
 }
 
 void SendTakeFocusMessage(TwmWindow *tmp, Time timestamp)
 {
-	send_clientmessage(tmp->w, _XA_WM_TAKE_FOCUS, timestamp);
+	send_clientmessage(tmp->w, XA_WM_TAKE_FOCUS, timestamp);
 }
 
 void MoveMenu(XEvent *eventp)

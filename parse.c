@@ -84,6 +84,7 @@
 #include <X11/Xmu/SysUtil.h>
 #endif
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "screen.h"
 #include "menus.h"
 #include "util.h"
@@ -2106,7 +2107,7 @@ static void put_pixel_on_root(Pixel pixel)
 	unsigned long nPixels, retAfter;
 	Pixel        *retProp;
 
-	if(XGetWindowProperty(dpy, Scr->Root, _XA_MIT_PRIORITY_COLORS, 0, 8192,
+	if(XGetWindowProperty(dpy, Scr->Root, XA__MIT_PRIORITY_COLORS, 0, 8192,
 	                      False, XA_CARDINAL, &retAtom,
 	                      &retFormat, &nPixels, &retAfter,
 	                      (unsigned char **)&retProp) != Success || !retProp) {
@@ -2121,7 +2122,7 @@ static void put_pixel_on_root(Pixel pixel)
 	XFree((char *)retProp);
 
 	if(addPixel)
-		XChangeProperty(dpy, Scr->Root, _XA_MIT_PRIORITY_COLORS,
+		XChangeProperty(dpy, Scr->Root, XA__MIT_PRIORITY_COLORS,
 		                XA_CARDINAL, 32, PropModeAppend,
 		                (unsigned char *)&pixel, 1);
 }
