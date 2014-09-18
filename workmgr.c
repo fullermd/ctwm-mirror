@@ -109,8 +109,6 @@ static void WMapRedrawWindow(Window window, int width, int height,
 static int CanChangeOccupation(TwmWindow **twm_winp);
 void safecopy(char *dest, char *src, int size);
 
-static Atom _XA_WM_CTWMSLIST;
-
 int fullOccupation = 0;
 static int useBackgroundInfo = False;
 static XContext MapWListContext = (XContext) 0;
@@ -1062,7 +1060,7 @@ Bool RedirectToCaptive(Window window)
 	char                *str_type;
 	XrmValue            value;
 	int                 ret;
-	Atom                _XA_WM_CTWM_ROOT;
+	Atom                XA_WM_CTWM_ROOT_name;
 	char                *atomname;
 	Window              newroot;
 	XWindowAttributes   wa;
@@ -1091,10 +1089,10 @@ Bool RedirectToCaptive(Window window)
 		safecopy(cctwm, value.addr, sizeof(cctwm));
 		atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(cctwm) + 1);
 		sprintf(atomname, "WM_CTWM_ROOT_%s", cctwm);
-		_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, False);
+		XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, False);
 		free(atomname);
 
-		if(XGetWindowProperty(dpy, Scr->Root, _XA_WM_CTWM_ROOT,
+		if(XGetWindowProperty(dpy, Scr->Root, XA_WM_CTWM_ROOT_name,
 		                      0L, 1L, False, AnyPropertyType, &actual_type, &actual_format,
 		                      &nitems, &bytesafter, (unsigned char **)&prop) == Success) {
 			if(actual_type == XA_WINDOW && actual_format == 32 &&
@@ -3972,7 +3970,7 @@ void AddToCaptiveList(void)
 	int         i, count;
 	char        **clist, **cl, **newclist;
 	int         busy [32];
-	Atom        _XA_WM_CTWM_ROOT;
+	Atom        XA_WM_CTWM_ROOT_name;
 	char        *atomname;
 	int         scrnum = Scr->screen;
 	Window      croot  = Scr->Root;
@@ -4039,8 +4037,8 @@ void AddToCaptiveList(void)
 	root = RootWindow(dpy, scrnum);
 	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
 	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, False);
-	XChangeProperty(dpy, root, _XA_WM_CTWM_ROOT, XA_WINDOW, 32,
+	XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, False);
+	XChangeProperty(dpy, root, XA_WM_CTWM_ROOT_name, XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *) &croot, 4);
 }
 
@@ -4048,7 +4046,7 @@ void RemoveFromCaptiveList(void)
 {
 	int  count;
 	char **clist, **cl, **newclist;
-	Atom _XA_WM_CTWM_ROOT;
+	Atom XA_WM_CTWM_ROOT_name;
 	char *atomname;
 	int scrnum = Scr->screen;
 	Window root = RootWindow(dpy, scrnum);
@@ -4086,29 +4084,24 @@ void RemoveFromCaptiveList(void)
 
 	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
 	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, True);
+	XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, True);
 	free(atomname);
-	if(_XA_WM_CTWM_ROOT == None) {
+	if(XA_WM_CTWM_ROOT_name == None) {
 		return;
 	}
-	XDeleteProperty(dpy, root, _XA_WM_CTWM_ROOT);
+	XDeleteProperty(dpy, root, XA_WM_CTWM_ROOT_name);
 }
 
 void SetPropsIfCaptiveCtwm(TwmWindow *win)
 {
 	Window      window = win->w;
 	Window      frame  = win->frame;
-	Atom        _XA_WM_CTWM_ROOT;
 
 	if(!CaptiveCtwmRootWindow(window)) {
 		return;
 	}
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, "WM_CTWM_ROOT", True);
-	if(_XA_WM_CTWM_ROOT == None) {
-		return;
-	}
 
-	XChangeProperty(dpy, frame, _XA_WM_CTWM_ROOT, XA_WINDOW, 32,
+	XChangeProperty(dpy, frame, XA_WM_CTWM_ROOT, XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *) &window, 4);
 }
 
@@ -4120,14 +4113,8 @@ Window CaptiveCtwmRootWindow(Window window)
 	unsigned long       len;
 	Atom                actual_type;
 	int                 actual_format;
-	Atom                _XA_WM_CTWM_ROOT;
 
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, "WM_CTWM_ROOT", True);
-	if(_XA_WM_CTWM_ROOT == None) {
-		return ((Window)0);
-	}
-
-	if(XGetWindowProperty(dpy, window, _XA_WM_CTWM_ROOT, 0L, 1L,
+	if(XGetWindowProperty(dpy, window, XA_WM_CTWM_ROOT, 0L, 1L,
 	                      False, XA_WINDOW, &actual_type, &actual_format, &len,
 	                      &bytesafter, (unsigned char **)&prop) != Success) {
 		return ((Window)0);
