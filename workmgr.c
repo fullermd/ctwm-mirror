@@ -3896,13 +3896,8 @@ static char **GetCaptivesList(int scrnum)
 	int                 i, l;
 	Window              root;
 
-	_XA_WM_CTWMSLIST = XInternAtom(dpy, "WM_CTWMSLIST", True);
-	if(_XA_WM_CTWMSLIST == None) {
-		return ((char **)0);
-	}
-
 	root = RootWindow(dpy, scrnum);
-	if(XGetWindowProperty(dpy, root, _XA_WM_CTWMSLIST, 0L, 512,
+	if(XGetWindowProperty(dpy, root, XA_WM_CTWMSLIST, 0L, 512,
 	                      False, XA_STRING, &actual_type, &actual_format, &len,
 	                      &bytesafter, &prop) != Success) {
 		return ((char **) 0);
@@ -3942,14 +3937,13 @@ static void SetCaptivesList(int scrnum, char **clist)
 	char                *s, *slist;
 	Window              root = RootWindow(dpy, scrnum);
 
-	_XA_WM_CTWMSLIST = XInternAtom(dpy, "WM_CTWMSLIST", False);
 	cl  = clist;
 	len = 0;
 	while(*cl) {
 		len += strlen(*cl++) + 1;
 	}
 	if(len == 0) {
-		XDeleteProperty(dpy, root, _XA_WM_CTWMSLIST);
+		XDeleteProperty(dpy, root, XA_WM_CTWMSLIST);
 		return;
 	}
 	slist = calloc(len, sizeof(char));
@@ -3961,7 +3955,7 @@ static void SetCaptivesList(int scrnum, char **clist)
 		*s++ = '\0';
 		cl++;
 	}
-	XChangeProperty(dpy, root, _XA_WM_CTWMSLIST, XA_STRING, 8,
+	XChangeProperty(dpy, root, XA_WM_CTWMSLIST, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) slist, len);
 	free(slist);
 }
