@@ -64,12 +64,15 @@ extern void OtpHandleCirculateNotify(VirtualScreen *vs, TwmWindow *twm_win,
                                      WinType wintype, int place);
 
 /* functions to change a window's OTP value */
-extern void OtpSetPriority(TwmWindow *, WinType, int);
+extern void OtpSetPriority(TwmWindow *, WinType, int, int);
 extern void OtpChangePriority(TwmWindow *, WinType, int);
 extern void OtpSwitchPriority(TwmWindow *, WinType);
 extern void OtpToggleSwitching(TwmWindow *, WinType);
 extern void OtpRecomputeValues(TwmWindow *);
 extern void OtpForcePlacement(TwmWindow *, int, TwmWindow *);
+
+extern void OtpReassignIcon(TwmWindow *twm_win, Icon *old_icon);
+extern void OtpFreeIcon(TwmWindow *twm_win);
 
 /* functions to manage the preferences. The second arg specifies icon prefs */
 extern void OtpScrInitData(ScreenInfo *);

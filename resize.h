@@ -64,6 +64,7 @@
 #ifndef _RESIZE_
 #define _RESIZE_
 
+extern void OpaqueResizeSize(TwmWindow *tmp_win);
 extern void MenuStartResize(TwmWindow *tmp_win, int x, int y, int w, int h);
 extern void StartResize(XEvent *evp, TwmWindow *tmp_win,
                         Bool fromtitlebar, Bool from3dborder);
@@ -81,7 +82,8 @@ extern void SetupFrame(TwmWindow *tmp_win,
 extern void ConstrainSize(TwmWindow *tmp_win, unsigned
                           int *widthp, unsigned int *heightp);
 
-extern void fullzoom(TwmWindow *tmp_win, int flag);
+extern void fullzoom(TwmWindow *tmp_win, int func);
+extern void unzoom(TwmWindow *tmp_win);
 extern void savegeometry(TwmWindow *tmp_win);
 extern void restoregeometry(TwmWindow *tmp_win);
 extern void SetFrameShape(TwmWindow *tmp);

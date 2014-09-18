@@ -156,6 +156,48 @@ static void do_auto_clamp(TwmWindow *tmp_win, XEvent *evp)
 	}
 }
 
+/***********************************************************************
+ *
+ *  Procedure:
+ *      OpaqueResizeSize - determine if window should be resized opaquely.
+ *
+ *  Inputs:
+ *      tmp_win - the TwmWindow pointer
+ *
+ ***********************************************************************
+ */
+
+void OpaqueResizeSize(TwmWindow *tmp_win)
+{
+	if(tmp_win->OpaqueResize) {
+		/*
+		 * OpaqueResize defaults to a thousand.  Assume that any number
+		 * >= 1000 is "infinity" and don't bother calculating.
+		 */
+		if(Scr->OpaqueResizeThreshold >= 1000) {
+			Scr->OpaqueResize = TRUE;
+		}
+		else {
+			/*
+			 * scrsz will hold the number of pixels in your resolution,
+			 * which can get big.  [signed] int may not cut it.
+			 */
+			unsigned long winsz, scrsz;
+			winsz = tmp_win->frame_width * tmp_win->frame_height;
+			scrsz = Scr->rootw  * Scr->rooth;
+			if(winsz > (scrsz * (Scr->OpaqueResizeThreshold / 100.0))) {
+				Scr->OpaqueResize = FALSE;
+			}
+			else {
+				Scr->OpaqueResize = TRUE;
+			}
+		}
+	}
+	else {
+		Scr->OpaqueResize = FALSE;
+	}
+}
+
 
 /***********************************************************************
  *
@@ -651,7 +693,7 @@ void EndResize(void)
 
 	if(dragWidth != tmp_win->frame_width ||
 	                dragHeight != tmp_win->frame_height) {
-		tmp_win->zoomed = ZOOM_NONE;
+		unzoom(tmp_win);
 	}
 
 	SetupWindow(tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
@@ -1168,7 +1210,7 @@ void SetupFrame(TwmWindow *tmp_win, int x, int y, int w, int h, int bw,
  **********************************************************************
  */
 
-void fullzoom(TwmWindow *tmp_win, int flag)
+void fullzoom(TwmWindow *tmp_win, int func)
 {
 	Window      junkRoot;
 	unsigned int junkbw, junkDepth;
@@ -1202,12 +1244,16 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 		border_x = 0;
 		border_y = 0;
 	}
-	if(tmp_win->zoomed == flag) {
+	if(tmp_win->zoomed == func) {
 		dragHeight = tmp_win->save_frame_height;
 		dragWidth = tmp_win->save_frame_width;
 		dragx = tmp_win->save_frame_x;
 		dragy = tmp_win->save_frame_y;
 		tmp_win->zoomed = ZOOM_NONE;
+
+		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
+			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri, Above);
+		}
 	}
 	else {
 		if(tmp_win->zoomed == ZOOM_NONE) {
@@ -1215,18 +1261,16 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 			tmp_win->save_frame_y = dragy;
 			tmp_win->save_frame_width = dragWidth;
 			tmp_win->save_frame_height = dragHeight;
-			tmp_win->zoomed = flag;
+			tmp_win->save_otpri = OtpGetPriority(tmp_win);
 		}
-		else {
-			tmp_win->zoomed = flag;
-		}
+		tmp_win->zoomed = func;
 
 		frame_bw_times_2 = 2 * tmp_win->frame_bw;
 
-		switch(flag) {
+		switch(func) {
 			case ZOOM_NONE:
 				break;
-			case F_ZOOM:
+			case F_VERTZOOM:
 				dragHeight = zheight - border_y - frame_bw_times_2;
 				dragy = basey;
 				break;
@@ -1264,16 +1308,37 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 				dragHeight = (zheight - border_y) / 2 - frame_bw_times_2;
 				dragWidth = zwidth - border_x - frame_bw_times_2;
 				break;
+			case F_FULLSCREENZOOM: {
+				int bw3D = tmp_win->frame_bw3D;
+				int bw3D_times_2 = 2 * bw3D;
+				int bw = tmp_win->frame_bw + bw3D;
+
+				dragx = -bw;
+				dragy = -tmp_win->title_height - bw;
+				dragHeight = zheight + tmp_win->title_height + bw3D_times_2;
+				dragWidth = zwidth + bw3D_times_2;
+
+				/* and should ignore aspect ratio and size increments... */
+				/*
+				 * Raise the window above the dock.
+				 * TODO: It should have the extra priority only while it
+				 * has focus.
+				 */
+				OtpSetPriority(tmp_win, WinWin, EWMH_PRI_FULLSCREEN, Above);
+				/* the OtpRaise below is effectively already done here... */
+			}
 		}
 	}
 
-	if(!Scr->NoRaiseResize) {
+	if(!Scr->NoRaiseResize && func != F_FULLSCREENZOOM) {
 		OtpRaise(tmp_win, WinWin);
 	}
 
-	ConstrainSize(tmp_win, &dragWidth, &dragHeight);
+	if(func != F_FULLSCREENZOOM) {
+		ConstrainSize(tmp_win, &dragWidth, &dragHeight);
+	}
 #ifdef BETTERZOOM
-	if(flag == F_ZOOM) {
+	if(func == F_VERTZOOM) {
 		if(dragy + dragHeight < tmp_win->save_frame_y + tmp_win->save_frame_height) {
 			dragy = tmp_win->save_frame_y + tmp_win->save_frame_height - dragHeight;
 		}
@@ -1294,6 +1359,23 @@ void fullzoom(TwmWindow *tmp_win, int flag)
 	                tmp_win->frame_y > tmpY ||
 	                tmp_win->frame_y + tmp_win->frame_height < tmpY) {
 		XWarpPointer(dpy, Scr->Root, tmp_win->w, 0, 0, 0, 0, 0, 0);
+	}
+#ifdef EWMH
+	EwmhSet_NET_WM_STATE(tmp_win, EWMH_STATE_MAXIMIZED_VERT);
+#endif
+}
+
+/*
+ * Forget about a window being zoomed.
+ * This also needs to undo the special effects of F_FULLSCREENZOOM.
+ */
+void unzoom(TwmWindow *tmp_win)
+{
+	if(tmp_win->zoomed != ZOOM_NONE) {
+		if(tmp_win->save_otpri != OtpGetPriority(tmp_win)) {
+			OtpSetPriority(tmp_win, WinWin, tmp_win->save_otpri, Above);
+		}
+		tmp_win->zoomed = ZOOM_NONE;
 	}
 }
 

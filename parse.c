@@ -680,6 +680,7 @@ typedef struct _TwmKeyword {
 #define kws_WMgrButtonStyle             17
 #define kws_WorkSpaceFont               18
 #define kws_IconifyStyle                19
+#define kws_IconSize                    20
 
 #define kwss_RandomPlacement            1
 
@@ -839,6 +840,7 @@ static TwmKeyword keytable[] = {
 	{ "f.forcemove",            FKEYWORD, F_FORCEMOVE },
 	{ "f.forwiconmgr",          FKEYWORD, F_FORWICONMGR },
 	{ "f.forwmapiconmgr",       FKEYWORD, F_FORWMAPICONMGR },
+	{ "f.fullscreenzoom",       FKEYWORD, F_FULLSCREENZOOM },
 	{ "f.fullzoom",             FKEYWORD, F_FULLZOOM },
 	{ "f.function",             FSKEYWORD, F_FUNCTION },
 	{ "f.gotoworkspace",        FSKEYWORD, F_GOTOWORKSPACE },
@@ -942,7 +944,7 @@ static TwmKeyword keytable[] = {
 	{ "f.warptoiconmgr",        FSKEYWORD, F_WARPTOICONMGR },
 	{ "f.warptoscreen",         FSKEYWORD, F_WARPTOSCREEN },
 	{ "f.winrefresh",           FKEYWORD, F_WINREFRESH },
-	{ "f.zoom",                 FKEYWORD, F_ZOOM },
+	{ "f.zoom",                 FKEYWORD, F_VERTZOOM },
 	{ "forceicons",             KEYWORD, kw0_ForceIcons },
 	{ "frame",                  FRAME, 0 },
 	{ "framepadding",           NKEYWORD, kwn_FramePadding },
@@ -974,6 +976,7 @@ static TwmKeyword keytable[] = {
 	{ "iconregionalignement",   SKEYWORD, kws_IconRegionAlignement },
 	{ "iconregionjustification", SKEYWORD, kws_IconRegionJustification },
 	{ "icons",                  ICONS, 0 },
+	{ "iconsize",               SKEYWORD, kws_IconSize },
 	{ "ignorecaseinmenuselection",      KEYWORD, kw0_IgnoreCaseInMenuSelection },
 	{ "ignorelockmodifier",     KEYWORD, kw0_IgnoreLockModifier },
 	{ "ignoremodifier",         IGNOREMODIFIER, 0 },
@@ -1688,6 +1691,21 @@ int do_string_keyword(int keyword, char *s)
 			}
 			return 1;
 		}
+
+#ifdef EWMH
+		case kws_IconSize:
+			if(sscanf(s, "%dx%d", &Scr->PreferredIconWidth,
+			                &Scr->PreferredIconHeight) == 2) {
+				/* ok */
+			}
+			else if(sscanf(s, "%d", &Scr->PreferredIconWidth) == 1) {
+				Scr->PreferredIconHeight = Scr->PreferredIconWidth;
+			}
+			else {
+				Scr->PreferredIconHeight = Scr->PreferredIconWidth = 48;
+			}
+			return 1;
+#endif
 	}
 	return 0;
 }

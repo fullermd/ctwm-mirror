@@ -95,6 +95,7 @@
 #include "icons.h"
 #include "iconmgr.h"
 #include "version.h"
+#include "ewmh.h"
 
 #ifdef VMS
 #include <starlet.h>
@@ -107,7 +108,6 @@ static void CtwmNextEvent(Display *display, XEvent  *event);
 static void RedoIcon(void);
 static void do_key_menu(MenuRoot *menu,         /* menu to pop up */
                         Window w);             /* invoking window or None */
-void RedoIconName(void);
 
 #ifdef SOUNDS
 #include "sounds.h"
@@ -144,6 +144,7 @@ int Cancel = FALSE;
 void HandleCreateNotify(void);
 void HandleShapeNotify(void);
 void HandleFocusChange(void);
+void HandleSelectionClear(void);
 
 #ifdef GNOME
 #  include "gnomewindefs.h"
@@ -276,6 +277,9 @@ void InitEvents(void)
 	if(HasShape) {
 		EventHandler[ShapeEventBase + ShapeNotify] = HandleShapeNotify;
 	}
+#ifdef EWMH
+	EventHandler[SelectionClear] = HandleSelectionClear;
+#endif
 }
 
 
@@ -1352,19 +1356,27 @@ void HandleKeyPress(void)
 		}
 	}
 	if(Tmp_win) {
-		if(Event.xany.window == Tmp_win->title_w) {
+		if(0) {
+		}
+#ifdef EWMH_DESKTOP_ROOT
+		else if(Tmp_win->ewmhWindowType == wt_Desktop) {
+			fprintf(stderr, "HandleKeyPress: wt_Desktop -> C_ROOT\n");
+			Context = C_ROOT;
+		}
+#endif
+		else if(Event.xany.window == Tmp_win->title_w) {
 			Context = C_TITLE;
 		}
-		if(Event.xany.window == Tmp_win->w) {
+		else if(Event.xany.window == Tmp_win->w) {
 			Context = C_WINDOW;
 		}
-		if(Tmp_win->icon && (Event.xany.window == Tmp_win->icon->w)) {
+		else if(Tmp_win->icon && (Event.xany.window == Tmp_win->icon->w)) {
 			Context = C_ICON;
 		}
-		if(Event.xany.window == Tmp_win->frame) {
+		else if(Event.xany.window == Tmp_win->frame) {
 			Context = C_FRAME;
 		}
-		if(Tmp_win->iconmanagerlist) {
+		else if(Tmp_win->iconmanagerlist) {
 			if(Event.xany.window == Tmp_win->iconmanagerlist->w ||
 			                Event.xany.window == Tmp_win->iconmanagerlist->icon) {
 				Context = C_ICONMGR;
@@ -1400,6 +1412,12 @@ void HandleKeyPress(void)
 					do_key_menu(key->menu, (Window) None);
 				}
 				else {
+#ifdef EWMH_DESKTOP_ROOT
+					if(Context == C_ROOT && Tmp_win != NULL) {
+						Context = C_WINDOW;
+						fprintf(stderr, "HandleKeyPress: wt_Desktop -> C_WINDOW\n");
+					}
+#endif /* EWMH */
 					ExecuteFunction(key->func, key->action, Event.xany.window,
 					                Tmp_win, &Event, Context, FALSE);
 					if(!AlternateKeymap && !AlternateContext) {
@@ -1581,6 +1599,7 @@ void HandlePropertyNotify(void)
 	int name_change;
 	XRectangle inc_rect;
 	XRectangle logical_rect;
+	Icon *icon;
 
 #ifdef GNOME
 	unsigned char *gwkspc;
@@ -1750,16 +1769,31 @@ void HandlePropertyNotify(void)
 			}
 			Tmp_win->wmhints = XGetWMHints(dpy, Event.xany.window);
 
-			if(Tmp_win->wmhints && (Tmp_win->wmhints->flags & WindowGroupHint)) {
+			if(!Tmp_win->wmhints) {
+				break;
+			}
+
+			if(Tmp_win->wmhints->flags & WindowGroupHint) {
 				Tmp_win->group = Tmp_win->wmhints->window_group;
 				if(Tmp_win->group && !GetTwmWindow(Tmp_win->group)) {
 					Tmp_win->group = 0;        /* see comment in AddWindow() */
 				}
 			}
 
-			if(!Tmp_win->forced && Tmp_win->wmhints &&
-			                Tmp_win->wmhints->flags & IconWindowHint) {
-				if(Tmp_win->icon && Tmp_win->icon->w) {
+			icon = Tmp_win->icon;
+
+			/*
+			 * If there already is an icon found in a way that has priority
+			 * over these hints, disable the flags and remove them from
+			 * consideration, now and in the future.
+			 */
+			if(Tmp_win->forced ||
+					(icon && icon->match == match_net_wm_icon)) {
+				Tmp_win->wmhints->flags &= ~(IconWindowHint | IconPixmapHint | IconMaskHint);
+			}
+
+			if(Tmp_win->wmhints->flags & IconWindowHint) {
+				if(icon && icon->w) {
 					int icon_x, icon_y;
 
 					/*
@@ -1767,7 +1801,7 @@ void HandlePropertyNotify(void)
 					 * Try to find out where it is; if we succeed, move the new
 					 * window to where the old one is.
 					 */
-					if(XGetGeometry(dpy, Tmp_win->icon->w, &JunkRoot, &icon_x,
+					if(XGetGeometry(dpy, icon->w, &JunkRoot, &icon_x,
 					                &icon_y, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth)) {
 						/*
 						 * Move the new icon window to where the old one was.
@@ -1787,20 +1821,20 @@ void HandlePropertyNotify(void)
 					 * Now, if the old window isn't ours, unmap it, otherwise
 					 * just get rid of it completely.
 					 */
-					if(Tmp_win->icon_not_ours) {
-						if(Tmp_win->icon->w != Tmp_win->wmhints->icon_window) {
-							XUnmapWindow(dpy, Tmp_win->icon->w);
+					if(icon->w_not_ours) {
+						if(icon->w != Tmp_win->wmhints->icon_window) {
+							XUnmapWindow(dpy, icon->w);
 						}
 					}
 					else {
-						XDestroyWindow(dpy, Tmp_win->icon->w);
+						XDestroyWindow(dpy, icon->w);
 					}
 
 					/*
 					 * The new icon window isn't our window, so note that fact
 					 * so that we don't treat it as ours.
 					 */
-					Tmp_win->icon_not_ours = TRUE;
+					icon->w_not_ours = TRUE;
 
 					/*
 					 * Now make the new window the icon window for this window,
@@ -1808,60 +1842,65 @@ void HandlePropertyNotify(void)
 					 * and button presses/releases, set up the contexts for it,
 					 * and define the cursor for it).
 					 */
-					Tmp_win->icon->w = Tmp_win->wmhints->icon_window;
-					XSelectInput(dpy, Tmp_win->icon->w,
+					icon->w = Tmp_win->wmhints->icon_window;
+					XSelectInput(dpy, icon->w,
 					             KeyPressMask | ButtonPressMask | ButtonReleaseMask);
-					XSaveContext(dpy, Tmp_win->icon->w, TwmContext, (XPointer)Tmp_win);
-					XSaveContext(dpy, Tmp_win->icon->w, ScreenContext, (XPointer)Scr);
-					XDefineCursor(dpy, Tmp_win->icon->w, Scr->IconCursor);
+					XSaveContext(dpy, icon->w, TwmContext, (XPointer)Tmp_win);
+					XSaveContext(dpy, icon->w, ScreenContext, (XPointer)Scr);
+					XDefineCursor(dpy, icon->w, Scr->IconCursor);
 				}
 			}
 
-			if(Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced && Tmp_win->wmhints &&
+			if(icon && icon->w &&
 			                (Tmp_win->wmhints->flags & IconPixmapHint)) {
 				int x;
+				unsigned int IconDepth;
+
 				if(!XGetGeometry(dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
-				                 &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon->width,
-				                 (unsigned int *)&Tmp_win->icon->height, &JunkBW,
-				                 &JunkDepth)) {
+				                 &JunkX, &JunkY, (unsigned int *)&icon->width,
+				                 (unsigned int *)&icon->height, &JunkBW,
+				                 &IconDepth)) {
 					return;
 				}
 
-				pm = XCreatePixmap(dpy, Scr->Root, Tmp_win->icon->width,
-				                   Tmp_win->icon->height, Scr->d_depth);
+				pm = XCreatePixmap(dpy, Scr->Root, icon->width,
+				                   icon->height, Scr->d_depth);
 
-				FB(Tmp_win->icon->iconc.fore, Tmp_win->icon->iconc.back);
+				FB(icon->iconc.fore, icon->iconc.back);
 
-				if(JunkDepth == Scr->d_depth)
+				if(IconDepth == Scr->d_depth)
 					XCopyArea(dpy, Tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
-					          0, 0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0);
+					          0, 0, icon->width, icon->height, 0, 0);
 				else
 					XCopyPlane(dpy, Tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
-					           0, 0, Tmp_win->icon->width, Tmp_win->icon->height, 0, 0, 1);
+					           0, 0, icon->width, icon->height, 0, 0, 1);
 
-				if(Tmp_win->icon->image) {
-					if(Tmp_win->icon->image->pixmap) {
-						XFreePixmap(dpy, Tmp_win->icon->image->pixmap);
-					}
-					Tmp_win->icon->image->pixmap = pm;
-					Tmp_win->icon->image->width  = Tmp_win->icon->width;
-					Tmp_win->icon->image->height = Tmp_win->icon->height;
-					Tmp_win->icon->image->mask   = None;
-					Tmp_win->icon->image->next   = None;
+				if(icon->image) {
+					/* Release the existing Image: it may be a shared one (UnknownIcon) */
+					ReleaseImage(icon);
+					/* conjure up a new Image */
+					Image *image = (Image *) calloc(1, sizeof(Image));
+					image->pixmap = pm;
+					image->width  = icon->width;
+					image->height = icon->height;
+					image->mask   = None;
+					image->next   = None;
+					icon->image = image;
+					icon->match = match_icon_pixmap_hint;
 				}
 
 				valuemask = CWBackPixmap;
 				attributes.background_pixmap = pm;
 
-				if(Tmp_win->icon->bm_w) {
-					XDestroyWindow(dpy, Tmp_win->icon->bm_w);
+				if(icon->bm_w) {
+					XDestroyWindow(dpy, icon->bm_w);
 				}
 
-				x = GetIconOffset(Tmp_win->icon);
-				Tmp_win->icon->bm_w =
-				        XCreateWindow(dpy, Tmp_win->icon->w, x, 0,
-				                      (unsigned int) Tmp_win->icon->width,
-				                      (unsigned int) Tmp_win->icon->height,
+				x = GetIconOffset(icon);
+				icon->bm_w =
+				        XCreateWindow(dpy, icon->w, x, 0,
+				                      (unsigned int) icon->width,
+				                      (unsigned int) icon->height,
 				                      (unsigned int) 0, Scr->d_depth,
 				                      (unsigned int) CopyFromParent, Scr->d_visual,
 				                      valuemask, &attributes);
@@ -1871,30 +1910,35 @@ void HandlePropertyNotify(void)
 
 					rect.x      = x;
 					rect.y      = 0;
-					rect.width  = Tmp_win->icon->width;
-					rect.height = Tmp_win->icon->height;
-					XShapeCombineRectangles(dpy, Tmp_win->icon->w, ShapeBounding, 0,
+					rect.width  = icon->width;
+					rect.height = icon->height;
+					XShapeCombineRectangles(dpy, icon->w, ShapeBounding, 0,
 					                        0, &rect, 1, ShapeUnion, 0);
 				}
-				XMapSubwindows(dpy, Tmp_win->icon->w);
+				XMapSubwindows(dpy, icon->w);
 				RedoIconName();
 			}
-			if(Tmp_win->icon && Tmp_win->icon->w && !Tmp_win->forced && Tmp_win->wmhints &&
-			                (Tmp_win->wmhints->flags & IconMaskHint)) {
+			if(icon && icon->w &&
+			                (Tmp_win->wmhints->flags & IconMaskHint) &&
+			                icon->match == match_icon_pixmap_hint) {
+				/* Only set the mask if the pixmap came from a WM_HINTS too,
+				 * for easier resource management.
+				 */
 				int x;
 				Pixmap mask;
 				GC gc;
+				unsigned int IconWidth, IconHeight, IconDepth;
 
 				if(!XGetGeometry(dpy, Tmp_win->wmhints->icon_mask, &JunkRoot,
-				                 &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW,
-				                 &JunkDepth)) {
+				                 &JunkX, &JunkY, &IconWidth, &IconHeight, &JunkBW,
+				                 &IconDepth)) {
 					return;
 				}
-				if(JunkDepth != 1) {
+				if(IconDepth != 1) {
 					return;
 				}
 
-				mask = XCreatePixmap(dpy, Scr->Root, JunkWidth, JunkHeight, 1);
+				mask = XCreatePixmap(dpy, Scr->Root, IconWidth, IconHeight, 1);
 				if(!mask) {
 					return;
 				}
@@ -1903,22 +1947,22 @@ void HandlePropertyNotify(void)
 					return;
 				}
 				XCopyArea(dpy, Tmp_win->wmhints->icon_mask, mask, gc,
-				          0, 0, JunkWidth, JunkHeight, 0, 0);
+				          0, 0, IconWidth, IconHeight, 0, 0);
 				XFreeGC(dpy, gc);
-				x = GetIconOffset(Tmp_win->icon);
-				XShapeCombineMask(dpy, Tmp_win->icon->bm_w, ShapeBounding, 0, 0, mask,
+				x = GetIconOffset(icon);
+				XShapeCombineMask(dpy, icon->bm_w, ShapeBounding, 0, 0, mask,
 				                  ShapeSet);
-				XShapeCombineMask(dpy, Tmp_win->icon->w,    ShapeBounding, x, 0, mask,
+				XShapeCombineMask(dpy, icon->w,    ShapeBounding, x, 0, mask,
 				                  ShapeSet);
-				if(Tmp_win->icon->image) {
-					if(Tmp_win->icon->image->mask) {
-						XFreePixmap(dpy, Tmp_win->icon->image->mask);
+				if(icon->image) {
+					if(icon->image->mask) {
+						XFreePixmap(dpy, icon->image->mask);
 					}
-					Tmp_win->icon->image->mask = mask;
+					icon->image->mask = mask;
 					RedoIconName();
 				}
 			}
-			if(Tmp_win->wmhints && (Tmp_win->wmhints->flags & IconPixmapHint)) {
+			if(Tmp_win->wmhints->flags & IconPixmapHint) {
 				AutoPopupMaybe(Tmp_win);
 			}
 
@@ -1948,6 +1992,11 @@ void HandlePropertyNotify(void)
 				ChangeOccupation(Tmp_win, GetMaskFromProperty(prop, nitems));
 				XFree((char *)prop);
 			}
+#ifdef EWMH
+			else if(EwmhHandlePropertyNotify(&Event.xproperty, Tmp_win)) {
+				/* event handled */
+			}
+#endif /* EWMH */
 #ifdef GNOME
 			else if(Event.xproperty.atom == _XA_WIN_WORKSPACE) {
 				if(XGetWindowProperty(dpy, Tmp_win->w, Event.xproperty.atom, 0L, 32, False,
@@ -1967,10 +2016,14 @@ void HandlePropertyNotify(void)
 
 static void RedoIcon(void)
 {
-	Icon *icon;
+	Icon *icon, *old_icon;
 	char *pattern;
 
-	if(Tmp_win->icon_not_ours) {
+	old_icon = Tmp_win->icon;
+
+	if(old_icon && (
+	                        old_icon->w_not_ours ||
+	                        old_icon->match != match_list)) {
 		RedoIconName();
 		return;
 	}
@@ -1990,36 +2043,50 @@ static void RedoIcon(void)
 		return;
 	}
 	if(icon != NULL) {
-		if(Tmp_win->icon == icon) {
+		if(old_icon == icon) {
 			RedoIconName();
 			return;
 		}
 		if(Tmp_win->icon_on && visible(Tmp_win)) {
 			IconDown(Tmp_win);
-			if(Tmp_win->icon && Tmp_win->icon->w) {
-				XUnmapWindow(dpy, Tmp_win->icon->w);
+			if(old_icon && old_icon->w) {
+				XUnmapWindow(dpy, old_icon->w);
 			}
 			Tmp_win->icon = icon;
+			OtpReassignIcon(Tmp_win, old_icon);
 			IconUp(Tmp_win);
 			OtpRaise(Tmp_win, IconWin);
 			XMapWindow(dpy, Tmp_win->icon->w);
 		}
 		else {
 			Tmp_win->icon = icon;
+			OtpReassignIcon(Tmp_win, old_icon);
 		}
 		RedoIconName();
 	}
 	else {
 		if(Tmp_win->icon_on && visible(Tmp_win)) {
 			IconDown(Tmp_win);
-			if(Tmp_win->icon && Tmp_win->icon->w) {
-				XUnmapWindow(dpy, Tmp_win->icon->w);
+			if(old_icon && old_icon->w) {
+				XUnmapWindow(dpy, old_icon->w);
 			}
+			/*
+			 * If the icon name/class was found on one of the above lists,
+			 * the call to CreateIconWindow() will find it again there
+			 * and keep track of it on Tmp_win->iconslist for eventual
+			 * deallocation. (It is now checked that the current struct
+			 * Icon is also already on that list)
+			 */
+			OtpFreeIcon(Tmp_win);
+			int saveForceIcon = Scr->ForceIcon;
+			Scr->ForceIcon = True;
 			CreateIconWindow(Tmp_win, -100, -100);
+			Scr->ForceIcon = saveForceIcon;
 			OtpRaise(Tmp_win, IconWin);
 			XMapWindow(dpy, Tmp_win->icon->w);
 		}
 		else {
+			OtpFreeIcon(Tmp_win);
 			Tmp_win->icon = (Icon *) 0;
 			WMapUpdateIconName(Tmp_win);
 		}
@@ -2059,7 +2126,7 @@ void RedoIconName(void)
 		goto wmapupd;
 	}
 
-	if(Tmp_win->icon_not_ours) {
+	if(Tmp_win->icon->w_not_ours) {
 		goto wmapupd;
 	}
 
@@ -2170,6 +2237,13 @@ void HandleClientMessage(void)
 		}
 		return;
 	}
+
+#ifdef EWMH
+	if(EwmhClientMessage(&Event.xclient)) {
+		return;
+	}
+#endif
+
 #ifdef GNOME
 	/* 6/19/1999 nhd for GNOME compliance */
 	if(Event.xclient.message_type == _XA_WIN_WORKSPACE) {
@@ -2424,6 +2498,11 @@ void HandleDestroyNotify(void)
 	}
 	OtpRemove(Tmp_win, WinWin);
 
+#ifdef EWMH
+	/* Remove the old window from the EWMH client list */
+	EwmhDeleteClientWindow(Tmp_win);
+	EwmhSet_NET_CLIENT_LIST_STACKING();
+#endif /* GNOME */
 #ifdef GNOME
 	GnomeDeleteClientWindow(Tmp_win);  /* Fix the gnome client list */
 #endif /* GNOME */
@@ -2518,12 +2597,13 @@ void HandleDestroyNotify(void)
 	 * Icons are not child windows.
 	 */
 	XDestroyWindow(dpy, Tmp_win->frame);
+	DeleteIconsList(Tmp_win);                                   /* 14 */
 	if(Tmp_win->icon) {
-		if(Tmp_win->icon->w && !Tmp_win->icon_not_ours) {
-			XDestroyWindow(dpy, Tmp_win->icon->w);
+		Icon *icon = Tmp_win->icon;
+		if(icon->w && !icon->w_not_ours) {
 			IconDown(Tmp_win);
 		}
-		free(Tmp_win->icon);
+		DeleteIcon(icon);
 		Tmp_win->icon = NULL;
 	}
 	Tmp_win->occupation = 0;
@@ -2566,7 +2646,6 @@ void HandleDestroyNotify(void)
 		Tmp_win->squeeze_info = NULL;
 	}
 	DeleteHighlightWindows(Tmp_win);                            /* 13 */
-	DeleteIconsList(Tmp_win);                                   /* 14 */
 
 	free((char *)Tmp_win);
 	Tmp_win = NULL;
@@ -2618,6 +2697,13 @@ void HandleMapRequest(void)
 		if(Tmp_win == NULL) {
 			return;
 		}
+#ifdef EWMH
+		/* add the new window to the EWMH client list */
+		EwmhAddClientWindow(Tmp_win);
+		EwmhSet_NET_CLIENT_LIST_STACKING();
+		OtpSetPriority(Tmp_win, WinWin, EwmhGetPriority(Tmp_win), Above);
+		EwmhSet_NET_WM_STATE(Tmp_win, EWMH_STATE_ALL);
+#endif /* EWMH */
 #ifdef GNOME
 		GnomeAddClientWindow(
 		        Tmp_win);  /* add the new window to the gnome client list */
@@ -2844,6 +2930,9 @@ void HandleUnmapNotify(void)
 	/* Is it the correct behaviour ???
 	    XDeleteProperty (dpy, Tmp_win->w, _XA_WM_OCCUPATION);
 	*/
+#ifdef EWMH
+	EwmhUnmapNotify(Tmp_win);
+#endif /* EWMH */
 	XGrabServer(dpy);
 	if(XTranslateCoordinates(dpy, Event.xunmap.window, Tmp_win->attr.root,
 	                         0, 0, &dstx, &dsty, &dumwin)) {
@@ -3432,6 +3521,12 @@ void HandleButtonPress(void)
 			Event.xany.window = Tmp_win->w;
 			Context = C_WINDOW;
 		}
+#ifdef EWMH_DESKTOP_ROOT
+		else if(Tmp_win->ewmhWindowType == wt_Desktop) {
+			fprintf(stderr, "HandleButtonPress: wt_Desktop -> C_ROOT\n");
+			Context = C_ROOT;
+		}
+#endif
 		else if(Event.xany.window == Tmp_win->title_w) {
 			if(Scr->ClickToFocus &&
 			                Tmp_win->wmhints &&
@@ -3506,7 +3601,8 @@ void HandleButtonPress(void)
 		}
 		else if(Tmp_win->wspmgr ||
 		                (Tmp_win == Scr->workSpaceMgr.occupyWindow->twm_win)) {
-			Context = C_WINDOW;
+			/*Context = C_WINDOW; probably a typo */
+			Context = C_WORKSPACE;
 		}
 		else if(Tmp_win->iconmanagerlist) {
 			if((Event.xany.window == Tmp_win->iconmanagerlist->icon) ||
@@ -3613,6 +3709,12 @@ void HandleButtonPress(void)
 			default :
 				if(func != 0) {
 					Action = tmp->item ? tmp->item->action : NULL;
+#ifdef EWMH_DESKTOP_ROOT
+					if(Context == C_ROOT && Tmp_win != NULL) {
+						Context = C_WINDOW;
+						fprintf(stderr, "HandleButtonPress: wt_Desktop -> C_WINDOW\n");
+					}
+#endif /* EWMH */
 					ExecuteFunction(func,
 					                Action, Event.xany.window, Tmp_win, &Event, Context, FALSE);
 				}
@@ -4411,7 +4513,7 @@ void HandleConfigureRequest(void)
 	}
 
 	if(width != Tmp_win->frame_width || height != Tmp_win->frame_height) {
-		Tmp_win->zoomed = ZOOM_NONE;
+		unzoom(Tmp_win);
 	}
 
 	/* Workaround for Java 1.4 bug that freezes the application whenever
@@ -4462,6 +4564,25 @@ void HandleShapeNotify(void)
 	Tmp_win->wShaped = sev->shaped;
 	SetFrameShape(Tmp_win);
 }
+
+
+/***********************************************************************
+ *
+ *  Procedure:
+ *      HandleSelectionClear - selection lost event handler
+ *
+ ***********************************************************************
+ */
+#ifdef EWMH
+void HandleSelectionClear(void)
+{
+	XSelectionClearEvent    *sev = (XSelectionClearEvent *) &Event;
+
+	if(sev->window == Scr->icccm_Window) {
+		EwhmSelectionClear(sev);
+	}
+}
+#endif
 
 
 

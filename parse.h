@@ -98,7 +98,7 @@ extern void TwmOutput(int c);
 #define F_DEICONIFY             14
 #define F_UNFOCUS               15
 #define F_RESIZE                16
-#define F_ZOOM                  17
+#define F_VERTZOOM              17
 #define F_LEFTZOOM              18
 #define F_RIGHTZOOM             19
 #define F_TOPZOOM               20
@@ -172,6 +172,7 @@ extern void TwmOutput(int c);
 #define F_AUTOLOWER             86
 #define F_FITTOCONTENT          87
 #define F_SHOWBGRD              88
+#define F_FULLSCREENZOOM        89
 
 
 #define F_MENU                  101     /* string */

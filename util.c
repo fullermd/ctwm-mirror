@@ -203,8 +203,6 @@ static Image  *Create3DBoxImage(ColorPair cp);
 static void PaintAllDecoration(void);
 static void PaintTitleButtons(TwmWindow *tmp_win);
 
-static void FreeImage(Image *image);
-
 static void swapshort(char *bp, unsigned n);
 static void swaplong(char *bp, unsigned n);
 
@@ -1921,6 +1919,9 @@ void SetFocus(TwmWindow *tmp_win, Time tim)
 	}
 
 	XSetInputFocus(dpy, w, RevertToPointerRoot, tim);
+#if EWMH
+	EwmhSet_NET_ACTIVE_WINDOW(w);
+#endif
 	if(Scr->Focus == tmp_win) {
 		return;
 	}
@@ -1938,13 +1939,6 @@ void SetFocus(TwmWindow *tmp_win, Time tim)
 		SetFocusVisualAttributes(tmp_win, True);
 	}
 	Scr->Focus = tmp_win;
-#if 0
-	/*
-	 * Not wanted if we sort-of want to keep the window list in
-	 * stacking order.
-	 */
-	move_to_head(tmp_win);
-#endif
 }
 
 
@@ -3120,10 +3114,10 @@ static void PaintAllDecoration(void)
 			}
 		}
 		else if((tmp_win->icon_on == TRUE)  &&
-		                !tmp_win->icon_not_ours &&
 		                !Scr->NoIconTitlebar    &&
 		                tmp_win->icon           &&
 		                tmp_win->icon->w        &&
+		                !tmp_win->icon->w_not_ours &&
 		                ! LookInList(Scr->NoIconTitle, tmp_win->full_name, &tmp_win->class)) {
 			PaintIcon(tmp_win);
 		}
@@ -3799,7 +3793,7 @@ Image *GetImage(char *name, ColorPair cp)
 	return (image);
 }
 
-static void FreeImage(Image *image)
+void FreeImage(Image *image)
 {
 	Image *im, *im2;
 

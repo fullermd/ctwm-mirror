@@ -102,6 +102,9 @@
 #ifdef SOUNDS
 #  include "sound.h"
 #endif
+#ifdef EWMH
+#  include "ewmh.h"
+#endif /* EWMH */
 #ifdef VMS
 #  include <stdlib.h>
 #  include <decw$include/Xproto.h>
@@ -216,6 +219,9 @@ SIGNAL_T Crash(int signum);
 #ifdef __WAIT_FOR_CHILDS
 SIGNAL_T ChildExit(int signum);
 #endif
+#ifdef EWMH
+int ewmh_replace;
+#endif /* EWMH */
 
 /***********************************************************************
  *
@@ -386,17 +392,29 @@ int main(int argc, char **argv, char **environ)
 						exit(0);
 					}
 					goto usage;
+#ifdef EWMH
+				case '-':
+					if(!strcmp(argv[i], "--replace")) {
+						ewmh_replace = 1;
+					}
+					else {
+						goto usage;
+					}
+					continue;
+#endif
 			}
 		}
 usage:
 		fprintf(stderr, "usage: %s [-display dpy] [-version] [-info]", ProgramName);
-#ifdef USEM4
-		fprintf(stderr,
-		        " [-cfgchk] [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-k] [-K file] [-n] [-name name]\n");
-#else
-		fprintf(stderr,
-		        " [-cfgchk] [-f file] [-s] [-q] [-v] [-W] [-w [wid]] [-name name] \n");
+#ifdef EWMH
+		fprintf(stderr, " [--replace]");
 #endif
+		fprintf(stderr,
+		        " [-cfgchk] [-f file] [-s[ingle]] [-q] [-v[erbose]] [-W] [-w[indow] [wid]] [-n]");
+#ifdef USEM4
+		fprintf(stderr, " [-k] [-K file]");
+#endif
+		fprintf(stderr, " [-name name] [-xrm resource]\n");
 		exit(1);
 	}
 
@@ -485,6 +503,10 @@ usage:
 	numManaged = 0;
 	PreviousScreen = DefaultScreen(dpy);
 	FirstScreen = TRUE;
+#ifdef EWMH
+	EwmhInit();
+#endif /* EWMH */
+
 	for(scrnum = firstscrn ; scrnum <= lastscrn; scrnum++) {
 		unsigned long attrmask;
 		if(captive) {
@@ -512,11 +534,31 @@ usage:
 		XChangeProperty(dpy, croot, _XA_MIT_PRIORITY_COLORS,
 		                XA_CARDINAL, 32, PropModeReplace, NULL, 0);
 		XSync(dpy, 0); /* Flush possible previous errors */
+
+		/* Note:  ScreenInfo struct is calloc'ed to initialize to zero. */
+		Scr = ScreenList[scrnum] =
+		              (ScreenInfo *) calloc(1, sizeof(ScreenInfo));
+		if(Scr == NULL) {
+			fprintf(stderr,
+			        "%s: unable to allocate memory for ScreenInfo structure"
+			        " for screen %d.\n",
+			        ProgramName, scrnum);
+			continue;
+		}
+
+		Scr->screen = scrnum;
+		Scr->XineramaRoot = croot;
+#ifdef EWMH
+		EwmhInitScreenEarly(Scr);
+#endif /* EWMH */
 		RedirectError = FALSE;
 		XSetErrorHandler(CatchRedirectError);
 		attrmask = ColormapChangeMask | EnterWindowMask | PropertyChangeMask |
 		           SubstructureRedirectMask | KeyPressMask | ButtonPressMask |
 		           ButtonReleaseMask;
+#ifdef EWMH
+		attrmask |= StructureNotifyMask;
+#endif /* EWMH */
 		if(captive) {
 			attrmask |= StructureNotifyMask;
 		}
@@ -537,16 +579,6 @@ usage:
 		}
 
 		numManaged ++;
-
-		/* Note:  ScreenInfo struct is calloc'ed to initialize to zero. */
-		Scr = ScreenList[scrnum] =
-		              (ScreenInfo *) calloc(1, sizeof(ScreenInfo));
-		if(Scr == NULL) {
-			fprintf(stderr,
-			        "%s: unable to allocate memory for ScreenInfo structure for screen %d.\n",
-			        ProgramName, scrnum);
-			continue;
-		}
 
 		/* initialize list pointers, remember to put an initialization
 		 * in InitVariables also
@@ -735,6 +767,9 @@ usage:
 		}
 
 		InitVirtualScreens(Scr);
+#ifdef EWMH
+		EwmhInitVirtualRoots(Scr);
+#endif /* EWMH */
 		ConfigureWorkSpaceManager();
 
 		if(ShowWelcomeWindow && ! screenmasked) {
@@ -855,6 +890,9 @@ usage:
 #ifdef GNOME
 		InitGnome();
 #endif /* GNOME */
+#ifdef EWMH
+		EwmhInitScreenLate(Scr);
+#endif /* EWMH */
 
 		XQueryTree(dpy, Scr->Root, &croot, &parent, &children, &nchildren);
 		/*
@@ -1194,6 +1232,10 @@ static void InitVariables(void)
 	Scr->AlwaysSqueezeToGravity = FALSE;
 	Scr->NoWarpToMenuTitle = FALSE;
 	Scr->DontToggleWorkspaceManagerState = False;
+#ifdef EWMH
+	Scr->PreferredIconWidth = 48;
+	Scr->PreferredIconHeight = 48;
+#endif
 
 	Scr->BorderTop    = 0;
 	Scr->BorderBottom = 0;
@@ -1359,6 +1401,9 @@ SIGNAL_T Done(int signum)
 	play_exit_sound();
 #endif
 	Reborder(CurrentTime);
+#ifdef EWMH
+	EwmhTerminate();
+#endif /* EWMH */
 #if defined(VMS) && EXIT_ENDSESSION /* was: #ifdef VMS */
 	createProcess("run sys$system:decw$endsession.exe");
 	sleep(10);  /* sleep until stopped */
@@ -1568,6 +1613,12 @@ static void DisplayInfo(void)
 #endif
 #ifdef SOUNDS
 	(void) printf(" SOUNDS");
+#endif
+#ifdef GNOME
+	(void) printf(" GNOME");
+#endif
+#ifdef EWMH
+	(void) printf(" EWMH");
 #endif
 	(void) printf(" I18N");
 	(void) printf("\n");

@@ -39,6 +39,8 @@
 #include "cursor.h"
 #include "list.h"
 #include "workmgr.h"
+#include "ewmh.h"
+#include "ewmh_atoms.h"
 #ifdef VMS
 #include <string.h>
 #include <decw$include/Xos.h>
@@ -108,7 +110,7 @@ void safecopy(char *dest, char *src, int size);
 
 static Atom _XA_WM_CTWMSLIST;
 
-static int fullOccupation = 0;
+int fullOccupation = 0;
 static int useBackgroundInfo = False;
 static XContext MapWListContext = (XContext) 0;
 static Cursor handCursor  = (Cursor) 0;
@@ -440,10 +442,20 @@ void GotoDownWorkSpace(VirtualScreen *vs)
 	GotoWorkSpaceByNumber(vs, number);
 }
 
-void ShowBackground(VirtualScreen *vs)
+/*
+ * Show the background (by hiding all windows) or undo it.
+ * newstate is the desired showing state.
+ * Pass -1 to toggle, 1 to show the background,
+ * or 0 to re-show the windows.
+ */
+void ShowBackground(VirtualScreen *vs, int newstate)
 {
 	static int state = 0;
 	TwmWindow *twmWin;
+
+	if(newstate == state) {
+		return;
+	}
 
 	if(state) {
 		for(twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
@@ -456,13 +468,21 @@ void ShowBackground(VirtualScreen *vs)
 	}
 	else {
 		for(twmWin = Scr->FirstWindow; twmWin != NULL; twmWin = twmWin->next) {
-			if(twmWin->vs == vs) {
+			if(twmWin->vs == vs
+#ifdef EWMH
+			                /* leave wt_Desktop and wt_Dock visible */
+			                && twmWin->ewmhWindowType == wt_Normal
+#endif /* EWMH */
+			  ) {
 				twmWin->savevs = twmWin->vs;
 				Vanish(vs, twmWin);
 			}
 		}
 		state = 1;
 	}
+#ifdef EWMH
+	EwmhSet_NET_SHOWING_DESKTOP(state);
+#endif /* EWMH */
 }
 
 void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
@@ -526,8 +546,19 @@ void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
 	for(twmWin = OtpTopWin(); twmWin != NULL;
 	                twmWin = OtpNextWinDown(twmWin)) {
 
-		if(OCCUPY(twmWin, newws) && !twmWin->vs) {
-			DisplayWin(vs, twmWin);
+		if(OCCUPY(twmWin, newws)) {
+			if(!twmWin->vs) {
+				DisplayWin(vs, twmWin);
+			}
+#ifdef EWMH
+			if(OCCUPY(twmWin, oldws)) {
+				/*
+				 * If the window remains visible, re-order the workspace
+				 * numbers in NET_WM_DESKTOP.
+				 */
+				EwmhSet_NET_WM_DESKTOP_ws(twmWin, newws);
+			}
+#endif
 		}
 	}
 
@@ -670,10 +701,26 @@ void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
 	 * property is used to indicate in which workspace it is contained.
 	 */
 
-	if(!Scr->CaptiveRoot)
+	if(!captive) {
+		long number = newws->number;
 		XChangeProperty(dpy, Scr->Root, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
-		                PropModeReplace, (unsigned char *) & (newws->number), 1);
+		                PropModeReplace, (unsigned char *) &number, 1);
+	}
 #endif /* GNOME */
+#ifdef EWMH
+	{
+		long number = newws->number;
+		/*
+		 * TODO: this should probably not use Scr->Root but ->XineramaRoot.
+		 * That is the real root window if we're using virtual screens.
+		 * Also, on the real root it would need values for each of the
+		 * virtual roots, but that doesn't fit in the EWMH ideas.
+		 */
+		XChangeProperty(dpy, Scr->Root, XA__NET_CURRENT_DESKTOP,
+		                XA_CARDINAL, 32,
+		                PropModeReplace, (unsigned char *) &number, 1);
+	}
+#endif /* EWMH */
 	XSelectInput(dpy, Scr->Root, eventMask);
 
 	/*    XDestroyWindow (dpy, cachew);*/
@@ -876,6 +923,12 @@ void SetupOccupation(TwmWindow *twm_win,
 		}
 	}
 
+#ifdef EWMH
+	if(twm_win->occupation == 0) {
+		twm_win->occupation = EwmhGetOccupation(twm_win);
+	}
+#endif /* EWMH */
+
 	if(twm_win->iconmgr) {
 		return;        /* someone tried to modify occupation of icon managers */
 	}
@@ -944,6 +997,9 @@ void SetupOccupation(TwmWindow *twm_win,
 
 	XChangeProperty(dpy, twm_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) wrkSpcList, len);
+#ifdef EWMH
+	EwmhSet_NET_WM_DESKTOP(twm_win);
+#endif
 #ifdef GNOME
 	XChangeProperty(dpy, twm_win->w, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
 	                PropModeReplace, (unsigned char *)(&gwkspc), 1);
@@ -1618,6 +1674,9 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 
 		XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
 		                PropModeReplace, (unsigned char *) namelist, len);
+#ifdef EWMH
+		EwmhSet_NET_WM_DESKTOP(tmp_win);
+#endif
 #ifdef GNOME
 		XChangeProperty(dpy, tmp_win->w, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,
 		                PropModeReplace, (unsigned char *)(&gwkspc), 1);
@@ -1687,6 +1746,9 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 	XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) namelist, len);
 
+#ifdef EWMH
+	EwmhSet_NET_WM_DESKTOP(tmp_win);
+#endif
 #ifdef GNOME
 	/* Tell GNOME where this window lives */
 	XChangeProperty(dpy, tmp_win->w, _XA_WIN_WORKSPACE, XA_CARDINAL, 32,

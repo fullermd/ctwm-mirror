@@ -455,6 +455,10 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 		tmp_win->DontSetInactive = False;
 	}
 
+#ifdef EWMH
+	EwmhGetProperties(tmp_win);
+#endif /* EWMH */
+
 	if(LookInList(Scr->AutoSqueeze, tmp_win->full_name, &tmp_win->class)) {
 		tmp_win->AutoSqueeze = True;
 	}
@@ -462,7 +466,11 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 		tmp_win->AutoSqueeze = False;
 	}
 
-	if(LookInList(Scr->StartSqueezed, tmp_win->full_name, &tmp_win->class)) {
+	if(
+#ifdef EWMH
+	        (tmp_win->ewmhFlags & EWMH_STATE_SHADED) ||
+#endif /* EWMH */
+	        LookInList(Scr->StartSqueezed, tmp_win->full_name, &tmp_win->class)) {
 		tmp_win->StartSqueezed = True;
 	}
 	else {
@@ -491,6 +499,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 		}
 	}
 	if((Scr->WindowRingAll && !iswman && !iconm &&
+#ifdef EWMH
+	                EwmhOnWindowRing(tmp_win) &&
+#endif /* EWMH */
 	                !LookInList(Scr->WindowRingExcludeL, tmp_win->full_name, &tmp_win->class)) ||
 	                LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
 		if(Scr->Ring) {
@@ -540,9 +551,13 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 		GetMWMHints(tmp_win->w, &mwmHints);
 
 		tmp_win->frame_bw3D = Scr->ThreeDBorderWidth;
-		if(((mwmHints.flags & MWM_HINTS_DECORATIONS) &&
-		                (mwmHints.decorations & MWM_DECOR_BORDER) == 0)
-		                || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class)) {
+		if(
+#ifdef EWMH
+		        !EwmhHasBorder(tmp_win) ||
+#endif /* EWMH */
+		        ((mwmHints.flags & MWM_HINTS_DECORATIONS) &&
+		         (mwmHints.decorations & MWM_DECOR_BORDER) == 0) ||
+		        LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class)) {
 			tmp_win->frame_bw = 0;
 			tmp_win->frame_bw3D = 0;
 		}
@@ -559,6 +574,9 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp, VirtualScreen *vs)
 
 
 		have_title = True;
+#ifdef EWMH
+		have_title = EwmhHasTitle(tmp_win);
+#endif /* EWMH */
 		if(mwmHints.flags & MWM_HINTS_DECORATIONS) {
 			have_title = (mwmHints.decorations & MWM_DECOR_TITLE) != 0;
 		}
@@ -1762,6 +1780,24 @@ void GrabKeys(TwmWindow *tmp_win)
 					}
 				}
 				break;
+
+#ifdef EWMH_DESKTOP_ROOT
+			case C_ROOT:
+				if(tmp_win->ewmhWindowType != wt_Desktop) {
+					break;
+				}
+
+				grabkey(tmp, 0, tmp_win->w);
+
+				for(i = 0 ; i < 8 ; i++) {
+					if((Scr->IgnoreModifier & ModifierMask [i]) &&
+					                !(tmp->mods & ModifierMask [i])) {
+						grabkey(tmp, ModifierMask [i], tmp_win->w);
+					}
+				}
+				break;
+#endif /* EWMH */
+
 				/*
 				case C_ROOT:
 				    XGrabKey(dpy, tmp->keycode, tmp->mods, Scr->Root, True,

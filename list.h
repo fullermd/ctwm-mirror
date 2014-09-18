@@ -64,6 +64,9 @@
 #ifndef _LIST_
 #define _LIST_
 
+#include <X11/Intrinsic.h>
+#include "types.h"
+
 struct name_list {
 	name_list *next;            /* pointer to the next name */
 	char *name;                 /* the name of the window */

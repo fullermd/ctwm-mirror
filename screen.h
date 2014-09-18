@@ -237,6 +237,10 @@ struct ScreenInfo {
 	short TitleJustification;   /* J_LEFT, J_CENTER or J_RIGHT */
 	short IconifyStyle;         /* ICONIFY_* */
 	int   MaxIconTitleWidth;    /* */
+#ifdef EWMH
+	int PreferredIconWidth;     /* Desired icon size: width */
+	int PreferredIconHeight;    /* Desired icon size: height */
+#endif
 
 	Cursor TitleCursor;         /* title bar cursor */
 	Cursor FrameCursor;         /* frame cursor */
@@ -470,6 +474,13 @@ struct ScreenInfo {
 #ifdef GNOME
 	GnomeData *gnomedata;
 #endif /* GNOME */
+#ifdef EWMH
+	Window icccm_Window;        /* ICCCM sections 4.3, 2.8 */
+	long *ewmh_CLIENT_LIST;
+	int ewmh_CLIENT_LIST_size;
+	int ewmh_CLIENT_LIST_used;
+	EwmhStrut *ewmhStruts;          /* remember values of _NET_WM_STRUT */
+#endif /* EWMH */
 };
 
 extern int captive;

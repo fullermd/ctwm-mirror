@@ -48,8 +48,9 @@ option(USE_XPM    "Enable XPM support"                 ON )
 option(USE_JPEG   "Enable libjpeg support"             ON )
 option(USE_M4     "Enable m4 support"                  ON )
 option(USE_SOUND  "Enable librplay sound support"      OFF)
-option(USE_GNOME  "Enable GNOME1 support"              ON )
 option(USE_SREGEX "Use regex from libc"                ON )
+option(USE_EWMH   "Support some Extended Window Manager Hints"  ON )
+option(USE_GNOME  "Enable GNOME1 support"              !USE_EWMH )
 
 
 #
@@ -158,11 +159,30 @@ if(USE_SOUND)
 endif(USE_SOUND)
 
 
+# Check if the user wants EWMH support built in.
+if(USE_EWMH)
+    # Hand-build ewmh_atoms.[ch]
+	set(ewmh_atoms ewmh_atoms.h ewmh_atoms.c)
+	add_custom_command(OUTPUT ${ewmh_atoms}
+		DEPENDS ewmh_atoms.in
+		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_atoms.sh ${CMAKE_CURRENT_SOURCE_DIR}/ewmh_atoms.in ewmh_atoms EWMH
+    )
+
+	list(APPEND CTWMSRC ewmh.c ewmh_atoms.c)
+	add_definitions(-DEWMH)
+	message(STATUS "Enabling Extended Window Manager Hints support.")
+else()
+	message(STATUS "Disabling Extended Window Manager Hints support.")
+endif(USE_EWMH)
+
+
 # Do build Gnome support bits by default
 if(USE_GNOME)
 	list(APPEND CTWMSRC gnome.c)
 	add_definitions(-DGNOME)
 	message(STATUS "Enabling GNOME1 support.")
+else()
+	message(STATUS "Disabling GNOME1 support.")
 endif(USE_GNOME)
 
 
@@ -337,6 +357,10 @@ if(DO_CLIENT)
 	add_subdirectory(client)
 endif(DO_CLIENT)
 
+# Build the event-forwarding program.
+
+add_executable(forward forward.c)
+target_link_libraries(forward ${X11_LIBRARIES})
 
 # Rewrite man page
 set(MANPAGE ${CMAKE_CURRENT_BINARY_DIR}/ctwm.1)

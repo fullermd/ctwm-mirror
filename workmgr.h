@@ -85,7 +85,7 @@ struct WorkSpaceMgr {
 };
 
 struct WorkSpace {
-	long                number;
+	int                 number;
 	char                *name;
 	char                *label;
 	Image               *image;
@@ -222,8 +222,10 @@ void MoveToPrevWorkSpaceAndFollow(VirtualScreen *vs, TwmWindow *twm_win);
 CaptiveCTWM GetCaptiveCTWMUnderPointer(void);
 void SetNoRedirect(Window window);
 
-extern void ShowBackground(VirtualScreen *vs);
+extern void ShowBackground(VirtualScreen *vs, int state);
 
 Bool visible(TwmWindow *tmp_win);
+
+extern int fullOccupation;
 
 #endif /* _WORKMGR_ */

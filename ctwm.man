@@ -16,7 +16,7 @@
 .SH NAME
 ctwm \- Claude's Tab Window Manager for the X Window System
 .SH SYNTAX
-\fIctwm \fP[\-display \fIdpy\fP] [\-s] [\-cfgchk] [\-f \fIinitfile\fP] [\-v] [\-n] [\-k] [\-K m4file] [\-w [win\-id]]
+\fIctwm \fP[\-display \fIdpy\fP] [\-\-replace] [\-s] [\-cfgchk] [\-f \fIinitfile\fP] [\-v] [\-n] [\-k] [\-K m4file] [\-w [win\-id]]
 .PP
 .SH DESCRIPTION
 \fIctwm\fP is a window manager for the X Window System.  It provides
@@ -82,6 +82,12 @@ to touch the bottom the screen.
 .TP 8
 .B \-display \fIdpy\fP
 This option specifies the X server to use.
+.TP 8
+.B \-\-replace
+This option indicates that it is not an error if a window manager
+is already running.
+In that case, the existing window manager is asked to quit,
+and ctwm takes its place.
 .TP 8
 .B \-s
 This option indicates that only the default screen (as specified by
@@ -882,6 +888,18 @@ Windows that match \(oqXTerm\(cq and would not be iconified by unmapping, would 
 to use  the icon bitmap in the file \(oqxterm.icon\(cq.If \fBForceIcons\fP is
 specified, this bitmap will be used even if the client has requested its
 own icon pixmap.
+
+.IP "\fBIconSize\fP \fIstring\fP" 8
+(Only with EWMH support)
+string is of the form
+"\fIwidth\fPx\fIheight\fP" 
+or
+"\fIsize\fP"
+for a square size.
+This indicates the preferred size of icons selected from the EWMH window
+property _NET_WM_ICON.
+If an icon with the exact size is not available, one with the nearest (area)
+size will be chosen.
 
 .IP "\fBIgnoreCaseInMenuSelection\fP" 8
 Used when moving the pointer inside a menu with the keyboard. When you
@@ -2052,6 +2070,14 @@ manager, wrapping to the beginning of the next row if necessary.
 This function warps the  pointer in the same manner as \fBf.forwiconmgr\fP
 but only stops at windows that are mapped.
 
+.IP "\fBf.fullscreenzoom\fP" 8
+This function resizes the client part (the inside the frame) of the selected
+window to the full size of the display or else restores the original size if
+the window was already zoomed. The frame is moved just outside the screen.
+This gives the appearance that window is shown without the frame:
+since ctwm can't dynamically make a window borderless, this is the next best
+thing.
+
 .IP "\fBf.fullzoom\fP" 8
 This function resizes the selected window to the full size of the display or
 else restores the original size if the window was already zoomed.
@@ -2332,8 +2358,13 @@ Set the WorkSpace manager in button state.
 .IP "\fBf.setmapstate\fP" 8
 Set the WorkSpace manager in map state.
 
-.IP "\fBf.setpriority \fIvalue\fP" 8
+\" define a quote, to be used as \*"
+.ds " ""
+.IP "\fBf.setpriority \*"\fIvalue\fP\*"" 8
 Set the window's priority to \fIvalue\fP (enclosed between double quotes).
+If \fIvalue\fP is directly followed by \fB<\fP or \fBb\fP, the window is
+placed below other windows of the given priority. Otherwise it is placed
+above.
 
 .IP "\fBf.showiconmgr\fP" 8
 This function maps the current icon manager.

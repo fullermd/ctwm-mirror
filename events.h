@@ -108,6 +108,7 @@ extern void SynthesiseFocusOut(Window w);
 extern void SynthesiseFocusIn(Window w);
 extern void HandleCirculateNotify(void);
 extern int Transient(Window w, Window *propw);
+extern void RedoIconName(void);
 
 extern ScreenInfo *FindScreenInfo(Window w);
 

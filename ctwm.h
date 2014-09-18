@@ -84,6 +84,7 @@
 #include <X11/Xfuncs.h>
 #endif  /* VMS */
 #include "types.h"
+#include "ewmh.h"
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
@@ -363,7 +364,6 @@ struct TwmWindow {
 	short auto_raise;           /* should we auto-raise this window ? */
 	short auto_lower;           /* should we auto-lower this window ? */
 	short forced;               /* has had an icon forced upon it */
-	short icon_not_ours;        /* icon pixmap or window supplied to us */
 	short icon_moved;           /* user explicitly moved the icon */
 	short highlight;            /* should highlight this window */
 	short stackmode;            /* honor stackmode requests */
@@ -374,10 +374,13 @@ struct TwmWindow {
 	Window transientfor;        /* window contained in XA_XM_TRANSIENT_FOR */
 	short titlehighlight;       /* should I highlight the title bar */
 	struct IconMgr *iconmgrp;   /* pointer to it if this is an icon manager */
-	int save_frame_x;           /* x position of frame */
-	int save_frame_y;           /* y position of frame */
-	unsigned int save_frame_width;  /* width of frame */
-	unsigned int save_frame_height; /* height of frame */
+	int save_frame_x;           /* x position of frame  (saved from zoom) */
+	int save_frame_y;           /* y position of frame  (saved from zoom)*/
+	unsigned int save_frame_width;  /* width of frame   (saved from zoom)*/
+	unsigned int save_frame_height; /* height of frame  (saved from zoom)*/
+#ifdef EWMH
+	int save_otpri;             /* on top priority      (saved from zoom)*/
+#endif
 	short zoomed;               /* is the window zoomed? */
 	short wShaped;              /* this window has a bounding shape */
 	unsigned long protocols;    /* which protocols this window handles */
@@ -418,7 +421,10 @@ struct TwmWindow {
 	/* did the user ever change the width/height? {yes, no, or unknown} */
 	short widthEverChangedByUser;
 	short heightEverChangedByUser;
-
+#ifdef EWMH
+	EwmhWindowType ewmhWindowType;
+	int ewmhFlags;
+#endif /* EWMH */
 };
 
 struct TWMWinConfigEntry {
@@ -539,6 +545,9 @@ extern Bool ShowWelcomeWindow;
 extern char **Environ;
 #endif
 extern char *captivename;
+#ifdef EWMH
+extern int ewmh_replace;
+#endif /* EWMH */
 
 extern Bool RestartPreviousState;
 extern Bool GetWMState(Window w, int *statep, Window *iwp);
