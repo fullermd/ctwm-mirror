@@ -4192,7 +4192,6 @@ unsigned char *GetWMPropertyString(Window w, Atom prop)
 	XTextProperty       text_prop;
 	char                **text_list;
 	int                 text_list_count;
-	Atom                XA_COMPOUND_TEXT = XInternAtom(dpy, "COMPOUND_TEXT", False);
 	unsigned char       *stringptr;
 	int                 status, len = -1;
 
