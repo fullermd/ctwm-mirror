@@ -126,6 +126,7 @@
 #include <stdio.h>
 #include <sys/stat.h>           /* For umask */
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "icons.h"
 #include "screen.h"
 #include "session.h"
@@ -157,14 +158,14 @@ char *GetClientID(Window window)
 	unsigned long bytes_after;
 	Window *prop = NULL;
 
-	if(XGetWindowProperty(dpy, window, _XA_WM_CLIENT_LEADER,
+	if(XGetWindowProperty(dpy, window, XA_WM_CLIENT_LEADER,
 	                      0L, 1L, False, AnyPropertyType, &actual_type, &actual_format,
 	                      &nitems, &bytes_after, (unsigned char **)&prop) == Success) {
 		if(actual_type == XA_WINDOW && actual_format == 32 &&
 		                nitems == 1 && bytes_after == 0) {
 			client_leader = *prop;
 
-			if(XGetTextProperty(dpy, client_leader, &tp, _XA_SM_CLIENT_ID)) {
+			if(XGetTextProperty(dpy, client_leader, &tp, XA_SM_CLIENT_ID)) {
 				if(tp.encoding == XA_STRING &&
 				                tp.format == 8 && tp.nitems != 0) {
 					client_id = (char *) tp.value;
@@ -188,7 +189,7 @@ char *GetWindowRole(Window window)
 {
 	XTextProperty tp;
 
-	if(XGetTextProperty(dpy, window, &tp, _XA_WM_WINDOW_ROLE)) {
+	if(XGetTextProperty(dpy, window, &tp, XA_WM_WINDOW_ROLE)) {
 		if(tp.encoding == XA_STRING && tp.format == 8 && tp.nitems != 0) {
 			return ((char *) tp.value);
 		}

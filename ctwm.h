@@ -555,25 +555,7 @@ extern Bool GetWMState(Window w, int *statep, Window *iwp);
 extern Bool RestartFlag;        /* Flag that is set when SIGHUP is caught */
 extern void DoRestart(Time t);  /* Function to perform a restart */
 
-extern Atom _XA_MIT_PRIORITY_COLORS;
-extern Atom _XA_WM_CHANGE_STATE;
-extern Atom _XA_WM_STATE;
-extern Atom _XA_WM_COLORMAP_WINDOWS;
-extern Atom _XA_WM_PROTOCOLS;
-extern Atom _XA_WM_TAKE_FOCUS;
-extern Atom _XA_WM_SAVE_YOURSELF;
-extern Atom _XA_WM_DELETE_WINDOW;
-extern Atom _XA_WM_END_OF_ANIMATION;
-extern Atom _XA_WM_CLIENT_MACHINE;
-extern Atom _XA_SM_CLIENT_ID;
-extern Atom _XA_WM_CLIENT_LEADER;
-extern Atom _XA_WM_WINDOW_ROLE;
-extern Atom _XA_WM_WORKSPACESLIST;
-extern Atom _XA_WM_CURRENTWORKSPACE;
-extern Atom _XA_WM_OCCUPATION;
-extern Atom _XA_WM_CTWM_VSCREENMAP;
-extern Atom _OL_WIN_ATTR;
-extern Atom _XA_WM_NOREDIRECT;
+extern Atom XA_WM_WORKSPACESLIST;
 
 #ifdef USEM4
 extern int KeepTmpFile;                 /* JMO 3/28/90 for m4 */

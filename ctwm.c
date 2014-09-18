@@ -85,6 +85,7 @@
 #include <fcntl.h>
 #endif
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "add_window.h"
 #include "gc.h"
 #include "parse.h"
@@ -531,7 +532,7 @@ usage:
 		}
 
 		/* Make sure property priority colors is empty */
-		XChangeProperty(dpy, croot, _XA_MIT_PRIORITY_COLORS,
+		XChangeProperty(dpy, croot, XA__MIT_PRIORITY_COLORS,
 		                XA_CARDINAL, 32, PropModeReplace, NULL, 0);
 		XSync(dpy, 0); /* Flush possible previous errors */
 
@@ -1408,7 +1409,7 @@ SIGNAL_T Done(int signum)
 	createProcess("run sys$system:decw$endsession.exe");
 	sleep(10);  /* sleep until stopped */
 #else
-	XDeleteProperty(dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
+	XDeleteProperty(dpy, Scr->Root, XA_WM_WORKSPACESLIST);
 	if(captive) {
 		RemoveFromCaptiveList();
 	}
@@ -1425,7 +1426,7 @@ SIGNAL_T Done(int signum)
 SIGNAL_T Crash(int signum)
 {
 	Reborder(CurrentTime);
-	XDeleteProperty(dpy, Scr->Root, _XA_WM_WORKSPACESLIST);
+	XDeleteProperty(dpy, Scr->Root, XA_WM_WORKSPACESLIST);
 	if(captive) {
 		RemoveFromCaptiveList();
 	}
@@ -1522,57 +1523,23 @@ static int CatchRedirectError(Display *display, XErrorEvent *event)
 	return 0;
 }
 
-Atom _XA_MIT_PRIORITY_COLORS;
-Atom _XA_WM_CHANGE_STATE;
-Atom _XA_WM_STATE;
-Atom _XA_WM_COLORMAP_WINDOWS;
-Atom _XA_WM_PROTOCOLS;
-Atom _XA_WM_TAKE_FOCUS;
-Atom _XA_WM_SAVE_YOURSELF;
-Atom _XA_WM_DELETE_WINDOW;
-Atom _XA_WM_END_OF_ANIMATION;   /* Used to throttle animation.  */
-Atom _XA_WM_CLIENT_MACHINE;
-Atom _XA_SM_CLIENT_ID;
-Atom _XA_WM_CLIENT_LEADER;
-Atom _XA_WM_WINDOW_ROLE;
-Atom _XA_WM_WORKSPACESLIST;
-Atom _XA_WM_CURRENTWORKSPACE;
-Atom _XA_WM_NOREDIRECT;
-Atom _XA_WM_OCCUPATION;
-Atom _XA_WM_CTWM_VSCREENMAP;
-Atom _OL_WIN_ATTR;
+/*
+ * XA_MIT_PRIORITY_COLORS     Create priority colors if necessary.
+ * XA_WM_END_OF_ANIMATION     Used to throttle animation.
+ */
 
+Atom XA_WM_WORKSPACESLIST;
+Atom XCTWMAtom[NUM_CTWM_XATOMS];
 
 void InternUsefulAtoms(void)
 {
-	/*
-	 * Create priority colors if necessary.
-	 */
-	_XA_MIT_PRIORITY_COLORS = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", False);
-	_XA_WM_CHANGE_STATE = XInternAtom(dpy, "WM_CHANGE_STATE", False);
-	_XA_WM_STATE = XInternAtom(dpy, "WM_STATE", False);
-	_XA_WM_COLORMAP_WINDOWS = XInternAtom(dpy, "WM_COLORMAP_WINDOWS", False);
-	_XA_WM_PROTOCOLS = XInternAtom(dpy, "WM_PROTOCOLS", False);
-	_XA_WM_TAKE_FOCUS = XInternAtom(dpy, "WM_TAKE_FOCUS", False);
-	_XA_WM_SAVE_YOURSELF = XInternAtom(dpy, "WM_SAVE_YOURSELF", False);
-	_XA_WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
-	_XA_WM_END_OF_ANIMATION = XInternAtom(dpy, "WM_END_OF_ANIMATION", False);
-	_XA_WM_CLIENT_MACHINE = XInternAtom(dpy, "WM_CLIENT_MACHINE", False);
-	_XA_SM_CLIENT_ID = XInternAtom(dpy, "SM_CLIENT_ID", False);
-	_XA_WM_CLIENT_LEADER = XInternAtom(dpy, "WM_CLIENT_LEADER", False);
-	_XA_WM_WINDOW_ROLE = XInternAtom(dpy, "WM_WINDOW_ROLE", False);
-	_XA_WM_CURRENTWORKSPACE = XInternAtom(dpy, "WM_CURRENTWORKSPACE", False);
-	_XA_WM_OCCUPATION = XInternAtom(dpy, "WM_OCCUPATION", False);
+	XInternAtoms(dpy, XCTWMAtomNames, NUM_CTWM_XATOMS, False, XCTWMAtom);
 
-	_XA_WM_CTWM_VSCREENMAP  = XInternAtom(dpy, "WM_CTWM_VSCREENMAP", False);
 #ifdef GNOME
-	_XA_WM_WORKSPACESLIST   = XInternAtom(dpy, "_WIN_WORKSPACE_NAMES", False);
+	XA_WM_WORKSPACESLIST   = XInternAtom(dpy, "_WIN_WORKSPACE_NAMES", False);
 #else /* GNOME */
-	_XA_WM_WORKSPACESLIST   = XInternAtom(dpy, "WM_WORKSPACESLIST", False);
+	XA_WM_WORKSPACESLIST   = XInternAtom(dpy, "WM_WORKSPACESLIST", False);
 #endif /* GNOME */
-	_OL_WIN_ATTR            = XInternAtom(dpy, "_OL_WIN_ATTR",      False);
-	_XA_WM_NOREDIRECT = XInternAtom(dpy, "WM_NOREDIRECT", False);
-
 }
 
 static Window CreateRootWindow(int x, int y,

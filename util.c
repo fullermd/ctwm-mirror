@@ -77,6 +77,7 @@
 #define LEVITTE_TEST
 
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "util.h"
 #include "events.h"
 #include "add_window.h"
@@ -3365,7 +3366,7 @@ void AdoptWindow(void)
 		}
 
 		w = XmuClientWindow(dpy, child);
-		ret = XGetWindowProperty(dpy, w, _XA_WM_WORKSPACESLIST, 0L, 512,
+		ret = XGetWindowProperty(dpy, w, XA_WM_WORKSPACESLIST, 0L, 512,
 		                         False, XA_STRING, &actual_type, &actual_format, &len,
 		                         &bytesafter, &prop);
 		XFree((char *)prop);  /* Don't ever do anything with it */
@@ -3410,7 +3411,7 @@ void AdoptWindow(void)
 	data [0] = (unsigned long) NormalState;
 	data [1] = (unsigned long) None;
 
-	XChangeProperty(dpy, w, _XA_WM_STATE, _XA_WM_STATE, 32,
+	XChangeProperty(dpy, w, XA_WM_STATE, XA_WM_STATE, 32,
 	                PropModeReplace, (unsigned char *) data, 2);
 	XFlush(dpy);
 	/*
@@ -4191,7 +4192,6 @@ unsigned char *GetWMPropertyString(Window w, Atom prop)
 	XTextProperty       text_prop;
 	char                **text_list;
 	int                 text_list_count;
-	Atom                XA_COMPOUND_TEXT = XInternAtom(dpy, "COMPOUND_TEXT", False);
 	unsigned char       *stringptr;
 	int                 status, len = -1;
 

@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "util.h"
 #include "parse.h"
 #include "screen.h"
@@ -108,13 +109,12 @@ static void WMapRedrawWindow(Window window, int width, int height,
 static int CanChangeOccupation(TwmWindow **twm_winp);
 void safecopy(char *dest, char *src, int size);
 
-static Atom _XA_WM_CTWMSLIST;
-
 int fullOccupation = 0;
 static int useBackgroundInfo = False;
 static XContext MapWListContext = (XContext) 0;
 static Cursor handCursor  = (Cursor) 0;
 static Bool DontRedirect(Window window);
+static Atom XA_WM_CTWM_ROOT_our_name;
 
 void InitWorkSpaceManager(void)
 {
@@ -260,7 +260,7 @@ void CreateWorkSpaceManager(void)
 		}
 	}
 	len = GetPropertyFromMask(0xFFFFFFFFu, wrkSpcList, &junk);
-	XChangeProperty(dpy, Scr->Root, _XA_WM_WORKSPACESLIST, XA_STRING, 8,
+	XChangeProperty(dpy, Scr->Root, XA_WM_WORKSPACESLIST, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) wrkSpcList, len);
 }
 
@@ -691,7 +691,7 @@ void GotoWorkSpace(VirtualScreen *vs, WorkSpace *ws)
 	eventMask = winattrs.your_event_mask;
 	XSelectInput(dpy, Scr->Root, eventMask & ~PropertyChangeMask);
 
-	XChangeProperty(dpy, Scr->Root, _XA_WM_CURRENTWORKSPACE, XA_STRING, 8,
+	XChangeProperty(dpy, Scr->Root, XA_WM_CURRENTWORKSPACE, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) newws->name, strlen(newws->name));
 #ifdef GNOME
 	/* nhd 6/19/1999 for GNOME compliance
@@ -913,7 +913,7 @@ void SetupOccupation(TwmWindow *twm_win,
 	}
 
 	if(RestartPreviousState) {
-		if(XGetWindowProperty(dpy, twm_win->w, _XA_WM_OCCUPATION, 0L, 2500, False,
+		if(XGetWindowProperty(dpy, twm_win->w, XA_WM_OCCUPATION, 0L, 2500, False,
 		                      XA_STRING, &actual_type, &actual_format, &nitems,
 		                      &bytesafter, &prop) == Success) {
 			if(nitems != 0) {
@@ -995,7 +995,7 @@ void SetupOccupation(TwmWindow *twm_win,
 	eventMask = winattrs.your_event_mask;
 	XSelectInput(dpy, twm_win->w, eventMask & ~PropertyChangeMask);
 
-	XChangeProperty(dpy, twm_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
+	XChangeProperty(dpy, twm_win->w, XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) wrkSpcList, len);
 #ifdef EWMH
 	EwmhSet_NET_WM_DESKTOP(twm_win);
@@ -1061,7 +1061,6 @@ Bool RedirectToCaptive(Window window)
 	char                *str_type;
 	XrmValue            value;
 	int                 ret;
-	Atom                _XA_WM_CTWM_ROOT;
 	char                *atomname;
 	Window              newroot;
 	XWindowAttributes   wa;
@@ -1086,16 +1085,26 @@ Bool RedirectToCaptive(Window window)
 	if((status == True) && (value.size != 0)) {
 		char             cctwm [64];
 		Window          *prop;
+		Atom             XA_WM_CTWM_ROOT_name;
 
 		safecopy(cctwm, value.addr, sizeof(cctwm));
 		atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(cctwm) + 1);
 		sprintf(atomname, "WM_CTWM_ROOT_%s", cctwm);
-		_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, False);
+		/*
+		 * Set only_if_exists to True: the atom for the requested
+		 * captive ctwm won't exist if the captive ctwm itself does not exist.
+		 * There is no reason to go and create random atoms just to
+		 * check.
+		 */
+		XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, True);
 		free(atomname);
 
-		if(XGetWindowProperty(dpy, Scr->Root, _XA_WM_CTWM_ROOT,
-		                      0L, 1L, False, AnyPropertyType, &actual_type, &actual_format,
-		                      &nitems, &bytesafter, (unsigned char **)&prop) == Success) {
+		if(XA_WM_CTWM_ROOT_name != None &&
+		                XGetWindowProperty(dpy, Scr->Root, XA_WM_CTWM_ROOT_name,
+		                                   0L, 1L, False, AnyPropertyType,
+		                                   &actual_type, &actual_format,
+		                                   &nitems, &bytesafter,
+		                                   (unsigned char **)&prop) == Success) {
 			if(actual_type == XA_WINDOW && actual_format == 32 &&
 			                nitems == 1 /*&& bytesafter == 0*/) {
 				newroot = *prop;
@@ -1672,7 +1681,7 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 		eventMask = winattrs.your_event_mask;
 		XSelectInput(dpy, tmp_win->w, eventMask & ~PropertyChangeMask);
 
-		XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
+		XChangeProperty(dpy, tmp_win->w, XA_WM_OCCUPATION, XA_STRING, 8,
 		                PropModeReplace, (unsigned char *) namelist, len);
 #ifdef EWMH
 		EwmhSet_NET_WM_DESKTOP(tmp_win);
@@ -1743,7 +1752,7 @@ void ChangeOccupation(TwmWindow *tmp_win, int newoccupation)
 	eventMask = winattrs.your_event_mask;
 	XSelectInput(dpy, tmp_win->w, eventMask & ~PropertyChangeMask);
 
-	XChangeProperty(dpy, tmp_win->w, _XA_WM_OCCUPATION, XA_STRING, 8,
+	XChangeProperty(dpy, tmp_win->w, XA_WM_OCCUPATION, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) namelist, len);
 
 #ifdef EWMH
@@ -3895,13 +3904,8 @@ static char **GetCaptivesList(int scrnum)
 	int                 i, l;
 	Window              root;
 
-	_XA_WM_CTWMSLIST = XInternAtom(dpy, "WM_CTWMSLIST", True);
-	if(_XA_WM_CTWMSLIST == None) {
-		return ((char **)0);
-	}
-
 	root = RootWindow(dpy, scrnum);
-	if(XGetWindowProperty(dpy, root, _XA_WM_CTWMSLIST, 0L, 512,
+	if(XGetWindowProperty(dpy, root, XA_WM_CTWMSLIST, 0L, 512,
 	                      False, XA_STRING, &actual_type, &actual_format, &len,
 	                      &bytesafter, &prop) != Success) {
 		return ((char **) 0);
@@ -3941,14 +3945,13 @@ static void SetCaptivesList(int scrnum, char **clist)
 	char                *s, *slist;
 	Window              root = RootWindow(dpy, scrnum);
 
-	_XA_WM_CTWMSLIST = XInternAtom(dpy, "WM_CTWMSLIST", False);
 	cl  = clist;
 	len = 0;
 	while(*cl) {
 		len += strlen(*cl++) + 1;
 	}
 	if(len == 0) {
-		XDeleteProperty(dpy, root, _XA_WM_CTWMSLIST);
+		XDeleteProperty(dpy, root, XA_WM_CTWMSLIST);
 		return;
 	}
 	slist = calloc(len, sizeof(char));
@@ -3960,7 +3963,7 @@ static void SetCaptivesList(int scrnum, char **clist)
 		*s++ = '\0';
 		cl++;
 	}
-	XChangeProperty(dpy, root, _XA_WM_CTWMSLIST, XA_STRING, 8,
+	XChangeProperty(dpy, root, XA_WM_CTWMSLIST, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) slist, len);
 	free(slist);
 }
@@ -3977,7 +3980,6 @@ void AddToCaptiveList(void)
 	int         i, count;
 	char        **clist, **cl, **newclist;
 	int         busy [32];
-	Atom        _XA_WM_CTWM_ROOT;
 	char        *atomname;
 	int         scrnum = Scr->screen;
 	Window      croot  = Scr->Root;
@@ -4044,8 +4046,9 @@ void AddToCaptiveList(void)
 	root = RootWindow(dpy, scrnum);
 	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
 	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, False);
-	XChangeProperty(dpy, root, _XA_WM_CTWM_ROOT, XA_WINDOW, 32,
+	XA_WM_CTWM_ROOT_our_name = XInternAtom(dpy, atomname, False);
+	free(atomname);
+	XChangeProperty(dpy, root, XA_WM_CTWM_ROOT_our_name, XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *) &croot, 4);
 }
 
@@ -4053,12 +4056,10 @@ void RemoveFromCaptiveList(void)
 {
 	int  count;
 	char **clist, **cl, **newclist;
-	Atom _XA_WM_CTWM_ROOT;
-	char *atomname;
 	int scrnum = Scr->screen;
 	Window root = RootWindow(dpy, scrnum);
 
-	if(!captivename) {
+	if(!captivename || XA_WM_CTWM_ROOT_our_name == None) {
 		return;
 	}
 	clist = GetCaptivesList(scrnum);
@@ -4089,31 +4090,19 @@ void RemoveFromCaptiveList(void)
 	freeCaptiveList(clist);
 	free(clist);
 
-	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
-	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, atomname, True);
-	free(atomname);
-	if(_XA_WM_CTWM_ROOT == None) {
-		return;
-	}
-	XDeleteProperty(dpy, root, _XA_WM_CTWM_ROOT);
+	XDeleteProperty(dpy, root, XA_WM_CTWM_ROOT_our_name);
 }
 
 void SetPropsIfCaptiveCtwm(TwmWindow *win)
 {
 	Window      window = win->w;
 	Window      frame  = win->frame;
-	Atom        _XA_WM_CTWM_ROOT;
 
 	if(!CaptiveCtwmRootWindow(window)) {
 		return;
 	}
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, "WM_CTWM_ROOT", True);
-	if(_XA_WM_CTWM_ROOT == None) {
-		return;
-	}
 
-	XChangeProperty(dpy, frame, _XA_WM_CTWM_ROOT, XA_WINDOW, 32,
+	XChangeProperty(dpy, frame, XA_WM_CTWM_ROOT, XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *) &window, 4);
 }
 
@@ -4125,14 +4114,8 @@ Window CaptiveCtwmRootWindow(Window window)
 	unsigned long       len;
 	Atom                actual_type;
 	int                 actual_format;
-	Atom                _XA_WM_CTWM_ROOT;
 
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, "WM_CTWM_ROOT", True);
-	if(_XA_WM_CTWM_ROOT == None) {
-		return ((Window)0);
-	}
-
-	if(XGetWindowProperty(dpy, window, _XA_WM_CTWM_ROOT, 0L, 1L,
+	if(XGetWindowProperty(dpy, window, XA_WM_CTWM_ROOT, 0L, 1L,
 	                      False, XA_WINDOW, &actual_type, &actual_format, &len,
 	                      &bytesafter, (unsigned char **)&prop) != Success) {
 		return ((Window)0);
@@ -4171,11 +4154,7 @@ CaptiveCTWM GetCaptiveCTWMUnderPointer(void)
 
 void SetNoRedirect(Window window)
 {
-	if(_XA_WM_NOREDIRECT == None) {
-		return;
-	}
-
-	XChangeProperty(dpy, window, _XA_WM_NOREDIRECT, XA_STRING, 8,
+	XChangeProperty(dpy, window, XA_WM_NOREDIRECT, XA_STRING, 8,
 	                PropModeReplace, (unsigned char *) "Yes", 4);
 }
 
@@ -4187,11 +4166,7 @@ static Bool DontRedirect(Window window)
 	Atom                actual_type;
 	int                 actual_format;
 
-	if(_XA_WM_NOREDIRECT == None) {
-		return (False);
-	}
-
-	if(XGetWindowProperty(dpy, window, _XA_WM_NOREDIRECT, 0L, 1L,
+	if(XGetWindowProperty(dpy, window, XA_WM_NOREDIRECT, 0L, 1L,
 	                      False, XA_STRING, &actual_type, &actual_format, &len,
 	                      &bytesafter, &prop) != Success) {
 		return (False);

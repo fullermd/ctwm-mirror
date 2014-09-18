@@ -38,9 +38,8 @@
 #include <stdio.h>
 
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "mwmhints.h"
-
-static Atom MOTIF_WM_HINTS = None;
 
 int GetMWMHints(Window w, MotifWmHints *mwmHints)
 {
@@ -60,12 +59,8 @@ int GetMWMHints(Window w, MotifWmHints *mwmHints)
 	mwmHints->status = 0;
 #endif
 
-	if(MOTIF_WM_HINTS == (Atom)None) {
-		MOTIF_WM_HINTS = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
-	}
-
 	success = XGetWindowProperty(
-	                  dpy, w, MOTIF_WM_HINTS,
+	                  dpy, w, XA__MOTIF_WM_HINTS,
 	                  0, 5,           /* long_offset, long long_length, */
 	                  False,          /* Bool delete, */
 	                  AnyPropertyType,/* Atom req_type */
@@ -76,7 +71,7 @@ int GetMWMHints(Window w, MotifWmHints *mwmHints)
 	                  (unsigned char **)&prop);       /* unsigned char ** */
 
 	if(success == Success &&
-	                actual_type == MOTIF_WM_HINTS &&
+	                actual_type == XA__MOTIF_WM_HINTS &&
 	                actual_format == 32 &&
 	                nitems >= 3) {
 		mwmHints->flags = (int)prop[0];

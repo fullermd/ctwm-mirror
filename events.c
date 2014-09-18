@@ -78,6 +78,7 @@
 #include <ctype.h>
 
 #include "ctwm.h"
+#include "ctwm_atoms.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
@@ -1610,10 +1611,10 @@ void HandlePropertyNotify(void)
 		XStandardColormap *maps = NULL;
 		int nmaps;
 
-		if(Event.xproperty.atom == _XA_WM_CURRENTWORKSPACE) {
+		if(Event.xproperty.atom == XA_WM_CURRENTWORKSPACE) {
 			switch(Event.xproperty.state) {
 				case PropertyNewValue:
-					if(XGetWindowProperty(dpy, Scr->Root, _XA_WM_CURRENTWORKSPACE,
+					if(XGetWindowProperty(dpy, Scr->Root, XA_WM_CURRENTWORKSPACE,
 					                      0L, 200L, False, XA_STRING, &actual, &actual_format,
 					                      &nitems, &bytesafter, &prop) == Success) {
 						if(nitems == 0) {
@@ -1788,7 +1789,7 @@ void HandlePropertyNotify(void)
 			 * consideration, now and in the future.
 			 */
 			if(Tmp_win->forced ||
-					(icon && icon->match == match_net_wm_icon)) {
+			                (icon && icon->match == match_net_wm_icon)) {
 				Tmp_win->wmhints->flags &= ~(IconWindowHint | IconPixmapHint | IconMaskHint);
 			}
 
@@ -1973,15 +1974,15 @@ void HandlePropertyNotify(void)
 			break;
 		}
 		default:
-			if(Event.xproperty.atom == _XA_WM_COLORMAP_WINDOWS) {
+			if(Event.xproperty.atom == XA_WM_COLORMAP_WINDOWS) {
 				FetchWmColormapWindows(Tmp_win);    /* frees old data */
 				break;
 			}
-			else if(Event.xproperty.atom == _XA_WM_PROTOCOLS) {
+			else if(Event.xproperty.atom == XA_WM_PROTOCOLS) {
 				FetchWmProtocols(Tmp_win);
 				break;
 			}
-			else if(Event.xproperty.atom == _XA_WM_OCCUPATION) {
+			else if(Event.xproperty.atom == XA_WM_OCCUPATION) {
 				if(XGetWindowProperty(dpy, Tmp_win->w, Event.xproperty.atom, 0L, MAX_NAME_LEN,
 				                      False,
 				                      XA_STRING, &actual, &actual_format, &nitems,
@@ -1998,7 +1999,7 @@ void HandlePropertyNotify(void)
 			}
 #endif /* EWMH */
 #ifdef GNOME
-			else if(Event.xproperty.atom == _XA_WIN_WORKSPACE) {
+			else if(Event.xproperty.atom == XA_WIN_WORKSPACE) {
 				if(XGetWindowProperty(dpy, Tmp_win->w, Event.xproperty.atom, 0L, 32, False,
 				                      XA_CARDINAL, &actual, &actual_format, &nitems, &bytesafter,
 				                      &gwkspc) != Success || actual == None) {
@@ -2221,7 +2222,7 @@ void HandleClientMessage(void)
 	TwmWindow *twm_win;
 #endif
 
-	if(Event.xclient.message_type == _XA_WM_CHANGE_STATE) {
+	if(Event.xclient.message_type == XA_WM_CHANGE_STATE) {
 		if(Tmp_win != NULL) {
 			if(Event.xclient.data.l[0] == IconicState && !Tmp_win->isicon) {
 				XEvent button;
@@ -2246,14 +2247,14 @@ void HandleClientMessage(void)
 
 #ifdef GNOME
 	/* 6/19/1999 nhd for GNOME compliance */
-	if(Event.xclient.message_type == _XA_WIN_WORKSPACE) {
+	if(Event.xclient.message_type == XA_WIN_WORKSPACE) {
 		/* XXXXX
 		   supposedly works with a single screen, but is less certain with
 		   multiple screens */
 		GotoWorkSpaceByNumber(Scr->currentvs, Event.xclient.data.l[0]);
 		return;
 	}
-	if(Event.xclient.message_type == _XA_WIN_STATE) {
+	if(Event.xclient.message_type == XA_WIN_STATE) {
 		unsigned long new_stuff = (unsigned long) Event.xclient.data.l [1];
 		unsigned long old_stuff = (unsigned long) Event.xclient.data.l [0];
 		Window        tmp_win = Event.xclient.window;
@@ -2277,8 +2278,8 @@ void HandleClientMessage(void)
 		}
 	}
 #endif /* GNOME */
-	else if((Event.xclient.message_type == _XA_WM_PROTOCOLS) &&
-	                (Event.xclient.data.l[0] == _XA_WM_END_OF_ANIMATION)) {
+	else if((Event.xclient.message_type == XA_WM_PROTOCOLS) &&
+	                (Event.xclient.data.l[0] == XA_WM_END_OF_ANIMATION)) {
 		if(Animating > 0) {
 			Animating--;
 		}
@@ -2928,7 +2929,7 @@ void HandleUnmapNotify(void)
 	 * that we've received a DestroyNotify).
 	 */
 	/* Is it the correct behaviour ???
-	    XDeleteProperty (dpy, Tmp_win->w, _XA_WM_OCCUPATION);
+	    XDeleteProperty (dpy, Tmp_win->w, XA_WM_OCCUPATION);
 	*/
 #ifdef EWMH
 	EwmhUnmapNotify(Tmp_win);
