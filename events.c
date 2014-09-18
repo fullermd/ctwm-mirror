@@ -1789,7 +1789,7 @@ void HandlePropertyNotify(void)
 			 * consideration, now and in the future.
 			 */
 			if(Tmp_win->forced ||
-					(icon && icon->match == match_net_wm_icon)) {
+			                (icon && icon->match == match_net_wm_icon)) {
 				Tmp_win->wmhints->flags &= ~(IconWindowHint | IconPixmapHint | IconMaskHint);
 			}
 
