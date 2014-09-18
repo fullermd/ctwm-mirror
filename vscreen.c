@@ -39,7 +39,6 @@ void InitVirtualScreens(ScreenInfo *scr)
 	unsigned long valuemask, attrmask;
 	XSetWindowAttributes attributes;
 	name_list *nptr;
-	Atom _XA_WM_VIRTUALROOT = XInternAtom(dpy, "WM_VIRTUALROOT", False);
 	Bool userealroot = True;
 	VirtualScreen *vs00 = NULL;
 
@@ -109,7 +108,7 @@ void InitVirtualScreens(ScreenInfo *scr)
 
 		XSync(dpy, 0);
 		XMapWindow(dpy, vs->window);
-		XChangeProperty(dpy, vs->window, _XA_WM_VIRTUALROOT, XA_STRING, 8,
+		XChangeProperty(dpy, vs->window, XA_WM_VIRTUALROOT, XA_STRING, 8,
 		                PropModeReplace, (unsigned char *) "Yes", 4);
 
 		vs->next = scr->vScreenList;
