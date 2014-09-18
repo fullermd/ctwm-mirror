@@ -1548,7 +1548,6 @@ static Window CreateRootWindow(int x, int y,
 	int         scrnum;
 	Window      ret;
 	XWMHints    wmhints;
-	Atom        _XA_WM_CTWM_ROOT;
 
 	scrnum = DefaultScreen(dpy);
 	ret = XCreateSimpleWindow(dpy, RootWindow(dpy, scrnum),
@@ -1560,9 +1559,8 @@ static Window CreateRootWindow(int x, int y,
 	wmhints.flags         = InputHint | StateHint;
 	XSetWMHints(dpy, ret, &wmhints);
 
-	_XA_WM_CTWM_ROOT = XInternAtom(dpy, "WM_CTWM_ROOT", False);
-	XChangeProperty(dpy, ret, _XA_WM_CTWM_ROOT, XA_WINDOW, 32,
-	                PropModeReplace, (unsigned char *) &ret, 4);
+	XChangeProperty(dpy, ret, XA_WM_CTWM_ROOT, XA_WINDOW, 32,
+	                PropModeReplace, (unsigned char *) &ret, 1);
 	XSelectInput(dpy, ret, StructureNotifyMask);
 	XMapWindow(dpy, ret);
 	return (ret);
