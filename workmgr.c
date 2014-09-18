@@ -3980,7 +3980,6 @@ void AddToCaptiveList(void)
 	int         i, count;
 	char        **clist, **cl, **newclist;
 	int         busy [32];
-	Atom        XA_WM_CTWM_ROOT_name;
 	char        *atomname;
 	int         scrnum = Scr->screen;
 	Window      croot  = Scr->Root;
@@ -4047,8 +4046,9 @@ void AddToCaptiveList(void)
 	root = RootWindow(dpy, scrnum);
 	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
 	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
-	XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, False);
-	XChangeProperty(dpy, root, XA_WM_CTWM_ROOT_name, XA_WINDOW, 32,
+	XA_WM_CTWM_ROOT_our_name = XInternAtom(dpy, atomname, False);
+	free(atomname);
+	XChangeProperty(dpy, root, XA_WM_CTWM_ROOT_our_name, XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *) &croot, 4);
 }
 
@@ -4056,12 +4056,10 @@ void RemoveFromCaptiveList(void)
 {
 	int  count;
 	char **clist, **cl, **newclist;
-	Atom XA_WM_CTWM_ROOT_name;
-	char *atomname;
 	int scrnum = Scr->screen;
 	Window root = RootWindow(dpy, scrnum);
 
-	if(!captivename) {
+	if(!captivename || XA_WM_CTWM_ROOT_our_name == None) {
 		return;
 	}
 	clist = GetCaptivesList(scrnum);
@@ -4092,14 +4090,7 @@ void RemoveFromCaptiveList(void)
 	freeCaptiveList(clist);
 	free(clist);
 
-	atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(captivename) + 1);
-	sprintf(atomname, "WM_CTWM_ROOT_%s", captivename);
-	XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, True);
-	free(atomname);
-	if(XA_WM_CTWM_ROOT_name == None) {
-		return;
-	}
-	XDeleteProperty(dpy, root, XA_WM_CTWM_ROOT_name);
+	XDeleteProperty(dpy, root, XA_WM_CTWM_ROOT_our_name);
 }
 
 void SetPropsIfCaptiveCtwm(TwmWindow *win)
