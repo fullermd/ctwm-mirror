@@ -67,7 +67,7 @@
 #include "parse.h"
 #include "resize.h"
 
-#define DEBUG_EWMH      1
+/* #define DEBUG_EWMH */
 
 Atom XEWMHAtom[NUM_EWMH_XATOMS];
 
@@ -1143,12 +1143,16 @@ static void EwmhClientMessage_NET_WM_STATEchange(TwmWindow *twm_win, int change,
 		fullzoom(twm_win, newZoom);
 	}
 	else if(change & EWMH_STATE_SHADED) {
+#ifdef DEBUG_EWMH
 		printf("EWMH_STATE_SHADED: newValue: %d old: %d\n", newValue,
 		       twm_win->ewmhFlags & EWMH_STATE_SHADED);
+#endif
 		if((twm_win->ewmhFlags & EWMH_STATE_SHADED) ^ newValue) {
 			/* Toggle the shade/squeeze state */
+#ifdef DEBUG_EWMH
 			printf("EWMH_STATE_SHADED: change it\n");
 			Squeeze(twm_win);
+#endif
 		}
 	}
 	else if(change & (EWMH_STATE_ABOVE | EWMH_STATE_BELOW)) {
