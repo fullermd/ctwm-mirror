@@ -114,6 +114,7 @@ static int useBackgroundInfo = False;
 static XContext MapWListContext = (XContext) 0;
 static Cursor handCursor  = (Cursor) 0;
 static Bool DontRedirect(Window window);
+static Atom XA_WM_CTWM_ROOT_our_name;
 
 void InitWorkSpaceManager(void)
 {
@@ -1060,7 +1061,6 @@ Bool RedirectToCaptive(Window window)
 	char                *str_type;
 	XrmValue            value;
 	int                 ret;
-	Atom                XA_WM_CTWM_ROOT_name;
 	char                *atomname;
 	Window              newroot;
 	XWindowAttributes   wa;
@@ -1085,16 +1085,26 @@ Bool RedirectToCaptive(Window window)
 	if((status == True) && (value.size != 0)) {
 		char             cctwm [64];
 		Window          *prop;
+		Atom             XA_WM_CTWM_ROOT_name;
 
 		safecopy(cctwm, value.addr, sizeof(cctwm));
 		atomname = (char *) malloc(strlen("WM_CTWM_ROOT_") + strlen(cctwm) + 1);
 		sprintf(atomname, "WM_CTWM_ROOT_%s", cctwm);
-		XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, False);
+		/*
+		 * Set only_if_exists to True: the atom for the requested
+		 * captive ctwm won't exist if the captive ctwm itself does not exist.
+		 * There is no reason to go and create random atoms just to
+		 * check.
+		 */
+		XA_WM_CTWM_ROOT_name = XInternAtom(dpy, atomname, True);
 		free(atomname);
 
-		if(XGetWindowProperty(dpy, Scr->Root, XA_WM_CTWM_ROOT_name,
-		                      0L, 1L, False, AnyPropertyType, &actual_type, &actual_format,
-		                      &nitems, &bytesafter, (unsigned char **)&prop) == Success) {
+		if(XA_WM_CTWM_ROOT_name != None &&
+		                XGetWindowProperty(dpy, Scr->Root, XA_WM_CTWM_ROOT_name,
+		                                   0L, 1L, False, AnyPropertyType,
+		                                   &actual_type, &actual_format,
+		                                   &nitems, &bytesafter,
+		                                   (unsigned char **)&prop) == Success) {
 			if(actual_type == XA_WINDOW && actual_format == 32 &&
 			                nitems == 1 /*&& bytesafter == 0*/) {
 				newroot = *prop;
