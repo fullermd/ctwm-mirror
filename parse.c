@@ -2399,7 +2399,7 @@ int do_squeeze_entry(name_list **list,  /* squeeze or dont-squeeze list */
 		sinfo->justify = justify;
 		sinfo->num = num;
 		sinfo->denom = denom;
-		AddToList(list, name, (char *) sinfo);
+		AddToList(list, name, sinfo);
 	}
 	return (0);
 }
