@@ -102,11 +102,7 @@ if(USE_XPM)
 	endif(NOT X11_Xpm_FOUND)
 
 	list(APPEND CTWMLIBS ${X11_Xpm_LIB})
-	add_definitions(-DXPM)
 	set(PIXMAPDIR ${TWMDIR}/images)
-	set_property(SOURCE parse.c ctwm.c APPEND
-		PROPERTY COMPILE_DEFINITIONS PIXMAP_DIRECTORY="${PIXMAPDIR}"
-	)
 	message(STATUS "Enabling XPM support: ${X11_Xpm_LIB}.")
 endif(USE_XPM)
 
@@ -120,7 +116,6 @@ if(USE_JPEG)
 
 	include_directories(${JPEG_INCLUDE_DIR})
 	list(APPEND CTWMLIBS ${JPEG_LIBRARIES})
-	add_definitions(-DJPEG)
 	message(STATUS "Enabling libjpeg support.")
 endif(USE_JPEG)
 
@@ -133,10 +128,6 @@ if(USE_M4)
 	if(NOT M4_CMD)
 		message(FATAL_ERROR "Can't find m4 program: try setting M4_CMD.")
 	endif(NOT M4_CMD)
-	add_definitions(-DUSEM4)
-	set_property(SOURCE parse.c APPEND
-		PROPERTY COMPILE_DEFINITIONS M4CMD="${M4_CMD}"
-	)
 	message(STATUS "Enabling m4 support (${M4_CMD}).")
 endif(USE_M4)
 
@@ -153,7 +144,6 @@ if(USE_SOUND)
 	endif(NOT LIBRPLAY_INCLUDE_DIR)
 
 	list(APPEND CTWMSRC sound.c)
-	add_definitions(-DSOUNDS)
 	list(APPEND CTWMLIBS ${LIBRPLAY})
 	include_directories(${LIBRPLAY_INCLUDE_DIR})
 	message(STATUS "Enabling librplay sound support.")
@@ -170,7 +160,6 @@ if(USE_EWMH)
     )
 
 	list(APPEND CTWMSRC ewmh.c ewmh_atoms.c)
-	add_definitions(-DEWMH)
 	message(STATUS "Enabling Extended Window Manager Hints support.")
 else()
 	message(STATUS "Disabling Extended Window Manager Hints support.")
@@ -180,7 +169,6 @@ endif(USE_EWMH)
 # Do build Gnome support bits by default
 if(USE_GNOME)
 	list(APPEND CTWMSRC gnome.c)
-	add_definitions(-DGNOME)
 	message(STATUS "Enabling GNOME1 support.")
 else()
 	message(STATUS "Disabling GNOME1 support.")
@@ -201,7 +189,6 @@ if(USE_SREGEX)
 		message(FATAL_ERROR "Can't find regexec()")
 	endif(NOT HAS_REGEXEC)
 
-	add_definitions(-DUSE_SYS_REGEX)
 	message(STATUS "Enabling libc regex usage.")
 endif(USE_SREGEX)
 
@@ -297,12 +284,6 @@ endif(NOT NO_WARNS)
 # Include source and generated files
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-
-# Extra flags for some files
-set_property(SOURCE parse.c APPEND
-	PROPERTY COMPILE_DEFINITIONS SYSTEM_INIT_FILE="${CONFDIR}/system.ctwmrc"
-)
 
 
 # Where should we stick manpages?
