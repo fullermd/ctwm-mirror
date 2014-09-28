@@ -4,5 +4,4 @@ gram.tab.[ch]
 lex.c
 *.tar*
 build/*
-CHANGES.html
-README.html
+*.html
