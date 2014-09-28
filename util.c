@@ -76,16 +76,6 @@
 
 #define LEVITTE_TEST
 
-#include "ctwm.h"
-#include "ctwm_atoms.h"
-#include "util.h"
-#include "events.h"
-#include "add_window.h"
-#include "gram.tab.h"
-#include "screen.h"
-#include "icons.h"
-#include "cursor.h"
-#include "resize.h"
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -98,11 +88,11 @@
  */
 #include <inttypes.h>
 
-#define PIXEL_ALREADY_TYPEDEFED         /* for Xmu/Drawing.h */
 #ifdef VMS
 #include <decw$include/Xos.h>
 #include <decw$include/Xatom.h>
 #include <decw$include/Xutil.h>
+#include <decw$include/Intrinsic.h>
 #include <X11Xmu/Drawing.h>
 #include <X11Xmu/WinUtil.h>
 #ifdef HAVE_XWDFILE_H
@@ -133,6 +123,7 @@
 #else /* !VMS */
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
+#include <X11/Intrinsic.h>
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/WinUtil.h>
 #include <X11/XWDFile.h>
@@ -147,12 +138,25 @@
 #include <sys/time.h>
 #endif
 
+
+#include "ctwm.h"
+#include "ctwm_atoms.h"
+#include "util.h"
+#include "events.h"
+#include "add_window.h"
+#include "gram.tab.h"
+#include "screen.h"
+#include "icons.h"
+#include "cursor.h"
+#include "resize.h"
+
+
 #if defined (XPM)
-#ifdef VMS
-#include "xpm.h"
-#else
-#   include <X11/xpm.h>
-#endif
+# ifdef VMS
+#  include "xpm.h"
+# else
+#  include <X11/xpm.h>
+# endif
 #endif
 
 #ifdef JPEG

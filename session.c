@@ -125,6 +125,7 @@
 #include <X11/Xatom.h>
 #include <stdio.h>
 #include <sys/stat.h>           /* For umask */
+
 #include "ctwm.h"
 #include "ctwm_atoms.h"
 #include "icons.h"

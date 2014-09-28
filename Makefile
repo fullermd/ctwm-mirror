@@ -16,7 +16,7 @@ indent:
 
 
 # Build documentation files
-DOC_FILES=README.html CHANGES.html
+DOC_FILES=README.html CHANGES.html STYLE.html
 docs: ${DOC_FILES}
 doc_clean:
 	rm -f ${DOC_FILES}
@@ -25,6 +25,8 @@ README.html: README
 	multimarkdown -ao README.html README
 CHANGES.html: CHANGES
 	multimarkdown -ao CHANGES.html CHANGES
+STYLE.html: STYLE
+	multimarkdown -ao STYLE.html STYLE
 
 
 # Prebuild these files for releases

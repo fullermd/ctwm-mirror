@@ -61,8 +61,6 @@
  *
  ***********************************************************************/
 
-#include <X11/Intrinsic.h>
-#include <X11/Xproto.h>
 #include "types.h"
 
 #ifndef _UTIL_

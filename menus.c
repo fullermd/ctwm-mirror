@@ -77,15 +77,21 @@
 #include <strings.h>
 
 #ifdef VMS
-#include <stdlib.h>
-#include <unixio.h>
-#include <file.h>
-#include <decw$include/Xos.h>
-#include <decw$include/Xatom.h>
+# include <stdlib.h>
+# include <unixio.h>
+# include <file.h>
+# include <decw$include/Xos.h>
+# include <decw$include/Xatom.h>
+# include <decw$bitmaps/menu12.xbm>
+# include <X11SM/SMlib.h>
+# include "vms_cmd_services.h"
+# include <lib$routines.h>
 #else
-#include <X11/Xos.h>
-#include <X11/Xatom.h>
+# include <X11/Xos.h>
+# include <X11/Xatom.h>
+# include <X11/SM/SMlib.h>
 #endif
+
 #include "ctwm.h"
 #include "ctwm_atoms.h"
 #include "gc.h"
@@ -107,14 +113,6 @@
 #endif
 #ifdef SOUNDS
 #  include "sound.h"
-#endif
-#ifdef VMS
-#  include <decw$bitmaps/menu12.xbm>
-#  include <X11SM/SMlib.h>
-#  include "vms_cmd_services.h"
-#  include <lib$routines.h>
-#else
-#  include <X11/SM/SMlib.h>
 #endif
 #include "version.h"
 

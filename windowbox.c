@@ -26,12 +26,13 @@
 
 
 #include <stdio.h>
-#include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
 #include <X11/Xatom.h>
 #endif
+
+#include "ctwm.h"
 #include "screen.h"
 #include "add_window.h"
 #include "resize.h"

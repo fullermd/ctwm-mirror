@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include "ctwm.h"
-#include "screen.h"
 #ifdef VMS
 #include <ctype.h>
 #include <string.h>
@@ -12,6 +10,9 @@
 #include <X11/Xatom.h>
 #include <X11/Xresource.h>
 #endif
+
+#include "ctwm.h"
+#include "screen.h"
 
 #define PROTOCOLS_COUNT 5
 

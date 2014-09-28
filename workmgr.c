@@ -26,22 +26,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
-#include "ctwm.h"
-#include "ctwm_atoms.h"
-#include "util.h"
-#include "parse.h"
-#include "screen.h"
-#include "icons.h"
-#include "resize.h"
-#include "add_window.h"
-#include "events.h"
-#include "otp.h"
-#include "clicktofocus.h"
-#include "cursor.h"
-#include "list.h"
-#include "workmgr.h"
-#include "ewmh.h"
-#include "ewmh_atoms.h"
 #ifdef VMS
 #include <string.h>
 #include <decw$include/Xos.h>
@@ -59,6 +43,22 @@ int strcmp(); /* missing from string.h in AUX 2.0 */
 static void fakeRaiseLower();
 #endif
 
+#include "ctwm.h"
+#include "ctwm_atoms.h"
+#include "util.h"
+#include "parse.h"
+#include "screen.h"
+#include "icons.h"
+#include "resize.h"
+#include "add_window.h"
+#include "events.h"
+#include "otp.h"
+#include "clicktofocus.h"
+#include "cursor.h"
+#include "list.h"
+#include "workmgr.h"
+#include "ewmh.h"
+#include "ewmh_atoms.h"
 #ifdef GNOME
 #  include "gnomewindefs.h" /* include GNOME hints definitions */
 #endif /* GNOME */

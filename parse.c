@@ -76,13 +76,16 @@
 #  include <ctype.h>
 #endif
 #ifdef VMS
-#include <ctype.h>
-#include <decw$include/Xos.h>
-#include <X11Xmu/SysUtil.h>
+# include <ctype.h>
+# include <decw$include/Xos.h>
+# include <X11Xmu/SysUtil.h>
+# include <decw$include/Xatom.h>
 #else
-#include <X11/Xos.h>
-#include <X11/Xmu/SysUtil.h>
+# include <X11/Xos.h>
+# include <X11/Xmu/SysUtil.h>
+# include <X11/Xatom.h>
 #endif
+
 #include "ctwm.h"
 #include "ctwm_atoms.h"
 #include "screen.h"
@@ -92,11 +95,6 @@
 #include "version.h"
 #ifdef SOUNDS
 #  include "sound.h"
-#endif
-#ifdef VMS
-#  include <decw$include/Xatom.h>
-#else
-#  include <X11/Xatom.h>
 #endif
 
 /* For m4... */
