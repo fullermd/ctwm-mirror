@@ -64,10 +64,6 @@
 #ifndef _EVENTS_
 #define _EVENTS_
 
-#include <stdio.h>
-#include <X11/Xlib.h>
-#include <X11/Xproto.h>
-
 typedef void (*event_proc)(void);
 
 extern void InitEvents(void);
