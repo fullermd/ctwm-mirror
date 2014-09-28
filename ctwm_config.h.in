@@ -30,7 +30,7 @@
 /* m4 preprocessing of config */
 #cmakedefine USE_M4
 #ifdef USE_M4
-# define M4
+# define USEM4
 # define M4CMD "@M4_CMD@"
 #endif
 
