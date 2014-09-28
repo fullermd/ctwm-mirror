@@ -352,6 +352,9 @@ add_custom_command(OUTPUT ${ctwm_atoms}
 	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_atoms.sh ${CMAKE_CURRENT_SOURCE_DIR}/ctwm_atoms.in ctwm_atoms CTWM
 )
 
+# Setup config file
+configure_file(ctwm_config.h.in ctwm_config.h ESCAPE_QUOTES)
+
 # We're building ctwm
 add_executable(ctwm ${CTWMSRC})
 target_link_libraries(ctwm ${CTWMLIBS})

@@ -1,0 +1,59 @@
+/*
+ * Compile-time config settings.  This gets processed by cmake into the
+ * file that's actually used.
+ */
+
+
+/*
+ * Defined paths etc
+ */
+#define SYSTEM_INIT_FILE "@CONFDIR@/system.ctwmrc"
+
+
+/*
+ * Various on/off configs
+ */
+
+/* Using XPM? */
+#cmakedefine USE_XPM
+#if USE_XPM
+# define XPM
+# define PIXMAP_DIRECTORY "@PIXMAPDIR@"
+#endif
+
+/* libjpeg */
+#cmakedefine USE_JPEG
+#if USE_JPEG
+# define JPEG
+#endif
+
+/* m4 preprocessing of config */
+#cmakedefine USE_M4
+#if USE_M4
+# define M4
+# define M4CMD "@M4_CMD@"
+#endif
+
+/* rplay? */
+#cmakedefine USE_SOUND
+#if USE_SOUND
+# define SOUNDS
+#endif
+
+/* How about EWMH properties */
+#cmakedefine USE_EWMH
+#if USE_EWMH
+# define EWMH
+#endif
+
+/* Or the GNOME1 stuff */
+#cmakedefine USE_GNOME
+#if USE_GNOME
+# define GNOME
+#endif
+
+/* Does libc provide regex funcs we use? */
+#cmakedefine USE_SREGEX
+#if USE_SREGEX
+# define USE_SYS_REGEX
+#endif
