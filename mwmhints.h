@@ -1,7 +1,6 @@
 #ifndef _MWMHINTS_
 #define _MWMHINTS_
 
-#include <X11/Xlib.h>
 #include "types.h"
 
 /*

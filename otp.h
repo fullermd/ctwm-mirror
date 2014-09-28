@@ -32,9 +32,6 @@
 #ifndef _OTP_
 #define _OTP_
 
-/* only needed to define Bool. Pathetic ! */
-#include <X11/Xlib.h>
-
 #include "types.h"
 
 /* kind of window */
