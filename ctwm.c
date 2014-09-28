@@ -84,6 +84,23 @@
 #else
 #include <fcntl.h>
 #endif
+#ifdef VMS
+#  include <stdlib.h>
+#  include <decw$include/Xproto.h>
+#  include <decw$include/Xatom.h>
+#  include <X11Xmu/Error.h>
+#  include "vms_cmd_services.h"
+#  include <X11SM/SMlib.h>
+#  include <X11/Xlocale.h>
+#else /* VMS */
+#  include <X11/Xproto.h>
+#  include <X11/Xatom.h>
+#  include <X11/Xmu/Error.h>
+#  include <X11/SM/SMlib.h>
+#  include <X11/Xlocale.h>
+#endif /* VMS */
+
+
 #include "ctwm.h"
 #include "ctwm_atoms.h"
 #include "add_window.h"
@@ -106,29 +123,19 @@
 #ifdef EWMH
 #  include "ewmh.h"
 #endif /* EWMH */
+
+
+/* I'm not sure this is meaningful anymore */
 #ifdef VMS
-#  include <stdlib.h>
-#  include <decw$include/Xproto.h>
-#  include <decw$include/Xatom.h>
-#  include <X11Xmu/Error.h>
-#  include "vms_cmd_services.h"
-#  include <X11SM/SMlib.h>
-#  include <X11/Xlocale.h>
-
-#  ifndef PIXMAP_DIRECTORY
-#    define PIXMAP_DIRECTORY "DECW$BITMAPS:"
-#  endif
-#else /* VMS */
-#  include <X11/Xproto.h>
-#  include <X11/Xatom.h>
-#  include <X11/Xmu/Error.h>
-#  include <X11/SM/SMlib.h>
-#  include <X11/Xlocale.h>
-
-#  ifndef PIXMAP_DIRECTORY
-#    define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
-#  endif /* PIXMAP_DIRECTORY */
+# ifndef PIXMAP_DIRECTORY
+#  define PIXMAP_DIRECTORY "DECW$BITMAPS:"
+# endif
+#else  /* VMS */
+# ifndef PIXMAP_DIRECTORY
+#  define PIXMAP_DIRECTORY "/usr/lib/X11/twm"
+# endif
 #endif /* VMS */
+
 
 XtAppContext appContext;        /* Xt application context */
 Display *dpy;                   /* which display are we talking to */

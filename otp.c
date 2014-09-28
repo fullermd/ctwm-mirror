@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+
 #include "ctwm.h"
 #include "otp.h"
 #include "screen.h"

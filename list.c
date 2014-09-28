@@ -72,6 +72,7 @@
 #ifdef VMS
 #include <string.h>
 #endif
+
 #include "ctwm.h"
 #include "screen.h"
 #include "gram.tab.h"

@@ -69,6 +69,7 @@
 
 #include <stdio.h>
 #include <ctype.h>
+
 #include "ctwm.h"
 #include "parse.h"
 #include "events.h"

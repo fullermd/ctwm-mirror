@@ -61,6 +61,7 @@
  **********************************************************************/
 
 #include <stdio.h>
+
 #include "ctwm.h"
 #include "screen.h"
 #include "icons.h"

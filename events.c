@@ -77,13 +77,21 @@
 #endif
 #include <ctype.h>
 
-#include "ctwm.h"
-#include "ctwm_atoms.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
 #include <X11/Xatom.h>
 #endif
+
+#ifdef VMS
+#include <starlet.h>
+#include <ssdef.h>
+#include <lib$routines.h>
+#define USE_SIGNALS
+#endif
+
+#include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "add_window.h"
 #include "clicktofocus.h"
 #include "menus.h"
@@ -97,12 +105,8 @@
 #include "iconmgr.h"
 #include "version.h"
 #include "ewmh.h"
-
-#ifdef VMS
-#include <starlet.h>
-#include <ssdef.h>
-#include <lib$routines.h>
-#define USE_SIGNALS
+#ifdef SOUNDS
+#include "sounds.h"
 #endif
 
 static void CtwmNextEvent(Display *display, XEvent  *event);
@@ -110,9 +114,6 @@ static void RedoIcon(void);
 static void do_key_menu(MenuRoot *menu,         /* menu to pop up */
                         Window w);             /* invoking window or None */
 
-#ifdef SOUNDS
-#include "sounds.h"
-#endif
 FILE *tracefile = NULL;
 
 #define MAX_X_EVENT 256

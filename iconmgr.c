@@ -63,18 +63,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
 #include <X11/Xatom.h>
 #endif
+
+#include "ctwm.h"
 #include "util.h"
 #include "parse.h"
 #include "screen.h"
 #include "resize.h"
 #include "otp.h"
 #include "add_window.h"
+
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif

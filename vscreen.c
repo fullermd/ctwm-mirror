@@ -26,6 +26,7 @@
 
 #include <X11/Xatom.h>
 #include <stdio.h>
+
 #include "ctwm.h"
 #include "ctwm_atoms.h"
 #include "cursor.h"

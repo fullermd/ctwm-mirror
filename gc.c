@@ -68,6 +68,7 @@
  **********************************************************************/
 
 #include <stdio.h>
+
 #include "ctwm.h"
 #include "util.h"
 #include "gram.tab.h"

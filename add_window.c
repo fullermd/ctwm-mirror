@@ -77,13 +77,14 @@
 #if defined(AIXV3) || defined(_SYSTYPE_SVR4) || defined(ibm) || defined __QNX__
 #include <sys/select.h>
 #endif
-#include "ctwm.h"
-#include "ctwm_atoms.h"
 #ifdef VMS
 #include <decw$include/Xatom.h>
 #else
 #include <X11/Xatom.h>
 #endif
+
+#include "ctwm.h"
+#include "ctwm_atoms.h"
 #include "add_window.h"
 #include "windowbox.h"
 #include "util.h"

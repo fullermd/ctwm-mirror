@@ -61,12 +61,13 @@
  ***********************************************************************/
 
 #include <stdio.h>
-#include "ctwm.h"
 #ifdef VMS
 #include <decw$include/Xos.h>
 #else
 #include <X11/Xos.h>
 #endif
+
+#include "ctwm.h"
 #include "screen.h"
 #include "util.h"
 #include "cursor.h"
