@@ -103,7 +103,7 @@
  ***********************************************************************
  */
 
-void AddToList(name_list **list_head, const char *name, char *ptr)
+void AddToList(name_list **list_head, const char *name, void *ptr)
 {
 	name_list *nptr;
 

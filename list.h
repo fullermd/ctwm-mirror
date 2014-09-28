@@ -73,7 +73,7 @@ struct name_list {
 	void      *ptr;             /* list dependent data */
 };
 
-extern void     AddToList(name_list **list_head, const char *name, char *ptr);
+extern void     AddToList(name_list **list_head, const char *name, void *ptr);
 extern void    *LookInList(name_list *list_head, const char *name,
                            XClassHint *class);
 extern void    *LookInNameList(name_list *list_head, const char *name);
