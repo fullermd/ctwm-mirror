@@ -70,7 +70,7 @@
 struct name_list {
 	name_list *next;            /* pointer to the next name */
 	char      *name;            /* the name of the window */
-	char      *ptr;             /* list dependent data */
+	void      *ptr;             /* list dependent data */
 };
 
 extern void     AddToList(name_list **list_head, const char *name, char *ptr);
