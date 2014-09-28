@@ -3629,7 +3629,7 @@ Image *GetImage(char *name, ColorPair cp)
 		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
 			int startn = (name [0] == '@') ? 1 : 4;
 			if((image = GetXpmImage(name + startn, cp)) != None) {
-				AddToList(list, fullname, (char *) image);
+				AddToList(list, fullname, image);
 			}
 		}
 	}
@@ -3638,7 +3638,7 @@ Image *GetImage(char *name, ColorPair cp)
 	else if(strncmp(name, "jpeg:", 5) == 0) {
 		if((image = (Image *) LookInNameList(*list, name)) == None) {
 			if((image = GetJpegImage(&name [5])) != None) {
-				AddToList(list, name, (char *) image);
+				AddToList(list, name, image);
 			}
 		}
 	}
@@ -3648,7 +3648,7 @@ Image *GetImage(char *name, ColorPair cp)
 		int startn = (name [0] == '|') ? 0 : 4;
 		if((image = (Image *) LookInNameList(*list, name)) == None) {
 			if((image = GetXwdImage(&name [startn], cp)) != None) {
-				AddToList(list, name, (char *) image);
+				AddToList(list, name, image);
 			}
 		}
 	}
@@ -3688,7 +3688,7 @@ Image *GetImage(char *name, ColorPair cp)
 				fprintf(stderr, "%s:  no such built-in pixmap \"%s\"\n", ProgramName, name);
 				return (None);
 			}
-			AddToList(list, fullname, (char *) image);
+			AddToList(list, fullname, image);
 		}
 	}
 	else if(strncmp(name, "%xpm:", 5) == 0) {
@@ -3728,7 +3728,7 @@ Image *GetImage(char *name, ColorPair cp)
 				fprintf(stderr, "%s:  no such built-in pixmap \"%s\"\n", ProgramName, name);
 				return (None);
 			}
-			AddToList(list, fullname, (char *) image);
+			AddToList(list, fullname, image);
 		}
 	}
 	else if(name [0] == ':') {
@@ -3780,14 +3780,14 @@ Image *GetImage(char *name, ColorPair cp)
 			image->width  = width;
 			image->height = height;
 			image->next   = None;
-			AddToList(list, fullname, (char *) image);
+			AddToList(list, fullname, image);
 		}
 	}
 	else {
 		sprintf(fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
 		if((image = (Image *) LookInNameList(*list, fullname)) == None) {
 			if((image = GetBitmapImage(name, cp)) != None) {
-				AddToList(list, fullname, (char *) image);
+				AddToList(list, fullname, image);
 			}
 		}
 	}

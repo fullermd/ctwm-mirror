@@ -804,7 +804,7 @@ void CreateIconWindow(TwmWindow *tmp_win, int def_x, int def_y)
 	}
 
 	if(pattern != NULL) {
-		AddToList(&tmp_win->iconslist, pattern, (char *) icon);
+		AddToList(&tmp_win->iconslist, pattern, icon);
 	}
 
 	tmp_win->icon = icon;

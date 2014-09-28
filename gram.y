@@ -802,13 +802,13 @@ iconm_entries	: /* Empty */
 		;
 
 iconm_entry	: string string number	{ if (Scr->FirstTime)
-					    AddToList(list, $1, (char *)
+					    AddToList(list, $1,
 						AllocateIconManager($1, NULLSTR,
 							$2,$3));
 					}
 		| string string string number
 					{ if (Scr->FirstTime)
-					    AddToList(list, $1, (char *)
+					    AddToList(list, $1,
 						AllocateIconManager($1,$2,
 						$3, $4));
 					}
