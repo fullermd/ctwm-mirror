@@ -33,8 +33,8 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include "otp.h"
 #include "ctwm.h"
+#include "otp.h"
 #include "screen.h"
 #include "util.h"
 #include "icons.h"
