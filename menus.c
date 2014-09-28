@@ -102,7 +102,9 @@
 #include "workmgr.h"
 #include "cursor.h"
 #include "otp.h"
-#include "gnomewindefs.h"
+#ifdef GNOME
+# include "gnomewindefs.h"
+#endif
 #ifdef SOUNDS
 #  include "sound.h"
 #endif
