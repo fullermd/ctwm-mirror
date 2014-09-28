@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "ctwm.h"
 #include "sound.h"
 
 char *eventNames[] = {
