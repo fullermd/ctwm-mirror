@@ -83,6 +83,9 @@
 #include <X11/extensions/shape.h>
 #include <X11/Xfuncs.h>
 #endif  /* VMS */
+
+#include "ctwm_config.h"
+
 #include "types.h"
 #include "ewmh.h"
 

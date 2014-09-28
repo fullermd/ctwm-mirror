@@ -1920,7 +1920,7 @@ void SetFocus(TwmWindow *tmp_win, Time tim)
 	}
 
 	XSetInputFocus(dpy, w, RevertToPointerRoot, tim);
-#if EWMH
+#ifdef EWMH
 	EwmhSet_NET_ACTIVE_WINDOW(w);
 #endif
 	if(Scr->Focus == tmp_win) {
