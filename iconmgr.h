@@ -77,11 +77,10 @@ struct WList {
 };
 
 struct IconMgr {
-	struct IconMgr *next;               /* pointer to the next icon manager */
-	struct IconMgr *prev;               /* pointer to the previous icon mgr */
-	struct IconMgr *lasti;              /* pointer to the last icon mgr */
-	struct IconMgr
-			*nextv;              /* pointer to the next virtual icon mgr C.L. */
+	struct IconMgr *next;               /* ptr to the next icon manager */
+	struct IconMgr *prev;               /* ptr to the previous icon mgr */
+	struct IconMgr *lasti;              /* ptr to the last icon mgr */
+	struct IconMgr *nextv;              /* ptr to the next virt icon mgr */
 	struct WList *first;                /* first window in the list */
 	struct WList *last;                 /* last window in the list */
 	struct WList *active;               /* the active entry */
