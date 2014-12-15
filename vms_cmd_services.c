@@ -108,12 +108,12 @@ static PrcBLK *PrcHead = (PrcBLK *)NULL, *PrcCurrent = (PrcBLK *)NULL;
 $DESCRIPTOR(BitBucket, "NLA0:");                /* null device */
 $DESCRIPTOR(image, "SYS$SYSTEM:LOGINOUT.EXE");  /* image to be run by $CREPRC */
 
-static struct dsc$descriptor_s
-		wsaDevice;       /* VMS string descriptor for the WorkStation Device */
-static struct dsc$descriptor_s
-		prcname;         /* VMS string descriptor for run process name */
-static struct dsc$descriptor_s
-		asciitime;       /* VMS string descriptor for getting the returned time */
+/* VMS string descriptor for the WorkStation Device */
+static struct dsc$descriptor_s wsaDevice;
+/* VMS string descriptor for run process name */
+static struct dsc$descriptor_s prcname;
+/* VMS string descriptor for getting the returned time */
+static struct dsc$descriptor_s asciitime;
 static unsigned char
 TrmMbxBuffer[ACC$K_TERMLEN];       /* Termination Mailbox's input buffer */
 static unsigned char VMSAsciiTime[24];  /* VMS Ascii Time returned by $ASCTIM */
