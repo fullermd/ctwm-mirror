@@ -415,9 +415,12 @@ struct TwmWindow {
 		int x, y;
 		unsigned int width, height;
 	} savegeometry;
-	struct VirtualScreen *vs;   /* where the window is mapped (may be NULL) */
-	struct VirtualScreen
-			*parent_vs;    /* where it is parented (deparenting is impossible) */
+
+	/* where the window is mapped (may be NULL) */
+	struct VirtualScreen *vs;
+	/* where it is parented (deparenting is impossible) */
+	struct VirtualScreen *parent_vs;
+
 	struct VirtualScreen *savevs;       /* for ShowBackground only */
 
 	short nameChanged;  /* did WM_NAME ever change? */
