@@ -1944,7 +1944,7 @@ This function sounds the keyboard bell.
 This function is similar to the \fBf.fullzoom\fP function, but
 resizes the window to fill only the bottom half of the screen.
 
-.IP "\fBf.changepriority \fIrel-value\fP" 8
+.IP "\fBf.changepriority\fP \fIrel-value\fP" 8
 Change the priority of a window by \fIrel-value\fP (enclosed within double
 quotes). For instance, to bury a window one level down, you would use
 f.changepriority "-1".
@@ -2264,7 +2264,7 @@ Valid only in a root menu. Make a menu permanent on the screen. This is a toggle
 function, if you select it while the menu is already permanent, it becomes
 non\-permanent.
 
-.IP "\fBf.priorityswitching" 8
+.IP "\fBf.priorityswitching\fP" 8
 Toggle the window's switching ability.
 
 .IP "\fBf.quit\fP" 8
@@ -2404,7 +2404,7 @@ Restart freezed animations (if any).
 .IP "\fBf.stopanimation\fP" 8
 Freeze animations (if any).
 
-.IP "\fBf.switchpriority" 8
+.IP "\fBf.switchpriority\fP" 8
 Switch the window's priority, independently of its ability to switch
 automatically.
 
