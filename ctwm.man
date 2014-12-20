@@ -1,4 +1,4 @@
-.de EX		\"Begin example
+.de EX		
 .ne 5
 .if n .sp 1
 .if t .sp .5
@@ -396,7 +396,6 @@ The \fIspeed\fP argument is a non\-negative integer. It determines the number of
 times a second animations (if any) are updated. If \fIspeed\fP is 0, animations
 are freezed. The default value is 0.
 
- \" kai
 .IP "\fBAutoFocusToTransients\fP" 8
 Transient windows get focus automatically when created.  Useful with
 programs that have keyboard shortcuts that pop up windows.
