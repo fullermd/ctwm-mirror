@@ -207,6 +207,9 @@ sub proc_ex
 		# Get rid of \fWhatever manipulations
 		$ln =~ s,\\f[IBP],,g;
 
+		# Dump escaping of -'s
+		$ln =~ s,\\-,-,g;
+
 		$r .= $ln;
 	};
 
