@@ -2643,12 +2643,7 @@ If \fBIconifyByUnmapping\fP is on and windows are listed in
 they may be lost if they are iconified and no bindings to
 \fBf.menu "TwmWindows"\fP or \fBf.warpto\fP are setup.
 .SH FILES
-.nf
-$HOME/.ctwmrc.<screen number>
-$HOME/.ctwmrc
-@TWMDIR@/system.ctwmrc
-$HOME/.twmrc
-.fi
+See earlier Customization section.
 .SH "ENVIRONMENT VARIABLES"
 .IP "DISPLAY" 8
 This variable is used to determine which X server to use.  It is also set
