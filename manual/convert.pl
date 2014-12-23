@@ -114,6 +114,7 @@ MAINLOOP: while(<STDIN>)
 			if(/^\.IP$/)
 			{
 				print "+\n[normal]\n";
+				$addnorm = 0;
 				next;
 			}
 
