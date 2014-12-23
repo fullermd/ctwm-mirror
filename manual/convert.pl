@@ -87,6 +87,19 @@ MAINLOOP: while(<STDIN>)
 			next if /^\\"/;
 			next if /^\.ds/;
 
+			# We get embedded .EX's sometimes
+			if(/^\.EX/)
+			{
+				my $str = proc_ex();
+
+				# Mess with newlines, and make continuations
+				$str =~ s/(^\s+|\s+$)//g;
+				$str = "+\n$str\n+\n";
+
+				print $str;
+				next;
+			}
+
 			# We consider this ended if we hit a macro line
 			if(/^\./)
 			{
