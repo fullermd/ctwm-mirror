@@ -1,4 +1,4 @@
-.de EX		
+.de EX
 .ne 5
 .if n .sp 1
 .if t .sp .5
@@ -891,7 +891,7 @@ own icon pixmap.
 .IP "\fBIconSize\fP \fIstring\fP" 8
 (Only with EWMH support)
 string is of the form
-"\fIwidth\fPx\fIheight\fP" 
+"\fIwidth\fPx\fIheight\fP"
 or
 "\fIsize\fP"
 for a square size.
@@ -1378,7 +1378,7 @@ where \fIname\fP is a window name, \fIjustification\fP is either \fBleft\fP,
 are numbers specifying a ratio giving the relative position about which
 the titlebar is justified.  The ratio is measured from left to right if
 the numerator is positive, and right to left if negative.  A denominator
-of 0 indicates that the numerator should be interpreted as pixels. 
+of 0 indicates that the numerator should be interpreted as pixels.
 For compatibility, the pixel-position 0/0 is the relative  middle  of
 the window (1/2) for \fBcenter\fP and the relative right side of the
 window (2/2) for \fBright\fP, but this use is not recommended.
@@ -2214,7 +2214,7 @@ Button1 = m1 : title : f.movetitlebar
 \fBf.movetitlebar\fP does nothing if the window has no title, the
 window is squeezed (see f.squeeze), or the title is not squeezed
 (see \fISqueezeTitle\fP).
- 
+
 .IP "\fBf.movetonextworkspace\fI" 8
 Move the window to the next workspace.
 
