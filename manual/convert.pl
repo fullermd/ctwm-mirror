@@ -16,6 +16,7 @@ use warnings;
 # - The sub-listing under WorkSpaces
 # - The whole bindings/title buttons block.  This probably wants to be
 #   organized slightly differently anyway.
+# - Fixup font string in WorkSpaceFont
 #
 
 
