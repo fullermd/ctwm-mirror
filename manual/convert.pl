@@ -208,6 +208,10 @@ sub ilcvt
 	# Convert comments
 	$l =~ s,^\.\\",// ,;
 
+	# Apparently, there's no way to escape hashes in asciidoc EXCEPT like
+	# this?  How stupid.
+	$l =~ s,#,&#35;,g;
+
 
 	return $l;
 }
