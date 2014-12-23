@@ -22,6 +22,16 @@ MAINLOOP: while(<STDIN>)
 	# Paragraphs are easy, they're just blank lines
 	s,^.PP$,,;
 
+	# .de defines macros, so we ignore everything until the end of the
+	# definition
+	if(/^\.de /)
+	{
+		1 while(<STDIN> !~ /^\.\./); # nada
+
+		# And back around
+		next;
+	}
+
 
 	# These .TP's are a little tougher.  They basically turn into
 	# labelled lists, in asciidoc parlance.  .IP is another
