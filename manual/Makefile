@@ -12,3 +12,9 @@ manual.txt: ../ctwm.man convert.pl
 
 .txt.html:
 	asciidoc -atoc -anumbered -o ${.TARGET} ${.IMPSRC}
+
+# NOTYET
+#ctwm.1: manual.txt
+#	cp manual.txt ctwm.1.txt
+#	a2x -vv --doctype manpage --format manpage ctwm.1.txt
+#	rm -f ctwm.1.txt
