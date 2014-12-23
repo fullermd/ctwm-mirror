@@ -111,7 +111,7 @@ MAINLOOP: while(<STDIN>)
 			# Otherwise, do std inline processing, and output
 			chomp;
 			$_ = ilcvt($_);
-			$_ = "  $_\n" if $_;
+			$_ .= "\n" if $_;
 			print $_;
 		}
 
