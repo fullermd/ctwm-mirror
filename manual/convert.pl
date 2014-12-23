@@ -212,9 +212,10 @@ sub ilcvt
 	# they always matched, which they don't.  So punt.
 	$l =~ s,\\f[IBP],++,g;
 
-	# Convert single quoted text
+	# Convert various roff escapes
 	$l =~ s,\\\(oq,`,g;
 	$l =~ s,\\\(cq,',g;
+	$l =~ s,\\\(or,|,g;
 
 	# Deal with a couple squirrely things asciidoc tries to take as magic
 	$l =~ s,\[\+,\\\[+,g;
