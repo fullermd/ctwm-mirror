@@ -13,7 +13,7 @@ MAINLOOP: while(<STDIN>)
 	if(/^\.EX/)
 	{
 		# Replace this line with start of an example block
-		print "------\n";
+		print "\n------\n";
 
 		# Read lines and output until the end
 		while((my $ln = <STDIN>) !~ /^\.EE/)
@@ -25,7 +25,7 @@ MAINLOOP: while(<STDIN>)
 		};
 
 		# And close
-		print "------\n";
+		print "------\n\n";
 
 		# Back around to the top
 		next MAINLOOP;
