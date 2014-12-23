@@ -841,9 +841,7 @@ variable, only the windows in this list will be shown in the icon manager.
 .IP "\fBIconMenuDontShow\fP { \fIwin\-list\fP }" 8
 Don't show the name of these windows in the TwmIcons menu.
 
-.IP "\fBIconRegion\fP \fIgeomstring\fP \fIvgrav hgrav gridwidth gridheight\fP [\fIiconjust\fP]" 8
-[\fIiconregjust\fP] [\fIiconregalign\fP] [{ \fIwin\-list\fP }]
-.IP "" 8
+.IP "\fBIconRegion\fP \fIgeomstring\fP \fIvgrav hgrav gridwidth gridheight\fP [\fIiconjust\fP] [\fIiconregjust\fP] [\fIiconregalign\fP] [{ \fIwin\-list\fP }] 8
 This variable specifies an area on the root window in which icons are placed
 if no specific icon location is provided by the client.  The \fIgeomstring\fP
 is a quoted string containing a standard geometry specification. If more than
