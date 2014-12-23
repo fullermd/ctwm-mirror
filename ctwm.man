@@ -1154,7 +1154,7 @@ OccupyAll
 Note : The OccupyAll declaration should come after the WorkSpaces declaration.
 
 .IP "\fBOnTopPriority\fP [\fBIcons\fP] \fIpriority\fP [ { \fIwin\-list\fP } ]" 8
-\fICtwm\fP allows you to put windows in several overlapping priority planes
+\fIctwm\fP allows you to put windows in several overlapping priority planes
 going from -8 to +8, which makes it possible to have windows that stay on
 top or that are kept in the background. If \fIwin-list\fP is present, it
 specifies which windows should be put in the \fIpriority\fP plane.
