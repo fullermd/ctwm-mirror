@@ -12,20 +12,7 @@ MAINLOOP: while(<STDIN>)
 	# Custom .EX and .EE macros for defining examples
 	if(/^\.EX/)
 	{
-		# Replace this line with start of an example block
-		print "\n------\n";
-
-		# Read lines and output until the end
-		while((my $ln = <STDIN>) !~ /^\.EE/)
-		{
-			# Get rid of \fWhatever manipulations
-			$ln =~ s,\\f[IBP],,g;
-
-			print $ln;
-		};
-
-		# And close
-		print "------\n\n";
+		print proc_ex();
 
 		# Back around to the top
 		next MAINLOOP;
@@ -166,4 +153,31 @@ sub ilcvt
 
 
 	return $l;
+}
+
+
+# Process a .EX/.EE block
+sub proc_ex
+{
+	# Assume we've already read the .EX
+	my $r;
+
+	# Replace with start of an example block
+	$r .= "\n------\n";
+
+	# Read lines and output until the end
+	while((my $ln = <STDIN>) !~ /^\.EE/)
+	{
+		# Get rid of \fWhatever manipulations
+		$ln =~ s,\\f[IBP],,g;
+
+		$r .= $ln;
+	};
+
+	# And close
+	$r .= "------\n\n";
+
+
+	# Done
+	return $r;
 }
