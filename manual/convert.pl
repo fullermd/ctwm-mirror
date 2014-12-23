@@ -32,6 +32,17 @@ MAINLOOP: while(<STDIN>)
 		next;
 	}
 
+	# .ta sets tabstops.  Totally don't care.
+	next if /^\.ta/;
+
+	# .TH sets the title
+	if(/^\.TH/)
+	{
+		# Hardcode
+		print "= CTWM (1)\n\n";
+		next;
+	}
+
 
 	# These .TP's are a little tougher.  They basically turn into
 	# labelled lists, in asciidoc parlance.  .IP is another
