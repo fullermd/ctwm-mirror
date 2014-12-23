@@ -113,7 +113,8 @@ MAINLOOP: while(<STDIN>)
 			# Otherwise, do std inline processing, and output
 			chomp;
 			$_ = ilcvt($_);
-			print "  $_\n";
+			$_ = "  $_\n" if $_;
+			print $_;
 		}
 
 		# NOTREACHED?
