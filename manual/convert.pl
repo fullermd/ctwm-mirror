@@ -56,7 +56,7 @@ MAINLOOP: while(<STDIN>)
 	if(/^\.TH/)
 	{
 		# Hardcode
-		print "= CTWM (1)\n\n";
+		print "= CTWM(1)\n\n";
 		next;
 	}
 
