@@ -103,7 +103,12 @@ MAINLOOP: while(<STDIN>)
 			next if /^\.ds/;
 
 			# We consider this ended if we hit a macro line
-			redo MAINLOOP if /^\./;
+			if(/^\./)
+			{
+				# If it's not another .TP/.IP, add a blank line
+				print "\n" unless /^\.(TP|IP)/;
+				redo MAINLOOP;
+			}
 
 			# Otherwise, do std inline processing, and output
 			chomp;
