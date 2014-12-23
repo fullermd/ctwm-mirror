@@ -205,7 +205,7 @@ sub ilcvt
 	# This happens a couple times, but asciidoc only cares once?
 	#$l =~ s,(\+\+ctwm\+\+)'s,$1\\'s,g;
 
-	# Convery comments
+	# Convert comments
 	$l =~ s,^\.\\",// ,;
 
 
