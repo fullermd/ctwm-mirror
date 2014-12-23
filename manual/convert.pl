@@ -5,10 +5,6 @@ use warnings;
 # Slurp
 MAINLOOP: while(<STDIN>)
 {
-	# Do basic processing of each line first
-	$_ = ilcvt($_);
-
-
 	# Custom .EX and .EE macros for defining examples
 	if(/^\.EX/)
 	{
@@ -50,8 +46,10 @@ MAINLOOP: while(<STDIN>)
 
 			# Clean it up.  First translate away the .B altogether, and
 			# the optional quotes.
-
 			$lbl =~ s,^.B "?([^"]+)"?,$1,;
+
+			# Do inline translation
+			$lbl = ilcvt($lbl);
 		}
 		elsif(/^\.IP/)
 		{
@@ -60,19 +58,19 @@ MAINLOOP: while(<STDIN>)
 			# Strip away the .IP leader, and the trailing indent number
 			$lbl =~ s,^.IP "?(.+?)"? [48]$,$1,;
 
-			# Strip ++'s, since they're redundant in labels
-			$lbl =~ s,\+\+,,g;
+			# Some have \f[ont] stuff.  In fact, most have \fB'ing of the
+			# label, which we don't want, but many have \fI'ing of args,
+			# which we do.  Fortunately, I _think_ we can use spaces to
+			# delimiate, because the \fB parts are always the first word.
+			$lbl =~ s,\\fB([^\s]+)\\fP,$1,g;
 
 			# The f.setpriority line does weird stuff.
-			$lbl =~ s,\\\*,,g;
+			$lbl =~ s,\\\*,,g if $lbl =~ /^f\.setpriority/;
+
+			# Do remaining inline conversion
+			$lbl = ilcvt($lbl);
 		}
 		# Now we've got just the label itself ready to go.
-
-		# A few have \f[ont] stuff
-		$lbl =~ s,\\f[IP],,g;
-
-		# And extra backslashes
-		$lbl =~ s,\\,,g;
 
 		# Clean up any space
 		$lbl =~ s,(^\s+|\s+$),,;
@@ -109,6 +107,8 @@ MAINLOOP: while(<STDIN>)
 	}
 
 
+	# Do basic inline processing before outputting.
+	$_ = ilcvt($_);
 	print;
 }
 
