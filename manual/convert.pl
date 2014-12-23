@@ -69,6 +69,10 @@ MAINLOOP: while(<STDIN>)
 
 			# Do remaining inline conversion
 			$lbl = ilcvt($lbl);
+
+			# asciidoc doesn't get along with the "[++" -> "\[++"
+			# conversion other things need here, so reverse it.
+			$lbl =~ s,\\\[\+\+,[\+\+,g;
 		}
 		# Now we've got just the label itself ready to go.
 
