@@ -80,6 +80,7 @@ MAINLOOP: while(<STDIN>)
 
 		# Now we have lines of content.  Assume it ends as soon as we hit
 		# another macro at the start.
+		my $addnorm = 0;
 		while(<STDIN>)
 		{
 			# Skip a comment and a weird (ms?) macro that show up before
@@ -96,6 +97,10 @@ MAINLOOP: while(<STDIN>)
 				$str =~ s/(^\s+|\s+$)//g;
 				$str = "+\n$str\n+\n";
 
+				# Add [normal] before next para if there is one
+				$addnorm = 1;
+
+				# Output
 				print $str;
 				next;
 			}
@@ -111,7 +116,12 @@ MAINLOOP: while(<STDIN>)
 			# Otherwise, do std inline processing, and output
 			chomp;
 			$_ = ilcvt($_);
-			$_ .= "\n" if $_;
+			$_ = "  $_\n" if $_;
+			if($_ && $addnorm)
+			{
+				$_ = "[normal]\n$_";
+				$addnorm = 0;
+			}
 			print $_;
 		}
 
