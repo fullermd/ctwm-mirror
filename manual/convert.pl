@@ -97,6 +97,12 @@ MAINLOOP: while(<STDIN>)
 		# another macro at the start.
 		while(<STDIN>)
 		{
+			# Skip a comment and a weird (ms?) macro that show up before
+			# the f.setpriority line.
+			next if /^\\"/;
+			next if /^\.ds/;
+
+			# We consider this ended if we hit a macro line
 			redo MAINLOOP if /^\./;
 
 			# Otherwise, do std inline processing, and output
