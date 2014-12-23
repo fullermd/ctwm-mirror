@@ -2359,7 +2359,7 @@ Set the WorkSpace manager in map state.
 
 \" define a quote, to be used as \*"
 .ds " ""
-.IP "\fBf.setpriority \*"\fIvalue\fP\*"" 8
+.IP "\fBf.setpriority\fP \*"\fIvalue\fP\*"" 8
 Set the window's priority to \fIvalue\fP (enclosed between double quotes).
 If \fIvalue\fP is directly followed by \fB<\fP or \fBb\fP, the window is
 placed below other windows of the given priority. Otherwise it is placed
