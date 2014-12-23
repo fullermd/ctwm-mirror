@@ -41,24 +41,54 @@ MAINLOOP: while(<STDIN>)
 
 
 	# These .TP's are a little tougher.  They basically turn into
-	# labelled lists, in asciidoc parlance.
-	if(/^\.TP/)
+	# labelled lists, in asciidoc parlance.  .IP is another
+	# almost-identical way of phrasing it in man (jeez), except
+	# incompatible.  Naturally.
+	if(/^\.(TP|IP )/)
 	{
-		# Skip the .TP line totally.
+		# If it's .TP, the following line is the label.  If it's .IP, the
+		# label is in the line, probably quotes, with possibly an indent
+		# length hanging on the end.  Except when it's not; there are a
+		# few cases of /^.IP$/, but I'm intentionally excluding them with
+		# the space above.
+
+		# Start with whitespace
 		print "\n";
 
-		# Next line is the label
-		chomp(my $lbl = <STDIN>);
+		my $lbl;
+		if(/^\.TP/)
+		{
+			# Next line is the label
+			chomp($lbl = <STDIN>);
 
-		# Clean it up.  First translate away the .B altogether, and the
-		# optional quotes.
-		$lbl =~ s,^.B "?([^"]+)"?,$1,;
+			# Clean it up.  First translate away the .B altogether, and
+			# the optional quotes.
+
+			$lbl =~ s,^.B "?([^"]+)"?,$1,;
+		}
+		elsif(/^\.IP/)
+		{
+			chomp($lbl = $_);
+
+			# Strip away the .IP leader, and the trailing indent number
+			$lbl =~ s,^.IP "?(.+?)"? [48]$,$1,;
+
+			# Strip ++'s, since they're redundant in labels
+			$lbl =~ s,\+\+,,g;
+
+			# The f.setpriority line does weird stuff.
+			$lbl =~ s,\\\*,,g;
+		}
+		# Now we've got just the label itself ready to go.
 
 		# A few have \f[ont] stuff
 		$lbl =~ s,\\f[IP],,g;
 
 		# And extra backslashes
 		$lbl =~ s,\\,,g;
+
+		# Clean up any space
+		$lbl =~ s,(^\s+|\s+$),,;
 
 		print "${lbl}::\n";
 
