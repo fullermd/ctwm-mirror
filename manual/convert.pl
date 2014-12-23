@@ -206,6 +206,10 @@ sub ilcvt
 	# \fB makes bold.  This seems used for an awful lot, but often literal
 	# text like config params etc.  That....  seems like it should generally
 	# be monospace too, doesn't it?
+	# Well, no, it also does stuff that should be bold, or emphasized.
+	# But there's no way to tell from here.  And trying to match up the
+	# \fP with the B or I it should go with is a losing battle, even if
+	# they always matched, which they don't.  So punt.
 	$l =~ s,\\f[IBP],++,g;
 
 	# Convert single quoted text
