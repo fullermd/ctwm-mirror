@@ -2,6 +2,23 @@
 use strict;
 use warnings;
 
+#
+# This does the majority of the conversion from the existing
+# part-pure-roff, part-man, part-ms, part-god-knows-what manpage, to an
+# asciidoc source file.  It actually does a pretty good job; easily 95%
+# of the work.
+#
+# There will be a fair bit of minor manual cleanup after it's run, but
+# only a few isolated more major reworkings, of places it wasn't worth
+# trying to extend this to properly handle itself.
+#
+# Currently known:
+# - The sub-listing under WorkSpaces
+# - The whole bindings/title buttons block.  This probably wants to be
+#   organized slightly differently anyway.
+#
+
+
 # Slurp
 MAINLOOP: while(<STDIN>)
 {
