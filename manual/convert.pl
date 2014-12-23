@@ -109,6 +109,14 @@ MAINLOOP: while(<STDIN>)
 				next;
 			}
 
+			# An embedded .IP means continue the indent in roff, which
+			# means we just continue the list item here.
+			if(/^\.IP$/)
+			{
+				print "+\n[normal]\n";
+				next;
+			}
+
 			# We consider this ended if we hit a macro line
 			if(/^\./)
 			{
