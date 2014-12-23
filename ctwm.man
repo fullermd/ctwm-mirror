@@ -167,7 +167,7 @@ This is the usual name for an individual user's startup file.
 .B "$HOME/.twmrc"
 The users twm startup file.
 .TP 8
-.B "/usr/lib/X11/twm/system.ctwmrc"
+.B "@TWMDIR@/system.ctwmrc"
 If none of the preceding files are found, \fIctwm\fP will look in this
 file for a
 default configuration.  This is often tailored by the site administrator to
@@ -608,7 +608,7 @@ Shapes from the \fBcursor\fP font may be specified directly as:
 .EE
 where \fIcursorname\fP is one of the cursor names listed below, and
 \fIstring\fP is the name of a glyph as found in the file
-/usr/include/X11/cursorfont.h (without the \(oqXC_\(cq prefix).
+<X11/cursorfont.h> (without the \(oqXC_\(cq prefix).
 If the cursor is to be defined
 from bitmap files, the following syntax is used instead:
 .EX 0
