@@ -1928,11 +1928,11 @@ whenever the pointer leaves it.  See the description of the variable
 This function toggles whether or not the selected window is raised whenever
 entered by the pointer.  See the description of the variable \fBAutoRaise\fP.
 
-.IP "\fBf.backmapiconmgr\fI" 8
+.IP "\fBf.backmapiconmgr\fP" 8
 This function warps the  pointer in the same manner as \fBf.backiconmgr\fP
 but only stops at windows that are mapped.
 
-.IP "\fBf.backiconmgr\fI" 8
+.IP "\fBf.backiconmgr\fP" 8
 This function warps the pointer to the previous column in the
 current icon manager, wrapping back to the previous row if necessary.
 
@@ -2019,7 +2019,7 @@ This function instructs the X server to close the display connection of the
 client that created the selected window.  This should only be used as a last
 resort for shutting down runaway clients.  See also f.delete.
 
-.IP "\fBf.downiconmgr\fI" 8
+.IP "\fBf.downiconmgr\fP" 8
 This function warps the pointer to the next row in the current icon manger,
 wrapping to the beginning of the next column if necessary.
 
@@ -2040,14 +2040,14 @@ the current workspace name.
 .\"This function assumes \fIstring\fP is a file name.  This file is read into
 .\"the window server's cut buffer.
 
-.IP "\fBf.fill\fI \fIstring\fP" 8
+.IP "\fBf.fill\fP \fIstring\fP" 8
 Where string is either : \(oqright\(cq, \(oqleft\(cq, \(oqtop\(cq, \(oqbottom\(cq or \(oqvertical\(cq.
 The current window is resized in the specified direction until it
 reaches an obstacle (either another window, or the screen border).
 f.fill \(oqvertical\(cq sets the window status to \(oqzoomed\(cq and toggles, ie
 calling it again will reset the previous window size.
 
-.IP "\fBf.fittocontent\fI" 8
+.IP "\fBf.fittocontent\fP" 8
 Can be used only with window boxes. The result is to have the box have the
 minimal size that contains all its children windows.
 
@@ -2061,11 +2061,11 @@ If the selected window already was focused, this function executes an
 This function is like \fBf.move\fP except that it ignores the \fBDontMoveOff\fP
 variable.
 
-.IP "\fBf.forwiconmgr\fI" 8
+.IP "\fBf.forwiconmgr\fP" 8
 This function warps the pointer to the next column in the current icon
 manager, wrapping to the beginning of the next row if necessary.
 
-.IP "\fBf.forwmapiconmgr\fI" 8
+.IP "\fBf.forwmapiconmgr\fP" 8
 This function warps the  pointer in the same manner as \fBf.forwiconmgr\fP
 but only stops at windows that are mapped.
 
@@ -2139,7 +2139,7 @@ Rightward equivalent of f.jumpdown.
 .IP "\fBf.jumpup\fP \fIstep\fP" 8
 Upward equivalent of f.jumpdown.
 
-.IP "\fBf.lefticonmgr\fI" 8
+.IP "\fBf.lefticonmgr\fP" 8
 This function similar to \fBf.backiconmgr\fP except that wrapping does not
 change rows.
 
@@ -2215,19 +2215,19 @@ Button1 = m1 : title : f.movetitlebar
 window is squeezed (see f.squeeze), or the title is not squeezed
 (see \fISqueezeTitle\fP).
 
-.IP "\fBf.movetonextworkspace\fI" 8
+.IP "\fBf.movetonextworkspace\fP" 8
 Move the window to the next workspace.
 
-.IP "\fBf.movetoprevworkspace\fI" 8
+.IP "\fBf.movetoprevworkspace\fP" 8
 Move the window to the previous workspace.
 
-.IP "\fBf.movetonextworkspaceandfollow\fI" 8
+.IP "\fBf.movetonextworkspaceandfollow\fP" 8
 Move the window to the next workspace and go to that workspace.
 
-.IP "\fBf.movetoprevworkspaceandfollow\fI" 8
+.IP "\fBf.movetoprevworkspaceandfollow\fP" 8
 Move the window to the previous workspace and go to that workspace.
 
-.IP "\fBf.nexticonmgr\fI" 8
+.IP "\fBf.nexticonmgr\fP" 8
 This function warps the pointer to the next icon manager containing any windows
 on the current or any succeeding screen.
 
@@ -2245,13 +2245,13 @@ belongs to.
 .IP "\fBf.occupyall\fP" 8
 This function makes the specified window occupy all the workspaces.
 
-.IP "\fBf.pack\fI \fIstring\fP" 8
+.IP "\fBf.pack\fP \fIstring\fP" 8
 Where string is either : \(oqright\(cq, \(oqleft\(cq, \(oqtop\(cq or \(oqbottom\(cq
 The current window is moved in the specified direction until it reaches
 an obstacle (either another window, or the screen border). The pointer
 follows the window.
 
-.IP "\fBf.previconmgr\fI" 8
+.IP "\fBf.previconmgr\fP" 8
 This function warps the pointer to the previous icon manager containing any
 windows on the current or preceding screens.
 
@@ -2315,7 +2315,7 @@ This function kills and restarts \fIctwm\fP.
 Restore the current window geometry to what was saved in the last
 call to f.savegeometry.
 
-.IP "\fBf.righticonmgr\fI" 8
+.IP "\fBf.righticonmgr\fP" 8
 This function is similar to \fBf.nexticonmgr\fP except that wrapping does
 not change rows.
 
@@ -2449,7 +2449,7 @@ when a focused window is no longer desired.
 .IP "\fBf.unsqueeze\fP" 8
 Is to \fBf.squeeze\fP what \fBf.deiconify\fP is to \fBf.iconify\fP.
 
-.IP "\fBf.upiconmgr\fI" 8
+.IP "\fBf.upiconmgr\fP" 8
 This function warps the pointer to the previous row in the current icon
 manager, wrapping to the last row in the same column if necessary.
 
@@ -2461,7 +2461,7 @@ same column. The result depends on the layout of the workspace manager.
 .IP "\fBf.vanish\fP" 8
 The specified window vanishes from the current workspace if it occupies at least
 one other WorkSpace. Do nothing in the others cases.
-.\".IP "\fBf.version\fI" 8
+.\".IP "\fBf.version\fP" 8
 .\"This function causes the \fIctwm\fP version window to be displayed.  This
 .\"window will be displayed until a pointer button is pressed or the
 .\"pointer is moved from one window to another.
