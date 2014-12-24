@@ -1,13 +1,15 @@
-all: ctwm.1.html
+BASE=ctwm.1
+
+all: ${BASE}.html
 
 clean:
-	rm -f ctwm.1.*
+	rm -f ${BASE}.*
 
-ctwm.1.txt: ../ctwm.man convert.pl
-	./convert.pl < ../ctwm.man > ctwm.1.txt
+${BASE}.txt: ../ctwm.man convert.pl
+	./convert.pl < ../ctwm.man > ${BASE}.txt
 
-ctwm.1.html: ctwm.1.txt
-	asciidoc -atoc -anumbered -o ${@} ${>}
+${BASE}.html: ${BASE}.txt
+	asciidoc -atoc -anumbered -o ${BASE}.html ${BASE}.txt
 
-ctwm.1: ctwm.1.txt
-	a2x -vv --doctype manpage --format manpage ctwm.1.txt
+${BASE}: ${BASE}.txt
+	a2x -vv --doctype manpage --format manpage ${BASE}.txt
