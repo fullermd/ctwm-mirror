@@ -4,6 +4,8 @@ use warnings;
 
 # Usage: $this.pl < old.roff.ctwm.man > new.asciidoc.ctwm.txt
 
+die "This script has served out its purpose.  For reference only.\n";
+
 #
 # This does the majority of the conversion from the existing
 # part-pure-roff, part-man, part-ms, part-god-knows-what manpage, to an
