@@ -8,10 +8,10 @@ man: ${BASE}
 all: html man
 
 clean:
-	rm -f ${BASE} ${HTML} ${BASE}.txt
+	rm -f ${BASE} ${HTML}
 
-${BASE}.txt: ../ctwm.man convert.pl
-	./convert.pl < ../ctwm.man > ${BASE}.txt
+#${BASE}.txt: ../ctwm.man convert.pl
+#	./convert.pl < ../ctwm.man > ${BASE}.txt
 
 ${HTML}: ${BASE}.txt
 	asciidoc -atoc -anumbered -o ${BASE}.html ${BASE}.txt
