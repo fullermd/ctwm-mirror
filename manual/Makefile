@@ -17,4 +17,4 @@ ${HTML}: ${BASE}.txt
 	asciidoc -atoc -anumbered -o ${BASE}.html ${BASE}.txt
 
 ${BASE}: ${BASE}.txt
-	a2x -vv --doctype manpage --format manpage ${BASE}.txt
+	a2x --doctype manpage --format manpage ${BASE}.txt
