@@ -1,14 +1,19 @@
 BASE=ctwm.1
 
-all: ${BASE}.html
+HTML=${BASE}.html
+
+html: ${HTML}
+man: ${BASE}
+
+all: html man
 
 clean:
-	rm -f ${BASE}.*
+	rm -f ${BASE} ${HTML} ${BASE}.txt
 
 ${BASE}.txt: ../ctwm.man convert.pl
 	./convert.pl < ../ctwm.man > ${BASE}.txt
 
-${BASE}.html: ${BASE}.txt
+${HTML}: ${BASE}.txt
 	asciidoc -atoc -anumbered -o ${BASE}.html ${BASE}.txt
 
 ${BASE}: ${BASE}.txt
