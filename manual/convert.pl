@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 
+# Usage: $this.pl < old.roff.ctwm.man > new.asciidoc.ctwm.txt
+
 #
 # This does the majority of the conversion from the existing
 # part-pure-roff, part-man, part-ms, part-god-knows-what manpage, to an
